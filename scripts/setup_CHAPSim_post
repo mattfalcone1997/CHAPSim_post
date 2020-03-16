@@ -1,0 +1,34 @@
+#!/bin/bash
+#==============================================================
+# Scipt to setup up machine to use the post processing files 
+# from any directory
+#==============================================================
+
+cd ../
+echo -e "\n *** SETTING UP CHAPSim_post ***\n"
+echo -e "Making CHAPSim_post\n"
+make all
+current_dir=$(pwd)
+
+#Ensuring that the .bashrc file isn't modified multiple time
+
+input=$HOME/.bashrc
+if [ -f $input ]; then 
+	while IFS= read -r line
+	do
+		if [ "$line" == "if [ -d \"$current_dir\" ]; then " ]; then
+			echo -e "\n$input already modified no changes required\n"
+			exit 0
+		fi
+	done <"$input"
+fi
+current_dir=${current_dir// /"\ "}
+
+#Adding to .bashrc
+bashrc_mod="if [ -d \"$current_dir\" ]; then \n\tCHAPSim_bin=\"$current_dir/bin\" \n\tPATH=\"\$PATH:\$CHAPSim_bin\" \nfi"
+
+echo -e "\nModifying $input\n"
+echo -e "\n# *** CHAPSim_post setup ***" >> $input 
+echo -e $bashrc_mod >> $input 
+
+
