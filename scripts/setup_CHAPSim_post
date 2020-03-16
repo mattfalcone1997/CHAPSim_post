@@ -12,7 +12,7 @@ current_dir=$(pwd)
 
 #Ensuring that the .bashrc file isn't modified multiple time
 
-input=$HOME/.bashrc
+input=scripts/test.sh #$HOME/.bashrc
 if [ -f $input ]; then 
 	while IFS= read -r line
 	do
@@ -30,5 +30,16 @@ bashrc_mod="if [ -d \"$current_dir\" ]; then \n\tCHAPSim_bin=\"$current_dir/bin\
 echo -e "\nModifying $input\n"
 echo -e "\n# *** CHAPSim_post setup ***" >> $input 
 echo -e $bashrc_mod >> $input 
+
+#Adding path to conda if present
+if hash conda &>/dev/null ; then
+	#Optional use of command line argument to give environment name, defaults to base 
+	if [ $# -gt 0 ]; then
+		source activate $1
+	else
+		source activate base
+	fi
+	conda develop $current_dir/bin
+fi
 
 
