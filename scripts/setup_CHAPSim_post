@@ -12,7 +12,7 @@ current_dir=$(pwd)
 
 #Ensuring that the .bashrc file isn't modified multiple time
 
-input=scripts/test.sh #$HOME/.bashrc
+input=$HOME/.bashrc
 if [ -f $input ]; then 
 	while IFS= read -r line
 	do
