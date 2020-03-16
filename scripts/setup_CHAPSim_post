@@ -25,7 +25,7 @@ fi
 current_dir=${current_dir// /"\ "}
 
 #Adding to .bashrc
-bashrc_mod="if [ -d \"$current_dir\" ]; then \n\tCHAPSim_bin=\"$current_dir/bin\" \n\tPATH=\"\$PATH:\$CHAPSim_bin\" \nfi"
+bashrc_mod="if [ -d \"$current_dir\" ]; then \n\tCHAPSim_bin=\"$current_dir/bin\" \n\tPYTHONPATH=\"\$PYTHONPATH:\$CHAPSim_bin\" \nfi"
 
 echo -e "\nModifying $input\n"
 echo -e "\n# *** CHAPSim_post setup ***" >> $input 
