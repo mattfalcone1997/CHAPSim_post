@@ -1,6 +1,7 @@
 
-.PHONY : scripts
-
+.PHONY : clean  scripts
+clean : 
+	rm -r bin/*
 scripts : 
 	cp src/* bin
-all : scripts
+all : clean scripts

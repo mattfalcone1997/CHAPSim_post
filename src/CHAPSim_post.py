@@ -54,7 +54,6 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-
 from scipy import integrate, fftpack
 import os
 import time
@@ -673,58 +672,122 @@ class CHAPSim_AVG():
         #plt.savefig("Average_flow_profile_%s.png" % flow_field.upper())
         return fig, ax
     #def non_dom_calc(self,PhyTime,)
-    def plot_near_wall(self,PhyTime,x_loc,fig='',ax=''):
+    def plot_near_wall(self,PhyTime,x_loc,U_plus=True,plotsep=True,Y_plus_lim='',fig='',ax=''):
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
         #wall_params = self._metaDF.loc['moving_wallflg':'VeloWall']
         wall_velo = self._meta_data.moving_wall_calc()
         
-        U = self.flow_AVGDF.loc[PhyTime,'u'].copy().values
-        U = U.reshape((self.NCL[1],self.NCL[0]))
+        U = self.flow_AVGDF.loc[PhyTime,'u'].copy().values.reshape((self.NCL[1],self.NCL[0]))
         for i in range(self.NCL[1]):
             U[i,:]=U[i,:] - wall_velo
-            
+        
         u_tau_star, delta_v_Star = wall_unit_calc(self,PhyTime)
 
         Y, X = np.meshgrid(self.CoordDF['y'].dropna().values,self.CoordDF['x'].dropna().values)
-        
-        #for i in range(3):
-            #non_dom_coordsDF[i] = non_dom_coordsDF[i]*u_tau_star/np.sqrt(REN)
-        Y_plus = np.zeros_like(Y)
-        X_plus = np.zeros_like(X)
-        U_plus = np.zeros_like(U)
-        for i in range(self.CoordDF['y'].dropna().size):
-            for j in range(self.CoordDF['x'].dropna().size):
-                Y_plus[j,i] = (1-np.abs(Y[j,i]))/delta_v_Star[j]#*np.sqrt(REN)
-                X_plus[j,i] = X[j,i]/delta_v_Star[j]#*np.sqrt(REN)
-                U_plus[i,j] = U[i,j]/u_tau_star[j]
-        #print(Y_plus[300],U_plus[:,300])
-        if not fig:
-            fig = plt.figure(figsize=[10,5])
-        if not ax:
-            ax = fig.add_subplot(1,1,1)
-        if isinstance(x_loc,int):
-            ax.plot(Y_plus[x_loc,:int(self.NCL[1]/2)],U_plus[:int(self.NCL[1]/2),x_loc])
-            ax.plot(Y_plus[x_loc,:int(self.NCL[1]/2)],Y_plus[x_loc,:int(self.NCL[1]/2)],'b--')
-        elif isinstance(x_loc,list):
-            x_coord = []
-            linestyle_list=['-','--','-.']
-            for x,j in zip(x_loc,range(len(x_loc))):    
-                ax.plot(Y_plus[x,:int(self.NCL[1]/2)],U_plus[:int(self.NCL[1]/2),x],linestyle_list[j%len(linestyle_list)])
-                x_coord.append(r"$x/\delta =%.3g$" % self.CoordDF['x'].dropna().values[x])
-            ax.plot(Y_plus[x_loc[0],:int(self.NCL[1]/2)],Y_plus[x_loc[0],:int(self.NCL[1]/2)],'r--')
-            x_coord.append(r"$U^+=Y^+$")
-            ax.legend(x_coord,loc = 'upper center',ncol=4*(len(x_coord)>3)+len(x_coord)*(len(x_coord)<4),bbox_to_anchor=(0.5,-0.2))
+            
+            #for i in range(3):
+                #non_dom_coordsDF[i] = non_dom_coordsDF[i]*u_tau_star/np.sqrt(REN)
+        if U_plus:
+            Y_plus = np.zeros_like(Y)
+            U_plus = np.zeros_like(U)
+            for i in range(self.CoordDF['y'].dropna().size):
+                for j in range(self.CoordDF['x'].dropna().size):
+                    Y_plus[j,i] = (1-np.abs(Y[j,i]))/delta_v_Star[j]#*np.sqrt(REN)
+                    U_plus[i,j] = U[i,j]/u_tau_star[j]
+            #print(Y_plus[300],U_plus[:,300])
+            if not fig:
+                fig = plt.figure(figsize=[10,5])
+            if not ax:
+                ax = fig.add_subplot(1,1,1)
+            if isinstance(x_loc,int):
+                ax.plot(Y_plus[x_loc,:int(self.NCL[1]/2)],U_plus[:int(self.NCL[1]/2),x_loc])
+                ax.plot(Y_plus[x_loc,:int(self.NCL[1]/2)],Y_plus[x_loc,:int(self.NCL[1]/2)],'b--')
+            elif isinstance(x_loc,list):
+                x_coord = []
+                linestyle_list=['-','--','-.']
+                for x,j in zip(x_loc,range(len(x_loc))):    
+                    ax.plot(Y_plus[x,:int(self.NCL[1]/2)],U_plus[:int(self.NCL[1]/2),x],linestyle_list[j%len(linestyle_list)])
+                    x_coord.append(r"$x/\delta =%.3g$" % self.CoordDF['x'].dropna().values[x])
+                ax.plot(Y_plus[x_loc[0],:int(self.NCL[1]/2)],Y_plus[x_loc[0],:int(self.NCL[1]/2)],'r--')
+                x_coord.append(r"$U^+=Y^+$")
+                ax.legend(x_coord,loc = 'upper center',ncol=4*(len(x_coord)>3)+len(x_coord)*(len(x_coord)<4),bbox_to_anchor=(0.5,-0.2))
+            else:
+                raise TypeError("Not a valid type")
+            ax.set_xscale('log')
+            ax.set_ylabel(r"$U^+$")
+            ax.set_xlabel(r"$Y^+$")
+            ax.set_ylim(top=1.2*np.max(U_plus),bottom=min(np.min(U_plus),0.0))
+            ax.grid()
+            ax.set_title("Wall-normal velocity profile in wall units")
+
         else:
-            raise TypeError("Not a valid type")
+            U=U[:,x_loc]
+            max_u=np.max(U)
+            Y=Y[x_loc].T
+            if Y_plus_lim:
+                U=U[:int(np.ceil(Y.shape[0]/2))]
+                Y=Y[:int(np.ceil(Y.shape[0]/2))]
+                for i in range(len(x_loc)):
+                    Y[:,i] =(1-np.abs( Y[:,i]))/delta_v_Star[x_loc[i]] #Y[:,i]/delta_v_Star[x_loc[i]]
+            if plotsep:
+                if not fig:
+                    fig,ax = plt.subplots(1,len(x_loc),figsize=[10,5],gridspec_kw = {'wspace':0, 'hspace':0})
+
+                #print("hello",flush=True)
+                for i in range(len(x_loc)):
+                    ax[i].plot(U[:,i],Y[:,i],linewidth=1)
+                    ax[i].set_xlim(right=max_u)
+                    ax[i].annotate("$x=%.3f$"%self.CoordDF['x'].dropna().values[x_loc[i]],
+                                xy=(0.01,1.03),xytext=(0.01,1.03),textcoords='axes fraction',
+                                fontsize=12)
+                    ax[i].xaxis.set_ticks_position('both')
+                    ax[i].xaxis.set_major_locator(mpl.ticker.FixedLocator([0,max_u]))
+                    ax[i].xaxis.set_minor_locator(mpl.ticker.MaxNLocator(3))
+                    if i <len(x_loc)-1:
+                        ax[i].spines['right'].set_visible(False)
+                    if i > 0:
+                        ax[i].spines['left'].set_visible(False)
+                        ax[i].set_xticklabels([])
+                        ax[i].set_yticks([],[])
+                    if i==0:
+                        ax[i].yaxis.set_ticks_position('left')
+                        if Y_plus_lim:
+                            ax[i].set_ylabel(r"$Y^+$",fontsize=20)
+                        else:
+                            ax[i].set_ylabel(r"$y/\delta$",fontsize=20)
+                    if Y_plus_lim:
+                        ax[i].set_ylim(bottom=0,top=Y_plus_lim)
+                    if i == int(np.ceil(len(x_loc)/2)):
+                        ax[i].set_xlabel(r'$\langle U^*\rangle$', fontsize=20)    
+            else:
+                if not fig:
+                    fig,ax = plt.subplots(figsize=[10,5])
+                elif not ax:
+                    ax=fig.add_subplot(1,1,1)
+                linestyles=['-','--',':','-.']
+                for i in range(len(x_loc)):
+                    ax.plot(U[:,i],Y[:,i],linewidth=1,linestyle=linestyles[i%len(linestyles)],
+                            label=r"$x=%.3f$"%self.CoordDF['x'].dropna().values[x_loc[i]])
+                    ax.set_xlabel(r'$\langle U^*\rangle$', fontsize=20)    
+                    if Y_plus_lim:
+                        ax.set_ylabel(r"$Y^+$",fontsize=20)
+                    else:
+                        ax.set_ylabel(r"$y/\delta$",fontsize=20)
+                        
+                handles, labels = ax.get_legend_handles_labels()
+                ax.legend(CT.flip_leg_col(handles,4),CT.flip_leg_col(labels,4),
+                      loc = 'upper center',ncol=4*(len(labels)>3)+len(labels)*(len(labels)<4),
+                      bbox_to_anchor=(0.5,-0.2),
+                      fontsize=16)
+                ax.grid()
+                if Y_plus_lim:
+                        ax.set_ylim(bottom=0,top=Y_plus_lim)
+                fig.tight_layout()
         
-        ax.plot()
-        ax.grid()
-        ax.set_ylabel(r"$U^+$")
-        ax.set_xlabel(r"$Y^+$")
-        ax.set_ylim(top=1.2*np.max(U_plus),bottom=min(np.min(U_plus),0.0))
-        ax.set_title("Wall-normal velocity profile in wall units")
-        ax.set_xscale('log')
+        
+        
+        
         #ax.set_yscale('log')
 
         return fig, ax
@@ -1250,6 +1313,7 @@ class CHAPSim_peturb(CHAPSim_AVG):
                     loc = 'upper center',ncol=4*(len(labels)>3)+len(labels)*(len(labels)<4),
                     bbox_to_anchor=(0.5,-0.2),
                     fontsize=16)
+        fig.tight_layout()
         return fig, ax
     def plot_peturb_cf(self,wall_units=False,fig='',ax=''):
         try:
@@ -2238,7 +2302,7 @@ class CHAPSim_autocov():
                     y_coord = y_coord[y_coord<Y_plus_max]
                     Ruu = Ruu[:len(y_coord)]
             X,Y = np.meshgrid(coord,y_coord)
-            ax1 = ax.pcolormesh(X,Y,Ruu,cmap='coolwarm')
+            ax1 = ax.pcolormesh(X,Y,Ruu,cmap='nipy_spectral')
             ax = ax1.axes
             if Y_plus:
                 ax.set_ylabel(r"$Y^{+0}$", fontsize=16)
@@ -2373,6 +2437,7 @@ class CHAPSim_autocov():
         ax.set_ylabel(r"$E_{%d%d}(\kappa_%s)$"%string,fontsize=20)
         ax.grid()
         ax.set_xscale('log')
+        fig.tight_layout()
         #ax.set_yscale('log')
         return fig, ax
 class CHAPSim_Ruu(CHAPSim_autocov):
