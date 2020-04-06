@@ -2,11 +2,34 @@ import numpy as np
 import CHAPSim_parallel as cpar
 import CHAPSim_post as cp
 import warnings
+import matplotlib as mpl
 from scipy.integrate import solve_bvp
 import sympy
 import itertools
 
+def default_axlabel_kwargs():
+    return {'fontsize':20}
+def default_legend_kwargs():
+    return {'loc':'upper center','bbox_to_anchor':(0.5,0.0)}
 
+def filter_mpl_kwargs(mpl_class,kwargs):
+    if not kwargs: return kwargs
+    text_keys = mpl_class.properties().keys()
+    output_dict={key: kwargs[key] for key in text_keys if key in kwargs.keys()}
+    return output_dict
+
+def filter_mpl_kwargs_text(kwargs):
+    return filter_mpl_kwargs(mpl.text.Text(),kwargs)
+def filter_mpl_kwargs_legend(kwargs):
+    new_kwargs=filter_mpl_kwargs(mpl.legend(),kwargs)
+    new_kwargs.pop('fontsize')
+    return new_kwargs
+def update_kwargs(orig_kwargs,new_kwargs):
+    if not new_kwargs: return None
+    for key,item in new_kwargs.items():
+        orig_kwargs[key] = item
+        
+        
 def flip_leg_col(items, ncol):
     return itertools.chain(*[items[i::ncol] for i in range(ncol)])
 
@@ -185,10 +208,16 @@ def coord_index_calc(CoordDF,comp,coord_list):
                         index_list.append(i+1)
                         break 
         except IndexError:
-            warnings.warn("Value in coord_list out of bounds: "\
+            
+            coord_end_plus=2*coords[coords.size-1]-coords[coords.size-2]
+            
+            if coord_end_plus>coord:
+                index_list.append(i)
+            else:
+                warnings.warn("Value in coord_list out of bounds: "\
                              + "%s coordinate given: %g, max %s coordinate:" % (comp,coord,comp)\
                              + " %g. Ignoring values beyond this" % max(coords))
-            return index_list
+                return index_list
     if len(coord_list)==1:
         return index_list[0]
     else:
