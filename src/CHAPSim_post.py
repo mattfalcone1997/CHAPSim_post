@@ -57,6 +57,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy import integrate, fftpack
 import os
+import itertools
 import time
 import warnings
 import CHAPSim_Tools as CT
@@ -236,7 +237,7 @@ class CHAPSim_Inst():
         elif not ax:
             ax = fig.add_subplot(1,1,1)
             
-        ax1 = ax.pcolormesh(axis1_mesh,axis2_mesh,velo_post,cmap='mpl.cm.jet')
+        ax1 = ax.pcolormesh(axis1_mesh,axis2_mesh,velo_post,cmap='jet')
         ax = ax1.axes
         ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
         ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
@@ -286,6 +287,7 @@ class CHAPSim_Inst():
         del strain_rate ; del rot_rate
         #eigs = np.vectorize(np.linalg.eig,otypes=[float],signature='(m,n,o,p,q)->(o,p,q)')
         S2_Omega2_eigvals, e_vecs = np.linalg.eigh(S2_Omega2)
+        del e_vecs
         #lambda2 = np.zeros_like(velo_field1)
         # eigs = np.zeros(3)
         
@@ -611,7 +613,7 @@ class CHAPSim_AVG():
         y_coords = self.CoordDF['y'].dropna().values
         X, Y = np.meshgrid(x_coords,y_coords)
             
-        ax1 = ax.pcolormesh(X,Y,local_velo,cmap='mpl.cm.jet')
+        ax1 = ax.pcolormesh(X,Y,local_velo,cmap='jet')
         ax = ax1.axes
         ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
         ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
@@ -640,13 +642,13 @@ class CHAPSim_AVG():
         y_coords = self.CoordDF['y'].dropna().values
         X, Y = np.meshgrid(x_coords,y_coords)
             
-        ax1 = ax.pcolormesh(X,Y,fluct,cmap='mpl.cm.jet')
+        ax1 = ax.pcolormesh(X,Y,fluct,cmap='jet')
         ax = ax1.axes
         ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
         ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
         fig.colorbar(ax1,ax=ax)
-        ax.set_xlabel("$x/\delta$", fontsize=18)
-        ax.set_ylabel("$y/\delta$",fontsize=16)
+        ax.set_xlabel(r"$x/\delta$", fontsize=18)
+        ax.set_ylabel(r"$y/\delta$",fontsize=16)
         return fig, ax
     def AVG_line_extract(self,flow_field,PhyTime,x_list,fig='',ax=''):
         if type(PhyTime) == float:
@@ -1071,9 +1073,9 @@ class CHAPSim_AVG():
         tau_star = np.zeros_like(u_velo[1])
         mu_star = 1.0
         #time0=time.time()
-        sol, h_list = CT.Stencil_calc([0,1,2,3], 1)
+        #sol, h_list = CT.Stencil_calc([0,1,2,3], 1)
         #print(time.time()-time0)
-        a,b,c,d = CT.Stencil_coeffs_eval(sol,h_list,[ycoords[0]--1.0,ycoords[1]-ycoords[0],ycoords[2]-ycoords[1]])
+        #a,b,c,d = CT.Stencil_coeffs_eval(sol,h_list,[ycoords[0]--1.0,ycoords[1]-ycoords[0],ycoords[2]-ycoords[1]])
         for i in range(self.NCL[0]):
             #tau_star[i] = mu_star*(a*wall_velo[i] + b*u_velo[0,i] + c*u_velo[1,i] + d*u_velo[2,i])
             tau_star[i] = mu_star*(u_velo[0,i]-wall_velo[i])/(ycoords[0]--1.0)#*(-1*u_velo[1,i] + 4*u_velo[0,i] - 3*wall_velo[i])/(0.5*ycoords[1]-1.5*(-1.0)+y_coords[0])
@@ -1370,40 +1372,92 @@ class CHAPSim_peturb():
     
 class CHAPSim_fluct():
     def __init__(self,*args,**kwargs):
-        i=0 ;j= 0
+        i=0 
         for arg in args:
            if isinstance(arg,CHAPSim_Inst):
                inst_data = arg ; i+=1
-           if isinstance(arg,CHAPSim_AVG):
-               avg_data = arg ; j+=1
                
-        assert i <2 and j<2 , "Only one arg of CHAPSim_Inst (%d) or CHAPSim_AVG (%d)" %(i,j)+\
-                                " can be provided "
-        if i==0 or j==0:
-            PhyTime=kwargs.pop('time')
-            avg_data=CHAPSim_AVG(PhyTime,kwargs)
+        # assert i <2 and j<2 , "Only one arg of CHAPSim_Inst (%d) or CHAPSim_AVG (%d)" %(i,j)+\
+        #                         " can be provided "
+        file_names = time_extract(kwargs.get('path_to_folder',''),kwargs.get('abs_path',True))
+        time_list =[]
+        for file in file_names:
+            time_list.append(float(file[20:35]))
+        times = list(dict.fromkeys(time_list))
+        maxtime= np.amax(times)
+        avg_list = [arg for arg in args if isinstance(arg,CHAPSim_AVG)]
+        if len(avg_list)>0:
+            j=1
+            for avg in avg_list:
+                avg_times=list(set([float(x[0]) for x in avg.flow_AVGDF.index]))
+                max_avg_times=max(avg_times)
+                if max_avg_times == maxtime:
+                    avg_data=avg
+                    break
+                else:
+                    if j == len(avg_list):
+                        avg_args = [x for x in args if not isinstance(x,CHAPSim_AVG) and not isinstance(x,CHAPSim_Inst)]
+                        avg_data=CHAPSim_AVG(maxtime,*avg_args[1:],**kwargs)
+                j+=1
+        else:
+            avg_args = [x for x in args if not isinstance(x,CHAPSim_Inst)]
+            avg_data = CHAPSim_AVG(maxtime,*avg_args[1:],**kwargs)
+        avg_values=avg_data.flow_AVGDF.values
+
+        args = [x for x in args if not isinstance(x,CHAPSim_AVG)]
+        if i==0:
             kwargs.pop('time0')
-            inst_data=CHAPSim_Inst(PhyTime,kwargs)
-        
-        inst_times = list(set([x[0] for x in inst_data.InstDF.index]))
-        avg_times = list(set([x[0] for x in avg_data.flow_AVGDF.index]))
-        assert inst_times ==avg_times, "The times in CHAPSim_Inst and CHAPSim_AVG must be the same"
-        
-        self._meta_data=inst_data._meta_data 
+            inst_data=CHAPSim_Inst(*args,**kwargs)
+            pd.testing.assert_frame_equal(left=avg_data._metaDF,right=inst_data._meta_data.metaDF)
+            inst_values=inst_data.InstDF.values
+            inst_times=list(set([x[0] for x in inst_data.InstDF.index]))
+        else:
+            inst_data_list=[arg for arg in args if isinstance(arg,CHAPSim_Inst)]
+            for inst_data in inst_data_list:
+                pd.testing.assert_frame_equal(left=avg_data._metaDF,
+                                            right=inst_data._meta_data.metaDF)
+
+            inst_values_list=[inst.InstDF.values for inst in inst_data_list]
+            # print([y[0] for y in itertools.chain.from_iterable([inst.InstDF.index for inst in inst_data_list])])
+            inst_times=list(set([y[0] for y in itertools.chain.from_iterable(\
+                            [inst.InstDF.index for inst in inst_data_list])]))
+            inst_values=np.vstack(inst_values_list)
+            print(args)
+            
+            args = [x for x in args if not isinstance(x,CHAPSim_Inst)]
+            try:
+                if args:
+                    args[0] = [x for x in args[0] if str(x) not in inst_times and x in times]
+                    if 'time0' in kwargs: del kwargs['time0']
+                    print([float(x) for x in args[0]],inst_times,times)
+                    if args[0]:
+                        inst_data = CHAPSim_Inst(*args,**kwargs)
+                        inst_values=np.vstack((inst_data.InstDF.values,*inst_values))
+                        inst_times.extend(list(set([x[0] for x in inst_data.InstDF.index])))
+            except IndexError as e:
+                raise ValueError("Check the arguments list for this function it should match CHAPSim_AVG with the options"\
+                                +" of addition CHAPSim_AVG or CHAPSim_Inst")
+        # inst_times = list(set([x[0] for x in inst_data.InstDF.index]))
+        # assert inst_times ==avg_times, "The times in CHAPSim_Inst and CHAPSim_AVG must be the same"
+        self._meta_data=avg_data._meta_data 
         self.CoordDF=self._meta_data.CoordDF
         self.NCL=self._meta_data.NCL
         
-        inst_velo = inst_data.InstDF.values\
-                     .reshape((4*len(inst_times),self.NCL[2],self.NCL[1],self.NCL[0]))
-        avg_velo = avg_data.flow_AVGDF.values\
-                     .reshape((4*len(inst_times),self.NCL[1],self.NCL[0]))
+        # inst_velo = inst_data.InstDF.values\
+        #              .reshape((4*len(inst_times),self.NCL[2],self.NCL[1],self.NCL[0]))
+        # avg_velo = avg_data.flow_AVGDF.values\
+        #              .reshape((4,self.NCL[1],self.NCL[0]))
 
-        fluct_velo=np.zeros_like(inst_velo)
-        for i in range(self.NCL[2]):
-             fluct_velo[:,i] = inst_velo[:,i]-avg_velo
+        inst_values=inst_values.reshape((len(inst_times),4,self.NCL[2],self.NCL[1],self.NCL[0]))
+        avg_values=avg_values.reshape(4,self.NCL[1],self.NCL[0])
+        fluct_velo=np.zeros_like(inst_values)
+        for j in range(len(inst_times)):
+            for i in range(self.NCL[2]):
+                fluct_velo[j,:,i] = inst_values[j,:,i]-avg_values
              
         fluct_velo=fluct_velo.reshape((4*len(inst_times),self.NCL[2]*self.NCL[1]*self.NCL[0]))
         index=[[],[]]
+
         for times in inst_times:
             index[0].extend([times]*4)
             index[1].extend(['u','v','w','p'])
@@ -1461,7 +1515,7 @@ class CHAPSim_fluct():
                 ax1 = ax[i].pcolormesh(X[:,x_coords_split[0]:x_coords_split[1]],
                                         Z[:,x_coords_split[0]:x_coords_split[1]],
                                         fluct[:,x_coords_split[0]:x_coords_split[1]],
-                                        cmap=mpl.cm.jet)
+                                        cmap='jet')
                 ax2 = ax1.axes
                 
                 fig.colorbar(ax1,ax=ax[i])
@@ -1477,7 +1531,7 @@ class CHAPSim_fluct():
                     ax1 = ax[j*len(y_vals)+i].pcolormesh(X[:,x_coords_split[j]:x_coords_split[j+1]],
                                              Z[:,x_coords_split[j]:x_coords_split[j+1]],
                                              fluct[:,x_coords_split[j]:x_coords_split[j+1]],
-                                             cmap=mpl.cm.jet)
+                                             cmap='jet')
                     ax2 = ax1.axes
                     ax1.set_clim(min_val,max_val)
                     fig.colorbar(ax1,ax=ax[j*len(y_vals)+i])
@@ -1495,7 +1549,7 @@ class CHAPSim_fluct():
             if type(PhyTime) == float:
                 PhyTime = "{:.9g}".format(PhyTime)
                 
-        if len(set([x[0] for x in self.InstDF.index])) == 1:
+        if len(set([x[0] for x in self.fluctDF.index])) == 1:
             fluct_time = list(set([x[0] for x in self.fluctDF.index]))[0]
             if PhyTime and PhyTime != fluct_time:
                 warnings.warn("PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time))
@@ -1533,14 +1587,14 @@ class CHAPSim_fluct():
         
         return plotter
     def plot_fluct3D_xz(self,y_vals,comp,PhyTime='',x_split_list='',fig='',ax=''):
-        def axisEqual3D(ax):
-            extents = np.array([getattr(ax, 'get_{}lim'.format(dim))() for dim in 'xyz'])
-            sz = extents[:,1] - extents[:,0]
-            centers = np.mean(extents, axis=1)
-            maxsize = max(abs(sz))
-            r = maxsize/2
-            for ctr, dim in zip(centers, 'xyz'):
-                getattr(ax, 'set_{}lim'.format(dim))(ctr - r, ctr + r)
+        # def axisEqual3D(ax):
+        #     extents = np.array([getattr(ax, 'get_{}lim'.format(dim))() for dim in 'xyz'])
+        #     sz = extents[:,1] - extents[:,0]
+        #     centers = np.mean(extents, axis=1)
+        #     maxsize = max(abs(sz))
+        #     r = maxsize/2
+        #     for ctr, dim in zip(centers, 'xyz'):
+        #         getattr(ax, 'set_{}lim'.format(dim))(ctr - r, ctr + r)
         if PhyTime:
             if type(PhyTime) == float:
                 PhyTime = "{:.9g}".format(PhyTime)
@@ -1592,7 +1646,7 @@ class CHAPSim_fluct():
                 surf=ax[j*len(y_vals)+i].plot_surface(Z[:,x_coords_split[j]:x_coords_split[j+1]],
                                      X[:,x_coords_split[j]:x_coords_split[j+1]],
                                      fluct[:,i,x_coords_split[j]:x_coords_split[j+1]],
-                                     rstride=1, cstride=1, cmap=mpl.cm.jet,
+                                     rstride=1, cstride=1, cmap='jet',
                                             linewidth=0, antialiased=False)
                 ax[j*len(y_vals)+i].set_ylabel(r'$x/\delta$',fontsize=20)
                 ax[j*len(y_vals)+i].set_xlabel(r'$z/\delta$',fontsize=20)
@@ -2247,10 +2301,10 @@ class CHAPSim_u2_budget(CHAPSim_budget):
             elif isinstance(time,list):
                 for PhyTime in time:
                     if not hasattr(self, 'budgetDF'):
-                        self.budgetDF = self.__u2_extract(AVG_DF,time)
+                        self.budgetDF = self.__u2_extract(time)
                         
                     else:
-                        local_u2_budgetDF = self.__u2_extract(AVG_DF,time)
+                        local_u2_budgetDF = self.__u2_extract(time)
                         DF_concat = [self.budgetDF,local_u2_budgetDF]
                         self.budgetDF = pd.concat(DF_concat)
             else:
@@ -2275,10 +2329,10 @@ class CHAPSim_v2_budget(CHAPSim_budget):
             elif isinstance(time,list):
                 for PhyTime in time:
                     if not hasattr(self, 'budgetDF'):
-                        self.budgetDF = self.__v2_extract(AVG_DF,time)
+                        self.budgetDF = self.__v2_extract(time)
                         
                     else:
-                        local_v2_budgetDF = self.__v2_extract(AVG_DF,time)
+                        local_v2_budgetDF = self.__v2_extract(time)
                         DF_concat = [self.budgetDF,local_v2_budgetDF]
                         self.budgetDF = pd.concat(DF_concat)
                         
@@ -2301,9 +2355,9 @@ class CHAPSim_w2_budget(CHAPSim_budget):
             elif isinstance(time,list):
                 for PhyTime in time:
                     if not hasattr(self, 'budgetDF'):
-                        self.budgetDF = self.__w2_extract(AVG_DF,time)
+                        self.budgetDF = self.__w2_extract(time)
                     else:
-                        local_w2_budgetDF = self.__w2_extract(AVG_DF,time)
+                        local_w2_budgetDF = self.__w2_extract(time)
                         DF_concat = [self.budgetDF,local_w2_budgetDF]
                         self.budgetDF = pd.concat(DF_concat)
             else:
@@ -2325,9 +2379,9 @@ class CHAPSim_uv_budget(CHAPSim_budget):
             elif isinstance(time,list):
                 for PhyTime in time:
                     if not hasattr(self, 'budgetDF'):
-                        self.budgetDF = self.__uv_extract(AVG_DF,time)
+                        self.budgetDF = self.__uv_extract(time)
                     else:                        
-                        local_uv_budgetDF = self.__uv_extract(AVG_DF,time)
+                        local_uv_budgetDF = self.__uv_extract(time)
                         DF_concat = [self.budgetDF,local_uv_budgetDF]
                         self.budgetDF = pd.concat(DF_concat)
             else:
@@ -2565,7 +2619,7 @@ class CHAPSim_autocov():
                     y_coord = y_coord[y_coord<Y_plus_max]
                     Ruu = Ruu[:len(y_coord)]
             X,Y = np.meshgrid(coord,y_coord)
-            ax1 = ax.pcolormesh(X,Y,Ruu,cmap='mpl.cm.jet')
+            ax1 = ax.pcolormesh(X,Y,Ruu,cmap='jet')
             ax = ax1.axes
             if Y_plus:
                 ax.set_ylabel(r"$Y^{+0}$", fontsize=16)
@@ -2611,7 +2665,7 @@ class CHAPSim_autocov():
                         Ruu = Ruu[:len(y_coord)]
                         
                 X,Y = np.meshgrid(coord,y_coord)
-                ax1 = ax[i-1].pcolormesh(X,Y,Ruu,cmap='mpl.cm.jet')
+                ax1 = ax[i-1].pcolormesh(X,Y,Ruu,cmap='jet')
                 ax[i-1] = ax1.axes
                 if i==len(self.x_split_list)-1:
                     if Y_plus:
@@ -2653,7 +2707,7 @@ class CHAPSim_autocov():
                     size = int(np.trunc(0.5*NCL_local[2]))
                 Ruu = self.autocorrDF.loc[comp].copy().dropna().values\
                     .reshape((NCL_local[1],size))
-            wavenumber_spectra = fftpack.cdt(Ruu[y_index])
+            wavenumber_spectra = fftpack.dct(Ruu[y_index])
             coord = self._meta_data.CoordDF[comp].dropna()\
                         .values[point1:point1+size]
             delta_comp = coord[1]-coord[0]
@@ -2679,7 +2733,7 @@ class CHAPSim_autocov():
 
                 Ruu = self.autocorrDF.loc[split_string,comp].dropna().values\
                         .reshape((NCL_local[1],size))[y_index]
-                wavenumber_spectra = fftpack.cdt(Ruu)
+                wavenumber_spectra = fftpack.dct(Ruu)
                 coord = self._meta_data.CoordDF[comp].dropna()\
                         .values[point1:point1+size]
                 delta_comp = coord[1]-coord[0]
@@ -2763,9 +2817,9 @@ class CHAPSim_k_spectra(CHAPSim_autocov):
                     .reshape((NCL_local[1],size))
                 R_ww = self.autocorr_ww.loc[comp].copy().dropna().values\
                     .reshape((NCL_local[1],size))
-            Phi_uu = fftpack.cdt(R_uu[y_index])
-            Phi_vv = fftpack.cdt(R_vv[y_index])
-            Phi_ww = fftpack.cdt(R_ww[y_index])
+            Phi_uu = fftpack.dct(R_uu[y_index])
+            Phi_vv = fftpack.dct(R_vv[y_index])
+            Phi_ww = fftpack.dct(R_ww[y_index])
             wavenumber_spectra = 0.5*(Phi_uu + Phi_vv + Phi_ww)
             coord = self._meta_data.CoordDF[comp].dropna()\
                         .values[point1:point1+size]
@@ -2794,9 +2848,9 @@ class CHAPSim_k_spectra(CHAPSim_autocov):
                     .reshape((NCL_local[1],size))
                 R_ww = self.autocorr_ww.loc[split_string,comp].copy().dropna().values\
                     .reshape((NCL_local[1],size))
-                Phi_uu = fftpack.cdt(R_uu[y_index])
-                Phi_vv = fftpack.cdt(R_vv[y_index])
-                Phi_ww = fftpack.cdt(R_ww[y_index])
+                Phi_uu = fftpack.dct(R_uu[y_index])
+                Phi_vv = fftpack.dct(R_vv[y_index])
+                Phi_ww = fftpack.dct(R_ww[y_index])
                 wavenumber_spectra = 0.5*(Phi_uu + Phi_vv + Phi_ww)
                 coord = self._meta_data.CoordDF[comp].dropna()\
                         .values[point1:point1+size]
@@ -2959,7 +3013,7 @@ class CHAPSim_mom_balance():
             if abs:
                 momentum_comp = np.abs(momentum_comp)
             #print(momentum_comp[1])
-            ax1 = ax.pcolormesh(X,Y,momentum_comp,cmap='mpl.cm.jet')
+            ax1 = ax.pcolormesh(X,Y,momentum_comp,cmap='jet')
             ax = ax1.axes
             ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
             ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
@@ -2974,7 +3028,7 @@ class CHAPSim_mom_balance():
             i=0    
             for comp in ['u','v','w']:
                 momentum_comp = momentumDF.loc[comp].values.reshape((self.NCL[1],self.NCL[0]))
-                ax1 = ax[i].pcolormesh(X,Y,momentum_comp,cmap='mpl.cm.jet')
+                ax1 = ax[i].pcolormesh(X,Y,momentum_comp,cmap='jet')
                 ax = ax1.axes
                 ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
                 ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
@@ -3030,7 +3084,7 @@ class CHAPSim_mom_balance():
         return fig, ax
         
         
-def time_extract(path_to_folder,abs_path):
+def time_extract(path_to_folder,abs_path=True):
     if abs_path:
         mypath = os.path.join(path_to_folder,'1_instant_D')
     else:
@@ -3272,8 +3326,8 @@ def _scalar_grad(coordDF,flow_array,two_D=True):
         grad_vector = np.zeros((2,flow_array.shape[0],flow_array.shape[1]))
     else:
         assert(flow_array.ndim == 3)
-        grad_vector = np.zeros(3,flow_array.shape[0],flow_array.shape[1],\
-                               flow_array.shape[2])
+        grad_vector = np.zeros((3,flow_array.shape[0],flow_array.shape[1],\
+                               flow_array.shape[2]))
     
     grad_vector[0] = Grad_calc(coordDF,flow_array,'x')
     grad_vector[1] = Grad_calc(coordDF,flow_array,'y')
