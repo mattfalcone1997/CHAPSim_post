@@ -130,7 +130,7 @@ class CHAPSim_Inst():
                     concat_DF = [self.InstDF,local_DF]
                     self.InstDF = pd.concat(concat_DF)
         else:
-            raise TypeError("`time' must be either float or list")
+            raise TypeError("\033[1;32 `time' must be either float or list")
     def __flow_extract(self,Time_input,path_to_folder,abs_path):
         """
         Extract velocity and pressure from the instantanous files on root process \
@@ -429,12 +429,12 @@ class CHAPSim_Inst():
             PhyTime = "{:.10g}".format(PhyTime)
         
         if axis1 == axis2: 
-            raise ValueError("Axis 1 cannot equal axis 2")
+            raise ValueError("\033[1;32 Axis 1 cannot equal axis 2")
     
             
         axes = ['x','y','z']
         if axis1 not in axes or axis2 not in axes:
-            raise ValueError("axis 1 and axis 2 must have values of %s, %s or %s" % axes)
+            raise ValueError("\033[1;32 axis 1 and axis 2 must have values of %s, %s or %s" % axes)
         #Swap axes to ensure image always the appropriate orientation
         if axis1 != 'x' and axis1 != 'z':
             axis_temp = axis2
@@ -453,7 +453,7 @@ class CHAPSim_Inst():
                                                 PhyTime],['u','v','w']])
             local_velo = np.sqrt(np.square(self.InstDF.loc[index]).sum(axis=0)).values
         else:
-            raise ValueError("Not a valid argument")
+            raise ValueError("\033[1;32 Not a valid argument")
         #Reshape into appropriate size
         if self._par_dir=='y':
             local_velo = local_velo.reshape((self.NCL[2],self.par.array_size,self.NCL[0]))
@@ -631,7 +631,7 @@ class CHAPSim_AVG():
                 self.PR_Velo_grad_tensorDF = DF_list[5]
                 self.DUDX2_tensorDF = DF_list[6]
         else:
-            raise TypeError("`time' can only be a float or a list")
+            raise TypeError("\033[1;32 `time' can only be a float or a list")
     
         
     def __AVG_extract(self,Time_input,time0,path_to_folder,abs_path):
@@ -1147,7 +1147,7 @@ class CHAPSim_autocov():
             direction_index = []
             for x in x_split_list:
                 if x > self._meta_data.NCL[0]:
-                    raise ValueError("value in x_split_list cannot be larger"\
+                    raise ValueError("\033[1;32 value in x_split_list cannot be larger"\
                                      +"than x_size: %d, %d" %(x,self._meta_data.NCL[0]))
             #Create DataFrame for each split then concatenate
             for i in range(len(x_split_list)-1): 
@@ -1310,7 +1310,7 @@ class CHAPSim_autocov():
             print("###  PLOTTING CONTOUR OF AUTOCORRELATION  of %s%s ###" % self.comp, flush=True)
         assert(comp=='x' or comp =='z') #Only component x and z computed
         if Y_plus_max and Y_plus == False: 
-            warnings.warn("Rank %d: ignoring `Y_plus_max' value: Y_plus == False" %rank)
+            warnings.warn("\033[1;33Rank %d: ignoring `Y_plus_max' value: Y_plus == False" %rank)
         NCL_local = self._meta_data.NCL.copy()
         NCL_local[1] = self._par.array_size
         if (hasattr(self,'x_split_list') and which_split) or not hasattr(self,'x_split_list'):
@@ -1414,7 +1414,7 @@ class CHAPSim_autocov():
                 # This results in complex plots as result it overides the provided
                 #fig and ax
                 if fig or ax: 
-                    warnings.warn("fig and ax are overridden in this case for all processes")
+                    warnings.warn("\033[1;33fig and ax are overridden in this case for all processes")
                 ax_size = len(self.x_split_list)-1
                 fig,ax = plt.subplots(ax_size,figsize=[8,ax_size*2.6])
             else:
@@ -2202,7 +2202,7 @@ class CHAPSim_uv_pdf():
                     assert(CDF[i,j]+err>=CDF[i-1,j] and CDF[i,j]+err>=CDF[i,j-1])
                 except AssertionError:
                     traceback.print_stack()
-                    raise ValueError("The value of the cumulative distribution function" \
+                    raise ValueError("\033[1;32 The value of the cumulative distribution function" \
                                      + "must always increase or the stay the same size with" \
                                      + " increasing index Indices (%d,%d), PreCDF has values %g %g %g" \
                                          % (i,j,CDF[i,j],CDF[i-1,j],CDF[i,j-1]))
@@ -2392,12 +2392,12 @@ class CHAPSim_Quad_Anal():
             if isinstance(other_coord_list,int): #if just int is given converts to single element list
                 other_coord_list=[other_coord_list]
             elif not isinstance(other_coord_list,list):
-                raise ValueError("other_coord_list must be list or int")
+                raise ValueError("\033[1;32 other_coord_list must be list or int")
                 
             if isinstance(h_list,float): #if just float is given converts to single element list
                 h_list=[h_list]
             elif not isinstance(h_list,list):
-                raise ValueError("h_list must be list or float")
+                raise ValueError("\033[1;32 h_list must be list or float")
             coord_h_list=[]
             for coord in other_coord_list:
                 for h in h_list:

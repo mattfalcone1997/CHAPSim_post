@@ -53,6 +53,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
+from matplotlib import animation
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy import integrate, fftpack
@@ -69,7 +70,7 @@ import numba
 try: 
     import pyvista as pv
 except ImportError:
-    warnings.warn("module `pyvista' has missing modules will not work correctly")
+    warnings.warn("\033[1;33module `pyvista' has missing modules will not work correctly")
 mpl.rcParams['mathtext.fontset'] = 'stix'
 
 
@@ -85,7 +86,7 @@ class CHAPSim_Inst():
         #Give capacity for both float and lists
         if isinstance(time,float): 
             self.InstDF = self.__flow_extract(time,path_to_folder,abs_path,tgpost)
-        elif isinstance(time,list):
+        elif hasattr(time,'__iter__'):
             for PhyTime in time:
                 if not hasattr(self, 'InstDF'):
                     self.InstDF = self.__flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
@@ -94,7 +95,7 @@ class CHAPSim_Inst():
                     concat_DF = [self.InstDF,local_DF]
                     self.InstDF = pd.concat(concat_DF)
         else:
-            raise TypeError("`time' must be either float or list")
+            raise TypeError("\033[1;32 `time' must be either float or list")
 
     def __flow_extract(self,Time_input,path_to_folder,abs_path,tgpost):
         """ Extract velocity and pressure from the instantanous files """
@@ -192,13 +193,13 @@ class CHAPSim_Inst():
             PhyTime = "{:.9g}".format(PhyTime)
        
         if axis1 == axis2:
-            raise ValueError("Axes cannot be the same")
+            raise ValueError("\033[1;32 Axes cannot be the same")
   
             
             
         axes = ['x','y','z']
         if axis1 not in axes or axis2 not in axes:
-            raise ValueError("axis values must be x,y or z")
+            raise ValueError("\033[1;32 axis values must be x,y or z")
         if axis1 != 'x' and axis1 != 'z':
             axis_temp = axis2
             axis2 = axis1
@@ -217,7 +218,7 @@ class CHAPSim_Inst():
                                                 PhyTime],['u','v','w']])
             local_velo = np.sqrt(np.square(self.InstDF.loc[index]).sum(axis=0)).values
         else:
-            raise ValueError("Not a valid argument")
+            raise ValueError("\033[1;32 Not a valid argument")
         local_velo = local_velo.reshape(self.NCL[2],self.NCL[1],self.NCL[0])
         
         axis1_mesh, axis2_mesh = np.meshgrid(axis1_coords,axis2_coords)
@@ -307,7 +308,7 @@ class CHAPSim_Inst():
         if len(set([x[0] for x in self.InstDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.InstDF.index]))[0]
             if PhyTime and PhyTime != avg_time:
-                warnings.warn("PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
             PhyTime = avg_time
         else:
             assert PhyTime in set([x[0] for x in self.InstDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -357,7 +358,7 @@ class CHAPSim_Inst():
     #     if len(set([x[0] for x in self.InstDF.index])) == 1:
     #         avg_time = list(set([x[0] for x in self.InstDF.index]))[0]
     #         if PhyTime and PhyTime != avg_time:
-    #             warnings.warn("PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+    #             warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
     #         PhyTime = avg_time
     #     else:
     #         assert PhyTime in set([x[0] for x in self.InstDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -390,7 +391,7 @@ class CHAPSim_Inst():
     #     if isinstance(vals_list, int) or isinstance(vals_list, float):
     #         vals_list=[vals_list]
     #     elif not isinstance(vals_list, list):
-    #         raise TypeError("Argument `vals_list' must be type int, float, or list ")
+    #         raise TypeError("\033[1;32 Argument `vals_list' must be type int, float, or list ")
     #     cmp_list=['Greens_r','Blues','Reds_r']
     #     if cmap != 'Greens_r':
     #         cmp_list.insert(0,cmap)
@@ -411,6 +412,8 @@ class CHAPSim_Inst():
         pass
     def plot_entrophy(self):
         pass
+    def __str__(self):
+        return self.InstDF.__str__()
 class CHAPSim_AVG():
     def __init__(self,time,meta_data='',path_to_folder='',time0='',abs_path=True,tgpost=False):
         
@@ -452,7 +455,7 @@ class CHAPSim_AVG():
                 self.PR_Velo_grad_tensorDF = DF_list[5]
                 self.DUDX2_tensorDF = DF_list[6]
         else:
-            raise TypeError("`time' can only be a float or a list")
+            raise TypeError("\033[1;32 `time' can only be a float or a list")
         
         
     def __AVG_extract(self,Time_input,time0,path_to_folder,abs_path,tgpost):
@@ -605,7 +608,7 @@ class CHAPSim_AVG():
             local_velo = np.sqrt(np.square(self.flow_AVGDF.loc[index]).sum(axis=0)).values
             
         else:
-            raise ValueError("Not a valid argument")
+            raise ValueError("\033[1;32 Not a valid argument")
         local_velo = local_velo.reshape(self.NCL[1],self.NCL[0]) 
         
         
@@ -672,7 +675,7 @@ class CHAPSim_AVG():
             ax.plot(y_coords,velo_array[:,x],label=r"$x= %.2f$" % x_coords[x])
         ax.set_ylabel(r"$\langle U/U_{b0}\rangle$",fontsize=20)
         ax.grid()
-        ax.set_xlabel("$y/\delta$",fontsize=20)
+        ax.set_xlabel(r"$y/\delta$",fontsize=20)
         handles, labels = ax.get_legend_handles_labels()
         ax.legend(CT.flip_leg_col(handles,4),CT.flip_leg_col(labels,4),
               loc = 'upper center',ncol=4*(len(labels)>3)+len(labels)*(len(labels)<4),
@@ -721,7 +724,7 @@ class CHAPSim_AVG():
                 x_coord.append(r"$U^+=Y^+$")
                 ax.legend(x_coord,loc = 'upper center',ncol=4*(len(x_coord)>3)+len(x_coord)*(len(x_coord)<4),bbox_to_anchor=(0.5,-0.2))
             else:
-                raise TypeError("Not a valid type")
+                raise TypeError("\033[1;32 Not a valid type")
             ax.set_xscale('log')
             ax.set_ylabel(r"$U^+$")
             ax.set_xlabel(r"$Y^+$")
@@ -931,7 +934,7 @@ class CHAPSim_AVG():
                   bbox_to_anchor=(0.5,-0.2),
                   fontsize=16)
         else:
-            raise TypeError("x_loc must be of type list or int")
+            raise TypeError("\033[1;32 x_loc must be of type list or int")
         if norm_ut:
             if comp_uu == 'uv':
                 ax.set_ylabel(r"$-\langle %s\rangle/u_\tau^2$"% comp_uu,fontsize=20)
@@ -960,7 +963,7 @@ class CHAPSim_AVG():
         if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
             if PhyTime and PhyTime != avg_time:
-                warnings.warn("PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
             PhyTime = avg_time
         else:
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -1150,7 +1153,7 @@ class CHAPSim_AVG():
         if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
             if PhyTime and PhyTime != avg_time:
-                warnings.warn("PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
             PhyTime = avg_time
         else:
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -1162,7 +1165,7 @@ class CHAPSim_AVG():
         elif isinstance(x_loc,list):
             x_loc_local=x_loc
         else:
-            raise TypeError("variable x_loc must be of type int of list of int")
+            raise TypeError("\033[1;32 variable x_loc must be of type int of list of int")
         UV = self.UU_tensorDF.loc[PhyTime,'uv'].values.reshape((self.NCL[1], self.NCL[0]))
         U = self.flow_AVGDF.loc[PhyTime,'u'].values.reshape((self.NCL[1], self.NCL[0]))
         V = self.flow_AVGDF.loc[PhyTime,'v'].values.reshape((self.NCL[1], self.NCL[0]))
@@ -1220,7 +1223,9 @@ class CHAPSim_AVG():
                       bbox_to_anchor=(0.5,-0.2),
                       fontsize=16)
         return fig, ax
-   
+    def __str__(self):
+        return self.flow_AVGDF.__str__()
+    
                 
         
 class CHAPSim_peturb():
@@ -1230,9 +1235,9 @@ class CHAPSim_peturb():
         else:
             assert time, "In the absence of input of class CHAPSim_AVG a time must be provided"
             if not path_to_folder:
-                warnings.warn("No path_to_folder selected in the absence of an CHAPSim_AVG input class")
+                warnings.warn("\033[1;33No path_to_folder selected in the absence of an CHAPSim_AVG input class")
             if not time0:
-                warnings.warn("No time0 input selected in the absence of an CHAPSim_AVG input class")
+                warnings.warn("\033[1;33No time0 input selected in the absence of an CHAPSim_AVG input class")
             self.__AVGDF = CHAPSim_AVG(time,meta_data,path_to_folder,time0,abs_path,tgpost)
         if not meta_data:
             meta_data = CHAPSim_meta(path_to_folder,abs_path,tgpost)
@@ -1291,9 +1296,9 @@ class CHAPSim_peturb():
             elif mode == 'rms':
                 velo_peturb, index = self.rms_velo_peturb_calc(comp)
             else:
-                raise ValueError("mode must be equal to 'mean' or 'rms'")
+                raise ValueError("\033[1;32 mode must be equal to 'mean' or 'rms'")
         except UnboundLocalError:
-            warnings.warn("This function can only be used if moving wall is used, ignoring")
+            warnings.warn("\033[1;33This function can only be used if moving wall is used, ignoring")
             return None, None
         if not fig:
             fig, ax = plt.subplots(figsize=[10,5])
@@ -1340,7 +1345,7 @@ class CHAPSim_peturb():
         try:
             tau_du, index = self.tau_du_calc()
         except UnboundLocalError:
-            warnings.warn("This function can only be used if moving wall is used, ignoring")
+            warnings.warn("\033[1;33This function can only be used if moving wall is used, ignoring")
             return None, None
         avg_time = self.__AVGDF.flow_AVGDF.index[0][0]
         bulkvelo = self.__AVGDF.bulk_velo_calc(avg_time)
@@ -1397,10 +1402,12 @@ class CHAPSim_fluct():
                 else:
                     if j == len(avg_list):
                         avg_args = [x for x in args if not isinstance(x,CHAPSim_AVG) and not isinstance(x,CHAPSim_Inst)]
+                        CHAPSim_fluct.__check_args(avg_args,True)
                         avg_data=CHAPSim_AVG(maxtime,*avg_args[1:],**kwargs)
                 j+=1
         else:
             avg_args = [x for x in args if not isinstance(x,CHAPSim_Inst)]
+            CHAPSim_fluct.__check_args(avg_args,True)
             avg_data = CHAPSim_AVG(maxtime,*avg_args[1:],**kwargs)
         avg_values=avg_data.flow_AVGDF.values
 
@@ -1422,20 +1429,20 @@ class CHAPSim_fluct():
             inst_times=list(set([y[0] for y in itertools.chain.from_iterable(\
                             [inst.InstDF.index for inst in inst_data_list])]))
             inst_values=np.vstack(inst_values_list)
-            print(args)
+            
             
             args = [x for x in args if not isinstance(x,CHAPSim_Inst)]
+            CHAPSim_fluct.__check_args(args,False)
             try:
                 if args:
                     args[0] = [x for x in args[0] if str(x) not in inst_times and x in times]
                     if 'time0' in kwargs: del kwargs['time0']
-                    print([float(x) for x in args[0]],inst_times,times)
                     if args[0]:
                         inst_data = CHAPSim_Inst(*args,**kwargs)
                         inst_values=np.vstack((inst_data.InstDF.values,*inst_values))
                         inst_times.extend(list(set([x[0] for x in inst_data.InstDF.index])))
             except IndexError as e:
-                raise ValueError("Check the arguments list for this function it should match CHAPSim_AVG with the options"\
+                raise ValueError("\033[1;32 Check the arguments list for this function it should match CHAPSim_AVG with the options"\
                                 +" of addition CHAPSim_AVG or CHAPSim_Inst")
         # inst_times = list(set([x[0] for x in inst_data.InstDF.index]))
         # assert inst_times ==avg_times, "The times in CHAPSim_Inst and CHAPSim_AVG must be the same"
@@ -1470,7 +1477,7 @@ class CHAPSim_fluct():
         if len(set([x[0] for x in self.fluctDF.index])) == 1:
             fluct_time = list(set([x[0] for x in self.fluctDF.index]))[0]
             if PhyTime and PhyTime != fluct_time:
-                warnings.warn("PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time))
             PhyTime = fluct_time
         else:
             assert PhyTime in set([x[0] for x in self.fluctDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -1478,50 +1485,44 @@ class CHAPSim_fluct():
         if isinstance(y_vals,int):
             y_vals=[y_vals]
         elif not isinstance(y_vals,list):
-            raise TypeError("y_vals must be type int or list but is type %s"%type(y_vals))
+            raise TypeError("\033[1;32 y_vals must be type int or list but is type %s"%type(y_vals))
         x_coords = self.CoordDF['x'].dropna().values
         z_coords = self.CoordDF['z'].dropna().values
         X,Z = np.meshgrid(x_coords,z_coords)
         fluct = self.fluctDF.loc[PhyTime,comp].values\
                 .reshape((self.NCL[2],self.NCL[1],self.NCL[0]))[:,y_vals,:]
-        fluct=fluct.reshape((self.NCL[2],self.NCL[0]))
+        
+        #fluct=fluct.reshape((self.NCL[2],self.NCL[0]))
         if isinstance(y_vals,int):
             y_vals=[y_vals]
         elif not isinstance(y_vals,list):
-            raise TypeError("y_vals must be type int or list but is type %s"%type(y_vals))
+            raise TypeError("\033[1;32 y_vals must be type int or list but is type %s"%type(y_vals))
         
         if not x_split_list:
                 x_split_list=[np.amin(x_coords),np.amax(x_coords)]
         if not fig:
-            fig, ax = plt.subplots(len(x_split_list)-1,len(y_vals),figsize=[10*len(y_vals),3*(len(x_split_list)-1)])
-            if not x_split_list:
-                x_split_list=[np.amin(x_coords),np.amax(x_coords)]
-            if len(y_vals)*(len(x_split_list)-1)==1:
-                ax_list=[]
-                ax_list.append(ax)
+            fig, ax = plt.subplots(len(x_split_list)-1,len(y_vals),
+                                    figsize=[10*len(y_vals),3*(len(x_split_list)-1)],
+                                    squeeze=False)
         elif not ax:
-            ax_list=[]
-            for j in range(len(x_split_list)-1):
-                for i in range(len(y_vals)):
-                    ax_list.append(fig.add_subplot(j+1,i+1,1))
-        if 'ax_list' in locals():
-            if not isinstance(ax_list,np.ndarray):
-                ax=np.array(ax_list)
+            ax=fig.subplots(len(x_split_list)-1,len(y_vals),squeeze=False)
+        ax=ax.flatten()
         x_coords_split=CT.coord_index_calc(self.CoordDF,'x',x_split_list)
         X, Z = np.meshgrid(x_coords, z_coords)
+        max_val = np.amax(fluct); min_val=np.amin(fluct)
         if len(x_split_list)==2:
             for i in range(len(y_vals)):
                 # print(X.shape,Z.shape,fluct.shape)
                 ax1 = ax[i].pcolormesh(X[:,x_coords_split[0]:x_coords_split[1]],
                                         Z[:,x_coords_split[0]:x_coords_split[1]],
-                                        fluct[:,x_coords_split[0]:x_coords_split[1]],
+                                        fluct[:,i,x_coords_split[0]:x_coords_split[1]],
                                         cmap='jet')
                 ax2 = ax1.axes
-                
+                ax1.set_clim(min_val,max_val)
                 fig.colorbar(ax1,ax=ax[i])
                 ax2.set_xlabel(r"$%s/\delta$" % 'x',fontsize=20)
                 ax2.set_ylabel(r"$%s/\delta$" % 'z',fontsize=20)
-                ax[i]=ax2
+                ax[i]=ax1
         else:
             ax=ax.flatten()
             max_val = np.amax(fluct); min_val=np.amin(fluct)
@@ -1530,20 +1531,18 @@ class CHAPSim_fluct():
                     # print(X.shape,Z.shape,fluct.shape)
                     ax1 = ax[j*len(y_vals)+i].pcolormesh(X[:,x_coords_split[j]:x_coords_split[j+1]],
                                              Z[:,x_coords_split[j]:x_coords_split[j+1]],
-                                             fluct[:,x_coords_split[j]:x_coords_split[j+1]],
+                                             fluct[:,i,x_coords_split[j]:x_coords_split[j+1]],
                                              cmap='jet')
                     ax2 = ax1.axes
                     ax1.set_clim(min_val,max_val)
                     fig.colorbar(ax1,ax=ax[j*len(y_vals)+i])
                     ax2.set_xlabel(r"$%s/\delta$" % 'x',fontsize=20)
                     ax2.set_ylabel(r"$%s/\delta$" % 'z',fontsize=20)
-                    ax[j*len(y_vals)+i]=ax2
-                    ax[j*len(y_vals)+i].set_aspect('equal')
+                    ax[j*len(y_vals)+i]=ax1
+                    ax[j*len(y_vals)+i].axes.set_aspect('equal')
         fig.tight_layout()
-        if ax.size==1:
-            return fig, ax[0]
-        else:
-            return fig, ax
+
+        return fig, ax
     def plot_streaks(self,comp,vals_list,PhyTime='',ylim='',Y_plus=True,cmap='Greens_r',plotter=''):
         if PhyTime:
             if type(PhyTime) == float:
@@ -1552,7 +1551,7 @@ class CHAPSim_fluct():
         if len(set([x[0] for x in self.fluctDF.index])) == 1:
             fluct_time = list(set([x[0] for x in self.fluctDF.index]))[0]
             if PhyTime and PhyTime != fluct_time:
-                warnings.warn("PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time))
             PhyTime = fluct_time
         else:
             assert PhyTime in set([x[0] for x in self.fluctDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -1569,7 +1568,7 @@ class CHAPSim_fluct():
         if isinstance(vals_list, int) or isinstance(vals_list, float):
             vals_list=[vals_list]
         elif not isinstance(vals_list, list):
-            raise TypeError("Argument `vals_list' must be type int, float, or list ")
+            raise TypeError("\033[1;32 Argument `vals_list' must be type int, float, or list ")
         cmp_list=['Greens_r','Blues','Reds_r']
         if cmap != 'Greens_r':
             cmp_list.insert(0,cmap)
@@ -1602,7 +1601,7 @@ class CHAPSim_fluct():
         if len(set([x[0] for x in self.fluctDF.index])) == 1:
             fluct_time = list(set([x[0] for x in self.fluctDF.index]))[0]
             if PhyTime and PhyTime != fluct_time:
-                warnings.warn("PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time))
             PhyTime = fluct_time
         else:
             assert PhyTime in set([x[0] for x in self.fluctDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -1610,7 +1609,7 @@ class CHAPSim_fluct():
         if isinstance(y_vals,int):
             y_vals=[y_vals]
         elif not isinstance(y_vals,list):
-            raise TypeError("y_vals must be type int or list but is type %s"%type(y_vals))
+            raise TypeError("\033[1;32 y_vals must be type int or list but is type %s"%type(y_vals))
             
         x_coords = self.CoordDF['x'].dropna().values
         z_coords = self.CoordDF['z'].dropna().values
@@ -1628,7 +1627,12 @@ class CHAPSim_fluct():
             subplot_kw={'projection':'3d'}
             fig, ax = plt.subplots((len(x_split_list)-1),len(y_vals),figsize=[10*len(y_vals),5*(len(x_split_list)-1)],subplot_kw=subplot_kw,squeeze=False)
         elif not ax:
-            raise Exception("axis must be provided with figure")
+            ax_list=[]
+            for i in range(len(x_split_list)-1):
+                for j in range(len(y_vals)):
+                    ax_list.append(fig.add_subplot(len(x_split_list)-1,len(y_vals),i*len(y_vals)+j+1,projection='3d'))
+            ax=np.array(ax_list)
+            #raise Exception("axis must be provided with figure")
         #     ax=np.empty(len(y_vals)*(len(x_split_list)-1),dtype='Axes3DSubplot')
         # else:
         #     if isinstance(ax,np.ndarray):
@@ -1655,12 +1659,87 @@ class CHAPSim_fluct():
                 surf.set_clim(min_val,max_val)
                 fig.colorbar(surf,ax=ax[j*len(y_vals)+i])
                 #ax_list.append(ax)
+                ax[j*len(y_vals)+i]=surf
         fig.tight_layout()
-        if ax.size==1:
-            return fig, ax[0]
-        else:
-            return fig, ax
-            
+        return fig, ax
+    @staticmethod
+    def __check_args(args,avg):
+        args_type_list_avg=[float,CHAPSim_meta,str,
+                        float,bool,bool]
+        args_type_list_inst=[float,CHAPSim_meta,str,
+                        bool,bool]
+        if avg: 
+            type_list = args_type_list_avg
+        else: 
+            type_list = args_type_list_inst
+        for arg,type in zip(args,type_list):
+            print(arg,type,isinstance(arg,type))
+            if not isinstance(arg,type):
+                if arg==args[0] and not isinstance(arg,list):
+                    
+                    raise TypeError("\033[1;32 Argument for %s invalid check input positional arguments" \
+                                    %(CHAPSim_AVG.__name__ if avg else CHAPSim_Inst.__name__))
+                                
+                else:
+                    raise TypeError("\033[1;32 Argument for %s invalid check input positional arguments" \
+                                    %(CHAPSim_AVG.__name__ if avg else CHAPSim_Inst.__name__))
+    @staticmethod
+    def create_video(y_vals,comp,contour=True,meta_data='',path_to_folder='',time0='',
+                            abs_path=True,tgpost=False,x_split_list='',lim_min=-1.,lim_max=1,
+                            fig='',ax=''):
+        file_names= time_extract(path_to_folder,abs_path)
+        time_list =[]
+        for file in file_names:
+            time_list.append(float(file[20:35]))
+        times = list(dict.fromkeys(time_list))
+        if time0:
+            times = list(filter(lambda x: x > time0, times))
+        #print(times.sort())
+        times.sort()
+        max_time = np.amax(times)
+        avg_data=CHAPSim_AVG(max_time,meta_data,path_to_folder,time0,abs_path,tgpost)
+        if isinstance(y_vals,int):
+            y_vals=[y_vals]
+        elif not isinstance(y_vals,list):
+            raise TypeError("\033[1;32 y_vals must be type int or list but is type %s"%type(y_vals))
+        
+        x_coords = avg_data.CoordDF['x'].dropna().values
+        if not x_split_list:
+            x_split_list=[np.min(x_coords),np.max(x_coords)]
+        if not fig:
+            fig = plt.figure(figsize=[7*len(y_vals),3*(len(x_split_list)-1)])
+        fig_list = [fig]*len(times)
+
+        
+        frames=list(zip(times,fig_list))
+        def animate(frames):
+            time=frames[0]; fig=frames[1]
+            ax_list=fig.axes
+            for ax in ax_list:
+                ax.remove()
+            fluct_data = CHAPSim_fluct(avg_data,time,meta_data=meta_data,path_to_folder=path_to_folder,
+                                    time0=time0,abs_path=abs_path)
+
+            if contour:
+                fig, ax = fluct_data.plot_contour(comp,y_vals,time,x_split_list=x_split_list,fig=fig)
+            else:
+                fig,ax = fluct_data.plot_fluct3D_xz(y_vals,comp,time,x_split_list,fig)
+            ax[0].axes.set_title(r"$t^*=%.3f$"%time)
+
+            for im in ax:
+                im.set_clim(lim_min,lim_max)
+
+            fig.tight_layout()
+            return ax
+        anim = mpl.animation.FuncAnimation(fig,animate,frames=frames)
+        
+        # print("\033[1;32m The colorbar limits are set to (%.3f,%.3f) the maximum limits are (%.3f,%.3f)\033[0;37m\n"%(lim_min,lim_max,lims[0],lims[1]))
+        # del lims
+        return anim
+
+        
+    def __str__(self):
+        return self.fluctDF.__str__()
                 
         
         
@@ -1834,6 +1913,8 @@ class CHAPSim_meta():
                 wall_velo[i-1] = 0.5*(wall_velo_ND[i+1] + wall_velo_ND[i])
 
         return wall_velo
+    def __str__(self):
+        return self.metaDF.__str__()
 class CHAPSim_budget():
     
     def __init__(self,time,AVG_DF):
@@ -2290,6 +2371,8 @@ class CHAPSim_budget():
         ax.legend(comp_list,loc = 'upper center',ncol=4,bbox_to_anchor=(0.5,-0.25))
         ax.grid()
         return fig, ax
+    def __str__(self):
+        return self.budgetDF.__str__()
 class CHAPSim_u2_budget(CHAPSim_budget):
     def __init__(self,time,AVG_DF):
         super().__init__(time,AVG_DF)
@@ -2487,7 +2570,7 @@ class CHAPSim_autocov():
             direction_index = []
             for x in x_split_list:
                 if x > self._meta_data.NCL[0]:
-                    raise ValueError("value in x_split_list cannot be larger"\
+                    raise ValueError("\033[1;32 value in x_split_list cannot be larger"\
                                      +"than x_size: %d, %d" %(x,self._meta_data.NCL[0]))
             for i in range(len(x_split_list)-1):
                 x_point1 = x_split_list[i]
@@ -2544,13 +2627,16 @@ class CHAPSim_autocov():
         #x_end = int(np.trunc((x_point1 +x_point2)*0.5))
         t0 = time.time()
         if homogen:
-            R_x = _loop_accelerator_x(fluct1_0,fluct2_0,R_x,x_size)
-            R_z = _loop_accelerator_z(fluct1_0,fluct2_0,R_z,z_size)
+            R_x = CHAPSim_autocov._loop_accelerator_x(fluct1_0,fluct2_0,R_x,x_size)
+            R_z = CHAPSim_autocov._loop_accelerator_z(fluct1_0,fluct2_0,R_z,z_size)
             R_x = R_x/(fluct2_0.shape[0]*x_size) #Divide by the number of values
             R_z = R_z/(fluct1_0.shape[2]*z_size)
         else:
-            R_x = _loop_accelerator_x_non_homogen(fluct1_0,fluct2_0,R_x,x_size)
-            R_z = _loop_accelerator_z_non_homogen(fluct1_0,fluct2_0,R_z,z_size)
+            R_x = CHAPSim_autocov._loop_accelerator_x_non_homogen(fluct1_0,
+                                                        fluct2_0,R_x,x_size)
+                                                                    
+            R_z = CHAPSim_autocov._loop_accelerator_z_non_homogen(fluct1_0,
+                                                        fluct2_0,R_z,z_size)
             R_x = R_x/(fluct1_0.shape[0])
             R_z = R_z/(z_size)
         
@@ -2570,7 +2656,7 @@ class CHAPSim_autocov():
     def autocorr_contour(self,comp,Y_plus=False,Y_plus_max ='', which_split='',norm=True,fig='',ax=''):
         assert(comp=='x' or comp =='z')
         if Y_plus_max and Y_plus == False:
-            warnings.warn("Ignoring `Y_plus_max' value: Y_plus == False")
+            warnings.warn("\033[1;33Ignoring `Y_plus_max' value: Y_plus == False")
         NCL_local = self._meta_data.NCL
         if (hasattr(self,'x_split_list') and which_split) or not hasattr(self,'x_split_list'):
             if which_split and hasattr(self,'x_split_list'):
@@ -2629,7 +2715,7 @@ class CHAPSim_autocov():
             fig.colorbar(ax1,ax=ax)
         elif hasattr(self,'x_split_list') and not which_split:
             if fig or ax:
-                warnings.warn("fig and ax are overridden in this case")
+                warnings.warn("\033[1;33fig and ax are overridden in this case")
             ax_size = len(self.x_split_list)-1
             fig,ax = plt.subplots(ax_size,figsize=[8,ax_size*2.6])
             point1 = 0
@@ -2678,6 +2764,36 @@ class CHAPSim_autocov():
         fig.subplots_adjust(hspace = 0.4)
         
         return fig,ax
+    @staticmethod
+    @numba.njit(parallel=True)
+    def _loop_accelerator_x(fluct1,fluct2,R_x,x_size):
+        for ix0 in numba.prange(x_size):
+            for z in numba.prange(fluct1.shape[0]):
+                for ix in numba.prange(x_size):
+                    R_x[:,ix0] += fluct1[z,:,ix]*fluct2[z,:,ix0+ix]
+        return R_x
+    @staticmethod
+    @numba.njit(parallel=True)
+    def _loop_accelerator_z(fluct1,fluct2,R_z,z_size):
+        for iz0 in numba.prange(z_size):
+            for ix in numba.prange(fluct1.shape[2]):
+                for iz in numba.prange(z_size):
+                    R_z[:,iz0] += fluct1[iz,:,ix]*fluct2[iz+iz0,:,ix]
+        return R_z
+    @staticmethod
+    @numba.njit(parallel=True)
+    def _loop_accelerator_x_non_homogen(fluct1,fluct2,R_x,x_size):
+        for ix0 in numba.prange(x_size):
+            for z in numba.prange(fluct1.shape[0]):
+                    R_x[:,ix0] += fluct1[z,:,0]*fluct2[z,:,ix0]
+        return R_x
+    @staticmethod
+    @numba.njit(parallel=True)
+    def _loop_accelerator_z_non_homogen(fluct1,fluct2,R_z,z_size):
+        for iz0 in numba.prange(z_size):
+            for ix in numba.prange(fluct1.shape[2]):
+                    R_z[:,iz0] += fluct1[0,:,ix]*fluct2[iz0,:,ix]
+        return R_z
     def Spectra_calc(self,comp, y_index, which_split='',fig='',ax=''):
         NCL_local = self._meta_data.NCL
         if not fig:
@@ -2757,6 +2873,8 @@ class CHAPSim_autocov():
         fig.tight_layout()
         #ax.set_yscale('log')
         return fig, ax
+    def __str__(self):
+        return self.autocorrDF.__str__()
 class CHAPSim_Ruu(CHAPSim_autocov):
     def __init__(self,x_split_list='',path_to_folder='',time0='',abs_path=True,homogen=True):
         super().__init__('u','u',x_split_list,path_to_folder,time0,abs_path,homogen)
@@ -3082,7 +3200,8 @@ class CHAPSim_mom_balance():
         ax.set_xlabel(r"$x/\delta$")
         ax.set_ylabel(r"$\int^\delta_{-\delta}$ Momentum Imabalance $dy \times 1/U_{bo}^2$")
         return fig, ax
-        
+    def __str__(self):
+        return self.Mom_balanceDF.__str__()
         
 def time_extract(path_to_folder,abs_path=True):
     if abs_path:
@@ -3091,33 +3210,7 @@ def time_extract(path_to_folder,abs_path=True):
         mypath = os.path.abspath(os.path.join(path_to_folder,'1_instant_D'))
     file_names = [f for f in os.listdir(mypath) if f[:20]=='DNS_perioz_INSTANT_T']
     return file_names       
-@numba.njit(parallel=True)
-def _loop_accelerator_x(fluct1,fluct2,R_x,x_size):
-    for ix0 in numba.prange(x_size):
-        for z in numba.prange(fluct1.shape[0]):
-            for ix in numba.prange(x_size):
-                R_x[:,ix0] += fluct1[z,:,ix]*fluct2[z,:,ix0+ix]
-    return R_x
-@numba.njit(parallel=True)
-def _loop_accelerator_z(fluct1,fluct2,R_z,z_size):
-    for iz0 in numba.prange(z_size):
-        for ix in numba.prange(fluct1.shape[2]):
-            for iz in numba.prange(z_size):
-                R_z[:,iz0] += fluct1[iz,:,ix]*fluct2[iz+iz0,:,ix]
-    return R_z
 
-@numba.njit(parallel=True)
-def _loop_accelerator_x_non_homogen(fluct1,fluct2,R_x,x_size):
-    for ix0 in numba.prange(x_size):
-        for z in numba.prange(fluct1.shape[0]):
-                R_x[:,ix0] += fluct1[z,:,0]*fluct2[z,:,ix0]
-    return R_x
-@numba.njit(parallel=True)
-def _loop_accelerator_z_non_homogen(fluct1,fluct2,R_z,z_size):
-    for iz0 in numba.prange(z_size):
-        for ix in numba.prange(fluct1.shape[2]):
-                R_z[:,iz0] += fluct1[0,:,ix]*fluct2[iz0,:,ix]
-    return R_z
 def _figuresize(x_split_list):
     number_v = len(x_split_list)-1
     number_h = 1

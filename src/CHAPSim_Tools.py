@@ -137,7 +137,7 @@ def Y_plus_index_calc(AVG_DF,CoordDF,coord_list,x_vals=''):
     if isinstance(coord_list,float) or isinstance(coord_list,int):
         coord_list = [coord_list]
     elif not isinstance(coord_list,list):
-        raise TypeError("coord_list must be of type float, list or int")
+        raise TypeError("\033[1;32 coord_list must be of type float, list or int")
     avg_time = AVG_DF.flow_AVGDF.index[0][0]
     if hasattr(AVG_DF,"par_dir"):
         par_dir = AVG_DF.par_dir
@@ -166,7 +166,7 @@ def Y_plus_index_calc(AVG_DF,CoordDF,coord_list,x_vals=''):
                             Y_plus_index_list.append(j+1)
                             break
             except IndexError:
-                warnings.warn("Value in coord_list out of bounds: "\
+                warnings.warn("\033[1;33Value in coord_list out of bounds: "\
                                  + "Y_plus given: %g, max Y_plus: %g" % (coord_list[i],max(Y_plus_list[i])))
                     
     else:
@@ -184,7 +184,7 @@ def Y_plus_index_calc(AVG_DF,CoordDF,coord_list,x_vals=''):
                             Y_plus_index_list.append(i+1)
                             break 
             except IndexError:
-                warnings.warn("Value in coord_list out of bounds: "\
+                warnings.warn("\033[1;33Value in coord_list out of bounds: "\
                                  + "Y_plus given: %g, max Y_plus: %g. Ignoring values beyond this" % (coord,max(Y_plus)))
                 return Y_plus_index_list
     if len(coord_list)==1:
@@ -214,7 +214,7 @@ def coord_index_calc(CoordDF,comp,coord_list):
             if coord_end_plus>coord:
                 index_list.append(i)
             else:
-                warnings.warn("Value in coord_list out of bounds: "\
+                warnings.warn("\033[1;33Value in coord_list out of bounds: "\
                              + "%s coordinate given: %g, max %s coordinate:" % (comp,coord,comp)\
                              + " %g. Ignoring values beyond this" % max(coords))
                 return index_list
