@@ -968,9 +968,6 @@ class CHAPSim_AVG():
         else:
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
         
-        text_kwargs=CT.default_axlabel_kwargs()
-        new_kwargs = CT.filter_mpl_kwargs_text(kwargs)
-        CT.update_kwargs(text_kwargs,new_kwargs)
         
         comp_uu =comp1 + comp2
         if comp1 == 'w' and (comp2=='v' or comp2 =='u'):
@@ -1014,13 +1011,13 @@ class CHAPSim_AVG():
                       loc = 'upper center',ncol=4*(len(labels)>3)+len(labels)*(len(labels)<4),
                       bbox_to_anchor=(0.5,-0.2),
                       fontsize=16)
-            ax.set_xlabel(r"$x/\delta$",text_kwargs)
-            ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%comp_uu,text_kwargs)#,fontsize=22)
+            ax.set_xlabel(r"$x/\delta$",fontsize=20)
+            ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%comp_uu,fontsize=20)#,fontsize=22)
             
         else:
             ax.plot(x_coords,rms_vals,label=r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%comp_uu)
-            ax.set_xlabel(r"$x/\delta$",text_kwargs)
-            ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%comp_uu,text_kwargs)#,fontsize=22)
+            ax.set_xlabel(r"$x/\delta$",fontsize=20)
+            ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%comp_uu,fontsize=20)#,fontsize=22)
         
         # ax.set_xlabel(r"$x/\delta$",text_kwargs)
         # ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%comp_uu,text_kwargs)#,fontsize=22)
@@ -1139,8 +1136,8 @@ class CHAPSim_AVG():
             ax = fig.add_subplot(1,1,1)
         
         ax.plot(xcoords,skin_friction)
-        ax.set_xlabel(r"$x$ direction")
-        ax.set_ylabel(r"Skin friction coefficient, $C_f$")
+        ax.set_xlabel(r"$x/\delta$",fontsize=20)
+        ax.set_ylabel(r"$C_f$",fontsize=20)
         
         ax.grid()
         return fig, ax

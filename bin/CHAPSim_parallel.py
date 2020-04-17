@@ -1170,7 +1170,7 @@ class CHAPSim_autocov():
         else: #if there is no x_split_list
             x_point1 = 0
             x_point2 = self._meta_data.NCL[0]
-            autocorrDF = self.__autocorr_calc(time,AVG_time,comp1,comp2,x_point1, x_point2)
+            autocorrDF = self.__autocorr_calc(time,AVG_time,comp1,comp2,x_point1, x_point2,homogen)
             index = ['x','z']
         return autocorrDF.values, index
     def __autocorr_calc(self,PhyTime,AVG_time,comp1,comp2,x_point1, x_point2,homogen):
