@@ -242,7 +242,8 @@ class CHAPSim_Inst():
         ax = ax1.axes
         ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
         ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
-        fig.colorbar(ax1,ax=ax)
+        cbar=fig.colorbar(ax1,ax=ax)
+        cbar.set_label(r"$%s$"%comp.upper(),fontsize=12)
         ax.set_xlabel(r"$%s/\delta$" % axis1,fontsize=18)
         ax.set_ylabel(r"$%s/\delta$" % axis2,fontsize=16)
         #ax.axes().set_aspect('equal')
@@ -620,7 +621,8 @@ class CHAPSim_AVG():
         ax = ax1.axes
         ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
         ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
-        fig.colorbar(ax1,ax=ax)
+        cbar=fig.colorbar(ax1,ax=ax)
+        cbar.set_label(r"$\bar{%s}$"%comp.upper(),fontsize=12)
         ax.set_xlabel("x direction")
         ax.set_ylabel("y direction")
         #ax.axes().set_aspect('equal')
@@ -649,7 +651,8 @@ class CHAPSim_AVG():
         ax = ax1.axes
         ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
         ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
-        fig.colorbar(ax1,ax=ax)
+        cbar=fig.colorbar(ax1,ax=ax)
+        cbar.set_label(r"$%s^\prime_{rms}$"%comp,fontsize=12)
         ax.set_xlabel(r"$x/\delta$", fontsize=18)
         ax.set_ylabel(r"$y/\delta$",fontsize=16)
         return fig, ax
@@ -1043,8 +1046,8 @@ class CHAPSim_AVG():
         elif not ax:
             ax =fig.add_subplot(1,1,1)
         ax.plot(x_coords,bulk_velo)
-        ax.set_ylabel(r"$U_b^*$",fontsize=16)
-        ax.set_xlabel(r"$x/\delta$",fontsize=18)
+        ax.set_ylabel(r"$U_b^*$",fontsize=20)
+        ax.set_xlabel(r"$x/\delta$",fontsize=20)
         ax.grid()
         return fig, ax
     def plot_accel_param(self,PhyTime,fig='',ax=''):
@@ -1516,7 +1519,8 @@ class CHAPSim_fluct():
                                         cmap='jet')
                 ax2 = ax1.axes
                 ax1.set_clim(min_val,max_val)
-                fig.colorbar(ax1,ax=ax[i])
+                cbar=fig.colorbar(ax1,ax=ax[i])
+                cbar.set_label(r"$%s^\prime$"%comp,fontsize=12)
                 ax2.set_xlabel(r"$%s/\delta$" % 'x',fontsize=20)
                 ax2.set_ylabel(r"$%s/\delta$" % 'z',fontsize=20)
                 ax[i]=ax1
@@ -1532,7 +1536,8 @@ class CHAPSim_fluct():
                                              cmap='jet')
                     ax2 = ax1.axes
                     ax1.set_clim(min_val,max_val)
-                    fig.colorbar(ax1,ax=ax[j*len(y_vals)+i])
+                    cbar=fig.colorbar(ax1,ax=ax[j*len(y_vals)+i])
+                    cbar.set_label(r"$%s^\prime$"%comp,fontsize=12)
                     ax2.set_xlabel(r"$%s/\delta$" % 'x',fontsize=20)
                     ax2.set_ylabel(r"$%s/\delta$" % 'z',fontsize=20)
                     ax[j*len(y_vals)+i]=ax1
@@ -1654,7 +1659,8 @@ class CHAPSim_fluct():
                 ax[j*len(y_vals)+i].set_zlabel(r'$%s^\prime$'%comp,fontsize=20)
                 ax[j*len(y_vals)+i].set_zlim(min_val,max_val)
                 surf.set_clim(min_val,max_val)
-                fig.colorbar(surf,ax=ax[j*len(y_vals)+i])
+                cbar=fig.colorbar(surf,ax=ax[j*len(y_vals)+i])
+                cbar.set_label(r"$%s^\prime$"%comp,fontsize=12)
                 #ax_list.append(ax)
                 ax[j*len(y_vals)+i]=surf
         fig.tight_layout()
