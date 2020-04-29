@@ -243,7 +243,11 @@ class CHAPSim_Inst():
         ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
         ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
         cbar=fig.colorbar(ax1,ax=ax)
-        cbar.set_label(r"$%s$"%comp.upper(),fontsize=12)
+        if flow_field=='mag':
+            cbar_label=r"$\vert U\vert$"
+        else:
+            cbar_label=r"$%s$"%flow_field.upper()
+        cbar.set_label(cbar_label,fontsize=12)
         ax.set_xlabel(r"$%s/\delta$" % axis1,fontsize=18)
         ax.set_ylabel(r"$%s/\delta$" % axis2,fontsize=16)
         #ax.axes().set_aspect('equal')
@@ -622,7 +626,11 @@ class CHAPSim_AVG():
         ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
         ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
         cbar=fig.colorbar(ax1,ax=ax)
-        cbar.set_label(r"$\bar{%s}$"%comp.upper(),fontsize=12)
+        if flow_field=='mag':
+            cbar_label=r"\vert\bar{U}\vert"
+        else:
+            cbar_label=r"\vert\bar{%s}\vert"%flow_field.upper()
+        cbar.set_label(cbar_label,fontsize=12)
         ax.set_xlabel("x direction")
         ax.set_ylabel("y direction")
         #ax.axes().set_aspect('equal')
@@ -2698,6 +2706,7 @@ class CHAPSim_autocov():
                     .values[point1:point1+size]
             y_coord = self._meta_data.CoordDF['y'].copy().dropna()\
                     .values
+            
             if Y_plus:
                 avg_time = self._AVG_data.flow_AVGDF.index[0][0]
                 #wall_params = self._meta_data.metaDF.loc['moving_wallflg':'VeloWall']
@@ -2767,6 +2776,9 @@ class CHAPSim_autocov():
         fig.subplots_adjust(hspace = 0.4)
         
         return fig,ax
+    def autocorr_line_plot(self,comp,y_val,y_type=0,which_split='',norm=True,fig='',ax=''):
+        
+        pass
     @staticmethod
     @numba.njit(parallel=True)
     def _loop_accelerator_x(fluct1,fluct2,R_x,x_size):
@@ -2988,7 +3000,364 @@ class CHAPSim_k_spectra(CHAPSim_autocov):
         ax.set_xscale('log')
         ax.set_yscale('log')
         return fig, ax
+#==================================================================================================
+#Autocorr v2
+class CHAPSim_autocov2():
+    def __init__(self,comp1,comp2,max_x_sep=None,max_z_sep=None,path_to_folder='',time0='',abs_path=True):
+        file_names = time_extract(path_to_folder,abs_path)
+        time_list =[]
+        for file in file_names:
+            time_list.append(float(file[20:35]))
+        times = list(dict.fromkeys(time_list))
+        if time0:
+            times = list(filter(lambda x: x > time0, times))
+        times.sort(); times= times[-3:]
+        self._meta_data = CHAPSim_meta(path_to_folder)
+        self.comp=(comp1,comp2)
+        self.NCL = self._meta_data.NCL
+        try:
+            self._avg_data = CHAPSim_AVG(max(times),self._meta_data,path_to_folder,time0,abs_path)
+        except Exception:
+            times_temp= times
+            times_temp.remove(max(times))
+            self._avg_data = CHAPSim_AVG(max(times_temp),self._meta_data,path_to_folder,time0)
+        i=1
 
+        if max_z_sep is None:
+            max_z_sep=int(self.NCL[2]/2)
+        elif max_z_sep>self.NCL[2]:
+            raise ValueError("\033[1;32 Variable max_z_sep must be less than half NCL3 in readdata file\n")
+        if max_x_sep is None:
+            max_x_sep=int(self.NCL[0]/2)
+        elif max_x_sep>self.NCL[0]:
+            raise ValueError("\033[1;32 Variable max_x_sep must be less than half NCL3 in readdata file\n")
+
+        for timing in times:
+            self._fluct_data = CHAPSim_fluct(self._avg_data,timing,self._meta_data,time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
+            coe3 = (i-1)/i
+            coe2 = 1/i
+            if i==1:
+                autocorr = self.__autocov_calc(self._fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
+            else:
+                local_autocorr = self.__autocov_calc(self._fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
+                assert local_autocorr.shape == autocorr.shape, "shape of previous array (%d,%d) " % autocorr.shape\
+                    + " and current array (%d,%d) must be the same" % local_autocorr.shape
+                autocorr = autocorr*coe3 + local_autocorr*coe2
+            i += 1
+            index=['x','z']
+            self.autocorrDF = pd.DataFrame(autocorr.T,index=index)
+            self.max_x_sep=max_x_sep
+            self.max_z_sep=max_z_sep
+    @staticmethod
+    def __autocov_calc(fluct_data,comp1,comp2,PhyTime,max_x_sep,max_z_sep):
+        if type(PhyTime) == float:
+            PhyTime = "{:.9g}".format(PhyTime)
+        NCL=fluct_data.NCL        
+
+        fluct_vals1=fluct_data.fluctDF.loc[PhyTime,comp1].values.reshape(NCL[::-1])
+        fluct_vals2=fluct_data.fluctDF.loc[PhyTime,comp2].values.reshape(NCL[::-1])
+        time1=time.time()
+        
+        R_x = CHAPSim_autocov2.__autocov_calc_x(fluct_vals1,fluct_vals2,*NCL,max_x_sep)
+        R_z = CHAPSim_autocov2.__autocov_calc_z(fluct_vals1,fluct_vals2,*NCL,max_z_sep)
+        print(time.time()-time1)
+        R_z = R_z/(NCL[2]-max_z_sep)
+        R_x = R_x/(NCL[2])
+
+        R_z = R_z.reshape((max_z_sep*NCL[1]*NCL[0]))
+        Rz_DF = pd.DataFrame(R_z)
+        R_x = R_x.reshape((max_x_sep*NCL[1]*(NCL[0]-max_x_sep)))
+        Rx_DF = pd.DataFrame(R_x)
+        R_DF=pd.concat([Rx_DF,Rz_DF],axis=1)
+        
+        return R_DF.values
+    @staticmethod
+    @numba.njit(parallel=True)
+    def __autocov_calc_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
+        R_z = np.zeros((max_z_step,NCL2,NCL1))
+        if max_z_step >0:
+            for iz0 in numba.prange(max_z_step):
+                for iz in numba.prange(NCL3-max_z_step):
+                    R_z[iz0,:,:] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
+        return R_z
+    @staticmethod
+    @numba.njit(parallel=True)
+    def __autocov_calc_x(fluct1,fluct2,NCL1,NCL2,NCL3,max_x_step):
+        
+        R_x = np.zeros((max_x_step,NCL2,NCL1-max_x_step))
+        if max_x_step >0:
+            for ix0 in numba.prange(max_x_step):
+                for ix in numba.prange(NCL1-max_x_step):
+                    for iz in numba.prange(NCL3):
+                        R_x[ix0,:,ix] += fluct1[iz,:,ix]*fluct2[iz,:,ix0+ix]
+        return R_x
+    def autocorr_contour_y(self,axis_vals,comp,Y_plus=False,Y_plus_0=False,Y_plus_max ='',norm=True,fig='',ax=''):
+        if comp == 'x':
+            shape=(self.max_x_sep,self.NCL[1],self.NCL[0]-self.max_x_sep)
+        elif comp=='z':
+            shape=(self.max_z_sep,self.NCL[1],self.NCL[0])
+        else:
+            raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
+        
+        index_vals = CT.coord_index_calc(self._meta_data.CoordDF,'x',axis_vals)
+        if not hasattr(index_vals,'__iter__'):
+            axis_vals=[index_vals]   
+        #raise TypeError("Variable `axis_vals' must be an int or iterable\n")
+        Ruu = self.autocorrDF.loc[comp].dropna().values.reshape(shape)[:,:,index_vals]
+        # print(CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,0.8,[10,20,30]))
+        # print(CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,0.8,[10,20,30],mode='disp_thickness'))
+        # print(CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,20,[10,20,30],mode='wall'))
+#        CT.y_coord_delta_star_index(self._avg_data,self._meta_data.CoordDF,0.8,None)
+        if norm:
+            Ruu_0=Ruu[0].copy()
+            for i in range(shape[0]):
+                Ruu[i]/=Ruu_0
+        if not fig:
+            fig, ax = plt.subplots(len(axis_vals),figsize=[10,4*len(axis_vals)],squeeze=False)
+        elif not ax:
+            subplot_kw = {'squeeze':'False'}
+            ax = fig.subplots(len(axis_vals),subplot_kw)
+        x_coord = self._meta_data.CoordDF['x'].copy().dropna()\
+                    .values
+        for i in range(len(axis_vals)):
+            y_coord = self._meta_data.CoordDF['y'].copy().dropna()\
+                    .values
+            coord = self._meta_data.CoordDF[comp].copy().dropna()\
+                    .values[:shape[0]]
+            if Y_plus:
+                avg_time = self._avg_data.flow_AVGDF.index[0][0]
+                #wall_params = self._meta_data.metaDF.loc['moving_wallflg':'VeloWall']
+                u_tau_star, delta_v_star = wall_unit_calc(self._avg_data,avg_time)
+                y_coord = y_coord[:int(y_coord.size/2)]
+                if i==0:
+                    Ruu = Ruu[:,:y_coord.size]
+                if Y_plus_0:
+                    y_coord = (1-np.abs(y_coord))/delta_v_star[0]
+                else:   
+                    y_coord = (1-np.abs(y_coord))/delta_v_star[index_vals[i]]
+
+            X,Y = np.meshgrid(coord,y_coord)
+            ax1 = ax[i,0].pcolormesh(X,Y,np.squeeze(Ruu[:,:,i]).T,cmap='jet')
+            ax1.axes.set_xlabel(r"$\Delta %s/\delta$" %comp, fontsize=20)
+            if Y_plus and Y_plus_0:
+                ax1.axes.set_ylabel(r"$Y^{+0}$", fontsize=20)
+            elif Y_plus and not Y_plus_0:
+                ax1.axes.set_ylabel(r"$Y^{+}$", fontsize=20)
+            else:
+                ax1.axes.set_ylabel(r"$y/\delta$", fontsize=20)
+            ax1.axes.set_title(r"$x=%.3f$"%axis_vals[i],loc='left')
+            if Y_plus_max:
+                ax1.axes.set_ylim(top=Y_plus_max)
+            fig.colorbar(ax1,ax=ax1.axes)
+            fig.tight_layout()
+        return fig, ax
+
+    def autocorr_contour_x(self,comp,axis_vals,axis_mode='half_channel',norm=True,fig='',ax=''):
+        if comp == 'x':
+            shape=(self.max_x_sep,self.NCL[1],self.NCL[0]-self.max_x_sep)
+        elif comp=='z':
+            shape=(self.max_z_sep,self.NCL[1],self.NCL[0])
+        else:
+            raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
+        if not hasattr(axis_vals,'__iter__'):
+            axis_vals=[axis_vals]
+            #raise TypeError("Variable `axis_vals' must be an int or iterable\n")
+        y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
+                                                    axis_vals,None,axis_mode)
+        Ruu_all = self.autocorrDF.loc[comp].dropna().values.reshape(shape)#[:,axis_vals,:]
+        Ruu=np.zeros((shape[0],len(axis_vals),shape[2]))
+        for i,vals in zip(range(shape[2]),y_index_axis_vals):
+            Ruu[:,:,i] = Ruu_all[:,vals,i].reshape(Ruu[:,:,i].shape)
+        if norm:
+            Ruu_0=Ruu[0].copy()
+            for i in range(shape[0]):
+                Ruu[i]/=Ruu_0
+        if not fig:
+            fig, ax = plt.subplots(len(axis_vals),figsize=[10,4*len(axis_vals)],squeeze=False)
+        elif not ax:
+            subplot_kw = {'squeeze':False}
+            ax = fig.subplots(len(axis_vals),subplot_kw=subplot_kw)
+        ax=ax.flatten()
+        x_coord = self._meta_data.CoordDF['x'].copy().dropna()\
+                .values[:shape[2]]
+        y_coord = self._meta_data.CoordDF['y'].copy().dropna().values
+        coord = self._meta_data.CoordDF[comp].copy().dropna()\
+                .values[:shape[0]]
+        for i in range(len(axis_vals)):
+
+            X,Y = np.meshgrid(x_coord,coord)
+            ax1 = ax[i].pcolormesh(X,Y,Ruu[:,i],cmap='jet')
+            ax1.axes.set_xlabel(r"$x/\delta$", fontsize=20)
+            
+            ax1.axes.set_ylabel(r"$\Delta %s/\delta$" %comp, fontsize=20)
+            title = r"$%s=%.3f$"%("y" if axis_mode=='half_channel' \
+                        else "\delta_u" if axis_mode=='disp_thickness' \
+                        else "\theta" if axis_mode=='mom_thickness' else "Y^+", axis_vals[i] )
+            ax1.axes.set_title(title,fontsize=15,loc='left')
+            fig.colorbar(ax1,ax=ax1.axes)
+        fig.tight_layout()
+        return fig, ax
+    def plot_autocorr_line(self,comp,axis_vals,y_vals,y_mode='half_channel',norm=True,fig='',ax=''):
+        if comp == 'x':
+            shape=(self.max_x_sep,self.NCL[1],self.NCL[0]-self.max_x_sep)
+        elif comp=='z':
+            shape=(self.max_z_sep,self.NCL[1],self.NCL[0])
+        else:
+            raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
+        axis_index = CT.coord_index_calc(self._meta_data.CoordDF,'x',axis_vals)
+        if not hasattr(axis_index,'__iter__'):
+            axis_index = [axis_index]
+            #raise TypeError("Variable `axis_vals' must be an int or iterable\n")
+
+        
+
+        coord = self._meta_data.CoordDF[comp].dropna().values[:shape[0]]
+        if not hasattr(y_vals,'__iter__'):
+            y_vals = [y_vals]
+        y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
+                                                    y_vals,axis_vals,y_mode)
+        Ruu = self.autocorrDF.loc[comp].dropna().values.reshape(shape)#[:,axis_vals,:]
+        # Ruu=np.zeros((shape[0],len(y_vals),len(axis_index)))
+        # for x_index,y_indices in zip(axis_index,y_index_axis_vals):
+        #     Ruu[:,:,i] = Ruu_all[:,y_indices,x_index].reshape(Ruu[:,y_indices,x_index].shape)
+        # print(Ruu.shape)
+        if norm:
+            Ruu_0=Ruu[0].copy()
+            for i in range(shape[0]):
+                Ruu[i]/=Ruu_0
+        linestyle_list=['-','--','-.']
+        if not fig:
+            fig,ax = plt.subplots(len(y_vals),figsize=[10,4*len(y_vals)],squeeze=False)
+            
+        elif not ax:
+            subplot_kw={'squeeze',False}
+            ax = fig.subplots(len(y_vals),subplot_kw=subplot_kw)
+        ax=ax.flatten()
+        coord = self._meta_data.CoordDF[comp].dropna().values[:shape[0]]
+
+        for j in range(len(y_vals)):
+            for i in range(len(axis_index)):
+                ax[j].plot(coord,Ruu[:,y_index_axis_vals[j],axis_index[i]],
+                        label=r"$x=%.3f$"%(axis_vals[i]),
+                        linestyle=linestyle_list[i%len(linestyle_list)])
+                y_unit="y" if y_mode=='half_channel' \
+                        else "\delta_u" if y_mode=='disp_thickness' \
+                        else "\theta" if y_mode=='mom_thickness' else "Y^+"
+                ax[j].set_title(r"$%s=%.3f$"%(y_unit,y_vals[j]),loc='left')
+            ax[j].set_ylabel(r"$R_{%s%s}$"%self.comp,fontsize=20)
+            ax[j].set_xlabel(r"$%s/\delta$"%comp,fontsize=20)
+            if j==0:
+                handles, labels = ax[j].get_legend_handles_labels()
+                ax[j].legend(handles, labels,fontsize=15)
+        
+        fig.tight_layout()
+        return fig, ax
+    def plot_spectra(self,comp,axis_vals,y_vals,y_mode='half_channel',fig='',ax=''):
+        if comp == 'x':
+            shape=(self.max_x_sep,self.NCL[1],self.NCL[0]-self.max_x_sep)
+        elif comp=='z':
+            shape=(self.max_z_sep,self.NCL[1],self.NCL[0])
+        else:
+            raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
+        axis_index = CT.coord_index_calc(self._meta_data.CoordDF,'x',axis_vals)
+        if not hasattr(axis_index,'__iter__'):
+            axis_index = [axis_index]
+            #raise TypeError("Variable `axis_vals' must be an int or iterable\n")
+
+        
+
+        coord = self._meta_data.CoordDF[comp].dropna().values[:shape[0]]
+        if not hasattr(y_vals,'__iter__'):
+            y_vals = [y_vals]
+        y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
+                                                    y_vals,axis_vals,y_mode)
+        Ruu = self.autocorrDF.loc[comp].dropna().values.reshape(shape)#[:,axis_vals,:]
+        # Ruu=np.zeros((shape[0],len(y_vals),len(axis_index)))
+        # for x_index,y_indices in zip(axis_index,y_index_axis_vals):
+        #     Ruu[:,:,i] = Ruu_all[:,y_indices,x_index].reshape(Ruu[:,y_indices,x_index].shape)
+        # print(Ruu.shape)
+        linestyle_list=['-','--','-.']
+        if not fig:
+            fig,ax = plt.subplots(len(y_vals),figsize=[10,4*len(y_vals)],squeeze=False)
+        elif not ax:
+            subplot_kw={'squeeze',False}
+            ax = fig.subplots(len(y_vals),subplot_kw=subplot_kw)
+        ax=ax.flatten()
+
+        for j in range(len(y_vals)):
+            for i in range(len(axis_index)):
+                wavenumber_spectra = fftpack.dct(Ruu[:,y_index_axis_vals[i][j],axis_index[i]])
+                delta_comp = coord[1]-coord[0]
+                Fs = (2.0*np.pi)/delta_comp
+                comp_size= wavenumber_spectra.size
+                wavenumber_comp = np.arange(comp_size)*Fs/comp_size
+                y_unit="y" if y_mode=='half_channel' \
+                        else "\delta_u" if y_mode=='disp_thickness' \
+                        else "\theta" if y_mode=='mom_thickness' else "Y^+"
+                ax[j].plot(wavenumber_comp,np.abs(wavenumber_spectra),
+                        label=r"$x=%.3f$"%(axis_vals[i]),
+                        linestyle=linestyle_list[i%len(linestyle_list)])
+                ax[j].set_title(r"$%s=%.3f$"%(y_unit,y_vals[j]),loc='left')
+            string= (ord(self.comp[0])-ord('u')+1,ord(self.comp[1])-ord('u')+1,comp)
+            ax[j].set_ylabel(r"$E_{%d%d}(\kappa_%s)$"%string,fontsize=20)
+            ax[j].set_xlabel(r"$\kappa_%s$"%comp,fontsize=20)
+        
+            if j==0:
+                handles, labels = ax[j].get_legend_handles_labels()
+                ax[j].legend(handles, labels,fontsize=15)
+        fig.tight_layout()
+        return fig, ax
+#==================================================================================================
+    def spectrum_contour(self,comp,axis_vals,axis_mode='half_channel',fig='',ax=''):
+        if comp == 'x':
+            shape=(self.max_x_sep,self.NCL[1],self.NCL[0]-self.max_x_sep)
+        elif comp=='z':
+            shape=(self.max_z_sep,self.NCL[1],self.NCL[0])
+        else:
+            raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
+        if not hasattr(axis_vals,'__iter__'):
+            axis_vals=[axis_vals]
+            #raise TypeError("Variable `axis_vals' must be an int or iterable\n")
+        y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
+                                                    axis_vals,None,axis_mode)
+        Ruu_all = self.autocorrDF.loc[comp].dropna().values.reshape(shape)#[:,axis_vals,:]
+        Ruu=np.zeros((shape[0],len(axis_vals),shape[2]))
+        for i,vals in zip(range(shape[2]),y_index_axis_vals):
+            Ruu[:,:,i] = Ruu_all[:,vals,i].reshape(Ruu[:,:,i].shape)
+
+        if not fig:
+            fig, ax = plt.subplots(len(axis_vals),figsize=[10,4*len(axis_vals)],squeeze=False)
+        elif not ax:
+            subplot_kw = {'squeeze':False}
+            ax = fig.subplots(len(axis_vals),subplot_kw=subplot_kw)
+        ax=ax.flatten()
+        x_coord = self._meta_data.CoordDF['x'].copy().dropna()\
+                .values[:shape[2]]
+        coord = self._meta_data.CoordDF[comp].copy().dropna()\
+                .values[:shape[0]]
+        ax_out=[]
+        for i in range(len(axis_vals)):
+            wavenumber_spectra = np.zeros((shape[0],shape[2]))
+            for j in range(shape[2]):
+                wavenumber_spectra[:,j]=fftpack.dct(Ruu[:,i,j])
+            delta_comp = coord[1]-coord[0]
+            Fs = (2.0*np.pi)/delta_comp
+            comp_size= shape[0]
+            wavenumber_comp = np.arange(comp_size)*Fs/comp_size
+            X, Y = np.meshgrid(x_coord,wavenumber_comp)
+            ax1 = ax[i].pcolormesh(X,Y,np.abs(wavenumber_spectra),cmap='jet')
+            ax1.axes.set_xlabel(r"$x/\delta$", fontsize=20)
+            ax1.axes.set_ylabel(r"$\kappa_%s$"%comp, fontsize=20)
+            title = r"$%s=%.3f$"%("y" if axis_mode=='half_channel' \
+                        else "\delta_u" if axis_mode=='disp_thickness' \
+                        else "\theta" if axis_mode=='mom_thickness' else "Y^+", axis_vals[i] )
+            ax1.axes.set_ylim([np.amin(wavenumber_comp[1:]),np.amax(wavenumber_comp)])
+            ax1.axes.set_title(title,fontsize=15,loc='left')
+            fig.colorbar(ax1,ax=ax1.axes)
+            ax_out.append(ax1)
+        fig.tight_layout()
+        return fig, np.array(ax_out)
+            
 class CHAPSim_mom_balance():
     def __init__(self,meta_data='',path_to_folder='',time0='',abs_path=True,tgpost=False):
         file_names = time_extract(path_to_folder, abs_path)

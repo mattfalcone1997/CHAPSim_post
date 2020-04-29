@@ -192,6 +192,54 @@ def Y_plus_index_calc(AVG_DF,CoordDF,coord_list,x_vals=''):
     else:
         return Y_plus_index_list
 
+def y_coord_index_norm(AVG_DF,CoordDF,coord_list,x_vals='',mode='half_channel'):
+    if mode=='half_channel':
+        norm_distance=np.ones((AVG_DF.NCL[0]))
+    elif mode == 'disp_thickness':
+        norm_distance, *other_thickness = AVG_DF.int_thickness_calc(AVG_DF.flow_AVGDF.index[0][0])
+    elif mode == 'mom_thickness':
+        disp_thickness, norm_distance, shape_factor = AVG_DF.int_thickness_calc(AVG_DF.flow_AVGDF.index[0][0])
+    elif mode == 'wall':
+        u_tau_star, norm_distance = cp.wall_unit_calc(AVG_DF,AVG_DF.flow_AVGDF.index[0][0])
+    else:
+        raise ValueError("The mode of normalisation must be 'half_channel', 'disp_thickness','mom_thickness',"+\
+                                " or 'wall. Value used was %s\n"%mode)
+    #print(norm_distance)
+    y_coords=CoordDF['y'].dropna().values
+    if x_vals:
+        x_index =coord_index_calc(CoordDF,'x',x_vals)
+        if not hasattr(x_index,'__iter__'):
+            x_index=[x_index]
+    elif x_vals is None:
+        x_index=list(range(AVG_DF.NCL[0]))
+    else:
+        x_index=[0]
+    if not hasattr(coord_list,'__iter__'):
+        coord_list=[coord_list]#raise TypeError("coord_list mist be an integer or iterable")
+    #y_coords_thick=np.zeros((int(0.5*y_coords.size),len(x_index)))
+    y_thick_index=[]
+    for x in x_index:
+        y_coords_thick=(1-abs(y_coords[:int(0.5*y_coords.size)]))/norm_distance[x]
+        y_thick=[]
+        for coord in coord_list:
+            try:
+                for i in range(y_coords_thick.size):
+                    if y_coords_thick[i+1]> coord:
+                        if abs(y_coords_thick[i+1]-coord)>abs(y_coords_thick[i]-coord):
+                            y_thick.append(i)
+                            break
+                        else:
+                            y_thick.append(i+1)
+                            break 
+            except IndexError:
+                warnings.warn("\033[1;33Value in coord_list out of bounds: "\
+                                 + "Y_plus given: %g, max Y_plus: %g. Ignoring values beyond this" % (coord,max(y_coords_thick)))
+                break
+        y_thick_index.append(y_thick)
+    #print(y_thick_index)
+    if len(coord_list)==1:
+        y_thick_index= list(itertools.chain(*y_thick_index))
+    return y_thick_index
 def coord_index_calc(CoordDF,comp,coord_list):
     coords = CoordDF[comp].dropna().values
     if isinstance(coord_list,float) or isinstance(coord_list,int):
@@ -278,8 +326,8 @@ def scalar_grad(coordDF,flow_array,two_D=True):
         grad_vector = np.zeros((2,flow_array.shape[0],flow_array.shape[1]))
     else:
         assert(flow_array.ndim == 3)
-        grad_vector = np.zeros(3,flow_array.shape[0],flow_array.shape[1],\
-                               flow_array.shape[2])
+        grad_vector = np.zeros((3,flow_array.shape[0],flow_array.shape[1],
+                               flow_array.shape[2]))
     
     grad_vector[0] = Grad_calc(coordDF,flow_array,'x')
     grad_vector[1] = Grad_calc(coordDF,flow_array,'y')
