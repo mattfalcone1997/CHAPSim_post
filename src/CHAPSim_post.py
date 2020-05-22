@@ -3409,7 +3409,6 @@ class CHAPSim_Quad_Anal():
                 quad_array=quadrant_array == i
                 # print(quad_array)
                 fluct_array = np.abs(quad_array*fluct_uv) > h*u_rms*v_rms
-                print(fluct_array.shape,fluct_uv.shape)
                 uv_q[i-1]=np.mean(fluct_uv*fluct_array,axis=0)
             quad_anal_array[j*4:j*4+4]=uv_q.reshape((4,NCL[0]*NCL[1]))
         return quad_anal_array
@@ -3445,9 +3444,7 @@ class CHAPSim_Quad_Anal():
 
         assert(quadrant_array.all()<=4 and quadrant_array.all()>=1)  
         fluct_uv=u_array*v_array 
-        print(quadrant_array)
-        print(u_array)
-        print(v_array)
+
         return fluct_uv, quadrant_array 
     def line_plot(self,h_list,coord_list,prop_dir,x_vals=0,y_mode='half_channel',norm=False,fig='',ax=''):
         assert x_vals is None or not hasattr(x_vals,'__iter__')
