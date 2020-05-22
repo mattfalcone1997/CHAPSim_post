@@ -3358,7 +3358,7 @@ class CHAPSim_Quad_Anal():
         times = list(dict.fromkeys(time_list))
         if time0:
             times = list(filter(lambda x: x > time0, times))
-        times.sort(); times= times[-3:]
+        # times.sort(); times= times[-3:]
         self._meta_data = CHAPSim_meta(path_to_folder)
         self.NCL = self._meta_data.NCL
         try:
