@@ -1268,17 +1268,13 @@ class CHAPSim_peturb():
         wall_velo = self._meta_data.moving_wall_calc()
         for i in range(self.__AVGDF.NCL[1]):
             U_velo_mean[i] -= wall_velo
-        for i in range(wall_velo.size):
-            if wall_velo[i] != 0:
-                index = i-1
-                break
         
         centre_index =int(0.5*self.__AVGDF.NCL[1])
-        U_c0 = U_velo_mean[centre_index,index]
+        U_c0 = U_velo_mean[centre_index,0]
         mean_velo_peturb = np.zeros_like(U_velo_mean)
-        for i in range(index+1,self.__AVGDF.NCL[0]):
-            mean_velo_peturb[:,i] = (U_velo_mean[:,i]-U_velo_mean[:,index])/(U_velo_mean[centre_index,i]-U_c0)
-        return mean_velo_peturb, index
+        for i in range(1,self.__AVGDF.NCL[0]):
+            mean_velo_peturb[:,i] = (U_velo_mean[:,i]-U_velo_mean[:,0])/(U_velo_mean[centre_index,i]-U_c0)
+        return mean_velo_peturb
     def rms_velo_peturb_calc(self,comp):
         velo_uu = self.__AVGDF.UU_tensorDF.loc[self.__AVGDF.UU_tensorDF.index[0][0],comp+comp]\
                         .values.reshape((self.__AVGDF.NCL[1],self.__AVGDF.NCL[0]))
@@ -1286,23 +1282,18 @@ class CHAPSim_peturb():
         velo_mean = self.__AVGDF.flow_AVGDF.loc[self.__AVGDF.flow_AVGDF.index[0][0],comp]\
                         .values.reshape((self.__AVGDF.NCL[1],self.__AVGDF.NCL[0]))
         velo_rms = np.sqrt(velo_uu-velo_mean*velo_mean)
-        for i in range(wall_velo.size):
-            if wall_velo[i] != 0:
-                index = i-1
-                break
         
         bulk_velo = self.__AVGDF.bulk_velo_calc(self.__AVGDF.UU_tensorDF.index[0][0])
         rms_velo_peturb=np.zeros_like(velo_rms)
-        for i in range(index+1,self.__AVGDF.NCL[0]):
-            assert bulk_velo[i]>bulk_velo[index]
+        for i in range(1,self.__AVGDF.NCL[0]):
             rms_velo_peturb[:,i] = (velo_rms[:,i] - velo_rms[:,0])/(bulk_velo[i]-bulk_velo[0])
-        return rms_velo_peturb, index
+        return rms_velo_peturb
     def plot_peturb_velo(self,x_indices,mode='mean',comp='u',Y_plus=False,Y_plus_max=100,fig='',ax =''):
         try:
             if mode =='mean':
-                velo_peturb, index = self.mean_velo_peturb_calc(comp)
+                velo_peturb = self.mean_velo_peturb_calc(comp)
             elif mode == 'rms':
-                velo_peturb, index = self.rms_velo_peturb_calc(comp)
+                velo_peturb = self.rms_velo_peturb_calc(comp)
             else:
                 raise ValueError("\033[1;32 mode must be equal to 'mean' or 'rms'")
         except UnboundLocalError:
@@ -1321,7 +1312,7 @@ class CHAPSim_peturb():
             #wall_params = self._meta_data.metaDF.loc['moving_wallflg':'VeloWall']
             
             y_coord = y_coord[:int(y_coord.size/2)]
-            y_coord = (1-np.abs(y_coord))/delta_v_star[index]
+            y_coord = (1-np.abs(y_coord))/delta_v_star[0]
             
             #y_coord = y_coord[y_coord<Y_plus_max]
             velo_peturb = velo_peturb[:int(y_coord.size)]
@@ -1351,7 +1342,7 @@ class CHAPSim_peturb():
         return fig, ax
     def plot_peturb_cf(self,wall_units=False,fig='',ax=''):
         try:
-            tau_du, index = self.tau_du_calc()
+            tau_du = self.tau_du_calc()
         except UnboundLocalError:
             warnings.warn("\033[1;33This function can only be used if moving wall is used, ignoring")
             return None, None
@@ -1362,11 +1353,11 @@ class CHAPSim_peturb():
         rho_star = 1.0
         if wall_units:
             u_tau_star, delta_v_star = wall_unit_calc(self.__AVGDF,avg_time)
-            Cf_du = tau_du/(0.5*REN*rho_star*u_tau_star[index]\
-                                        *(bulkvelo[(index+1):]-bulkvelo[index]))
+            Cf_du = tau_du/(0.5*REN*rho_star*u_tau_star[0]\
+                                        *(bulkvelo[(1):]-bulkvelo[0]))
         else:
-            Cf_du = tau_du/(0.5*REN*rho_star*(bulkvelo[(index+1):]-bulkvelo[index])**2)
-        x_coord = self._meta_data.CoordDF['x'].dropna().values[(index+1):] 
+            Cf_du = tau_du/(0.5*REN*rho_star*(bulkvelo[1:]-bulkvelo[0])**2)
+        x_coord = self._meta_data.CoordDF['x'].dropna().values[1:] 
         
         if not fig:
             fig, ax = plt.subplots(figsize=[10,5])
@@ -3357,7 +3348,161 @@ class CHAPSim_autocov2():
             ax_out.append(ax1)
         fig.tight_layout()
         return fig, np.array(ax_out)
+
+class CHAPSim_Quad_Anal():
+    def __init__(self,h_list,path_to_folder='',time0='',abs_path=True):
+        file_names = time_extract(path_to_folder,abs_path)
+        time_list =[]
+        for file in file_names:
+            time_list.append(float(file[20:35]))
+        times = list(dict.fromkeys(time_list))
+        if time0:
+            times = list(filter(lambda x: x > time0, times))
+        times.sort(); times= times[-3:]
+        self._meta_data = CHAPSim_meta(path_to_folder)
+        self.NCL = self._meta_data.NCL
+        try:
+            self._avg_data = CHAPSim_AVG(max(times),self._meta_data,path_to_folder,time0,abs_path)
+        except Exception:
+            times_temp= times
+            times_temp.remove(max(times))
+            self._avg_data = CHAPSim_AVG(max(times_temp),self._meta_data,path_to_folder,time0)
+        i=1
+        for timing in times:
+            self._fluct_data = CHAPSim_fluct(self._avg_data,timing,self._meta_data,
+                                            time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
+            fluct_uv, quadrant_array = self.__quadrant_extract(self._fluct_data.fluctDF,timing,self.NCL)
+            coe3 = (i-1)/i
+            coe2 = 1/i
+            if i==1:
+                quad_anal_array = self.__quad_calc(self._avg_data,fluct_uv,quadrant_array,self.NCL,h_list,timing)
+            else:
+                local_quad_anal_array = self.__quad_calc(self._avg_data,fluct_uv,quadrant_array,self.NCL,h_list,timing)
+                assert local_quad_anal_array.shape == quad_anal_array.shape, "shape of previous array (%d,%d) " % autocorr.shape\
+                    + " and current array (%d,%d) must be the same" % local_quad_anal_array.shape
+                autocorr = quad_anal_array*coe3 + local_quad_anal_array*coe2
+            i += 1
+        index=[[],[]]
+        for h in h_list:
+            index[0].extend([h]*4)
+        index[1]=[1,2,3,4]*len(h_list)
+        self.QuadAnalDF=pd.DataFrame(quad_anal_array,index=index)
+
+    @staticmethod
+    def __quad_calc(avg_data,fluct_uv,quadrant_array,NCL,h_list,PhyTime):
+        if type(PhyTime) == float: #Convert float to string to be compatible with dataframe
+            PhyTime = "{:.10g}".format(PhyTime)
+
+        avg_time = list(set([x[0] for x in avg_data.UU_tensorDF.index]))[0]
+        uv_q=np.zeros((4,*NCL[::-1][1:]))
+
+        u=avg_data.flow_AVGDF.loc[avg_time,'u'].values.reshape(NCL[::-1][1:])
+        v=avg_data.flow_AVGDF.loc[avg_time,'v'].values.reshape(NCL[::-1][1:])
+        uu=avg_data.UU_tensorDF.loc[avg_time,'uu'].values.reshape(NCL[::-1][1:])
+        vv=avg_data.UU_tensorDF.loc[avg_time,'vv'].values.reshape(NCL[::-1][1:])
+        u_rms = np.sqrt(uu-u*u)
+        v_rms = np.sqrt(vv-v*v)
+
+        quad_anal_array=np.empty((len(h_list)*4,NCL[0]*NCL[1]))
+        for h,j in zip(h_list,range(len(h_list))):
+            for i in range(1,5):
+                quad_array=quadrant_array == i
+                # print(quad_array)
+                fluct_array = np.abs(quad_array*fluct_uv) > h*u_rms*v_rms
+                print(fluct_array.shape,fluct_uv.shape)
+                uv_q[i-1]=np.mean(fluct_uv*fluct_array,axis=0)
+            quad_anal_array[j*4:j*4+4]=uv_q.reshape((4,NCL[0]*NCL[1]))
+        return quad_anal_array
+
+    @staticmethod
+    def __quadrant_extract(fluctDF,PhyTime,NCL):
+        if type(PhyTime) == float: #Convert float to string to be compatible with dataframe
+            PhyTime = "{:.10g}".format(PhyTime)
+        if len(set([x[0] for x in fluctDF.index])) == 1:
+            fluct_time = list(set([x[0] for x in fluctDF.index]))[0]
+
+        u_array=fluctDF.loc[PhyTime,'u'].values.reshape(NCL[::-1])
+        v_array=fluctDF.loc[PhyTime,'v'].values.reshape(NCL[::-1])
+
+        u_array_isneg=u_array<0
+        v_array_isneg=v_array<0
+
+        quadrant_array = np.zeros_like(v_array_isneg,dtype='i4')
+
+        for i in range(1,5): #determining quadrant
+            if i ==1:
+                quadrant_array_temp = np.logical_and(~u_array_isneg,~v_array_isneg)#not fluct_u_isneg and not fluct_v_isneg
+                quadrant_array += quadrant_array_temp*1
+            elif i==2:
+                quadrant_array_temp = np.logical_and(u_array_isneg,~v_array_isneg)#not fluct_u_isneg and fluct_v_isneg
+                quadrant_array += quadrant_array_temp*2
+            elif i==3:
+                quadrant_array_temp =  np.logical_and(u_array_isneg,v_array_isneg)
+                quadrant_array += quadrant_array_temp*3
+            elif i==4:
+                quadrant_array_temp =  np.logical_and(~u_array_isneg,v_array_isneg)#fluct_u_isneg and not fluct_v_isneg
+                quadrant_array += quadrant_array_temp*4
+
+        assert(quadrant_array.all()<=4 and quadrant_array.all()>=1)  
+        fluct_uv=u_array*v_array 
+        print(quadrant_array)
+        print(u_array)
+        print(v_array)
+        return fluct_uv, quadrant_array 
+    def line_plot(self,h_list,coord_list,prop_dir,x_vals=0,y_mode='half_channel',norm=False,fig='',ax=''):
+        assert x_vals is None or not hasattr(x_vals,'__iter__')
+        if not fig:
+            fig, ax = plt.subplots(4,len(coord_list),figsize=[12,5*len(coord_list)],squeeze=False)
+        elif not ax:
+            subplot_kw={'squeeze':False}
+            ax = fig.subplots(4,len(coord_list),figsize=[12,5*len(coord_list)],subplot_kw=subplot_kw)
+        if prop_dir =='y':
+            index = CT.coord_index_calc(self._meta_data.CoordDF,'x',coord_list)
+            arr_len = self.NCL[2]
+        elif prop_dir == 'x':
+            index = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
+                                                        coord_list,x_vals,y_mode)
+            arr_len = self.NCL[1]
+            if x_vals is not None:
+                index=list(itertools.chain(*index))
+        else:
+            raise ValueError("The propagation direction of the quadrant analysis must be `x' or `y'")
+        if norm: 
+            avg_time = list(set([x[0] for x in self._avg_data.UU_tensorDF.index]))[0]
+            u=self._avg_data.flow_AVGDF.loc[avg_time,'u'].values.reshape(self.NCL[::-1][1:])
+            v=self._avg_data.flow_AVGDF.loc[avg_time,'v'].values.reshape(self.NCL[::-1][1:])
+            UV=self._avg_data.UU_tensorDF.loc[avg_time,'uv'].values.reshape(self.NCL[::-1][1:])
+            uv = UV-u*v
+
+        coords = self._meta_data.CoordDF[prop_dir].dropna().values
+
+        unit="x/\delta"if prop_dir =='y' else "y/\delta" if y_mode=='half_channel' \
+                else "\delta_u" if y_mode=='disp_thickness' \
+                else "\theta" if y_mode=='mom_thickness' else "Y^+" \
+                if x_vals is None or x_vals!=0 else "Y^{+0}"
+
+        for i in range(1,5):
+            for h in h_list:
+                quad_anal = self.QuadAnalDF.loc[h,i].values.reshape(self.NCL[::-1][1:])
+                if norm:
+                    quad_anal/=uv
+                for j in range(len(coord_list)):
+                    if x_vals is None and prop_dir=='x':
+                        quad_anal_index= np.zeros(self.NCL[0])
+                        for k in range(self.NCL[0]):
+                            quad_anal_index[k]=quad_anal[index[k][j],k]
+                    else:
+                        quad_anal_index=quad_anal[index[j],:] if prop_dir == 'x' else quad_anal[:,index[j]].T
+                    ax[i-1,j].plot(coords,quad_anal_index,label=r"$h=%.5g$"%h)
+                    ax[i-1,j].set_xlabel(r"$%s/\delta$"%prop_dir,fontsize=20)
+                    ax[i-1,j].set_ylabel(r"$Q%d$"%i,fontsize=20)
+                    ax[i-1,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left',fontsize=16)
             
+        handles, labels = ax[0,0].get_legend_handles_labels()
+        ax[0,0].legend(handles, labels,fontsize=12)
+        fig.tight_layout()
+        return fig, ax
+    
 class CHAPSim_mom_balance():
     def __init__(self,meta_data='',path_to_folder='',time0='',abs_path=True,tgpost=False):
         file_names = time_extract(path_to_folder, abs_path)

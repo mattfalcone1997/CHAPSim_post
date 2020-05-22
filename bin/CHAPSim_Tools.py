@@ -7,6 +7,9 @@ from scipy.integrate import solve_bvp
 import sympy
 import itertools
 
+def plot_moving_wall_similarity(Re_0,Eh):
+    pass
+
 def default_axlabel_kwargs():
     return {'fontsize':20}
 def default_legend_kwargs():
