@@ -3378,7 +3378,7 @@ class CHAPSim_Quad_Anal():
                 quad_anal_array = self.__quad_calc(self._avg_data,fluct_uv,quadrant_array,self.NCL,h_list,timing)
             else:
                 local_quad_anal_array = self.__quad_calc(self._avg_data,fluct_uv,quadrant_array,self.NCL,h_list,timing)
-                assert local_quad_anal_array.shape == quad_anal_array.shape, "shape of previous array (%d,%d) " % autocorr.shape\
+                assert local_quad_anal_array.shape == quad_anal_array.shape, "shape of previous array (%d,%d) " % quad_anal_array.shape\
                     + " and current array (%d,%d) must be the same" % local_quad_anal_array.shape
                 autocorr = quad_anal_array*coe3 + local_quad_anal_array*coe2
             i += 1

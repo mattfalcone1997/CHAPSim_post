@@ -3358,7 +3358,7 @@ class CHAPSim_Quad_Anal():
         times = list(dict.fromkeys(time_list))
         if time0:
             times = list(filter(lambda x: x > time0, times))
-        times.sort(); times= times[-3:]
+        # times.sort(); times= times[-3:]
         self._meta_data = CHAPSim_meta(path_to_folder)
         self.NCL = self._meta_data.NCL
         try:
@@ -3378,7 +3378,7 @@ class CHAPSim_Quad_Anal():
                 quad_anal_array = self.__quad_calc(self._avg_data,fluct_uv,quadrant_array,self.NCL,h_list,timing)
             else:
                 local_quad_anal_array = self.__quad_calc(self._avg_data,fluct_uv,quadrant_array,self.NCL,h_list,timing)
-                assert local_quad_anal_array.shape == quad_anal_array.shape, "shape of previous array (%d,%d) " % autocorr.shape\
+                assert local_quad_anal_array.shape == quad_anal_array.shape, "shape of previous array (%d,%d) " % quad_anal_array.shape\
                     + " and current array (%d,%d) must be the same" % local_quad_anal_array.shape
                 autocorr = quad_anal_array*coe3 + local_quad_anal_array*coe2
             i += 1
@@ -3409,7 +3409,6 @@ class CHAPSim_Quad_Anal():
                 quad_array=quadrant_array == i
                 # print(quad_array)
                 fluct_array = np.abs(quad_array*fluct_uv) > h*u_rms*v_rms
-                print(fluct_array.shape,fluct_uv.shape)
                 uv_q[i-1]=np.mean(fluct_uv*fluct_array,axis=0)
             quad_anal_array[j*4:j*4+4]=uv_q.reshape((4,NCL[0]*NCL[1]))
         return quad_anal_array
@@ -3445,9 +3444,7 @@ class CHAPSim_Quad_Anal():
 
         assert(quadrant_array.all()<=4 and quadrant_array.all()>=1)  
         fluct_uv=u_array*v_array 
-        print(quadrant_array)
-        print(u_array)
-        print(v_array)
+
         return fluct_uv, quadrant_array 
     def line_plot(self,h_list,coord_list,prop_dir,x_vals=0,y_mode='half_channel',norm=False,fig='',ax=''):
         assert x_vals is None or not hasattr(x_vals,'__iter__')
