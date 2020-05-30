@@ -7,8 +7,27 @@ from scipy.integrate import solve_bvp
 import sympy
 import itertools
 
-def plot_moving_wall_similarity(Re_0,Eh):
-    pass
+def moving_wall_similarity(Re_0,U_grad):
+    def moving_wall_calc(y_vals,Eh):
+        R=np.abs(Eh)*Re_0
+        RHS_fun = lambda x,y: np.array([y[1],y[2],y[3],-R*(y[0]*y[3]-y[1]*y[2])])
+        bc = lambda ya,yb: np.array([yb[0],yb[2],ya[0],1-ya[1]])
+        # y_vals=np.linspace(0,1,100)
+        f1_init=y_vals
+        f2_init=np.exp(y_vals)
+        f3_init=np.exp(y_vals)
+        f4_init=np.exp(y_vals)
+        finit = np.column_stack((f1_init,f2_init,f3_init,f4_init))
+        
+        
+        sol = solve_bvp(RHS_fun,bc,y_vals,finit.T)
+        f = sol.sol(y_vals)
+        return f
+    y_coords=np.linspace(-1,0,1000)
+    f = moving_wall_calc(y_coords,U_grad)
+    U=f[1]
+    print(U[0],U[-1])
+    return y_coords,(1-f[1])/(f[1,0]-f[1,-1])
 
 def default_axlabel_kwargs():
     return {'fontsize':20}

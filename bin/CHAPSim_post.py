@@ -602,7 +602,7 @@ class CHAPSim_AVG():
 
         return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
                     Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
-    def AVG_flow_contour(self,flow_field,PhyTime,fig,ax):
+    def AVG_flow_contour(self,flow_field,PhyTime,relative=False,fig='',ax=''):
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
         if flow_field == 'u' or flow_field =='v' or flow_field =='w' or flow_field =='P':
@@ -615,7 +615,15 @@ class CHAPSim_AVG():
         else:
             raise ValueError("\033[1;32 Not a valid argument")
         local_velo = local_velo.reshape(self.NCL[1],self.NCL[0]) 
+        wall_velo = self._meta_data.moving_wall_calc()
+        if relative and flow_field == 'u':
+            for i in range(self.NCL[0]):
+                local_velo[:,i] -= wall_velo[i]
         
+        if not fig:
+            fig, ax = plt.subplots(figsize=[10,5])
+        elif not ax:
+            ax = fig.subplots()
         
         x_coords = self.CoordDF['x'].dropna().values
         y_coords = self.CoordDF['y'].dropna().values
@@ -627,9 +635,9 @@ class CHAPSim_AVG():
         ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
         cbar=fig.colorbar(ax1,ax=ax)
         if flow_field=='mag':
-            cbar_label=r"\vert\bar{U}\vert"
+            cbar_label=r"$\vert\bar{U}\vert$"
         else:
-            cbar_label=r"\vert\bar{%s}\vert"%flow_field.upper()
+            cbar_label=r"$\langle\bar{%s}\rangle$"%flow_field.upper()
         cbar.set_label(cbar_label,fontsize=12)
         ax.set_xlabel("x direction")
         ax.set_ylabel("y direction")
@@ -824,11 +832,15 @@ class CHAPSim_AVG():
                                axis1_spacing,axis2_spacing)
         ax.set_title("Averaged velocity vector plot")
         return fig, ax
-    def int_thickness_calc(self,PhyTime):
+    def int_thickness_calc(self,PhyTime,relative=False):
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
         U0_index = int(np.floor(self.NCL[1]*0.5))
         U_mean = self.flow_AVGDF.loc[PhyTime,'u'].values.reshape((self.NCL[1],self.NCL[0]))
+        if relative:
+            wall_velo = self._meta_data.moving_wall_calc()
+            for i in range(wall_velo.size):
+                U_mean[:,i] -= wall_velo[i]
         y_coords = self.CoordDF['y'].dropna().values
         U0 = U_mean[U0_index]
         theta_integrand = np.zeros((U0_index,self.NCL[0]))
@@ -844,8 +856,8 @@ class CHAPSim_AVG():
         shape_factor = np.divide(disp_thickness,mom_thickness)
         
         return disp_thickness, mom_thickness, shape_factor
-    def plot_shape_factor(self,PhyTime,fig='',ax=''):
-        delta, theta, shape_factor = self.int_thickness_calc(PhyTime)
+    def plot_shape_factor(self,PhyTime,relative=False,fig='',ax=''):
+        delta, theta, shape_factor = self.int_thickness_calc(PhyTime,relative)
         x_coords = self.CoordDF['x'].dropna().values
         if not fig:
             fig = plt.figure()
@@ -894,7 +906,7 @@ class CHAPSim_AVG():
         return accel_param
     
     
-    def plot_Reynolds(self,comp1,comp2,x_loc,PhyTime,norm_ut=True,Y_plus=True,fig='',ax=''):
+    def plot_Reynolds(self,comp1,comp2,x_loc,PhyTime,norm=None,Y_plus=True,fig='',ax=''):
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
         comp_uu =comp1 + comp2
@@ -911,12 +923,17 @@ class CHAPSim_AVG():
         if comp_uu == 'uv':
             uu *= -1.0
         
-        u_tau_star, delta_v_star = wall_unit_calc(self,PhyTime)
+        
         y_coord = self.CoordDF['y'].dropna().values[:int(self.NCL[1]/2)]
         #Reynolds_wall_units = np.zeros_like(uu)
-        if norm_ut:
+        if norm=='wall':
+            u_tau_star, delta_v_star = wall_unit_calc(self,PhyTime)
             for i in range(self.NCL[0]):
                 uu[:,i] = uu[:,i]/(u_tau_star[i]*u_tau_star[i])
+        elif norm=='local-bulk':
+            velo_bulk=self.bulk_velo_calc(PhyTime,relative=True)
+            for i in range(self.NCL[0]):
+                uu[:,i] = uu[:,i]/(velo_bulk[i]*velo_bulk[i])
         if not fig:
             fig,ax = plt.subplots(figsize=[10,5])
         elif not ax:
@@ -946,11 +963,16 @@ class CHAPSim_AVG():
                   fontsize=16)
         else:
             raise TypeError("\033[1;32 x_loc must be of type list or int")
-        if norm_ut:
+        if norm=='wall':
             if comp_uu == 'uv':
                 ax.set_ylabel(r"$-\langle %s\rangle/u_\tau^2$"% comp_uu,fontsize=20)
             else:
                 ax.set_ylabel(r"$\langle %s\rangle/u_\tau^2$"% comp_uu,fontsize=20)
+        elif norm=='local-bulk':
+            if comp_uu == 'uv':
+                ax.set_ylabel(r"$-\langle %s\rangle/U_b^2$"% comp_uu,fontsize=20)
+            else:
+                ax.set_ylabel(r"$\langle %s\rangle/U_b^2$"% comp_uu,fontsize=20)
         else:
             if comp_uu == 'uv':
                 ax.set_ylabel(r"$-\langle %s\rangle/U_{b0}^2$"% comp_uu,fontsize=20)
@@ -1402,7 +1424,12 @@ class CHAPSim_fluct():
                     if j == len(avg_list):
                         avg_args = [x for x in args if not isinstance(x,CHAPSim_AVG) and not isinstance(x,CHAPSim_Inst)]
                         CHAPSim_fluct.__check_args(avg_args,True)
-                        avg_data=CHAPSim_AVG(maxtime,*avg_args[1:],**kwargs)
+                        try:
+                            avg_data=CHAPSim_AVG(maxtime,*avg_args[1:],**kwargs)
+                        except FileNotFoundError:
+                            times_temp.remove(maxtime)
+                            maxtime = max(times_temp)
+                            avg_data=CHAPSim_AVG(maxtime,*avg_args[1:],**kwargs)
                 j+=1
         else:
             avg_args = [x for x in args if not isinstance(x,CHAPSim_Inst)]
