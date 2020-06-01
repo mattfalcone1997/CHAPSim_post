@@ -1426,7 +1426,7 @@ class CHAPSim_fluct():
                         CHAPSim_fluct.__check_args(avg_args,True)
                         try:
                             avg_data=CHAPSim_AVG(maxtime,*avg_args[1:],**kwargs)
-                        except FileNotFoundError:
+                        except Exception:
                             times.remove(maxtime)
                             maxtime = max(times)
                             avg_data=CHAPSim_AVG(maxtime,*avg_args[1:],**kwargs)

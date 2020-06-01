@@ -1426,9 +1426,9 @@ class CHAPSim_fluct():
                         CHAPSim_fluct.__check_args(avg_args,True)
                         try:
                             avg_data=CHAPSim_AVG(maxtime,*avg_args[1:],**kwargs)
-                        except FileNotFoundError:
-                            times_temp.remove(maxtime)
-                            maxtime = max(times_temp)
+                        except Exception:
+                            times.remove(maxtime)
+                            maxtime = max(times)
                             avg_data=CHAPSim_AVG(maxtime,*avg_args[1:],**kwargs)
                 j+=1
         else:
@@ -3036,9 +3036,8 @@ class CHAPSim_autocov2():
         try:
             self._avg_data = CHAPSim_AVG(max(times),self._meta_data,path_to_folder,time0,abs_path)
         except Exception:
-            times_temp= times
-            times_temp.remove(max(times))
-            self._avg_data = CHAPSim_AVG(max(times_temp),self._meta_data,path_to_folder,time0)
+            times.remove(max(times))
+            self._avg_data = CHAPSim_AVG(max(times),self._meta_data,path_to_folder,time0)
         i=1
 
         if max_z_sep is None:
@@ -3391,9 +3390,8 @@ class CHAPSim_Quad_Anal():
         try:
             self._avg_data = CHAPSim_AVG(max(times),self._meta_data,path_to_folder,time0,abs_path)
         except Exception:
-            times_temp= times
-            times_temp.remove(max(times))
-            self._avg_data = CHAPSim_AVG(max(times_temp),self._meta_data,path_to_folder,time0)
+            times.remove(max(times))
+            self._avg_data = CHAPSim_AVG(max(times),self._meta_data,path_to_folder,time0)
         i=1
         for timing in times:
             self._fluct_data = CHAPSim_fluct(self._avg_data,timing,self._meta_data,
