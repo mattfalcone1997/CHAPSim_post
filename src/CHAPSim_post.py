@@ -602,6 +602,10 @@ class CHAPSim_AVG():
 
         return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
                     Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
+    
+    def save(self,path_to_folder=''):
+        pass
+
     def AVG_flow_contour(self,flow_field,PhyTime,relative=False,fig='',ax=''):
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
@@ -1702,7 +1706,7 @@ class CHAPSim_fluct():
         else: 
             type_list = args_type_list_inst
         for arg,type in zip(args,type_list):
-            print(arg,type,isinstance(arg,type))
+            # print(arg,type,isinstance(arg,type))
             if not isinstance(arg,type):
                 if arg==args[0] and not isinstance(arg,list):
                     
@@ -1810,7 +1814,8 @@ class CHAPSim_meta():
         meta_DF = pd.DataFrame(meta_out,index=meta_list)
         meta_DF = meta_DF.dropna(how='all')
         return meta_DF
-                
+    def save(self,path_to_file='', append=False):
+        pass            
     def _coord_extract(self,path_to_folder,abs_path,tgpost):
         """ Function to extract the coordinates from their .dat file """
     
