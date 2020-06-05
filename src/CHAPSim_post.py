@@ -3034,7 +3034,7 @@ class CHAPSim_autocov2():
         times = list(dict.fromkeys(time_list))
         if time0:
             times = list(filter(lambda x: x > time0, times))
-        #times.sort(); times= times[-3:]
+        times.sort(); times= times[-3:]
         self._meta_data = CHAPSim_meta(path_to_folder)
         self.comp=(comp1,comp2)
         self.NCL = self._meta_data.NCL
@@ -3259,7 +3259,7 @@ class CHAPSim_autocov2():
 
         for j in range(len(y_vals)):
             for i in range(len(axis_index)):
-                ax[j].plot(coord,Ruu[:,y_index_axis_vals[j],axis_index[i]],
+                ax[j].plot(coord,Ruu[:,y_index_axis_vals[i][j],axis_index[i]],
                         label=r"$x=%.3f$"%(axis_vals[i]),
                         linestyle=linestyle_list[i%len(linestyle_list)])
                 y_unit="y" if y_mode=='half_channel' \
