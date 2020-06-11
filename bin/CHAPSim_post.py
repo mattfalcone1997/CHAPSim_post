@@ -66,6 +66,7 @@ import CHAPSim_Tools as CT
 
 #import loop_accel as la
 import numba
+import h5py
 #on iceberg HPC vtkmodules not found allows it to work as this resource isn't need on iceberg
 try: 
     import pyvista as pv
@@ -1778,13 +1779,58 @@ class CHAPSim_fluct():
         
         
 class CHAPSim_meta():
-    def __init__(self,path_to_folder='',abs_path=True,tgpost=False):
-        self.CoordDF, self.NCL = self._coord_extract(path_to_folder,abs_path,tgpost)
-        self.Coord_ND_DF = self.Coord_ND_extract(path_to_folder,abs_path,tgpost)
-        self.metaDF = self._meta_extract(path_to_folder,abs_path)
-        self.path_to_folder = path_to_folder
-        self._abs_path = abs_path
-    def _meta_extract(self,path_to_folder,abs_path):
+    def __init__(self,*args,**kwargs):
+        fromfile= kwargs.pop('fromfile',False)
+        if not fromfile:
+            self.CoordDF, self.NCL, self.Coord_ND_DF,\
+            self.metaDF, self.path_to_folder,\
+            self._abs_path = self.__extract_meta(*args,**kwargs)
+
+        else:
+            self.CoordDF, self.NCL, self.Coord_ND_DF,\
+            self.metaDF, self.path_to_folder,\
+            self._abs_path = self.__hdf_extract(*args,**kwargs)
+
+    def __extract_meta(self,path_to_folder='',abs_path=True,tgpost=False):
+        CoordDF, NCL = self._coord_extract(path_to_folder,abs_path,tgpost)
+        Coord_ND_DF = self.Coord_ND_extract(path_to_folder,NCL,abs_path,tgpost)
+        metaDF = self._readdata_extract(path_to_folder,abs_path)
+        path_to_folder = path_to_folder
+        abs_path = abs_path
+        return CoordDF, NCL, Coord_ND_DF, metaDF, path_to_folder, abs_path
+
+    @classmethod
+    def from_hdf(cls,*args,**kwargs):
+        return cls(fromfile=True,*args,**kwargs)
+
+    def __hdf_extract(self,file_name,group_name=''):
+        base_name=group_name if group_name else 'CHAPSim_meta'
+
+        CoordDF = pd.read_hdf(file_name,key=base_name+'/CoordDF')
+        Coord_ND_DF = pd.read_hdf(file_name,key=base_name+'/Coord_ND_DF')
+        metaDF = pd.read_hdf(file_name,key=base_name+'/metaDF')
+        
+        hdf_file = h5py.File(file_name,'r')
+        NCL = hdf_file[base_name+'/NCL']
+        path_to_folder = hdf_file[base_name].attrs['path_to_folder'].decode('utf-8')
+        abs_path = bool(hdf_file[base_name].attrs['abs_path'])
+        hdf_file.close()
+        return CoordDF, NCL, Coord_ND_DF, metaDF, path_to_folder, abs_path
+    
+    def save_hdf(self,file_name,write_mode='a',group_name=''):
+        base_name=group_name if group_name else 'CHAPSim_meta'
+
+        hdf_file = h5py.File(file_name,write_mode)
+        group = hdf_file.create_group(base_name)
+        group.attrs["path_to_folder"] = self.path_to_folder.encode('utf-8')
+        group.attrs["abs_path"] = int(self._abs_path)
+        group.create_dataset("NCL",data=self.NCL)
+        hdf_file.close()
+        self.metaDF.to_hdf(file_name,key=base_name+'/metaDF',mode='a',format='fixed',data_columns=True)
+        self.CoordDF.to_hdf(file_name,key=base_name+'/CoordDF',mode='a',format='fixed',data_columns=True)
+        self.Coord_ND_DF.to_hdf(file_name,key=base_name+'/Coord_ND_DF',mode='a',format='fixed',data_columns=True)
+
+    def _readdata_extract(self,path_to_folder,abs_path):
         
         if not abs_path:
             readdata_file = os.path.abspath(os.path.join(path_to_folder,'readdata.ini'))
@@ -1814,8 +1860,7 @@ class CHAPSim_meta():
         meta_DF = pd.DataFrame(meta_out,index=meta_list)
         meta_DF = meta_DF.dropna(how='all')
         return meta_DF
-    def save(self,path_to_file='', append=False):
-        pass            
+        
     def _coord_extract(self,path_to_folder,abs_path,tgpost):
         """ Function to extract the coordinates from their .dat file """
     
@@ -1887,7 +1932,7 @@ class CHAPSim_meta():
             ZCC[i] = 0.5*(ZND[i+1] + ZND[i])
     
         return XCC, ZCC
-    def Coord_ND_extract(self,path_to_folder,abs_path,tgpost):
+    def Coord_ND_extract(self,path_to_folder,NCL,abs_path,tgpost):
         if not abs_path:
             x_coord_file = os.path.abspath(os.path.join(path_to_folder,'CHK_COORD_XND.dat'))
             y_coord_file = os.path.abspath(os.path.join(path_to_folder,'CHK_COORD_YND.dat'))
@@ -1919,7 +1964,7 @@ class CHAPSim_meta():
         #Extracting YCC from the .dat file
         file=open(y_coord_file,'rb')
         YND=np.loadtxt(file,comments='#',usecols=1)
-        YND=YND[:self.NCL[1]+1]
+        YND=YND[:NCL[1]+1]
         
         #y_size = YCC.size
         #============================================================
@@ -3034,7 +3079,7 @@ class CHAPSim_autocov2():
         times = list(dict.fromkeys(time_list))
         if time0:
             times = list(filter(lambda x: x > time0, times))
-        times.sort(); times= times[-3:]
+        #times.sort(); times= times[-3:]
         self._meta_data = CHAPSim_meta(path_to_folder)
         self.comp=(comp1,comp2)
         self.NCL = self._meta_data.NCL
