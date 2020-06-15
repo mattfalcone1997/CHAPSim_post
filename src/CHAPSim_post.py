@@ -51,7 +51,7 @@
 
 
 import numpy as np
-import pandas as pd
+import pandas as pd; from pandas.errors import PerformanceWarning 
 import matplotlib as mpl
 from matplotlib import animation
 import matplotlib.pyplot as plt
@@ -76,27 +76,75 @@ mpl.rcParams['mathtext.fontset'] = 'stix'
 
 
 class CHAPSim_Inst():
-    def __init__(self,time,meta_data='',path_to_folder='',abs_path = True,tgpost=False):
+    def __init__(self,*args,**kwargs):#self,time,meta_data='',path_to_folder='',abs_path = True,tgpost=False):
         #Extract x,y,z coordinates that match for entire dataset
         #Extract velocity components and pressure from files
+        # if not meta_data:
+        #     meta_data = CHAPSim_meta(path_to_folder,abs_path,tgpost)
+        # self.CoordDF = meta_data.CoordDF
+        # self.NCL = meta_data.NCL
+        # self._meta_data=meta_data
+        # #Give capacity for both float and lists
+        # if isinstance(time,float): 
+        #     self.InstDF = self.__flow_extract(time,path_to_folder,abs_path,tgpost)
+        # elif hasattr(time,'__iter__'):
+        #     for PhyTime in time:
+        #         if not hasattr(self, 'InstDF'):
+        #             self.InstDF = self.__flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
+        #         else: #Variable already exists
+        #             local_DF = self.__flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
+        #             concat_DF = [self.InstDF,local_DF]
+        #             self.InstDF = pd.concat(concat_DF)
+        # else:
+        #     raise TypeError("\033[1;32 `time' must be either float or list")
+        fromfile= kwargs.pop('fromfile',False)
+        if not fromfile:
+            self._meta_data, self.CoordDF, self.NCL,\
+            self.InstDF = self.__inst_extract(*args,**kwargs)
+        else:
+            self._meta_data, self.CoordDF, self.NCL,\
+            self.InstDF = self.__hdf_extract(*args,**kwargs)
+
+    def __inst_extract(self,time,meta_data='',path_to_folder='',abs_path = True,tgpost=False):
         if not meta_data:
             meta_data = CHAPSim_meta(path_to_folder,abs_path,tgpost)
-        self.CoordDF = meta_data.CoordDF
-        self.NCL = meta_data.NCL
-        self._meta_data=meta_data
+        CoordDF = meta_data.CoordDF
+        NCL = meta_data.NCL
+
         #Give capacity for both float and lists
         if isinstance(time,float): 
-            self.InstDF = self.__flow_extract(time,path_to_folder,abs_path,tgpost)
+            InstDF = self.__flow_extract(time,path_to_folder,abs_path,tgpost)
         elif hasattr(time,'__iter__'):
             for PhyTime in time:
                 if not hasattr(self, 'InstDF'):
-                    self.InstDF = self.__flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
+                    InstDF = self.__flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
                 else: #Variable already exists
                     local_DF = self.__flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
                     concat_DF = [self.InstDF,local_DF]
-                    self.InstDF = pd.concat(concat_DF)
+                    InstDF = pd.concat(concat_DF)
         else:
             raise TypeError("\033[1;32 `time' must be either float or list")
+            
+        return meta_data,CoordDF,NCL,InstDF
+
+    @classmethod
+    def from_hdf(cls,*args,**kwargs):
+        return cls(fromfile=True,*args,**kwargs)
+    
+    def __hdf_extract(self,file_name,group_name=''):
+        base_name=group_name if group_name else 'CHAPSim_Inst'
+        meta_data = CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
+        CoordDF=meta_data.CoordDF
+        NCL=meta_data.NCL
+
+        InstDF = pd.read_hdf(file_name,base_name+'/InstDF')
+
+        return meta_data, CoordDF, NCL, InstDF
+
+    def save_hdf(self,file_name,write_mode,group_name=''):
+        base_name=group_name if group_name else 'CHAPSim_Inst'
+        self._meta_data.save_hdf(file_name,write_mode,group_name=base_name+'/meta_data')
+        self.InstDF.to_hdf(file_name,key=base_name+'/InstDF',mode='a',format='fixed',data_columns=True)
 
     def __flow_extract(self,Time_input,path_to_folder,abs_path,tgpost):
         """ Extract velocity and pressure from the instantanous files """
@@ -421,28 +469,34 @@ class CHAPSim_Inst():
     def __str__(self):
         return self.InstDF.__str__()
 class CHAPSim_AVG():
-    def __init__(self,time,meta_data='',path_to_folder='',time0='',abs_path=True,tgpost=False):
-        
-        if meta_data:
-            self._meta_data = meta_data
+    def __init__(self,*args,**kwargs):
+        fromfile= kwargs.pop('fromfile',False)
+        if not fromfile:
+            self._meta_data, self.CoordDF,self._metaDF,\
+            self.NCL,self.flow_AVGDF,self.PU_vectorDF,\
+            self.UU_tensorDF,self.UUU_tensorDF,\
+            self.Velo_grad_tensorDF, self.PR_Velo_grad_tensorDF,\
+            self.DUDX2_tensorDF = self.__extract_avg(*args,**kwargs)
+
         else:
-            self._meta_data = CHAPSim_meta(path_to_folder,abs_path,tgpost)
-        self.CoordDF = self._meta_data.CoordDF
-        self._metaDF = self._meta_data.metaDF
-        self.NCL = self._meta_data.NCL
+            self._meta_data, self.CoordDF,self._metaDF,\
+            self.NCL,self.flow_AVGDF,self.PU_vectorDF,\
+            self.UU_tensorDF,self.UUU_tensorDF,\
+            self.Velo_grad_tensorDF, self.PR_Velo_grad_tensorDF,\
+            self.DUDX2_tensorDF = self.__hdf_extract(*args,**kwargs)
+
+    def __extract_avg(self,time,meta_data='',path_to_folder='',time0='',abs_path=True,tgpost=False):
+        if not meta_data:
+            meta_data = CHAPSim_meta(path_to_folder,abs_path,tgpost)
+        CoordDF = meta_data.CoordDF
+        metaDF = meta_data.metaDF
+        NCL = meta_data.NCL
        
         if isinstance(time,float):
             DF_list = self.__AVG_extract(time,time0,path_to_folder,abs_path,tgpost)
-            self.flow_AVGDF = DF_list[0]
-            self.PU_vectorDF = DF_list[1]
-            self.UU_tensorDF = DF_list[2]
-            self.UUU_tensorDF = DF_list[3]
-            self.Velo_grad_tensorDF = DF_list[4]
-            self.PR_Velo_grad_tensorDF = DF_list[5]
-            self.DUDX2_tensorDF = DF_list[6]
-        elif isinstance(time,list):
+        elif hasattr(time,'__iter__'):
             for PhyTime in time:
-                if not hasattr(self, 'flow_AVGDF'):
+                if 'flow_AVGDF' not in locals():
                     DF_list = self.__AVG_extract(PhyTime,time0,path_to_folder,abs_path,tgpost)
                 else:
                     DF_temp=[]
@@ -453,17 +507,49 @@ class CHAPSim_AVG():
                         DF_temp.append(pd.concat(concat_DF))
                     DF_list=DF_temp
                     
-                self.flow_AVGDF = DF_list[0]
-                self.PU_vectorDF = DF_list[1]
-                self.UU_tensorDF = DF_list[2]
-                self.UUU_tensorDF = DF_list[3]
-                self.Velo_grad_tensorDF = DF_list[4]
-                self.PR_Velo_grad_tensorDF = DF_list[5]
-                self.DUDX2_tensorDF = DF_list[6]
         else:
             raise TypeError("\033[1;32 `time' can only be a float or a list")
         
-        
+        return_list = [meta_data, CoordDF, metaDF, NCL, *DF_list]
+        return itertools.chain(return_list)
+    @classmethod
+    def from_hdf(cls,*args,**kwargs):
+        return cls(fromfile=True,*args,**kwargs)
+    def save_hdf(self,file_name,write_mode,group_name=''):
+        base_name=group_name if group_name else 'CHAPSim_AVG'
+        hdf_file = h5py.File(file_name,write_mode)
+        group = hdf_file.create_group(base_name)
+        group.create_dataset("NCL",data=self.NCL)
+        hdf_file.close()
+        self._meta_data.save_hdf(file_name,'a',group_name=base_name+'/meta_data')
+        self.flow_AVGDF.to_hdf(file_name,key=base_name+'/flow_AVGDF',mode='a',format='fixed',data_columns=True)
+        self.PU_vectorDF.to_hdf(file_name,key=base_name+'/PU_vectorDF',mode='a',format='fixed',data_columns=True)
+        self.UU_tensorDF.to_hdf(file_name,key=base_name+'/UU_tensorDF',mode='a',format='fixed',data_columns=True)
+        self.UUU_tensorDF.to_hdf(file_name,key=base_name+'/UUU_tensorDF',mode='a',format='fixed',data_columns=True)
+        self.Velo_grad_tensorDF.to_hdf(file_name,key=base_name+'/Velo_grad_tensorDF',mode='a',format='fixed',data_columns=True)
+        self.PR_Velo_grad_tensorDF.to_hdf(file_name,key=base_name+'/PR_Velo_grad_tensorDF',mode='a',format='fixed',data_columns=True)
+        self.DUDX2_tensorDF.to_hdf(file_name,key=base_name+'/DUDX2_tensorDF',mode='a',format='fixed',data_columns=True)
+
+    def __hdf_extract(self,file_name,group_name=''):
+        base_name=group_name if group_name else 'CHAPSim_AVG'
+        meta_data = CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
+        CoordDF = meta_data.CoordDF
+        metaDF = meta_data.metaDF
+        NCL=meta_data.NCL
+
+        flow_AVFDF = pd.read_hdf(file_name,key=base_name+'/flow_AVGDF')
+        PU_vectorDF = pd.read_hdf(file_name,key=base_name+'/PU_vectorDF')
+        UU_tensorDF = pd.read_hdf(file_name,key=base_name+'/UU_tensorDF')
+        UUU_tensorDF = pd.read_hdf(file_name,key=base_name+'/UUU_tensorDF')
+        Velo_grad_tensorDF = pd.read_hdf(file_name,key=base_name+'/Velo_grad_tensorDF')
+        PR_Velo_grad_tensorDF = pd.read_hdf(file_name,key=base_name+'/PR_Velo_grad_tensorDF')
+        DUDX2_tensorDF = pd.read_hdf(file_name,key=base_name+'/DUDX2_tensorDF')
+
+        return_list = [meta_data, CoordDF, metaDF, NCL, flow_AVFDF,
+                    PU_vectorDF,UU_tensorDF,UUU_tensorDF,Velo_grad_tensorDF,
+                    PR_Velo_grad_tensorDF,DUDX2_tensorDF]
+        return itertools.chain(return_list)
+
     def __AVG_extract(self,Time_input,time0,path_to_folder,abs_path,tgpost):
         if time0:
             instant = "%0.9E" % time0
@@ -492,8 +578,6 @@ class CHAPSim_AVG():
             r_info = np.fromfile(file,dtype='float64',count=3)
             
             PhyTime = r_info[0]
-            #REN = r_info[1]
-            #DT = r_info[2]
             AVG_info0 = np.zeros(dummy_size)
             AVG_info0 = np.fromfile(file,dtype='float64',count=dummy_size)
         
@@ -603,9 +687,6 @@ class CHAPSim_AVG():
 
         return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
                     Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
-    
-    def save(self,path_to_folder=''):
-        pass
 
     def AVG_flow_contour(self,flow_field,PhyTime,relative=False,fig='',ax=''):
         if type(PhyTime) == float:
@@ -1811,13 +1892,13 @@ class CHAPSim_meta():
         metaDF = pd.read_hdf(file_name,key=base_name+'/metaDF')
         
         hdf_file = h5py.File(file_name,'r')
-        NCL = hdf_file[base_name+'/NCL']
+        NCL = hdf_file[base_name+'/NCL'][:]
         path_to_folder = hdf_file[base_name].attrs['path_to_folder'].decode('utf-8')
         abs_path = bool(hdf_file[base_name].attrs['abs_path'])
         hdf_file.close()
         return CoordDF, NCL, Coord_ND_DF, metaDF, path_to_folder, abs_path
     
-    def save_hdf(self,file_name,write_mode='a',group_name=''):
+    def save_hdf(self,file_name,write_mode,group_name=''):
         base_name=group_name if group_name else 'CHAPSim_meta'
 
         hdf_file = h5py.File(file_name,write_mode)
@@ -3071,7 +3152,36 @@ class CHAPSim_k_spectra(CHAPSim_autocov):
 #==================================================================================================
 #Autocorr v2
 class CHAPSim_autocov2():
-    def __init__(self,comp1,comp2,max_x_sep=None,max_z_sep=None,path_to_folder='',time0='',abs_path=True):
+    def __init__(self,*args,**kwargs):#self,comp1,comp2,max_x_sep=None,max_z_sep=None,path_to_folder='',time0='',abs_path=True):
+        fromfile=kwargs.pop('fromfile',False)
+        if not fromfile:
+            self._meta_data, self.comp, self.NCL,\
+            self._avg_data, self.autocorrDF, self.max_x_sep,\
+            self.max_z_sep = self.__autocov_extract(*args,**kwargs)
+        else:
+            self._meta_data, self.comp, self.NCL,\
+            self._avg_data, self.autocorrDF, self.max_x_sep,\
+            self.max_z_sep = self.__hdf_extract(*args,**kwargs)
+
+    @classmethod
+    def from_hdf(cls,*args,**kwargs):
+        return cls(fromfile=True,*args,**kwargs)
+
+    def save_hdf(self,file_name,write_mode,group_name=''):
+        base_name=group_name if group_name else 'CHAPSim_autocov'
+        hdf_file = h5py.File(file_name,write_mode)
+        group = hdf_file.create_group(base_name)
+        group.attrs["max_x_sep"] = self.max_x_sep
+        group.attrs["max_z_sep"] = self.max_z_sep
+        group.attrs['comp'] = np.array([np.string_(x) for x in self.comp])
+        hdf_file.close()
+
+        self._meta_data.save_hdf(file_name,'a',base_name+'/meta_data')
+        self._avg_data.save_hdf(file_name,'a',base_name+'/avg_data')
+        self.autocorrDF.to_hdf(file_name,key=base_name+'/autocorrDF',mode='a',format='fixed',data_columns=True)
+
+
+    def __autocov_extract(self,comp1,comp2,path_to_folder='',time0='',abs_path=True,max_x_sep=None,max_z_sep=None):
         file_names = time_extract(path_to_folder,abs_path)
         time_list =[]
         for file in file_names:
@@ -3079,42 +3189,57 @@ class CHAPSim_autocov2():
         times = list(dict.fromkeys(time_list))
         if time0:
             times = list(filter(lambda x: x > time0, times))
-        #times.sort(); times= times[-3:]
-        self._meta_data = CHAPSim_meta(path_to_folder)
-        self.comp=(comp1,comp2)
-        self.NCL = self._meta_data.NCL
+        # times.sort(); times= times[-3:]
+        meta_data = CHAPSim_meta(path_to_folder)
+        comp=(comp1,comp2)
+        NCL = meta_data.NCL
         try:
-            self._avg_data = CHAPSim_AVG(max(times),self._meta_data,path_to_folder,time0,abs_path)
+            avg_data = CHAPSim_AVG(max(times),meta_data,path_to_folder,time0,abs_path)
         except Exception:
             times.remove(max(times))
-            self._avg_data = CHAPSim_AVG(max(times),self._meta_data,path_to_folder,time0)
+            avg_data = CHAPSim_AVG(max(times),meta_data,path_to_folder,time0)
         i=1
 
         if max_z_sep is None:
-            max_z_sep=int(self.NCL[2]/2)
-        elif max_z_sep>self.NCL[2]:
+            max_z_sep=int(NCL[2]/2)
+        elif max_z_sep>NCL[2]:
             raise ValueError("\033[1;32 Variable max_z_sep must be less than half NCL3 in readdata file\n")
         if max_x_sep is None:
-            max_x_sep=int(self.NCL[0]/2)
-        elif max_x_sep>self.NCL[0]:
+            max_x_sep=int(NCL[0]/2)
+        elif max_x_sep>NCL[0]:
             raise ValueError("\033[1;32 Variable max_x_sep must be less than half NCL3 in readdata file\n")
 
         for timing in times:
-            self._fluct_data = CHAPSim_fluct(self._avg_data,timing,self._meta_data,time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
+            fluct_data = CHAPSim_fluct(avg_data,timing,meta_data,time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
             coe3 = (i-1)/i
             coe2 = 1/i
             if i==1:
-                autocorr = self.__autocov_calc(self._fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
+                autocorr = self.__autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
             else:
-                local_autocorr = self.__autocov_calc(self._fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
+                local_autocorr = self.__autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
                 assert local_autocorr.shape == autocorr.shape, "shape of previous array (%d,%d) " % autocorr.shape\
                     + " and current array (%d,%d) must be the same" % local_autocorr.shape
                 autocorr = autocorr*coe3 + local_autocorr*coe2
             i += 1
             index=['x','z']
-            self.autocorrDF = pd.DataFrame(autocorr.T,index=index)
-            self.max_x_sep=max_x_sep
-            self.max_z_sep=max_z_sep
+            autocorrDF = pd.DataFrame(autocorr.T,index=index)
+        return meta_data, comp, NCL, avg_data, autocorrDF, max_x_sep, max_z_sep
+
+    def __hdf_extract(self,file_name, group_name=''):
+        base_name=group_name if group_name else 'CHAPSim_autocov'
+        hdf_file = h5py.File(file_name,'r')
+        max_x_sep = hdf_file[base_name].attrs["max_x_sep"]
+        max_z_sep = hdf_file[base_name].attrs["max_z_sep"]
+        comp = tuple(hdf_file[base_name].attrs["comp"][:])
+        hdf_file.close()
+
+        meta_data = CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
+        NCL=meta_data.NCL
+        avg_data = CHAPSim_AVG.from_hdf(file_name,base_name+'/avg_data')
+        autocorrDF = pd.read_hdf(file_name,key=base_name+'/autocorrDF')
+        
+        return meta_data, comp, NCL, avg_data, autocorrDF, max_x_sep, max_z_sep
+
     @staticmethod
     def __autocov_calc(fluct_data,comp1,comp2,PhyTime,max_x_sep,max_z_sep):
         if type(PhyTime) == float:
@@ -3426,7 +3551,16 @@ class CHAPSim_autocov2():
         return fig, np.array(ax_out)
 
 class CHAPSim_Quad_Anal():
-    def __init__(self,h_list,path_to_folder='',time0='',abs_path=True):
+    def __init__(self,*args,**kwargs):
+        fromfile=kwargs.pop('fromfile',False)
+        if not fromfile:
+            self._meta_data, self.NCL, self._avg_data,\
+            self.QuadAnalDF = self.__quad_extract(*args,**kwargs)
+        else:
+            self._meta_data, self.NCL, self._avg_data,\
+            self.QuadAnalDF = self.__hdf_extract(*args,**kwargs)
+
+    def __quad_extract(self,h_list,path_to_folder='',time0='',abs_path=True):
         file_names = time_extract(path_to_folder,abs_path)
         time_list =[]
         for file in file_names:
@@ -3435,24 +3569,24 @@ class CHAPSim_Quad_Anal():
         if time0:
             times = list(filter(lambda x: x > time0, times))
         # times.sort(); times= times[-3:]
-        self._meta_data = CHAPSim_meta(path_to_folder)
-        self.NCL = self._meta_data.NCL
+        meta_data = CHAPSim_meta(path_to_folder)
+        NCL = meta_data.NCL
         try:
-            self._avg_data = CHAPSim_AVG(max(times),self._meta_data,path_to_folder,time0,abs_path)
+            avg_data = CHAPSim_AVG(max(times),meta_data,path_to_folder,time0,abs_path)
         except Exception:
             times.remove(max(times))
-            self._avg_data = CHAPSim_AVG(max(times),self._meta_data,path_to_folder,time0)
+            avg_data = CHAPSim_AVG(max(times),meta_data,path_to_folder,time0)
         i=1
         for timing in times:
-            self._fluct_data = CHAPSim_fluct(self._avg_data,timing,self._meta_data,
-                                            time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
-            fluct_uv, quadrant_array = self.__quadrant_extract(self._fluct_data.fluctDF,timing,self.NCL)
+            fluct_data = CHAPSim_fluct(avg_data,timing,meta_data,
+                                        time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
+            fluct_uv, quadrant_array = self.__quadrant_extract(fluct_data.fluctDF,timing,NCL)
             coe3 = (i-1)/i
             coe2 = 1/i
             if i==1:
-                quad_anal_array = self.__quad_calc(self._avg_data,fluct_uv,quadrant_array,self.NCL,h_list,timing)
+                quad_anal_array = self.__quad_calc(avg_data,fluct_uv,quadrant_array,NCL,h_list,timing)
             else:
-                local_quad_anal_array = self.__quad_calc(self._avg_data,fluct_uv,quadrant_array,self.NCL,h_list,timing)
+                local_quad_anal_array = self.__quad_calc(avg_data,fluct_uv,quadrant_array,NCL,h_list,timing)
                 assert local_quad_anal_array.shape == quad_anal_array.shape, "shape of previous array (%d,%d) " % quad_anal_array.shape\
                     + " and current array (%d,%d) must be the same" % local_quad_anal_array.shape
                 autocorr = quad_anal_array*coe3 + local_quad_anal_array*coe2
@@ -3461,7 +3595,29 @@ class CHAPSim_Quad_Anal():
         for h in h_list:
             index[0].extend([h]*4)
         index[1]=[1,2,3,4]*len(h_list)
-        self.QuadAnalDF=pd.DataFrame(quad_anal_array,index=index)
+        QuadAnalDF=pd.DataFrame(quad_anal_array,index=index)
+
+        return meta_data, NCL, avg_data, QuadAnalDF
+
+    def __hdf_extract(self,file_name,group_name=''):
+        base_name=group_name if group_name else 'CHAPSim_Quad_Anal'
+        meta_data = CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
+        NCL= meta_data.NCL
+        avg_data = CHAPSim_AVG.from_hdf(file_name,base_name+'/avg_data')
+        QuadAnalDF = pd.read_hdf(file_name,key=base_name+'/QuadAnalDF')
+
+        return meta_data, NCL, avg_data, QuadAnalDF
+
+    @classmethod
+    def from_hdf(cls,*args,**kwargs):
+        return cls(fromfile=True,*args,**kwargs)
+
+    def save_hdf(self,file_name,write_mode,group_name=''):
+        base_name=group_name if group_name else 'CHAPSim_Quad_Anal'
+
+        self._meta_data.save_hdf(file_name,write_mode,base_name+'/meta_data')
+        self._avg_data.save_hdf(file_name,'a',base_name+'/avg_data')
+        self.QuadAnalDF.to_hdf(file_name,key=base_name+'/QuadAnalDF',mode='a',format='fixed',data_columns=True)
 
     @staticmethod
     def __quad_calc(avg_data,fluct_uv,quadrant_array,NCL,h_list,PhyTime):
