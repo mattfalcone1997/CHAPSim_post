@@ -2,44 +2,63 @@
 #==============================================================
 # Scipt to setup up machine to use the post processing files 
 # from any directory
+# This script must be run from the scripts/ directory
 #==============================================================
-
-cd ../
+if [ ! -d bin ]; then
+	cd ../
+fi
+if [ ! -d bin ]; then
+	echo -e "This script must be run from either the \
+main directory or the scripts directory...exiting\n"
+	exit 1
+fi
 echo -e "\n *** SETTING UP CHAPSim_post ***\n"
 echo -e "Making CHAPSim_post\n"
 make all
 current_dir=$(pwd)
-
-#Ensuring that the .bashrc file isn't modified multiple time
+if [ ! -d bin ]; then
+	echo -e "This has not be initiated from the correct directory\n"
+	exit 1
+fi
+#Ensuring that the .bashrc file isn't modified multiple tim
 
 input=$HOME/.bashrc
-if [ -f $input ]; then 
-	while IFS= read -r line
-	do
-		if [ "$line" == "if [ -d \"$current_dir\" ]; then " ]; then
-			echo -e "\n$input already modified no changes required\n"
-			exit 0
-		fi
-	done <"$input"
+if [ -f $HOME/.bashrc ]; then 
+	if [ ! $(cat $HOME/.bashrc | grep PYTHONPATH=\"\$PYTHONPATH:\$CHAPSim_bin\") &>/dev/null ]; then
+		current_dir=${current_dir// /"\ "}
+		#Adding to .bashrc
+		bashrc_mod="if [ -d \"$current_dir\" ]; then \n\tCHAPSim_bin=\"$current_dir/bin\" \n\texport PYTHONPATH=\"\$PYTHONPATH:\$CHAPSim_bin\" \nfi"
+
+		echo -e "\nModifying $HOME/.bashrc\n"
+		echo -e "\n# *** CHAPSim_post setup ***" >> $HOME/.bashrc
+		echo -e $bashrc_mod >> $HOME/.bashrc
+	fi
 fi
-current_dir=${current_dir// /"\ "}
-
-#Adding to .bashrc
-bashrc_mod="if [ -d \"$current_dir\" ]; then \n\tCHAPSim_bin=\"$current_dir/bin\" \n\texport PYTHONPATH=\"\$PYTHONPATH:\$CHAPSim_bin\" \nfi"
-
-echo -e "\nModifying $input\n"
-echo -e "\n# *** CHAPSim_post setup ***" >> $input 
-echo -e $bashrc_mod >> $input 
 
 #Adding path to conda if present
 if hash conda &>/dev/null ; then
-	#Optional use of command line argument to give environment name, defaults to base 
-	if [ $# -gt 0 ]; then
-		source activate $1
-	else
-		source activate base
+	if [ ! $(conda env list | grep CHAPSim_post ) &>/dev/null ]; then
+		#Create conda environment
+		echo -e "### Creating conda environment\n"
+		conda  env create -f scripts/CHAPSim_post.yml
+
+		source activate CHAPSim_post
+		conda develop $current_dir/bin
+		echo -e "### Testing conda environment\n "
+		if python3.7 -c "import CHAPSim_post; import CHAPSim_parallel; import CHAPSim_Tools;\
+						 import CHAPSim_plot" &>/dev/null ; then
+			echo -e "Import test complete" 
+		else
+			echo -e "Import test failed"
+			conda remove --name CHAPSim_post --all
+			exit 1
+		fi
+	
+		conda deactivate
+		echo check
 	fi
-	conda develop $current_dir/bin
 fi
+
+echo -e "### Finished Setup of CHAPSim_post"
 
 

@@ -1,0 +1,16 @@
+name: CHAPSim_post
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.7
+  - numpy
+  - pandas
+  - matplotlib
+  - scipy
+  - numba
+  - h5py
+  - pyvista
+  - sympy
+  - mpi4py
+  - ipython

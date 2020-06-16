@@ -61,7 +61,9 @@ import os
 import itertools
 import time
 import warnings
+
 import CHAPSim_Tools as CT
+import CHAPSim_plot as cplt
 #import plotly.graph_objects as go
 
 #import loop_accel as la
@@ -72,31 +74,11 @@ try:
     import pyvista as pv
 except ImportError:
     warnings.warn("\033[1;33module `pyvista' has missing modules will not work correctly")
-mpl.rcParams['mathtext.fontset'] = 'stix'
+
 
 
 class CHAPSim_Inst():
-    def __init__(self,*args,**kwargs):#self,time,meta_data='',path_to_folder='',abs_path = True,tgpost=False):
-        #Extract x,y,z coordinates that match for entire dataset
-        #Extract velocity components and pressure from files
-        # if not meta_data:
-        #     meta_data = CHAPSim_meta(path_to_folder,abs_path,tgpost)
-        # self.CoordDF = meta_data.CoordDF
-        # self.NCL = meta_data.NCL
-        # self._meta_data=meta_data
-        # #Give capacity for both float and lists
-        # if isinstance(time,float): 
-        #     self.InstDF = self.__flow_extract(time,path_to_folder,abs_path,tgpost)
-        # elif hasattr(time,'__iter__'):
-        #     for PhyTime in time:
-        #         if not hasattr(self, 'InstDF'):
-        #             self.InstDF = self.__flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
-        #         else: #Variable already exists
-        #             local_DF = self.__flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
-        #             concat_DF = [self.InstDF,local_DF]
-        #             self.InstDF = pd.concat(concat_DF)
-        # else:
-        #     raise TypeError("\033[1;32 `time' must be either float or list")
+    def __init__(self,*args,**kwargs):
         fromfile= kwargs.pop('fromfile',False)
         if not fromfile:
             self._meta_data, self.CoordDF, self.NCL,\
@@ -768,24 +750,22 @@ class CHAPSim_AVG():
         velo_array[-1,:]=self._meta_data.moving_wall_calc()
         #velo_array=velo_array[:,x_list]
         if not fig:
-            fig, ax = plt.subplots(figsize=[10,5])
+            fig, ax = cplt.subplots(figsize=[10,5])
         elif not ax:
-            ax = fig.add_subplots(1,1,1)
+            ax = fig.subplots(squeeze=False)
 
         y_coords=np.zeros(self.NCL[1]+2)
         y_coords[1:-1]=self.CoordDF['y'].dropna().values
         y_coords[0]=-1.0 ; y_coords[-1]=1.0
         x_coords = self.CoordDF['x'].dropna().values
         for x in x_list:
-            ax.plot(y_coords,velo_array[:,x],label=r"$x= %.2f$" % x_coords[x])
+            ax.cplot(y_coords,velo_array[:,x],label=r"$x= %.2f$" % x_coords[x])
         ax.set_ylabel(r"$\langle U/U_{b0}\rangle$",fontsize=20)
         ax.grid()
         ax.set_xlabel(r"$y/\delta$",fontsize=20)
-        handles, labels = ax.get_legend_handles_labels()
-        ax.legend(CT.flip_leg_col(handles,4),CT.flip_leg_col(labels,4),
-              loc = 'upper center',ncol=4*(len(labels)>3)+len(labels)*(len(labels)<4),
-              bbox_to_anchor=(0.5,-0.2),
-              fontsize=16)
+        axes_items_num = len(ax.get_lines())
+        ncol = 4 if axes_items_num>3 else axes_items_num
+        ax.clegend(ncol=ncol,vertical=False,fontsize=16)
         return fig, ax
     #def non_dom_calc(self,PhyTime,)
     def plot_near_wall(self,PhyTime,x_loc,U_plus=True,plotsep=True,Y_plus_lim='',fig='',ax=''):
@@ -813,21 +793,20 @@ class CHAPSim_AVG():
                     U_plus[i,j] = U[i,j]/u_tau_star[j]
             #print(Y_plus[300],U_plus[:,300])
             if not fig:
-                fig = plt.figure(figsize=[10,5])
-            if not ax:
-                ax = fig.add_subplot(1,1,1)
+                fig, ax = cplt.subplots(figsize=[10,5])
+            elif not ax:
+                ax = fig.subplots(squeeze=False)
             if isinstance(x_loc,int):
-                ax.plot(Y_plus[x_loc,:int(self.NCL[1]/2)],U_plus[:int(self.NCL[1]/2),x_loc])
-                ax.plot(Y_plus[x_loc,:int(self.NCL[1]/2)],Y_plus[x_loc,:int(self.NCL[1]/2)],'b--')
+                ax.cplot(Y_plus[x_loc,:int(self.NCL[1]/2)],U_plus[:int(self.NCL[1]/2),x_loc],label=r"$x/\delta =%.3g$" % self.CoordDF['x'].dropna().values[x_loc])
+                ax.cplot(Y_plus[x_loc,:int(self.NCL[1]/2)],Y_plus[x_loc,:int(self.NCL[1]/2)],'r--',label=r"$U^+=Y^+$")
             elif isinstance(x_loc,list):
-                x_coord = []
-                linestyle_list=['-','--','-.']
                 for x,j in zip(x_loc,range(len(x_loc))):    
-                    ax.plot(Y_plus[x,:int(self.NCL[1]/2)],U_plus[:int(self.NCL[1]/2),x],linestyle_list[j%len(linestyle_list)])
-                    x_coord.append(r"$x/\delta =%.3g$" % self.CoordDF['x'].dropna().values[x])
-                ax.plot(Y_plus[x_loc[0],:int(self.NCL[1]/2)],Y_plus[x_loc[0],:int(self.NCL[1]/2)],'r--')
-                x_coord.append(r"$U^+=Y^+$")
-                ax.legend(x_coord,loc = 'upper center',ncol=4*(len(x_coord)>3)+len(x_coord)*(len(x_coord)<4),bbox_to_anchor=(0.5,-0.2))
+                    ax.cplot(Y_plus[x,:int(self.NCL[1]/2)],U_plus[:int(self.NCL[1]/2),x],label=r"$x/\delta =%.3g$" % self.CoordDF['x'].dropna().values[x])
+                ax.cplot(Y_plus[x_loc[0],:int(self.NCL[1]/2)],Y_plus[x_loc[0],:int(self.NCL[1]/2)],color='red',linestyle='--',linewidth=1.5,label=r"$U^+=Y^+$")
+                
+                axes_items_num = len(ax.get_lines())
+                ncol = 4 if axes_items_num>3 else axes_items_num
+                ax.clegend(vertical=False,ncol=ncol)
             else:
                 raise TypeError("\033[1;32 Not a valid type")
             ax.set_xscale('log')
@@ -835,7 +814,6 @@ class CHAPSim_AVG():
             ax.set_xlabel(r"$Y^+$")
             ax.set_ylim(top=1.2*np.max(U_plus),bottom=0.0)
             ax.grid()
-            ax.set_title("Wall-normal velocity profile in wall units")
 
         else:
             U=U[:,x_loc]
@@ -850,11 +828,11 @@ class CHAPSim_AVG():
                 #     Y[:,i] =(1-np.abs( Y[:,i]))/delta_v_Star[x_loc[i]] #Y[:,i]/delta_v_Star[x_loc[i]]
             if plotsep:
                 if not fig:
-                    fig,ax = plt.subplots(1,len(x_loc),figsize=[10,5],gridspec_kw = {'wspace':0, 'hspace':0})
+                    fig,ax = cplt.subplots(1,len(x_loc),figsize=[10,5],gridspec_kw = {'wspace':0, 'hspace':0})
 
                 #print("hello",flush=True)
                 for i in range(len(x_loc)):
-                    ax[i].plot(U[:,i],Y[:,i],linewidth=1)
+                    ax[i].cplot(U[:,i],Y[:,i],linewidth=1)
                     ax[i].set_xlim(right=max_u)
                     ax[i].annotate("$x=%.3f$"%self.CoordDF['x'].dropna().values[x_loc[i]],
                                 xy=(0.01,1.03),xytext=(0.01,1.03),textcoords='axes fraction',
@@ -880,22 +858,18 @@ class CHAPSim_AVG():
                         ax[i].set_xlabel(r'$\langle U/U_{b0}\rangle$', fontsize=20)    
             else:
                 if not fig:
-                    fig,ax = plt.subplots(figsize=[10,5])
+                    fig,ax = cplt.subplots(figsize=[10,5])
                 elif not ax:
-                    ax=fig.add_subplot(1,1,1)
+                    ax=fig.c_add_subplot(1,1,1)
                 linestyles=['-','--',':','-.']
                 for i in range(len(x_loc)):
-                    ax.plot(Y[:,i],U[:,i],linewidth=1,linestyle=linestyles[i%len(linestyles)],
-                            label=r"$x=%.3f$"%self.CoordDF['x'].dropna().values[x_loc[i]])
+                    ax.cplot(Y[:,i],U[:,i],linewidth=1, label=r"$x=%.3f$"%self.CoordDF['x'].dropna().values[x_loc[i]])
                 ax.set_ylabel(r'$\langle U/U_{b0}\rangle$', fontsize=20)    
-               
                 ax.set_xlabel(r"$y/\delta$",fontsize=20)
-                        
-                handles, labels = ax.get_legend_handles_labels()
-                ax.legend(CT.flip_leg_col(handles,4),CT.flip_leg_col(labels,4),
-                      loc = 'upper center',ncol=4*(len(labels)>3)+len(labels)*(len(labels)<4),
-                      bbox_to_anchor=(0.5,-0.2),
-                      fontsize=16)
+
+                axes_items_num = len(ax.get_lines())
+                ncol = 4 if axes_items_num>3 else axes_items_num
+                ax.clegend(vertical=True,ncol=ncol,fontsize=16)
                 ax.grid()
                 if Y_plus_lim:
                         ax.set_xlim(left=-1,right=y_max)
@@ -946,10 +920,10 @@ class CHAPSim_AVG():
         delta, theta, shape_factor = self.int_thickness_calc(PhyTime,relative)
         x_coords = self.CoordDF['x'].dropna().values
         if not fig:
-            fig = plt.figure()
-        if not ax:
-            ax = fig.add_subplot(1,1,1)
-        ax.plot(x_coords,shape_factor)
+            fig, ax = cplt.subplots()
+        elif not ax:
+            ax = fig.c_add_subplot(1,1,1)
+        ax.cplot(x_coords,shape_factor)
         ax.set_xlabel(r"$x$ direction")
         ax.set_ylabel(r"Shape Factor, $H$")
         ax.grid()
@@ -979,16 +953,6 @@ class CHAPSim_AVG():
                                 (x_coords[i+1] - x_coords[i-1])
         accel_param = (1/(REN*U_infty**2))*U_infty_grad
         
-#        if not fig:
-#            fig=plt.figure()
-#        if not ax:
-#            ax =fig.add_subplot(1,1,1)
-#        
-#        ax.plot(x_coords,accel_param)
-#        ax.set_xlabel(r"$x$ direction")
-#        ax.set_ylabel(r"Acceleration parameter, $K$")
-#        ax.ticklabel_format(style='sci',axis='y',scilimits=(-5,5))
-#        ax.grid()
         return accel_param
     
     
@@ -1008,8 +972,7 @@ class CHAPSim_AVG():
         uu = UU-U1_mean*U2_mean
         if comp_uu == 'uv':
             uu *= -1.0
-        
-        
+
         y_coord = self.CoordDF['y'].dropna().values[:int(self.NCL[1]/2)]
         #Reynolds_wall_units = np.zeros_like(uu)
         if norm=='wall':
@@ -1021,17 +984,16 @@ class CHAPSim_AVG():
             for i in range(self.NCL[0]):
                 uu[:,i] = uu[:,i]/(velo_bulk[i]*velo_bulk[i])
         if not fig:
-            fig,ax = plt.subplots(figsize=[10,5])
+            fig,ax = cplt.subplots(figsize=[10,5])
         elif not ax:
-            ax = fig.add_subplot(1,1,1)
+            ax = fig.c_add_subplot(1,1,1)
         if isinstance(x_loc,int):
             if Y_plus:
                 y_coord_local = (1-np.abs(y_coord))/delta_v_star[x_loc]
             else:
                 y_coord_local = y_coord
-            ax.plot(y_coord_local,uu[:,x_loc])
+            ax.cplot(y_coord_local,uu[:,x_loc])
         elif isinstance(x_loc,list):
-            x_coord=[]
             linestyle_list=['-','--','-.']
             for x,j in zip(x_loc,range(len(x_loc))):
                 if Y_plus:
@@ -1039,14 +1001,11 @@ class CHAPSim_AVG():
                 else:
                     y_coord_local = y_coord
                 label=r"$x/\delta =%.3g$" % self.CoordDF['x'].dropna().values[x]
-                ax.plot(y_coord_local,uu[:,x],label=label,linestyle=linestyle_list[j%len(linestyle_list)])
-                x_coord.append(r"$x/\delta =%.3g$" % self.CoordDF['x'].dropna().values[x])
-            
-            handles, labels = ax.get_legend_handles_labels()
-            ax.legend(CT.flip_leg_col(handles,4),CT.flip_leg_col(labels,4),
-                  loc = 'upper center',ncol=4*(len(labels)>3)+len(labels)*(len(labels)<4),
-                  bbox_to_anchor=(0.5,-0.2),
-                  fontsize=16)
+                ax.cplot(y_coord_local,uu[:,x],label=label)
+
+            axes_items_num = len(ax.get_lines())
+            ncol = 4 if axes_items_num>3 else axes_items_num
+            ax.clegend(vertical=False,ncol=ncol, fontsize=16)
         else:
             raise TypeError("\033[1;32 x_loc must be of type list or int")
         if norm=='wall':
@@ -1112,36 +1071,31 @@ class CHAPSim_AVG():
             rms_vals = UU-U1_mean*U2_mean
             rms_vals = np.amax(rms_vals,axis=0)
         if not fig:
-            fig,ax = plt.subplots(figsize=[10,5])
+            fig,ax = cplt.subplots(figsize=[10,5])
         elif not ax:
-            ax=fig.add_subplot(1,1,1)
+            ax=fig.c_add_subplot(1,1,1)
 
         x_coords = self.CoordDF['x'].dropna().values            
 
         if y_vals_list != 'max':
-            linestyle_list=['-','--','-.']
-            
+           
             for i in range(len(y_index)):
-                ax.plot(x_coords,rms_vals[i],label=r"$Y^+=%.3g$"% y_vals_list[i],linestyle=linestyle_list[i%len(linestyle_list)])
-            # y_coord = [r"$Y^+=%.3g$"% x for x in y_vals_list]
-            handles, labels = ax.get_legend_handles_labels()
-            
-            ax.legend(CT.flip_leg_col(handles,4),CT.flip_leg_col(labels,4),
-                      loc = 'upper center',ncol=4*(len(labels)>3)+len(labels)*(len(labels)<4),
-                      bbox_to_anchor=(0.5,-0.2),
-                      fontsize=16)
+                ax.cplot(x_coords,rms_vals[i],label=r"$Y^+=%.3g$"% y_vals_list[i])
+            axes_items_num = len(ax.get_lines())
+            ncol = 4 if axes_items_num>3 else axes_items_num
+            ax.clegend(vertical=False,ncol=ncol, fontsize=16)
             ax.set_xlabel(r"$x/\delta$",fontsize=20)
-            ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%comp_uu,fontsize=20)#,fontsize=22)
+            ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)$"%comp_uu,fontsize=20)#,fontsize=22)
             
         else:
-            ax.plot(x_coords,rms_vals,label=r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%comp_uu)
+            ax.cplot(x_coords,rms_vals,label=r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%comp_uu)
             ax.set_xlabel(r"$x/\delta$",fontsize=20)
             ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%comp_uu,fontsize=20)#,fontsize=22)
         
         # ax.set_xlabel(r"$x/\delta$",text_kwargs)
         # ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%comp_uu,text_kwargs)#,fontsize=22)
         ax.grid()
-        fig.tight_layout()
+        # fig.tight_layout()
         return fig, ax
     
     def plot_bulk_velocity(self,PhyTime,fig='',ax=''):
@@ -1158,10 +1112,10 @@ class CHAPSim_AVG():
         for i in range(self.NCL[0]):
             bulk_velo[i] = 0.5*integrate.simps(U_mean[:,i],y_coords)
         if not fig:
-            fig, ax=plt.subplots()
+            fig, ax=cplt.subplots()
         elif not ax:
             ax =fig.add_subplot(1,1,1)
-        ax.plot(x_coords,bulk_velo)
+        ax.cplot(x_coords,bulk_velo)
         ax.set_ylabel(r"$U_b^*$",fontsize=20)
         ax.set_xlabel(r"$x/\delta$",fontsize=20)
         ax.grid()
@@ -1170,11 +1124,11 @@ class CHAPSim_AVG():
         accel_param = self.accel_param_calc(PhyTime)
         x_coords = self.CoordDF['x'].dropna().values
         if not fig:
-            fig=plt.figure()
-        if not ax:
+            fig,ax=cplt.subplots()
+        elif not ax:
             ax =fig.add_subplot(1,1,1)
         
-        ax.plot(x_coords,accel_param)
+        ax.cplot(x_coords,accel_param)
         ax.set_xlabel(r"$x$ direction")
         ax.set_ylabel(r"Acceleration parameter, $K$")
         ax.ticklabel_format(style='sci',axis='y',scilimits=(-5,5))
@@ -1250,11 +1204,11 @@ class CHAPSim_AVG():
         skin_friction = (2.0/(rho_star*bulk_velo*bulk_velo))*(1/REN)*tau_star
         xcoords = self.CoordDF['x'].dropna().values
         if not fig:
-            fig = plt.figure()
-        if not ax:
+            fig,ax = cplt.subplots()
+        elif not ax:
             ax = fig.add_subplot(1,1,1)
         
-        ax.plot(xcoords,skin_friction)
+        ax.cplot(xcoords,skin_friction)
         ax.set_xlabel(r"$x/\delta$",fontsize=20)
         ax.set_ylabel(r"$C_f$",fontsize=20)
         
@@ -1295,7 +1249,7 @@ class CHAPSim_AVG():
         
         
         if not fig:
-            fig, ax = plt.subplots(figsize=[10,5])
+            fig, ax = cplt.subplots(figsize=[10,5])
         elif not ax:
             ax = fig.add_subplot(1,1,1)
         linestyle_list=['-','--','-.']
@@ -1320,8 +1274,7 @@ class CHAPSim_AVG():
             
             label = r"$x/\delta = %.2g$" %x_coord[x_loc_local[i]]
             
-            ax.plot(y_coord_local,nu_t_local,label=label,
-                    linestyle=linestyle_list[i%len(linestyle_list)])
+            ax.cplot(y_coord_local,nu_t_local,label=label)
             if Y_plus:
                 ax.set_xlabel(r"$Y^+$",fontsize=18)
                 ax.set_xlim([0,Y_plus_max])
@@ -1332,12 +1285,10 @@ class CHAPSim_AVG():
                 ax.set_ylim([-0.5,max(nu_t_local)*1.2])
             ax.set_ylabel(r"$\mu_t/\mu$",fontsize=16)
 
-            handles, labels = ax.get_legend_handles_labels()
-            
-            ax.legend(CT.flip_leg_col(handles,4),CT.flip_leg_col(labels,4),
-                      loc = 'upper center',ncol=4*(len(labels)>3)+len(labels)*(len(labels)<4),
-                      bbox_to_anchor=(0.5,-0.2),
-                      fontsize=16)
+            axes_items_num = len(ax.get_lines())
+            ncol = 4 if axes_items_num>3 else axes_items_num
+            ax.clegend(vertical=False,ncol=ncol, fontsize=16)
+
         return fig, ax
     def __str__(self):
         return self.flow_AVGDF.__str__()
@@ -1408,7 +1359,7 @@ class CHAPSim_peturb():
             warnings.warn("\033[1;33This function can only be used if moving wall is used, ignoring")
             return None, None
         if not fig:
-            fig, ax = plt.subplots(figsize=[10,5])
+            fig, ax = cplt.subplots(figsize=[10,5])
         elif not ax:
             ax = fig.add_subplot(1,1,1)
         y_coord = self._meta_data.CoordDF['y'].dropna().values
@@ -1426,11 +1377,9 @@ class CHAPSim_peturb():
             velo_peturb = velo_peturb[:int(y_coord.size)]
         else:
             y_max= Y_plus_max*delta_v_star[0]-1.0
-        linestyle_list=['-','--','-.']
         for x,j in zip(x_indices,range(len(x_indices))):
             label=r"$x/\delta = %.2f$" % x_coord[x_indices[j]]
-            ax.plot(velo_peturb[:,x],y_coord,label=label,
-                    linestyle=linestyle_list[j%len(linestyle_list)])
+            ax.cplot(velo_peturb[:,x],y_coord,label=label)
         if mode =='mean':
             ax.set_xlabel(r"$\bar{U}^{\wedge}$",fontsize=18)
         elif mode =='rms':
@@ -1441,11 +1390,9 @@ class CHAPSim_peturb():
         else:
             ax.set_ylabel(r"$y/\delta$",fontsize=16)
             ax.set_ylim([-1,y_max])
-        handles, labels = ax.get_legend_handles_labels()
-        ax.legend(CT.flip_leg_col(handles,4),CT.flip_leg_col(labels,4),
-                    loc = 'upper center',ncol=4*(len(labels)>3)+len(labels)*(len(labels)<4),
-                    bbox_to_anchor=(0.5,-0.2),
-                    fontsize=16)
+        axes_items_num = len(ax.get_lines())
+        ncol = 4 if axes_items_num>3 else axes_items_num
+        ax.clegend(vertical=False,ncol=ncol, fontsize=16)
         fig.tight_layout()
         return fig, ax
     def plot_peturb_cf(self,wall_units=False,fig='',ax=''):
@@ -1468,11 +1415,11 @@ class CHAPSim_peturb():
         x_coord = self._meta_data.CoordDF['x'].dropna().values[1:] 
         
         if not fig:
-            fig, ax = plt.subplots(figsize=[10,5])
+            fig, ax = cplt.subplots(figsize=[10,5])
         elif not ax:
             ax = fig.add_subplot(1,1,1)
             
-        ax.plot(x_coord, Cf_du)
+        ax.cplot(x_coord, Cf_du)
         ax.set_xlabel(r"$x/\delta$",fontsize=18)
         if wall_units:
             ax.set_ylabel(r"$C\prime_{f,du}$",fontsize=16)
@@ -2349,7 +2296,7 @@ class CHAPSim_budget():
         
         dissipation = -(2/REN)*(du1dxdu2dx + du1dydu2dy)
         return dissipation.reshape(self.AVG_DF.NCL[0]*self.AVG_DF.NCL[1])
-    def budget_plot(self,PhyTime, x_list,wall_units=True,plotx0=True, fig='', ax =''):
+    def budget_plot(self,PhyTime, x_list,wall_units=True, fig='', ax =''):
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
         #wall_params = self.AVG_DF._metaDF.loc['moving_wallflg':'VeloWall']
@@ -2370,137 +2317,71 @@ class CHAPSim_budget():
             ax_size = len(x_list)
         else:
             ax_size = 1
+
+        ax_size=(int(np.ceil(ax_size/2)),2) if ax_size >2 else (ax_size,1)
+        print(ax_size)
+        lower_extent= 0.2
+        gridspec_kw={'bottom': lower_extent,'wspace':0.3,'hspace':0.3}
         if not fig:
-            if ax_size>4:
-                ax_size=(int(np.ceil(ax_size/2)),2)
-                #print(type(ax_size[0]),type(ax_size[1]))
-                fig, ax = plt.subplots(ax_size[0],ax_size[1],figsize=[6.5*ax_size[1],4*ax_size[0]+1])
-                
-            else:
-                fig, ax = plt.subplots(ax_size,figsize=[6,3*ax_size])
+            fig, ax = cplt.subplots(*ax_size,figsize=[6*ax_size[1],4.5*ax_size[0]],squeeze=False,gridspec_kw=gridspec_kw,constrained_layout=False)
         elif not ax:
-            ax=[]
-            for i in range(1,ax_size +1):
-                ax.append(fig.add_subplot(ax_size,1,i))
+            ax=fig.subplots(*ax_size,squeeze=False,gridspec_kw=gridspec_kw,constrained_layout=False)
             
-        comp_list = tuple([x[1] for x in self.budgetDF.index])#('production','advection','turbulent_transport','pressure_diffusion',\
-                     #'pressure_strain','viscous_diffusion','dissipation')   
+        comp_list = tuple([x[1] for x in self.budgetDF.index])
         #print(comp_list)
         k=0
+
         def ax_convert(j):
-            if type(ax_size)==int:
-                return j
-            else:
-                return (int(j/2),j%2)
+            return (int(j/2),j%2)
         
-                
         Y_extent= int(np.floor(self.AVG_DF.NCL[1]/2))
-        linestyle_list=['-','--','-.']
-        markerstyle=['v','x','+','o','s','^','D']
-        if (isinstance(ax,list) or isinstance(ax,np.ndarray)) and ax_size!=1:
-            for x in x_list:
-                for comp, j in zip(comp_list,range(len(comp_list))):
-                    budget_values = self.budgetDF.loc[PhyTime,comp].copy().values.reshape((self.AVG_DF.NCL[1],self.AVG_DF.NCL[0]))
-                    if wall_units:
-                        budget = budget_values[:Y_extent,x]/budget_scale[x]
-                    else:
-                        budget = budget_values[:Y_extent,x]
-                    if x ==x_list[0] and plotx0:
-                        budget0=self.budgetDF.loc[PhyTime].copy().values.reshape((7,self.AVG_DF.NCL[1],self.AVG_DF.NCL[0]))
-                    if self.comp == 'uv':
-                        budget= budget * -1.0
-                    i=ax_convert(k)
-                    ax[i].plot(Y_coords[x,:Y_extent],budget,linestyle_list[j%len(linestyle_list)],label=comp)
-                    if plotx0 and x != x_list[0]:
-                        ax[i].plot(Y_coords[x_list[0],:Y_extent],budget0[j,:Y_extent,x_list[0]],marker=markerstyle[j],markevery=10,
-                                   color='k',linestyle='',label=comp+" x=%.3f"%x_coords[x_list[0]])
-                    
-                    if wall_units:
-                        if self.comp == 'uv':
-                            ax[i].set_ylabel(r'$-\overline{%s} \cdot \nu/u_\tau^4$'%self.comp,fontsize=16)
-                        elif self.comp == 'k':
-                            ax[i].set_ylabel(r'$%s \cdot \nu/u_\tau^4$'%self.comp,fontsize=16)
-                        else:
-                            ax[i].set_ylabel(r'$\overline{%s} \cdot \nu/u_\tau^4$'%self.comp,fontsize=16)
-                        ax[i].set_xscale('log')
-                        ax[i].set_xlim(left=1.0)
-                       # if i == len(x_list) -1:
-                        ax[i].set_xlabel(r"$Y^+$",fontsize=18)
-                    else:
-                        if self.comp == 'uv':
-                            ax[i].set_ylabel(r'$-\overline{%s}/U_{b0}^2$'%self.comp,fontsize=16)
-                        elif self.comp == 'k':
-                            ax[i].set_ylabel(r'$%s/U_{b0}^2$'%self.comp,fontsize=16)
-                        else:
-                            ax[i].set_ylabel(r'$\overline{%s}/U_{b0}^2$'%self.comp,fontsize=16)
-                        #if i == len(x_list) -1:
-                        ax[i].set_xlabel(r"$y/\delta$",fontsize=18)
-                    ax[i].set_title(r"$x/\delta=%.3f$" %x_coords[x],loc='right',pad=-6.0)
-                    
-                    ax[i].grid()
-                    
-                    if k ==len(x_list)-1:
-                        handles, labels = ax[i].get_legend_handles_labels()
-                        labels=tuple(x.title() for x in labels)
-                        leg=fig.legend(CT.flip_leg_col(handles,4),CT.flip_leg_col(labels,4),
-                              loc = 'lower center',ncol=4*(len(labels)>3)+len(labels)*(len(labels)<4),
-                              bbox_to_anchor=(0.5,0.0),
-                              fontsize=13)
-                    
-                k += 1
-            if type(ax_size)==tuple:
-                while k <ax_size[0]*ax_size[1]:
-                    i=ax_convert(k)
-                    ax[i].remove()
-                    k+=1
-            leg.set_in_layout(False)
-            fig.tight_layout()
-            fig.subplots_adjust(bottom=0.15)
-        else:
-            for comp,j in zip(comp_list,range(len(comp_list))):
+        if not hasattr(x_list,'__iter__'):
+            x_list=[x_list]
+
+        for x in x_list:
+            for comp in comp_list:
                 budget_values = self.budgetDF.loc[PhyTime,comp].copy().values.reshape((self.AVG_DF.NCL[1],self.AVG_DF.NCL[0]))
                 if wall_units:
-                    budget = budget_values[:Y_extent,x_list]/budget_scale[x_list]
+                    budget = budget_values[:Y_extent,x]/budget_scale[x]
                 else:
-                    budget = budget_values[:Y_extent,x_list]
+                    budget = budget_values[:Y_extent,x]
+                
                 if self.comp == 'uv':
                     budget= budget * -1.0
-                ax.plot(Y_coords[x_list,:Y_extent],budget,linestyle_list[j%len(linestyle_list)],label=comp)
+                i=ax_convert(k)
+                ax[i].cplot(Y_coords[x,:Y_extent],budget,label=comp.title())
+    
+                
                 if wall_units:
-                    if self.comp == 'uv':
-                        ax.set_ylabel(r'$-\overline{%s} \cdot \nu/u_\tau^4$'%self.comp,fontsize=16)
-                    elif self.comp == 'k':
-                        ax.set_ylabel(r'$%s \cdot \nu/u_\tau^4$'%self.comp,fontsize=16)
-                    else:
-                        ax.set_ylabel(r'$\overline{%s} \cdot \nu/u_\tau^4$'%self.comp,fontsize=16)
-                    ax.set_xlabel(r"$Y^+$")
-                    ax.set_xscale('log')
-                    ax.set_xlim(left=1.0)
+                    ax[i].set_xscale('log')
+                    ax[i].set_xlim(left=1.0)
+                    ax[i].set_xlabel(r"$Y^+$",fontsize=18)
                 else:
-                    if self.comp == 'uv':
-                        ax.set_ylabel(r'$-\overline{%s}/U_{b0}^2$'%self.comp,fontsize=16)
-                    elif self.comp == 'k':
-                        ax.set_ylabel(r'$%s/U_{b0}^2$'%self.comp,fontsize=16)
+                    ax[i].set_xlabel(r"$y/\delta$",fontsize=18)
+                
+                ax[i].set_title(r"$x/\delta=%.3f$" %x_coords[x],loc='right',pad=-20)
+                if i[1] == 0:
+                    if mpl.rcParams['text.usetex'] == True:
+                        ax[i].set_ylabel("Loss\ \ \ \ \ \ \ \ Gain",fontsize=18)
                     else:
-                        ax.set_ylabel(r'$\overline{%s}/U_{b0}^2$'%self.comp,fontsize=16)
-                        ax.set_xlabel(r"$y/\delta$",fontsize=18)
+                        ax[i].set_ylabel("Loss        Gain",fontsize=18)
                 
-            
-                
-                ax.grid()
-            leg=fig.legend(labels=comp_list,fontsize='x-large',loc = 'lower center',ncol=4,bbox_to_anchor=(0.45,0.0))
-            leg.set_in_layout(False)
+                ax[i].grid()
 
-            fig.tight_layout()
-            fig.subplots_adjust(bottom=0.1)
-            if isinstance(ax,list):
-                if len(x_list)==1:
-                    return fig, ax[0]
-                else:
-                    return fig, ax
-            else:
-                return fig, ax
-            
+                handles, labels = ax[0,0].get_legend_handles_labels()
+                handles = cplt.flip_leg_col(handles,4)
+                labels = cplt.flip_leg_col(labels,4)
+
+                fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.15),ncol=4,fontsize=17)
+                #ax[0,0].clegend(vertical=False,loc = 'lower left',ncol=4, bbox_to_anchor=(0,1.02),fontsize=13)
+                
+            k += 1
+        # if type(ax_size)==tuple:
+        #     while k <ax_size[0]*ax_size[1]:
+        #         i=ax_convert(k)
+        #         ax[i].remove()
+        #         k+=1   
+        # fig.tight_layout()         
         return fig, ax
     def plot_integral_budget(self,PhyTime,wall_units=True,fig='',ax=''):
         if type(PhyTime) == float:
@@ -2510,7 +2391,7 @@ class CHAPSim_budget():
         x_coords = self.AVG_DF.CoordDF['x'].dropna().values
         u_tau_star, delta_v_star = wall_unit_calc(self.AVG_DF,PhyTime)
         if not fig:
-            fig,ax = plt.subplots(figsize=[10,5])
+            fig,ax = cplt.subplots(figsize=[10,5])
         elif not ax:
             ax = fig.add_subplots(1,1,1)
         for comp in comp_list:
@@ -2521,14 +2402,14 @@ class CHAPSim_budget():
                 if wall_units:
                     delta_star=1.0
                     integral_budget[i] /=(delta_star*u_tau_star[i]**3/delta_v_star[i])
-            ax.plot(x_coords,integral_budget)
+            ax.cplot(x_coords,integral_budget,label=comp.title())
         
         if wall_units:
             ax.set_ylabel(r"$\int_{-\delta}^{\delta} %s$ budget $dy\times u_{\tau}^4\delta/\nu $" %self.comp,fontsize=16)
         else:
             ax.set_ylabel(r"$\int_{-\delta}^{\delta} %s$ budget $dy\times 1/U_{b0}^3 $"%self.comp,fontsize=16)
         ax.set_xlabel(r"$x/\delta$",fontsize=18)
-        ax.legend(comp_list,loc = 'upper center',ncol=4,bbox_to_anchor=(0.5,-0.25))
+        ax.clegend(ncol=4,vertical=False)
         ax.grid()
         return fig, ax
     def __str__(self):
@@ -2682,473 +2563,473 @@ class CHAPSim_k_budget(CHAPSim_budget):
                                 from_arrays([phystring_index,budget_index]))
         return k_budgetDF
         
-class CHAPSim_autocov():
-    def __init__(self,comp1,comp2,x_split_list='',path_to_folder='',time0='',abs_path=True,homogen=True):
-        file_names = time_extract(path_to_folder,abs_path)
-        time_list =[]
-        for file in file_names:
-            time_list.append(float(file[20:35]))
-        times = list(dict.fromkeys(time_list))
-        if time0:
-            times = list(filter(lambda x: x > time0, times))
-        #times=times[:10]
-        self._meta_data = CHAPSim_meta(path_to_folder)
-        self.comp=(comp1,comp2)
-        if x_split_list:
-            self.x_split_list = x_split_list
-        try:
-            self._AVG_data = CHAPSim_AVG(max(times),self._meta_data,path_to_folder,time0,abs_path)
-        except Exception:
-            times_temp= times
-            times_temp.remove(max(times))
-            self._AVG_data = CHAPSim_AVG(max(times_temp),self._meta_data,path_to_folder,time0)
-        i=1
+# class CHAPSim_autocov():
+#     def __init__(self,comp1,comp2,x_split_list='',path_to_folder='',time0='',abs_path=True,homogen=True):
+#         file_names = time_extract(path_to_folder,abs_path)
+#         time_list =[]
+#         for file in file_names:
+#             time_list.append(float(file[20:35]))
+#         times = list(dict.fromkeys(time_list))
+#         if time0:
+#             times = list(filter(lambda x: x > time0, times))
+#         #times=times[:10]
+#         self._meta_data = CHAPSim_meta(path_to_folder)
+#         self.comp=(comp1,comp2)
+#         if x_split_list:
+#             self.x_split_list = x_split_list
+#         try:
+#             self._AVG_data = CHAPSim_AVG(max(times),self._meta_data,path_to_folder,time0,abs_path)
+#         except Exception:
+#             times_temp= times
+#             times_temp.remove(max(times))
+#             self._AVG_data = CHAPSim_AVG(max(times_temp),self._meta_data,path_to_folder,time0)
+#         i=1
         
-        for timing in times:       
-            self._inst_data = CHAPSim_Inst(timing,self._meta_data,path_to_folder)
-            coe3 = (i-1)/i
-            coe2 = 1/i
-            if i==1:
-                autocorr, index = self.__autocorr(timing,max(times),comp1,comp2,homogen,x_split_list)
-            else:
-                local_autocorr, index = self.__autocorr(timing,max(times),comp1,comp2,homogen,x_split_list)
-                assert local_autocorr.shape == autocorr.shape, "shape of previous array (%d,%d) " % autocorr.shape\
-                    + " and current array (%d,%d) must be the same" % local_autocorr.shape
-                autocorr = autocorr*coe3 + local_autocorr*coe2
-            i += 1
-        autocorr = autocorr.T
-        print(index)
-        #if hasattr(self,x_split_list):
-        #    self.autocorrDF = pd.DataFrame(autocorr,index=pd.MultiIndex.from_arrays(index))
-        #else:
-        self.autocorrDF = pd.DataFrame(autocorr,index=index)
+#         for timing in times:       
+#             self._inst_data = CHAPSim_Inst(timing,self._meta_data,path_to_folder)
+#             coe3 = (i-1)/i
+#             coe2 = 1/i
+#             if i==1:
+#                 autocorr, index = self.__autocorr(timing,max(times),comp1,comp2,homogen,x_split_list)
+#             else:
+#                 local_autocorr, index = self.__autocorr(timing,max(times),comp1,comp2,homogen,x_split_list)
+#                 assert local_autocorr.shape == autocorr.shape, "shape of previous array (%d,%d) " % autocorr.shape\
+#                     + " and current array (%d,%d) must be the same" % local_autocorr.shape
+#                 autocorr = autocorr*coe3 + local_autocorr*coe2
+#             i += 1
+#         autocorr = autocorr.T
+#         print(index)
+#         #if hasattr(self,x_split_list):
+#         #    self.autocorrDF = pd.DataFrame(autocorr,index=pd.MultiIndex.from_arrays(index))
+#         #else:
+#         self.autocorrDF = pd.DataFrame(autocorr,index=index)
     
-    def __autocorr(self,time,AVG_time,comp1,comp2,homogen,x_split_list=''):
+#     def __autocorr(self,time,AVG_time,comp1,comp2,homogen,x_split_list=''):
         
-        if x_split_list:
-            split_index = []
-            direction_index = []
-            for x in x_split_list:
-                if x > self._meta_data.NCL[0]:
-                    raise ValueError("\033[1;32 value in x_split_list cannot be larger"\
-                                     +"than x_size: %d, %d" %(x,self._meta_data.NCL[0]))
-            for i in range(len(x_split_list)-1):
-                x_point1 = x_split_list[i]
-                x_point2 = x_split_list[i+1]
-                autocorr_tempDF = self.__autocorr_calc(time,AVG_time,comp1,comp2,x_point1, x_point2,homogen)
-                if i==0:
-                    autocorrDF = autocorr_tempDF   
-                else:
-                    concatDF =[autocorrDF,autocorr_tempDF]
-                    autocorrDF = pd.concat(concatDF, axis=1)
-                split_list = ['Split ' + str(i+1),'Split ' + str(i+1)]
-                direction_list = ['x','z']
-                split_index.extend(split_list)
-                direction_index.extend(direction_list)
-            index = [split_index,direction_index]
+#         if x_split_list:
+#             split_index = []
+#             direction_index = []
+#             for x in x_split_list:
+#                 if x > self._meta_data.NCL[0]:
+#                     raise ValueError("\033[1;32 value in x_split_list cannot be larger"\
+#                                      +"than x_size: %d, %d" %(x,self._meta_data.NCL[0]))
+#             for i in range(len(x_split_list)-1):
+#                 x_point1 = x_split_list[i]
+#                 x_point2 = x_split_list[i+1]
+#                 autocorr_tempDF = self.__autocorr_calc(time,AVG_time,comp1,comp2,x_point1, x_point2,homogen)
+#                 if i==0:
+#                     autocorrDF = autocorr_tempDF   
+#                 else:
+#                     concatDF =[autocorrDF,autocorr_tempDF]
+#                     autocorrDF = pd.concat(concatDF, axis=1)
+#                 split_list = ['Split ' + str(i+1),'Split ' + str(i+1)]
+#                 direction_list = ['x','z']
+#                 split_index.extend(split_list)
+#                 direction_index.extend(direction_list)
+#             index = [split_index,direction_index]
                 
-        else:
-            x_point1 = 0
-            x_point2 = self._meta_data.NCL[0]
-            autocorrDF = self.__autocorr_calc(time,AVG_time,comp1,comp2,x_point1, x_point2,homogen)
-            index = ['x','z']
-        return autocorrDF.values, index
-    def __autocorr_calc(self,PhyTime,AVG_time,comp1,comp2,x_point1, x_point2,homogen):
-        if type(PhyTime) == float:
-            PhyTime = "{:.9g}".format(PhyTime)
-        if type(AVG_time) == float:
-            AVG_time = "{:.9g}".format(AVG_time)
+#         else:
+#             x_point1 = 0
+#             x_point2 = self._meta_data.NCL[0]
+#             autocorrDF = self.__autocorr_calc(time,AVG_time,comp1,comp2,x_point1, x_point2,homogen)
+#             index = ['x','z']
+#         return autocorrDF.values, index
+#     def __autocorr_calc(self,PhyTime,AVG_time,comp1,comp2,x_point1, x_point2,homogen):
+#         if type(PhyTime) == float:
+#             PhyTime = "{:.9g}".format(PhyTime)
+#         if type(AVG_time) == float:
+#             AVG_time = "{:.9g}".format(AVG_time)
         
-        NCL_local = self._meta_data.NCL
-        velo1 = self._inst_data.InstDF.loc[PhyTime,comp1].values.\
-                    reshape((NCL_local[2],NCL_local[1],NCL_local[0]))
-        AVG1 = self._AVG_data.flow_AVGDF.loc[AVG_time,comp1].values\
-                    .reshape((NCL_local[1],NCL_local[0]))
-        fluct1 = np.zeros_like(velo1)
-        for i in range(NCL_local[2]):
-            fluct1[i] = velo1[i] - AVG1
+#         NCL_local = self._meta_data.NCL
+#         velo1 = self._inst_data.InstDF.loc[PhyTime,comp1].values.\
+#                     reshape((NCL_local[2],NCL_local[1],NCL_local[0]))
+#         AVG1 = self._AVG_data.flow_AVGDF.loc[AVG_time,comp1].values\
+#                     .reshape((NCL_local[1],NCL_local[0]))
+#         fluct1 = np.zeros_like(velo1)
+#         for i in range(NCL_local[2]):
+#             fluct1[i] = velo1[i] - AVG1
         
-        velo2 = self._inst_data.InstDF.loc[PhyTime,comp2].values.\
-                    reshape((NCL_local[2],NCL_local[1],NCL_local[0]))
-        AVG2 = self._AVG_data.flow_AVGDF.loc[AVG_time,comp2].values\
-                    .reshape((NCL_local[1],NCL_local[0]))
-        fluct2 = np.zeros_like(velo2)
+#         velo2 = self._inst_data.InstDF.loc[PhyTime,comp2].values.\
+#                     reshape((NCL_local[2],NCL_local[1],NCL_local[0]))
+#         AVG2 = self._AVG_data.flow_AVGDF.loc[AVG_time,comp2].values\
+#                     .reshape((NCL_local[1],NCL_local[0]))
+#         fluct2 = np.zeros_like(velo2)
         
-        for i in range(NCL_local[2]):
-            fluct2[i] = velo2[i] - AVG2
-        fluct1_0 = fluct1[:,:,x_point1:x_point2]
-        fluct2_0 = fluct2[:,:,x_point1:x_point2]
-        #x direction calculator
-        x_size = int(np.trunc(0.5*fluct1_0.shape[2]))
-        z_size = int(np.trunc(0.5*fluct2_0.shape[0]))
+#         for i in range(NCL_local[2]):
+#             fluct2[i] = velo2[i] - AVG2
+#         fluct1_0 = fluct1[:,:,x_point1:x_point2]
+#         fluct2_0 = fluct2[:,:,x_point1:x_point2]
+#         #x direction calculator
+#         x_size = int(np.trunc(0.5*fluct1_0.shape[2]))
+#         z_size = int(np.trunc(0.5*fluct2_0.shape[0]))
         
-        R_x = np.zeros((NCL_local[1],x_size))
-        R_z = np.zeros((NCL_local[1],z_size))
-        #x_end = int(np.trunc((x_point1 +x_point2)*0.5))
-        t0 = time.time()
-        if homogen:
-            R_x = CHAPSim_autocov._loop_accelerator_x(fluct1_0,fluct2_0,R_x,x_size)
-            R_z = CHAPSim_autocov._loop_accelerator_z(fluct1_0,fluct2_0,R_z,z_size)
-            R_x = R_x/(fluct2_0.shape[0]*x_size) #Divide by the number of values
-            R_z = R_z/(fluct1_0.shape[2]*z_size)
-        else:
-            R_x = CHAPSim_autocov._loop_accelerator_x_non_homogen(fluct1_0,
-                                                        fluct2_0,R_x,x_size)
+#         R_x = np.zeros((NCL_local[1],x_size))
+#         R_z = np.zeros((NCL_local[1],z_size))
+#         #x_end = int(np.trunc((x_point1 +x_point2)*0.5))
+#         t0 = time.time()
+#         if homogen:
+#             R_x = CHAPSim_autocov._loop_accelerator_x(fluct1_0,fluct2_0,R_x,x_size)
+#             R_z = CHAPSim_autocov._loop_accelerator_z(fluct1_0,fluct2_0,R_z,z_size)
+#             R_x = R_x/(fluct2_0.shape[0]*x_size) #Divide by the number of values
+#             R_z = R_z/(fluct1_0.shape[2]*z_size)
+#         else:
+#             R_x = CHAPSim_autocov._loop_accelerator_x_non_homogen(fluct1_0,
+#                                                         fluct2_0,R_x,x_size)
                                                                     
-            R_z = CHAPSim_autocov._loop_accelerator_z_non_homogen(fluct1_0,
-                                                        fluct2_0,R_z,z_size)
-            R_x = R_x/(fluct1_0.shape[0])
-            R_z = R_z/(z_size)
+#             R_z = CHAPSim_autocov._loop_accelerator_z_non_homogen(fluct1_0,
+#                                                         fluct2_0,R_z,z_size)
+#             R_x = R_x/(fluct1_0.shape[0])
+#             R_z = R_z/(z_size)
         
 
-        t1 = time.time()
+#         t1 = time.time()
     
         
-        R_x = R_x.reshape((NCL_local[1]*x_size))
-        R_z = R_z.reshape(z_size*NCL_local[1])
+#         R_x = R_x.reshape((NCL_local[1]*x_size))
+#         R_z = R_z.reshape(z_size*NCL_local[1])
         
-        R_xDF = pd.DataFrame(R_x)
-        R_zDF = pd.DataFrame(R_z)
-        autocorr = pd.concat([R_xDF,R_zDF],axis=1)
-        print(t1-t0)
-        return autocorr
+#         R_xDF = pd.DataFrame(R_x)
+#         R_zDF = pd.DataFrame(R_z)
+#         autocorr = pd.concat([R_xDF,R_zDF],axis=1)
+#         print(t1-t0)
+#         return autocorr
         
-    def autocorr_contour(self,comp,Y_plus=False,Y_plus_max ='', which_split='',norm=True,fig='',ax=''):
-        assert(comp=='x' or comp =='z')
-        if Y_plus_max and Y_plus == False:
-            warnings.warn("\033[1;33Ignoring `Y_plus_max' value: Y_plus == False")
-        NCL_local = self._meta_data.NCL
-        if (hasattr(self,'x_split_list') and which_split) or not hasattr(self,'x_split_list'):
-            if which_split and hasattr(self,'x_split_list'):
-                assert(type(which_split)==int)
-                split_string = "Split "+ str(which_split)
-                x_point2 = self.x_split_list[which_split]
-                x_point1 = point1 = self.x_split_list[which_split-1]
-                if comp =='x':
-                    size = int(np.trunc(0.5*(x_point2-x_point1)))
-                else:
-                    size = int(np.trunc(0.5*NCL_local[2]))
-                Ruu = self.autocorrDF.loc[split_string,comp].copy().dropna().values\
-                    .reshape((NCL_local[1],size))
+#     def autocorr_contour(self,comp,Y_plus=False,Y_plus_max ='', which_split='',norm=True,fig='',ax=''):
+#         assert(comp=='x' or comp =='z')
+#         if Y_plus_max and Y_plus == False:
+#             warnings.warn("\033[1;33Ignoring `Y_plus_max' value: Y_plus == False")
+#         NCL_local = self._meta_data.NCL
+#         if (hasattr(self,'x_split_list') and which_split) or not hasattr(self,'x_split_list'):
+#             if which_split and hasattr(self,'x_split_list'):
+#                 assert(type(which_split)==int)
+#                 split_string = "Split "+ str(which_split)
+#                 x_point2 = self.x_split_list[which_split]
+#                 x_point1 = point1 = self.x_split_list[which_split-1]
+#                 if comp =='x':
+#                     size = int(np.trunc(0.5*(x_point2-x_point1)))
+#                 else:
+#                     size = int(np.trunc(0.5*NCL_local[2]))
+#                 Ruu = self.autocorrDF.loc[split_string,comp].copy().dropna().values\
+#                     .reshape((NCL_local[1],size))
 
-            else:
-                x_point1 = point1 = 0
-                x_point2 = NCL_local[0]
-                if comp =='x':
-                    size = int(np.trunc(0.5*(x_point2-x_point1)))
-                else:
-                    size = int(np.trunc(0.5*NCL_local[2]))
-                Ruu = self.autocorrDF.loc[comp].copy().dropna().values\
-                    .reshape((NCL_local[1],size))
-            # Normalising autocovariance to form autocorrelation
-            if norm:
-                Ruu_0 = Ruu[:,0].copy()
-                for i in range(size):
-                    Ruu[:,i] = Ruu[:,i]/Ruu_0
-            if not fig:
-                fig,ax = plt.subplots(figsize=[10,3])
-            elif not ax:
-                ax = fig.add_subplot(1,1,1)
+#             else:
+#                 x_point1 = point1 = 0
+#                 x_point2 = NCL_local[0]
+#                 if comp =='x':
+#                     size = int(np.trunc(0.5*(x_point2-x_point1)))
+#                 else:
+#                     size = int(np.trunc(0.5*NCL_local[2]))
+#                 Ruu = self.autocorrDF.loc[comp].copy().dropna().values\
+#                     .reshape((NCL_local[1],size))
+#             # Normalising autocovariance to form autocorrelation
+#             if norm:
+#                 Ruu_0 = Ruu[:,0].copy()
+#                 for i in range(size):
+#                     Ruu[:,i] = Ruu[:,i]/Ruu_0
+#             if not fig:
+#                 fig,ax = plt.subplots(figsize=[10,3])
+#             elif not ax:
+#                 ax = fig.add_subplot(1,1,1)
                 
             
-            coord = self._meta_data.CoordDF[comp].copy().dropna()\
-                    .values[point1:point1+size]
-            y_coord = self._meta_data.CoordDF['y'].copy().dropna()\
-                    .values
+#             coord = self._meta_data.CoordDF[comp].copy().dropna()\
+#                     .values[point1:point1+size]
+#             y_coord = self._meta_data.CoordDF['y'].copy().dropna()\
+#                     .values
             
-            if Y_plus:
-                avg_time = self._AVG_data.flow_AVGDF.index[0][0]
-                #wall_params = self._meta_data.metaDF.loc['moving_wallflg':'VeloWall']
-                u_tau_star, delta_v_star = wall_unit_calc(self._AVG_data,avg_time)
-                y_coord = y_coord[:int(y_coord.size/2)]
-                y_coord = (1-np.abs(y_coord))/delta_v_star[point1]
-                if Y_plus_max:
-                    y_coord = y_coord[y_coord<Y_plus_max]
-                    Ruu = Ruu[:len(y_coord)]
-            X,Y = np.meshgrid(coord,y_coord)
-            ax1 = ax.pcolormesh(X,Y,Ruu,cmap='jet')
-            ax = ax1.axes
-            if Y_plus:
-                ax.set_ylabel(r"$Y^{+0}$", fontsize=16)
-            else:
-                ax.set_ylabel(r"$y/\delta$", fontsize=16)
-            ax.set_xlabel(r"$\Delta %s/\delta$" %comp, fontsize=18)
-            fig.colorbar(ax1,ax=ax)
-        elif hasattr(self,'x_split_list') and not which_split:
-            if fig or ax:
-                warnings.warn("\033[1;33fig and ax are overridden in this case")
-            ax_size = len(self.x_split_list)-1
-            fig,ax = plt.subplots(ax_size,figsize=[8,ax_size*2.6])
-            point1 = 0
-            for i in range(1,len(self.x_split_list)):
-                split_string = "Split "+ str(i)
-                if comp =='x':
-                    x_point2 = self.x_split_list[i]   
-                    x_point1 = point1 = self.x_split_list[i-1]
-                    size = int(np.trunc(0.5*(x_point2-x_point1)))
-                else:
-                    size = int(np.trunc(0.5*NCL_local[2]))
+#             if Y_plus:
+#                 avg_time = self._AVG_data.flow_AVGDF.index[0][0]
+#                 #wall_params = self._meta_data.metaDF.loc['moving_wallflg':'VeloWall']
+#                 u_tau_star, delta_v_star = wall_unit_calc(self._AVG_data,avg_time)
+#                 y_coord = y_coord[:int(y_coord.size/2)]
+#                 y_coord = (1-np.abs(y_coord))/delta_v_star[point1]
+#                 if Y_plus_max:
+#                     y_coord = y_coord[y_coord<Y_plus_max]
+#                     Ruu = Ruu[:len(y_coord)]
+#             X,Y = np.meshgrid(coord,y_coord)
+#             ax1 = ax.pcolormesh(X,Y,Ruu,cmap='jet')
+#             ax = ax1.axes
+#             if Y_plus:
+#                 ax.set_ylabel(r"$Y^{+0}$", fontsize=16)
+#             else:
+#                 ax.set_ylabel(r"$y/\delta$", fontsize=16)
+#             ax.set_xlabel(r"$\Delta %s/\delta$" %comp, fontsize=18)
+#             fig.colorbar(ax1,ax=ax)
+#         elif hasattr(self,'x_split_list') and not which_split:
+#             if fig or ax:
+#                 warnings.warn("\033[1;33fig and ax are overridden in this case")
+#             ax_size = len(self.x_split_list)-1
+#             fig,ax = plt.subplots(ax_size,figsize=[8,ax_size*2.6])
+#             point1 = 0
+#             for i in range(1,len(self.x_split_list)):
+#                 split_string = "Split "+ str(i)
+#                 if comp =='x':
+#                     x_point2 = self.x_split_list[i]   
+#                     x_point1 = point1 = self.x_split_list[i-1]
+#                     size = int(np.trunc(0.5*(x_point2-x_point1)))
+#                 else:
+#                     size = int(np.trunc(0.5*NCL_local[2]))
 
-                Ruu = self.autocorrDF.loc[split_string,comp].dropna().values\
-                        .reshape((NCL_local[1],size)) 
-                #Noramlise if this is indicated
-                if norm:
-                    Ruu_0 = Ruu[:,0].copy()
-                    for j in range(size):
-                        Ruu[:,j] = Ruu[:,j]/Ruu_0
+#                 Ruu = self.autocorrDF.loc[split_string,comp].dropna().values\
+#                         .reshape((NCL_local[1],size)) 
+#                 #Noramlise if this is indicated
+#                 if norm:
+#                     Ruu_0 = Ruu[:,0].copy()
+#                     for j in range(size):
+#                         Ruu[:,j] = Ruu[:,j]/Ruu_0
                     
-                coord = self._meta_data.CoordDF[comp].dropna()\
-                        .values[point1:point1+size]
-                y_coord = self._meta_data.CoordDF['y'].dropna()\
-                        .values
-                if Y_plus:
-                    avg_time = self._AVG_data.flow_AVGDF.index[0][0]
-                    #wall_params = self._meta_data.metaDF.loc['moving_wallflg':'VeloWall']
-                    u_tau_star, delta_v_star = wall_unit_calc(self._AVG_data,avg_time)
-                    y_coord = y_coord[:int(y_coord.size/2)]
-                    y_coord = (1-np.abs(y_coord))/delta_v_star[point1]
-                    if Y_plus_max:
-                        y_coord = y_coord[y_coord<Y_plus_max]
-                        Ruu = Ruu[:len(y_coord)]
+#                 coord = self._meta_data.CoordDF[comp].dropna()\
+#                         .values[point1:point1+size]
+#                 y_coord = self._meta_data.CoordDF['y'].dropna()\
+#                         .values
+#                 if Y_plus:
+#                     avg_time = self._AVG_data.flow_AVGDF.index[0][0]
+#                     #wall_params = self._meta_data.metaDF.loc['moving_wallflg':'VeloWall']
+#                     u_tau_star, delta_v_star = wall_unit_calc(self._AVG_data,avg_time)
+#                     y_coord = y_coord[:int(y_coord.size/2)]
+#                     y_coord = (1-np.abs(y_coord))/delta_v_star[point1]
+#                     if Y_plus_max:
+#                         y_coord = y_coord[y_coord<Y_plus_max]
+#                         Ruu = Ruu[:len(y_coord)]
                         
-                X,Y = np.meshgrid(coord,y_coord)
-                ax1 = ax[i-1].pcolormesh(X,Y,Ruu,cmap='jet')
-                ax[i-1] = ax1.axes
-                if i==len(self.x_split_list)-1:
-                    if Y_plus:
-                        ax[i-1].set_xlabel(r"$\Delta %s/\delta$" %comp, fontsize=18)
-                if Y_plus:
-                    ax[i-1].set_ylabel(r"$Y^{+0}$", fontsize=16)
-                else:
-                    ax[i-1].set_ylabel(r"$y/\delta$", fontsize=16)
-                fig.colorbar(ax1,ax=ax[i-1])
-        fig.subplots_adjust(hspace = 0.4)
+#                 X,Y = np.meshgrid(coord,y_coord)
+#                 ax1 = ax[i-1].pcolormesh(X,Y,Ruu,cmap='jet')
+#                 ax[i-1] = ax1.axes
+#                 if i==len(self.x_split_list)-1:
+#                     if Y_plus:
+#                         ax[i-1].set_xlabel(r"$\Delta %s/\delta$" %comp, fontsize=18)
+#                 if Y_plus:
+#                     ax[i-1].set_ylabel(r"$Y^{+0}$", fontsize=16)
+#                 else:
+#                     ax[i-1].set_ylabel(r"$y/\delta$", fontsize=16)
+#                 fig.colorbar(ax1,ax=ax[i-1])
+#         fig.subplots_adjust(hspace = 0.4)
         
-        return fig,ax
-    def autocorr_line_plot(self,comp,y_val,y_type=0,which_split='',norm=True,fig='',ax=''):
+#         return fig,ax
+#     def autocorr_line_plot(self,comp,y_val,y_type=0,which_split='',norm=True,fig='',ax=''):
         
-        pass
-    @staticmethod
-    @numba.njit(parallel=True)
-    def _loop_accelerator_x(fluct1,fluct2,R_x,x_size):
-        for ix0 in numba.prange(x_size):
-            for z in numba.prange(fluct1.shape[0]):
-                for ix in numba.prange(x_size):
-                    R_x[:,ix0] += fluct1[z,:,ix]*fluct2[z,:,ix0+ix]
-        return R_x
-    @staticmethod
-    @numba.njit(parallel=True)
-    def _loop_accelerator_z(fluct1,fluct2,R_z,z_size):
-        for iz0 in numba.prange(z_size):
-            for ix in numba.prange(fluct1.shape[2]):
-                for iz in numba.prange(z_size):
-                    R_z[:,iz0] += fluct1[iz,:,ix]*fluct2[iz+iz0,:,ix]
-        return R_z
-    @staticmethod
-    @numba.njit(parallel=True)
-    def _loop_accelerator_x_non_homogen(fluct1,fluct2,R_x,x_size):
-        for ix0 in numba.prange(x_size):
-            for z in numba.prange(fluct1.shape[0]):
-                    R_x[:,ix0] += fluct1[z,:,0]*fluct2[z,:,ix0]
-        return R_x
-    @staticmethod
-    @numba.njit(parallel=True)
-    def _loop_accelerator_z_non_homogen(fluct1,fluct2,R_z,z_size):
-        for iz0 in numba.prange(z_size):
-            for ix in numba.prange(fluct1.shape[2]):
-                    R_z[:,iz0] += fluct1[0,:,ix]*fluct2[iz0,:,ix]
-        return R_z
-    def Spectra_calc(self,comp, y_index, which_split='',fig='',ax=''):
-        NCL_local = self._meta_data.NCL
-        if not fig:
-            fig,ax = plt.subplots(figsize=[10,5])
-        elif not ax:
-            ax = fig.add_subplot(1,1,1)
-        x_coord = self._meta_data.CoordDF['x'].dropna().values
-        if (hasattr(self,'x_split_list') and which_split) or not hasattr(self,'x_split_list'):
-            if which_split and hasattr(self,'x_split_list'):
-                assert(type(which_split)==int)
-                split_string = "Split "+ str(which_split)
-                x_point2 = self.x_split_list[which_split]
-                x_point1 = point1 = self.x_split_list[which_split-1]
-                if comp =='x':
-                    size = int(np.trunc(0.5*(x_point2-x_point1)))
-                else:
-                    size = int(np.trunc(0.5*NCL_local[2]))
-                Ruu = self.autocorrDF.loc[split_string,comp].copy().dropna().values\
-                    .reshape((NCL_local[1],size))
+#         pass
+#     @staticmethod
+#     @numba.njit(parallel=True)
+#     def _loop_accelerator_x(fluct1,fluct2,R_x,x_size):
+#         for ix0 in numba.prange(x_size):
+#             for z in numba.prange(fluct1.shape[0]):
+#                 for ix in numba.prange(x_size):
+#                     R_x[:,ix0] += fluct1[z,:,ix]*fluct2[z,:,ix0+ix]
+#         return R_x
+#     @staticmethod
+#     @numba.njit(parallel=True)
+#     def _loop_accelerator_z(fluct1,fluct2,R_z,z_size):
+#         for iz0 in numba.prange(z_size):
+#             for ix in numba.prange(fluct1.shape[2]):
+#                 for iz in numba.prange(z_size):
+#                     R_z[:,iz0] += fluct1[iz,:,ix]*fluct2[iz+iz0,:,ix]
+#         return R_z
+#     @staticmethod
+#     @numba.njit(parallel=True)
+#     def _loop_accelerator_x_non_homogen(fluct1,fluct2,R_x,x_size):
+#         for ix0 in numba.prange(x_size):
+#             for z in numba.prange(fluct1.shape[0]):
+#                     R_x[:,ix0] += fluct1[z,:,0]*fluct2[z,:,ix0]
+#         return R_x
+#     @staticmethod
+#     @numba.njit(parallel=True)
+#     def _loop_accelerator_z_non_homogen(fluct1,fluct2,R_z,z_size):
+#         for iz0 in numba.prange(z_size):
+#             for ix in numba.prange(fluct1.shape[2]):
+#                     R_z[:,iz0] += fluct1[0,:,ix]*fluct2[iz0,:,ix]
+#         return R_z
+#     def Spectra_calc(self,comp, y_index, which_split='',fig='',ax=''):
+#         NCL_local = self._meta_data.NCL
+#         if not fig:
+#             fig,ax = cplt.subplots(figsize=[10,5])
+#         elif not ax:
+#             ax = fig.add_subplot(1,1,1)
+#         x_coord = self._meta_data.CoordDF['x'].dropna().values
+#         if (hasattr(self,'x_split_list') and which_split) or not hasattr(self,'x_split_list'):
+#             if which_split and hasattr(self,'x_split_list'):
+#                 assert(type(which_split)==int)
+#                 split_string = "Split "+ str(which_split)
+#                 x_point2 = self.x_split_list[which_split]
+#                 x_point1 = point1 = self.x_split_list[which_split-1]
+#                 if comp =='x':
+#                     size = int(np.trunc(0.5*(x_point2-x_point1)))
+#                 else:
+#                     size = int(np.trunc(0.5*NCL_local[2]))
+#                 Ruu = self.autocorrDF.loc[split_string,comp].copy().dropna().values\
+#                     .reshape((NCL_local[1],size))
 
-            else:
-                x_point1 = point1 = 0
-                x_point2 = NCL_local[0]
-                if comp =='x':
-                    size = int(np.trunc(0.5*(x_point2-x_point1)))
-                else:
-                    size = int(np.trunc(0.5*NCL_local[2]))
-                Ruu = self.autocorrDF.loc[comp].copy().dropna().values\
-                    .reshape((NCL_local[1],size))
-            wavenumber_spectra = fftpack.dct(Ruu[y_index])
-            coord = self._meta_data.CoordDF[comp].dropna()\
-                        .values[point1:point1+size]
-            delta_comp = coord[1]-coord[0]
-            Fs = (2.0*np.pi)/delta_comp
-            comp_size= wavenumber_spectra.size
-            wavenumber_comp = np.arange(comp_size)*Fs/comp_size
+#             else:
+#                 x_point1 = point1 = 0
+#                 x_point2 = NCL_local[0]
+#                 if comp =='x':
+#                     size = int(np.trunc(0.5*(x_point2-x_point1)))
+#                 else:
+#                     size = int(np.trunc(0.5*NCL_local[2]))
+#                 Ruu = self.autocorrDF.loc[comp].copy().dropna().values\
+#                     .reshape((NCL_local[1],size))
+#             wavenumber_spectra = fftpack.dct(Ruu[y_index])
+#             coord = self._meta_data.CoordDF[comp].dropna()\
+#                         .values[point1:point1+size]
+#             delta_comp = coord[1]-coord[0]
+#             Fs = (2.0*np.pi)/delta_comp
+#             comp_size= wavenumber_spectra.size
+#             wavenumber_comp = np.arange(comp_size)*Fs/comp_size
             
-            ax.plot(wavenumber_comp,np.abs(wavenumber_spectra))
-            wavenumber_comp = wavenumber_comp[wavenumber_comp>0]
-            ax.plot(wavenumber_comp,wavenumber_comp**(-5/3),label='Kolmogorov spectrum')
+#             ax.cplot(wavenumber_comp,np.abs(wavenumber_spectra))
+#             wavenumber_comp = wavenumber_comp[wavenumber_comp>0]
+#             ax.cplot(wavenumber_comp,wavenumber_comp**(-5/3),label='Kolmogorov spectrum')
                     
-        elif hasattr(self,'x_split_list') and not which_split:
-            point1 = 0
-            x_coord = self._meta_data.CoordDF['x'].dropna().values[self.x_split_list[:-1]]       
-            for i in range(1,len(self.x_split_list)):
-                split_string = "Split "+ str(i)
-                if comp =='x':
-                    x_point2 = self.x_split_list[i]   
-                    x_point1 = point1 = self.x_split_list[i-1]
-                    size = int(np.trunc(0.5*(x_point2-x_point1)))
-                else:
-                    size = int(np.trunc(0.5*NCL_local[2]))
+#         elif hasattr(self,'x_split_list') and not which_split:
+#             point1 = 0
+#             x_coord = self._meta_data.CoordDF['x'].dropna().values[self.x_split_list[:-1]]       
+#             for i in range(1,len(self.x_split_list)):
+#                 split_string = "Split "+ str(i)
+#                 if comp =='x':
+#                     x_point2 = self.x_split_list[i]   
+#                     x_point1 = point1 = self.x_split_list[i-1]
+#                     size = int(np.trunc(0.5*(x_point2-x_point1)))
+#                 else:
+#                     size = int(np.trunc(0.5*NCL_local[2]))
 
-                Ruu = self.autocorrDF.loc[split_string,comp].dropna().values\
-                        .reshape((NCL_local[1],size))[y_index]
-                wavenumber_spectra = fftpack.dct(Ruu)
-                coord = self._meta_data.CoordDF[comp].dropna()\
-                        .values[point1:point1+size]
-                delta_comp = coord[1]-coord[0]
-                Fs = (2.0*np.pi)/delta_comp
-                comp_size= wavenumber_spectra.size
-                wavenumber_comp = np.arange(comp_size)*Fs/comp_size
+#                 Ruu = self.autocorrDF.loc[split_string,comp].dropna().values\
+#                         .reshape((NCL_local[1],size))[y_index]
+#                 wavenumber_spectra = fftpack.dct(Ruu)
+#                 coord = self._meta_data.CoordDF[comp].dropna()\
+#                         .values[point1:point1+size]
+#                 delta_comp = coord[1]-coord[0]
+#                 Fs = (2.0*np.pi)/delta_comp
+#                 comp_size= wavenumber_spectra.size
+#                 wavenumber_comp = np.arange(comp_size)*Fs/comp_size
                 
-                ax.plot(wavenumber_comp,np.abs(wavenumber_spectra),label="x=%.3f"%x_coord[i-1])
-            wavenumber_comp = wavenumber_comp[wavenumber_comp>0]
-            ax.plot(wavenumber_comp,wavenumber_comp**(-5/3),label='Kolmogorov spectrum')
-            handles, labels = ax.get_legend_handles_labels()
-            ax.legend(CT.flip_leg_col(handles,4),CT.flip_leg_col(labels,4),
-                  loc = 'upper center',ncol=4*(len(labels)>3)+len(labels)*(len(labels)<4),
-                  bbox_to_anchor=(0.5,-0.2),
-                  fontsize=16)
-        ax.set_xlabel(r"$\kappa_%s$"%comp,fontsize=20)
-        string= (ord(self.comp[0])-ord('u')+1,ord(self.comp[1])-ord('u')+1,comp)
-        ax.set_ylabel(r"$E_{%d%d}(\kappa_%s)$"%string,fontsize=20)
-        ax.grid()
-        ax.set_xscale('log')
-        fig.tight_layout()
-        #ax.set_yscale('log')
-        return fig, ax
-    def __str__(self):
-        return self.autocorrDF.__str__()
-class CHAPSim_Ruu(CHAPSim_autocov):
-    def __init__(self,x_split_list='',path_to_folder='',time0='',abs_path=True,homogen=True):
-        super().__init__('u','u',x_split_list,path_to_folder,time0,abs_path,homogen)
-class CHAPSim_Rvv(CHAPSim_autocov):
-    def __init__(self,x_split_list='',path_to_folder='',time0='',abs_path='',homogen=True):
-        super().__init__('v','v',x_split_list,path_to_folder,time0,abs_path,homogen)
-class CHAPSim_Rww(CHAPSim_autocov):
-    def __init__(self,x_split_list='',path_to_folder='',time0='',abs_path='',homogen=True):
-        super().__init__('w','w',x_split_list,path_to_folder,time0,abs_path,homogen)
-class CHAPSim_Ruv(CHAPSim_autocov):
-    def __init__(self,x_split_list='',path_to_folder='',time0='',abs_path='',homogen=True):
-        super().__init__('u','v',x_split_list,path_to_folder,time0,abs_path,homogen)
-class CHAPSim_k_spectra(CHAPSim_autocov):
-    def __init__(self,x_split_list='',path_to_folder='',time0='',abs_path='',homogen=True):
+#                 ax.plot(wavenumber_comp,np.abs(wavenumber_spectra),label="x=%.3f"%x_coord[i-1])
+#             wavenumber_comp = wavenumber_comp[wavenumber_comp>0]
+#             ax.plot(wavenumber_comp,wavenumber_comp**(-5/3),label='Kolmogorov spectrum')
+#             handles, labels = ax.get_legend_handles_labels()
+#             ax.legend(CT.flip_leg_col(handles,4),CT.flip_leg_col(labels,4),
+#                   loc = 'upper center',ncol=4*(len(labels)>3)+len(labels)*(len(labels)<4),
+#                   bbox_to_anchor=(0.5,-0.2),
+#                   fontsize=16)
+#         ax.set_xlabel(r"$\kappa_%s$"%comp,fontsize=20)
+#         string= (ord(self.comp[0])-ord('u')+1,ord(self.comp[1])-ord('u')+1,comp)
+#         ax.set_ylabel(r"$E_{%d%d}(\kappa_%s)$"%string,fontsize=20)
+#         ax.grid()
+#         ax.set_xscale('log')
+#         fig.tight_layout()
+#         #ax.set_yscale('log')
+#         return fig, ax
+#     def __str__(self):
+#         return self.autocorrDF.__str__()
+# class CHAPSim_Ruu(CHAPSim_autocov):
+#     def __init__(self,x_split_list='',path_to_folder='',time0='',abs_path=True,homogen=True):
+#         super().__init__('u','u',x_split_list,path_to_folder,time0,abs_path,homogen)
+# class CHAPSim_Rvv(CHAPSim_autocov):
+#     def __init__(self,x_split_list='',path_to_folder='',time0='',abs_path='',homogen=True):
+#         super().__init__('v','v',x_split_list,path_to_folder,time0,abs_path,homogen)
+# class CHAPSim_Rww(CHAPSim_autocov):
+#     def __init__(self,x_split_list='',path_to_folder='',time0='',abs_path='',homogen=True):
+#         super().__init__('w','w',x_split_list,path_to_folder,time0,abs_path,homogen)
+# class CHAPSim_Ruv(CHAPSim_autocov):
+#     def __init__(self,x_split_list='',path_to_folder='',time0='',abs_path='',homogen=True):
+#         super().__init__('u','v',x_split_list,path_to_folder,time0,abs_path,homogen)
+# class CHAPSim_k_spectra(CHAPSim_autocov):
+#     def __init__(self,x_split_list='',path_to_folder='',time0='',abs_path='',homogen=True):
         
-        super().__init__('u','u',x_split_list,path_to_folder,time0,abs_path,homogen)
-        self.autocorr_uu = self.autocorrDF
-        super().__init__('v','v',x_split_list,path_to_folder,time0,abs_path,homogen)
-        self.autocorr_vv = self.autocorrDF
-        super().__init__('w','w',x_split_list,path_to_folder,time0,abs_path,homogen)
-        self.autocorr_ww = self.autocorrDF
+#         super().__init__('u','u',x_split_list,path_to_folder,time0,abs_path,homogen)
+#         self.autocorr_uu = self.autocorrDF
+#         super().__init__('v','v',x_split_list,path_to_folder,time0,abs_path,homogen)
+#         self.autocorr_vv = self.autocorrDF
+#         super().__init__('w','w',x_split_list,path_to_folder,time0,abs_path,homogen)
+#         self.autocorr_ww = self.autocorrDF
         
-    def spectra_plot(self,comp, y_index, which_split='',fig='',ax=''):
-        NCL_local = self._meta_data.NCL
-        print(NCL_local[2])
-        if not fig:
-            fig,ax = plt.subplots()
-        elif not ax:
-            ax = fig.add_subplot(1,1,1)
-        if (hasattr(self,'x_split_list') and which_split) or not hasattr(self,'x_split_list'):
-            if which_split:
-                assert(type(which_split)==int)
-                split_string = "Split "+ str(which_split)
-                x_point2 = self.x_split_list[which_split]
-                x_point1 = point1 = self.x_split_list[which_split-1]
-                if comp =='x':
-                    size = int(np.trunc(0.5*(x_point2-x_point1)))
-                else:
-                    print(NCL_local[2])
-                    size = int(np.trunc(NCL_local[2]))
-                print(size)
-                R_uu = self.autocorr_uu.loc[split_string,comp].copy().dropna().values\
-                    .reshape((NCL_local[1],size))
-                R_vv = self.autocorr_vv.loc[split_string,comp].copy().dropna().values\
-                    .reshape((NCL_local[1],size))
-                R_ww = self.autocorr_ww.loc[split_string,comp].copy().dropna().values\
-                    .reshape((NCL_local[1],size))
-            else:
-                x_point1 = point1 = 0
-                x_point2 = NCL_local[0]
-                if comp =='x':
-                    size = int(np.trunc(0.5*(x_point2-x_point1)))
-                else:
-                    size = int(np.trunc(0.5*NCL_local[2]))
-                R_uu = self.autocorr_uu.loc[comp].copy().dropna().values\
-                    .reshape((NCL_local[1],size))
-                R_vv = self.autocorr_vv.loc[comp].copy().dropna().values\
-                    .reshape((NCL_local[1],size))
-                R_ww = self.autocorr_ww.loc[comp].copy().dropna().values\
-                    .reshape((NCL_local[1],size))
-            Phi_uu = fftpack.dct(R_uu[y_index])
-            Phi_vv = fftpack.dct(R_vv[y_index])
-            Phi_ww = fftpack.dct(R_ww[y_index])
-            wavenumber_spectra = 0.5*(Phi_uu + Phi_vv + Phi_ww)
-            coord = self._meta_data.CoordDF[comp].dropna()\
-                        .values[point1:point1+size]
-            delta_comp = coord[1]-coord[0]
-            Fs = (2.0*np.pi)/delta_comp
-            comp_size= wavenumber_spectra.size
-            wavenumber_comp = np.arange(comp_size)*Fs/comp_size
+#     def spectra_plot(self,comp, y_index, which_split='',fig='',ax=''):
+#         NCL_local = self._meta_data.NCL
+#         print(NCL_local[2])
+#         if not fig:
+#             fig,ax = plt.subplots()
+#         elif not ax:
+#             ax = fig.add_subplot(1,1,1)
+#         if (hasattr(self,'x_split_list') and which_split) or not hasattr(self,'x_split_list'):
+#             if which_split:
+#                 assert(type(which_split)==int)
+#                 split_string = "Split "+ str(which_split)
+#                 x_point2 = self.x_split_list[which_split]
+#                 x_point1 = point1 = self.x_split_list[which_split-1]
+#                 if comp =='x':
+#                     size = int(np.trunc(0.5*(x_point2-x_point1)))
+#                 else:
+#                     print(NCL_local[2])
+#                     size = int(np.trunc(NCL_local[2]))
+#                 print(size)
+#                 R_uu = self.autocorr_uu.loc[split_string,comp].copy().dropna().values\
+#                     .reshape((NCL_local[1],size))
+#                 R_vv = self.autocorr_vv.loc[split_string,comp].copy().dropna().values\
+#                     .reshape((NCL_local[1],size))
+#                 R_ww = self.autocorr_ww.loc[split_string,comp].copy().dropna().values\
+#                     .reshape((NCL_local[1],size))
+#             else:
+#                 x_point1 = point1 = 0
+#                 x_point2 = NCL_local[0]
+#                 if comp =='x':
+#                     size = int(np.trunc(0.5*(x_point2-x_point1)))
+#                 else:
+#                     size = int(np.trunc(0.5*NCL_local[2]))
+#                 R_uu = self.autocorr_uu.loc[comp].copy().dropna().values\
+#                     .reshape((NCL_local[1],size))
+#                 R_vv = self.autocorr_vv.loc[comp].copy().dropna().values\
+#                     .reshape((NCL_local[1],size))
+#                 R_ww = self.autocorr_ww.loc[comp].copy().dropna().values\
+#                     .reshape((NCL_local[1],size))
+#             Phi_uu = fftpack.dct(R_uu[y_index])
+#             Phi_vv = fftpack.dct(R_vv[y_index])
+#             Phi_ww = fftpack.dct(R_ww[y_index])
+#             wavenumber_spectra = 0.5*(Phi_uu + Phi_vv + Phi_ww)
+#             coord = self._meta_data.CoordDF[comp].dropna()\
+#                         .values[point1:point1+size]
+#             delta_comp = coord[1]-coord[0]
+#             Fs = (2.0*np.pi)/delta_comp
+#             comp_size= wavenumber_spectra.size
+#             wavenumber_comp = np.arange(comp_size)*Fs/comp_size
             
-            ax.plot(wavenumber_comp,np.abs(wavenumber_spectra))
-            ax.plot(wavenumber_comp,wavenumber_comp**(-5/3))
+#             ax.plot(wavenumber_comp,np.abs(wavenumber_spectra))
+#             ax.plot(wavenumber_comp,wavenumber_comp**(-5/3))
                     
-        elif hasattr(self,'x_split_list') and not which_split:
-            point1 = 0
-            for i in range(1,len(self.x_split_list)):
-                split_string = "Split "+ str(i)
-                if comp =='x':
-                    x_point2 = self.x_split_list[i]   
-                    x_point1 = point1 = self.x_split_list[i-1]
-                    size = int(np.trunc(0.5*(x_point2-x_point1)))
-                else:
-                    size = int(np.trunc(0.5*NCL_local[2]))
+#         elif hasattr(self,'x_split_list') and not which_split:
+#             point1 = 0
+#             for i in range(1,len(self.x_split_list)):
+#                 split_string = "Split "+ str(i)
+#                 if comp =='x':
+#                     x_point2 = self.x_split_list[i]   
+#                     x_point1 = point1 = self.x_split_list[i-1]
+#                     size = int(np.trunc(0.5*(x_point2-x_point1)))
+#                 else:
+#                     size = int(np.trunc(0.5*NCL_local[2]))
 
-                R_uu = self.autocorr_uu.loc[split_string,comp].copy().dropna().values\
-                    .reshape((NCL_local[1],size))
-                R_vv = self.autocorr_vv.loc[split_string,comp].copy().dropna().values\
-                    .reshape((NCL_local[1],size))
-                R_ww = self.autocorr_ww.loc[split_string,comp].copy().dropna().values\
-                    .reshape((NCL_local[1],size))
-                Phi_uu = fftpack.dct(R_uu[y_index])
-                Phi_vv = fftpack.dct(R_vv[y_index])
-                Phi_ww = fftpack.dct(R_ww[y_index])
-                wavenumber_spectra = 0.5*(Phi_uu + Phi_vv + Phi_ww)
-                coord = self._meta_data.CoordDF[comp].dropna()\
-                        .values[point1:point1+size]
-                delta_comp = coord[1]-coord[0]
-                Fs = (2.0*np.pi)/delta_comp
-                comp_size= wavenumber_spectra.size
-                wavenumber_comp = np.arange(comp_size)*Fs/comp_size
+#                 R_uu = self.autocorr_uu.loc[split_string,comp].copy().dropna().values\
+#                     .reshape((NCL_local[1],size))
+#                 R_vv = self.autocorr_vv.loc[split_string,comp].copy().dropna().values\
+#                     .reshape((NCL_local[1],size))
+#                 R_ww = self.autocorr_ww.loc[split_string,comp].copy().dropna().values\
+#                     .reshape((NCL_local[1],size))
+#                 Phi_uu = fftpack.dct(R_uu[y_index])
+#                 Phi_vv = fftpack.dct(R_vv[y_index])
+#                 Phi_ww = fftpack.dct(R_ww[y_index])
+#                 wavenumber_spectra = 0.5*(Phi_uu + Phi_vv + Phi_ww)
+#                 coord = self._meta_data.CoordDF[comp].dropna()\
+#                         .values[point1:point1+size]
+#                 delta_comp = coord[1]-coord[0]
+#                 Fs = (2.0*np.pi)/delta_comp
+#                 comp_size= wavenumber_spectra.size
+#                 wavenumber_comp = np.arange(comp_size)*Fs/comp_size
                 
-                ax.plot(wavenumber_comp,np.abs(wavenumber_spectra))
-            ax.plot(wavenumber_comp,wavenumber_comp**(-5/3))
-        ax.set_xlabel(r"$\kappa_z$",fontsize=18)
-        ax.set_ylabel(r"$E(\kappa_z)$")
-        ax.grid()
-        ax.set_xscale('log')
-        ax.set_yscale('log')
-        return fig, ax
+#                 ax.plot(wavenumber_comp,np.abs(wavenumber_spectra))
+#             ax.plot(wavenumber_comp,wavenumber_comp**(-5/3))
+#         ax.set_xlabel(r"$\kappa_z$",fontsize=18)
+#         ax.set_ylabel(r"$E(\kappa_z)$")
+#         ax.grid()
+#         ax.set_xscale('log')
+#         ax.set_yscale('log')
+#         return fig, ax
 #==================================================================================================
 #Autocorr v2
 class CHAPSim_autocov2():
@@ -3419,8 +3300,7 @@ class CHAPSim_autocov2():
                 Ruu[i]/=Ruu_0
         linestyle_list=['-','--','-.']
         if not fig:
-            fig,ax = plt.subplots(len(y_vals),figsize=[10,4*len(y_vals)],squeeze=False)
-            
+            fig,ax = cplt.subplots(len(y_vals),figsize=[10,4*len(y_vals)],squeeze=False)
         elif not ax:
             subplot_kw={'squeeze',False}
             ax = fig.subplots(len(y_vals),subplot_kw=subplot_kw)
@@ -3429,9 +3309,8 @@ class CHAPSim_autocov2():
 
         for j in range(len(y_vals)):
             for i in range(len(axis_index)):
-                ax[j].plot(coord,Ruu[:,y_index_axis_vals[i][j],axis_index[i]],
-                        label=r"$x=%.3f$"%(axis_vals[i]),
-                        linestyle=linestyle_list[i%len(linestyle_list)])
+                ax[j].cplot(coord,Ruu[:,y_index_axis_vals[i][j],axis_index[i]],
+                        label=r"$x=%.3f$"%(axis_vals[i]))
                 y_unit="y" if y_mode=='half_channel' \
                         else "\delta_u" if y_mode=='disp_thickness' \
                         else "\theta" if y_mode=='mom_thickness' else "Y^+"
@@ -3439,8 +3318,9 @@ class CHAPSim_autocov2():
             ax[j].set_ylabel(r"$R_{%s%s}$"%self.comp,fontsize=20)
             ax[j].set_xlabel(r"$%s/\delta$"%comp,fontsize=20)
             if j==0:
-                handles, labels = ax[j].get_legend_handles_labels()
-                ax[j].legend(handles, labels,fontsize=15)
+                axes_items_num = len(ax.get_lines())
+                ncol = 4 if axes_items_num>3 else axes_items_num
+                ax[j].clegend(vertical=False,ncol=ncol,fontsize=15)
         
         fig.tight_layout()
         return fig, ax
@@ -3470,7 +3350,7 @@ class CHAPSim_autocov2():
         # print(Ruu.shape)
         linestyle_list=['-','--','-.']
         if not fig:
-            fig,ax = plt.subplots(len(y_vals),figsize=[10,4*len(y_vals)],squeeze=False)
+            fig,ax = cplt.subplots(len(y_vals),figsize=[10,4*len(y_vals)],squeeze=False)
         elif not ax:
             subplot_kw={'squeeze',False}
             ax = fig.subplots(len(y_vals),subplot_kw=subplot_kw)
@@ -3486,17 +3366,17 @@ class CHAPSim_autocov2():
                 y_unit="y" if y_mode=='half_channel' \
                         else "\delta_u" if y_mode=='disp_thickness' \
                         else "\theta" if y_mode=='mom_thickness' else "Y^+"
-                ax[j].plot(wavenumber_comp,np.abs(wavenumber_spectra),
-                        label=r"$x=%.3f$"%(axis_vals[i]),
-                        linestyle=linestyle_list[i%len(linestyle_list)])
+                ax[j].cplot(wavenumber_comp,np.abs(wavenumber_spectra),
+                        label=r"$x=%.3f$"%(axis_vals[i]))
                 ax[j].set_title(r"$%s=%.3f$"%(y_unit,y_vals[j]),loc='left')
             string= (ord(self.comp[0])-ord('u')+1,ord(self.comp[1])-ord('u')+1,comp)
             ax[j].set_ylabel(r"$E_{%d%d}(\kappa_%s)$"%string,fontsize=20)
             ax[j].set_xlabel(r"$\kappa_%s$"%comp,fontsize=20)
         
             if j==0:
-                handles, labels = ax[j].get_legend_handles_labels()
-                ax[j].legend(handles, labels,fontsize=15)
+                axes_items_num = len(ax.get_lines())
+                ncol = 4 if axes_items_num>3 else axes_items_num
+                ax[j].clegend(ncol=ncol,vertical=False,fontsize=15)
         fig.tight_layout()
         return fig, ax
 #==================================================================================================
@@ -3680,7 +3560,7 @@ class CHAPSim_Quad_Anal():
     def line_plot(self,h_list,coord_list,prop_dir,x_vals=0,y_mode='half_channel',norm=False,fig='',ax=''):
         assert x_vals is None or not hasattr(x_vals,'__iter__')
         if not fig:
-            fig, ax = plt.subplots(4,len(coord_list),figsize=[12,5*len(coord_list)],squeeze=False)
+            fig, ax = cplt.subplots(4,len(coord_list),figsize=[12,5*len(coord_list)],squeeze=False)
         elif not ax:
             subplot_kw={'squeeze':False}
             ax = fig.subplots(4,len(coord_list),figsize=[12,5*len(coord_list)],subplot_kw=subplot_kw)
@@ -3721,13 +3601,12 @@ class CHAPSim_Quad_Anal():
                             quad_anal_index[k]=quad_anal[index[k][j],k]
                     else:
                         quad_anal_index=quad_anal[index[j],:] if prop_dir == 'x' else quad_anal[:,index[j]].T
-                    ax[i-1,j].plot(coords,quad_anal_index,label=r"$h=%.5g$"%h)
+                    ax[i-1,j].cplot(coords,quad_anal_index,label=r"$h=%.5g$"%h)
                     ax[i-1,j].set_xlabel(r"$%s/\delta$"%prop_dir,fontsize=20)
                     ax[i-1,j].set_ylabel(r"$Q%d$"%i,fontsize=20)
                     ax[i-1,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left',fontsize=16)
             
-        handles, labels = ax[0,0].get_legend_handles_labels()
-        ax[0,0].legend(handles, labels,fontsize=12)
+        ax[0,0].clegend(fontsize=12)
         fig.tight_layout()
         return fig, ax
     
@@ -3935,12 +3814,12 @@ class CHAPSim_mom_balance():
                 norm_terms[i] =  integrate.simps(momentum_norm[:,i],y_coord)
                 total_imbal[i] /= norm_terms[i]
         if not fig:
-            fig, ax = plt.subplots(figsize=[10,5])
+            fig, ax = cplt.subplots(figsize=[10,5])
         elif not ax:
             ax = fig.add_subplot(1,1,1)
         if abs:
             total_imbal = np.abs(total_imbal)    
-        ax.plot(x_coord,total_imbal)
+        ax.cplot(x_coord,total_imbal)
         ax.grid()
         ax.set_xlabel(r"$x/\delta$")
         ax.set_ylabel(r"$\int^\delta_{-\delta}$ Momentum Imabalance $dy \times 1/U_{bo}^2$")
