@@ -4,6 +4,8 @@
 # from any directory
 # This script must be run from the scripts/ directory
 #==============================================================
+
+#Checking directory is correct
 if [ ! -d bin ]; then
 	cd ../
 fi
@@ -14,15 +16,16 @@ main directory or the scripts directory...exiting\n"
 fi
 echo -e "\n *** SETTING UP CHAPSim_post ***\n"
 echo -e "Making CHAPSim_post\n"
+#Making directory: copies contents of src to bin 
 make all
 current_dir=$(pwd)
 if [ ! -d bin ]; then
 	echo -e "This has not be initiated from the correct directory\n"
 	exit 1
 fi
-#Ensuring that the .bashrc file isn't modified multiple tim
 
-input=$HOME/.bashrc
+#Modifying PYTHONPATH in .bashrc
+#Ensuring that the .bashrc file isn't modified multiple times
 if [ -f $HOME/.bashrc ]; then 
 	if [ ! $(cat $HOME/.bashrc | grep PYTHONPATH=\"\$PYTHONPATH:\$CHAPSim_bin\") &>/dev/null ]; then
 		current_dir=${current_dir// /"\ "}
@@ -37,25 +40,30 @@ fi
 
 #Adding path to conda if present
 if hash conda &>/dev/null ; then
+	#Creating conda environment if not already present
 	if [ ! $(conda env list | grep CHAPSim_post ) &>/dev/null ]; then
 		#Create conda environment
 		echo -e "### Creating conda environment\n"
 		conda  env create -f scripts/CHAPSim_post.yml
 
 		source activate CHAPSim_post
+		#adds bin to conda's search path
 		conda develop $current_dir/bin
+		wait
+		#testing by importing module
 		echo -e "### Testing conda environment\n "
-		if python3.7 -c "import CHAPSim_post; import CHAPSim_parallel; import CHAPSim_Tools;\
-						 import CHAPSim_plot" &>/dev/null ; then
+		
+		if $CONDA_PREFIX/bin/python -c "import CHAPSim_post; import CHAPSim_parallel; import CHAPSim_Tools;\
+						 import CHAPSim_plot" ; then
 			echo -e "Import test complete" 
 		else
+			#If it fails it removes the created environment
 			echo -e "Import test failed"
-			conda remove --name CHAPSim_post --all
+			conda remove --name CHAPSim_post -y --all
 			exit 1
 		fi
 	
 		conda deactivate
-		echo check
 	fi
 fi
 
