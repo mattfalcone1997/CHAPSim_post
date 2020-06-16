@@ -14,3 +14,4 @@ dependencies:
   - sympy
   - mpi4py
   - ipython
+  - pytables
