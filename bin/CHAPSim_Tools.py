@@ -258,9 +258,9 @@ def y_coord_index_norm(AVG_DF,CoordDF,coord_list,x_vals='',mode='half_channel'):
                                  + "Y_plus given: %g, max Y_plus: %g. Ignoring values beyond this" % (coord,max(y_coords_thick)))
                 break
         y_thick_index.append(y_thick)
-    #print(y_thick_index)
-    if len(coord_list)==1:
-        y_thick_index= list(itertools.chain(*y_thick_index))
+    print(y_thick_index)
+    # if len(coord_list)==1:
+    #     y_thick_index= list(itertools.chain(*y_thick_index))
     return y_thick_index
 def coord_index_calc(CoordDF,comp,coord_list):
     coords = CoordDF[comp].dropna().values

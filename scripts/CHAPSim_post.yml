@@ -15,3 +15,4 @@ dependencies:
   - mpi4py
   - ipython
   - pytables
+  - ffmpeg

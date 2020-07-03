@@ -535,8 +535,8 @@ class CHAPSim_Inst():
             ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
             ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
             fig.colorbar(ax1,ax=ax)
-            ax.set_xlabel(r"$%s/\delta$" % axis1,fontsize=18)
-            ax.set_ylabel(r"$%s/\delta$" % axis2,fontsize=16)
+            ax.set_xlabel(r"$%s/\delta$" % axis1)# ,fontsize=18)
+            ax.set_ylabel(r"$%s/\delta$" % axis2)# ,fontsize=16)
             #print('checkpoint4a',flush=True)
         else:
             fig = None
@@ -967,8 +967,8 @@ class CHAPSim_AVG():
             ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
             ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
             fig.colorbar(ax1,ax=ax)
-            ax.set_xlabel("$x/\delta$",fontsize=18)
-            ax.set_ylabel("$y/\delta$",fontsize=16)
+            ax.set_xlabel("$x/\delta$")# ,fontsize=18)
+            ax.set_ylabel("$y/\delta$")# ,fontsize=16)
         else:
             fig = None
             ax = None
@@ -1019,8 +1019,8 @@ class CHAPSim_AVG():
             ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
             ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
             fig.colorbar(ax1,ax=ax)
-            ax.set_xlabel("$x/\delta$",fontsize=18)
-            ax.set_ylabel("$y/\delta$",fontsize=16)
+            ax.set_xlabel("$x/\delta$")# ,fontsize=18)
+            ax.set_ylabel("$y/\delta$")# ,fontsize=16)
         else:
             fig = None
             ax = None
@@ -1642,8 +1642,8 @@ class CHAPSim_autocov():
                             .values[self.x_split_list[:-1]]
                         ax.legend([r"$x/\delta = %.3f$" %x for x in x_coord])
         if rank ==0:
-            ax.set_xlabel(r"$\kappa_%s$"%comp,fontsize=18)
-            ax.set_ylabel(r"$E(\kappa_%s)$"%comp,fontsize=16)
+            ax.set_xlabel(r"$\kappa_%s$"%comp)# ,fontsize=18)
+            ax.set_ylabel(r"$E(\kappa_%s)$"%comp)# ,fontsize=16)
             ax.grid()
             ax.set_xscale('log')
             #ax.set_yscale('log')
@@ -1854,8 +1854,8 @@ class CHAPSim_k_spectra(CHAPSim_autocov):
                         ax.legend([r"$x/\delta = %.3f$" %x for x in x_coord])
                     #ax.plot(wavenumber_comp,wavenumber_comp**(-5/3))
         if rank ==0:
-            ax.set_xlabel(r"$\kappa_%s$"%comp,fontsize=18)
-            ax.set_ylabel(r"$E(\kappa_%s)$"%comp,fontsize=16)
+            ax.set_xlabel(r"$\kappa_%s$"%comp)# ,fontsize=18)
+            ax.set_ylabel(r"$E(\kappa_%s)$"%comp)# ,fontsize=16)
             ax.grid()
             ax.set_xscale('log')
             #ax.set_yscale('log')
@@ -2318,14 +2318,14 @@ class CHAPSim_uv_pdf():
                     ax[i].yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
                     fig.colorbar(ax1,ax=ax[i])
                     if i == len(coord_xy_list)-1:
-                        ax[i].set_xlabel(r"$u'/U_b$",fontsize=18)
-                    ax[i].set_ylabel(r"$v'/U_b$",fontsize=16)
+                        ax[i].set_xlabel(r"$u'/U_b$")# ,fontsize=18)
+                    ax[i].set_ylabel(r"$v'/U_b$")# ,fontsize=16)
                     
                 else:
                     #needs to be updated
                     CS = ax.contour(u_mesh,v_mesh, extract.T,extent=(min(u_vals),
                                                                         max(u_vals),min(v_vals),max(v_vals)))
-                    ax.clabel(CS,inline=1,fontsize=10)
+                    ax.clabel(CS,inline=1)# ,fontsize=10)
                     
                 i+=1
         else:
@@ -2736,7 +2736,7 @@ class CHAPSim_Quad_Anal():
                         #Plot quadrant analysis
                         ax[i,j].plot(coord_prop[10:-1],concat_array[10:-1])
                         if h==h_set[-1] and coord==coord_set[-1]:
-                            ax[i,0].set_ylabel(r"Q%d"% (i+1),fontsize=16)
+                            ax[i,0].set_ylabel(r"Q%d"% (i+1))# ,fontsize=16)
             if rank ==0:
                 #Setting titles, lengends and labels
                 coord_value=coord_other[coord]
@@ -2744,7 +2744,7 @@ class CHAPSim_Quad_Anal():
                     ax[0,j].set_title(r"$Y^{+0} = %.3f$" % coord_value,loc='right')
                 else:
                     ax[0,j].set_title(r"$x/\delta = %.3f$" % coord_value,loc='right')
-                ax[3,j].set_xlabel(r"$%s/\delta$"% self._prop_dir,fontsize=18)        
+                ax[3,j].set_xlabel(r"$%s/\delta$"% self._prop_dir)# ,fontsize=18)        
             j+=1
         if rank ==0:
             ax[0,0].legend(["h ="+str(x) for x in  h_set])

@@ -56,7 +56,7 @@ import matplotlib as mpl
 from matplotlib import animation
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from scipy import integrate, fftpack
+from scipy import integrate, fft
 import os
 import itertools
 import time
@@ -213,7 +213,7 @@ class CHAPSim_Inst():
                 flow_interp[2,i,:,:] = 0.5*(flow_info[2,i,:,:-1] + flow_info[2,0,:,:-1])
         flow_interp[3,:,:,:] = flow_info[3,:,:,:-1] #Removing final pressure value 
         return flow_interp
-    def inst_contour(self,axis1,axis2,axis3_value,flow_field,PhyTime,fig='',ax=''):
+    def inst_contour(self,axis1,axis2,axis3_value,flow_field,PhyTime,fig='',ax='',**kwargs):
         """Function to output velocity contour plot on a particular plane"""
         #======================================================================
         # axis1 and axis2 represents the axes that will be shown in the plot
@@ -265,7 +265,9 @@ class CHAPSim_Inst():
             raise Exception
         
         if not fig:
-            fig,ax = plt.subplots(figsize=[10,3])
+            if 'figsize' not in kwargs.keys:
+                kwargs['figsize']=figsize=[10,5]
+            fig,ax = plt.subplots(**kwargs)
         elif not ax:
             ax = fig.add_subplot(1,1,1)
             
@@ -278,9 +280,9 @@ class CHAPSim_Inst():
             cbar_label=r"$\vert U\vert$"
         else:
             cbar_label=r"$%s$"%flow_field.upper()
-        cbar.set_label(cbar_label,fontsize=12)
-        ax.set_xlabel(r"$%s/\delta$" % axis1,fontsize=18)
-        ax.set_ylabel(r"$%s/\delta$" % axis2,fontsize=16)
+        cbar.set_label(cbar_label)# ,fontsize=12)
+        ax.set_xlabel(r"$%s/\delta$" % axis1)# ,fontsize=18)
+        ax.set_ylabel(r"$%s/\delta$" % axis2)# ,fontsize=16)
         #ax.axes().set_aspect('equal')
         #plt.colorbar(orientation='horizontal',shrink=0.5,pad=0.2)
         
@@ -670,7 +672,7 @@ class CHAPSim_AVG():
         return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
                     Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
 
-    def AVG_flow_contour(self,flow_field,PhyTime,relative=False,fig='',ax=''):
+    def AVG_flow_contour(self,flow_field,PhyTime,relative=False,fig='',ax='',**kwargs):
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
         if flow_field == 'u' or flow_field =='v' or flow_field =='w' or flow_field =='P':
@@ -689,9 +691,11 @@ class CHAPSim_AVG():
                 local_velo[:,i] -= wall_velo[i]
         
         if not fig:
-            fig, ax = plt.subplots(figsize=[10,5])
+            if 'figsize' not in kwargs.keys:
+                kwargs['figsize']=figsize=[10,5]
+            fig, ax = plt.subplots(figsize=[10,5],**kwargs)
         elif not ax:
-            ax = fig.subplots()
+            ax = fig.subplots(**kwargs)
         
         x_coords = self.CoordDF['x'].dropna().values
         y_coords = self.CoordDF['y'].dropna().values
@@ -706,14 +710,14 @@ class CHAPSim_AVG():
             cbar_label=r"$\vert\bar{U}\vert$"
         else:
             cbar_label=r"$\langle\bar{%s}\rangle$"%flow_field.upper()
-        cbar.set_label(cbar_label,fontsize=12)
-        ax.set_xlabel("x direction")
-        ax.set_ylabel("y direction")
+        cbar.set_label(cbar_label)# ,fontsize=12)
+        ax.set_xlabel("x  ")
+        ax.set_ylabel("y  ")
         #ax.axes().set_aspect('equal')
         #plt.colorbar(orientation='horizontal',shrink=0.5,pad=0.2)    
         
         return fig, ax1
-    def fluct_contour_plot(self,comp,PhyTime,fig='',ax=''):
+    def fluct_contour_plot(self,comp,PhyTime,fig='',ax='',**kwargs):
         assert(comp=='u' or comp=='v' or comp=='w')
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
@@ -723,7 +727,9 @@ class CHAPSim_AVG():
         U_mean = self.flow_AVGDF.loc[PhyTime,comp].values.reshape((self.NCL[1], self.NCL[0]))
         fluct = np.sqrt(UU - U_mean*U_mean)
         if not fig:
-            fig, ax = plt.subplots()
+            if 'figsize' not in kwargs.keys:
+                kwargs['figsize']=figsize=[10,5]
+            fig, ax = plt.subplots(**kwargs)
         elif not ax:
             ax = fig.add_subplot(1,1,1)
             
@@ -736,11 +742,11 @@ class CHAPSim_AVG():
         ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
         ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
         cbar=fig.colorbar(ax1,ax=ax)
-        cbar.set_label(r"$%s^\prime_{rms}$"%comp,fontsize=12)
+        cbar.set_label(r"$%s^\prime_{rms}$"%comp)# ,fontsize=12)
         ax.set_xlabel(r"$x/\delta$", fontsize=18)
-        ax.set_ylabel(r"$y/\delta$",fontsize=16)
+        ax.set_ylabel(r"$y/\delta$")# ,fontsize=16)
         return fig, ax
-    def AVG_line_extract(self,flow_field,PhyTime,x_list,fig='',ax=''):
+    def AVG_line_extract(self,flow_field,PhyTime,x_list,fig='',ax='',**kwargs):
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
         #line_DF, x_coord = _line_extract(self.flow_AVGDF.loc[PhyTime,flow_field],self.CoordDF,self.NCL,x_list)
@@ -749,26 +755,31 @@ class CHAPSim_AVG():
         velo_array[0,:]=self._meta_data.moving_wall_calc()
         velo_array[-1,:]=self._meta_data.moving_wall_calc()
         #velo_array=velo_array[:,x_list]
+        
+    
+        kwargs['squeeze']=False
         if not fig:
-            fig, ax = cplt.subplots(figsize=[10,5])
+            if 'figsize' not in kwargs.keys:
+                kwargs['figsize']=figsize=[10,5]
+            fig, ax = cplt.subplots(**kwargs)
         elif not ax:
-            ax = fig.subplots(squeeze=False)
+            ax = fig.subplots(**kwargs)
 
         y_coords=np.zeros(self.NCL[1]+2)
         y_coords[1:-1]=self.CoordDF['y'].dropna().values
         y_coords[0]=-1.0 ; y_coords[-1]=1.0
         x_coords = self.CoordDF['x'].dropna().values
         for x in x_list:
-            ax.cplot(y_coords,velo_array[:,x],label=r"$x= %.2f$" % x_coords[x])
-        ax.set_ylabel(r"$\langle U/U_{b0}\rangle$",fontsize=20)
-        ax.grid()
-        ax.set_xlabel(r"$y/\delta$",fontsize=20)
+            ax.cplot(y_coords,velo_array[:,x],label=r"$x= %.3g$" % x_coords[x])
+        ax.set_ylabel(r"$\langle U/U_{b0}\rangle$")# ,fontsize=20)
+        #ax.grid()
+        ax.set_xlabel(r"$y/\delta$")# ,fontsize=20)
         axes_items_num = len(ax.get_lines())
         ncol = 4 if axes_items_num>3 else axes_items_num
-        ax.clegend(ncol=ncol,vertical=False,fontsize=16)
+        ax.clegend(ncol=ncol,vertical=False)# ,fontsize=16)
         return fig, ax
     #def non_dom_calc(self,PhyTime,)
-    def plot_near_wall(self,PhyTime,x_loc,U_plus=True,plotsep=True,Y_plus_lim='',fig='',ax=''):
+    def plot_near_wall(self,PhyTime,x_loc,U_plus=True,plotsep=True,Y_plus_lim='',fig='',ax='',**kwargs):
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
         #wall_params = self._metaDF.loc['moving_wallflg':'VeloWall']
@@ -793,9 +804,12 @@ class CHAPSim_AVG():
                     U_plus[i,j] = U[i,j]/u_tau_star[j]
             #print(Y_plus[300],U_plus[:,300])
             if not fig:
-                fig, ax = cplt.subplots(figsize=[10,5])
+                if 'figsize' not in kwargs.keys():
+                    kwargs['figsize'] = [8,6]
+                fig, ax = cplt.subplots(**kwargs)
             elif not ax:
-                ax = fig.subplots(squeeze=False)
+                ax = fig.subplots(**kwargs)
+
             if isinstance(x_loc,int):
                 ax.cplot(Y_plus[x_loc,:int(self.NCL[1]/2)],U_plus[:int(self.NCL[1]/2),x_loc],label=r"$x/\delta =%.3g$" % self.CoordDF['x'].dropna().values[x_loc])
                 ax.cplot(Y_plus[x_loc,:int(self.NCL[1]/2)],Y_plus[x_loc,:int(self.NCL[1]/2)],'r--',label=r"$U^+=Y^+$")
@@ -810,10 +824,10 @@ class CHAPSim_AVG():
             else:
                 raise TypeError("\033[1;32 Not a valid type")
             ax.set_xscale('log')
-            ax.set_ylabel(r"$U^+$")
-            ax.set_xlabel(r"$Y^+$")
+            ax.set_ylabel(r"$U^+$")# ,fontsize=18)
+            ax.set_xlabel(r"$Y^+$")# ,fontsize=18)
             ax.set_ylim(top=1.2*np.max(U_plus),bottom=0.0)
-            ax.grid()
+            #ax.grid()
 
         else:
             U=U[:,x_loc]
@@ -834,7 +848,7 @@ class CHAPSim_AVG():
                 for i in range(len(x_loc)):
                     ax[i].cplot(U[:,i],Y[:,i],linewidth=1)
                     ax[i].set_xlim(right=max_u)
-                    ax[i].annotate("$x=%.3f$"%self.CoordDF['x'].dropna().values[x_loc[i]],
+                    ax[i].annotate("$x=%.3g$"%self.CoordDF['x'].dropna().values[x_loc[i]],
                                 xy=(0.01,1.03),xytext=(0.01,1.03),textcoords='axes fraction',
                                 fontsize=12)
                     ax[i].xaxis.set_ticks_position('both')
@@ -849,28 +863,30 @@ class CHAPSim_AVG():
                     if i==0:
                         ax[i].yaxis.set_ticks_position('left')
                         if Y_plus_lim:
-                            ax[i].set_ylabel(r"$Y^+$",fontsize=20)
+                            ax[i].set_ylabel(r"$Y^+$")# ,fontsize=20)
                         else:
-                            ax[i].set_ylabel(r"$y/\delta$",fontsize=20)
+                            ax[i].set_ylabel(r"$y/\delta$")# ,fontsize=20)
                     if Y_plus_lim:
                         ax[i].set_ylim(bottom=0,top=Y_plus_lim)
                     if i == int(np.ceil(len(x_loc)/2)):
                         ax[i].set_xlabel(r'$\langle U/U_{b0}\rangle$', fontsize=20)    
             else:
                 if not fig:
-                    fig,ax = cplt.subplots(figsize=[10,5])
+                    if 'figsize' not in kwargs.keys():
+                        kwargs['figsize'] = [8,6]
+                    fig, ax = cplt.subplots(**kwargs)
                 elif not ax:
-                    ax=fig.c_add_subplot(1,1,1)
+                    ax = fig.subplots(**kwargs)
                 linestyles=['-','--',':','-.']
                 for i in range(len(x_loc)):
-                    ax.cplot(Y[:,i],U[:,i],linewidth=1, label=r"$x=%.3f$"%self.CoordDF['x'].dropna().values[x_loc[i]])
+                    ax.cplot(Y[:,i],U[:,i],linewidth=1, label=r"$x=%.3g$"%self.CoordDF['x'].dropna().values[x_loc[i]])
                 ax.set_ylabel(r'$\langle U/U_{b0}\rangle$', fontsize=20)    
-                ax.set_xlabel(r"$y/\delta$",fontsize=20)
+                ax.set_xlabel(r"$y/\delta$")# ,fontsize=20)
 
                 axes_items_num = len(ax.get_lines())
                 ncol = 4 if axes_items_num>3 else axes_items_num
-                ax.clegend(vertical=True,ncol=ncol,fontsize=16)
-                ax.grid()
+                ax.clegend(vertical=True,ncol=ncol)# ,fontsize=16)
+                #ax.grid()
                 if Y_plus_lim:
                         ax.set_xlim(left=-1,right=y_max)
                 fig.tight_layout()
@@ -879,7 +895,7 @@ class CHAPSim_AVG():
         
         
         #ax.set_yscale('log')
-
+        # fig.tight_layout()
         return fig, ax
     def AVG_vector_plot(self,PhyTime,axis1_spacing, axis2_spacing,fig='',ax=''):
         if type(PhyTime) == float:
@@ -896,7 +912,7 @@ class CHAPSim_AVG():
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
         U0_index = int(np.floor(self.NCL[1]*0.5))
-        U_mean = self.flow_AVGDF.loc[PhyTime,'u'].values.reshape((self.NCL[1],self.NCL[0]))
+        U_mean = self.flow_AVGDF.loc[PhyTime,'u'].copy().values.reshape((self.NCL[1],self.NCL[0]))
         if relative:
             wall_velo = self._meta_data.moving_wall_calc()
             for i in range(wall_velo.size):
@@ -916,17 +932,21 @@ class CHAPSim_AVG():
         shape_factor = np.divide(disp_thickness,mom_thickness)
         
         return disp_thickness, mom_thickness, shape_factor
-    def plot_shape_factor(self,PhyTime,relative=False,fig='',ax=''):
+    def plot_shape_factor(self,PhyTime,relative=False,fig='',ax='',**kwargs):
         delta, theta, shape_factor = self.int_thickness_calc(PhyTime,relative)
         x_coords = self.CoordDF['x'].dropna().values
         if not fig:
-            fig, ax = cplt.subplots()
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [7,5]
+            fig, ax = cplt.subplots(**kwargs)
         elif not ax:
             ax = fig.c_add_subplot(1,1,1)
         ax.cplot(x_coords,shape_factor)
-        ax.set_xlabel(r"$x$ direction")
-        ax.set_ylabel(r"Shape Factor, $H$")
-        ax.grid()
+        ax.set_xlabel(r"$x/\delta$ ")# ,fontsize=18)
+        ylabel= "H_{rel}" if relative else "H"
+        ax.set_ylabel(r"$%s$"%ylabel)# ,fontsize=18)
+        #ax.grid()
+        fig.tight_layout()
         return fig, ax
     def accel_param_calc(self,PhyTime):
         if type(PhyTime) == float:
@@ -956,7 +976,7 @@ class CHAPSim_AVG():
         return accel_param
     
     
-    def plot_Reynolds(self,comp1,comp2,x_loc,PhyTime,norm=None,Y_plus=True,fig='',ax=''):
+    def plot_Reynolds(self,comp1,comp2,x_loc,PhyTime,norm=None,Y_plus=True,fig='',ax='',**kwargs):
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
         comp_uu =comp1 + comp2
@@ -984,7 +1004,9 @@ class CHAPSim_AVG():
             for i in range(self.NCL[0]):
                 uu[:,i] = uu[:,i]/(velo_bulk[i]*velo_bulk[i])
         if not fig:
-            fig,ax = cplt.subplots(figsize=[10,5])
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [10,5]
+            fig,ax = cplt.subplots(**kwargs)
         elif not ax:
             ax = fig.c_add_subplot(1,1,1)
         if isinstance(x_loc,int):
@@ -1010,27 +1032,27 @@ class CHAPSim_AVG():
             raise TypeError("\033[1;32 x_loc must be of type list or int")
         if norm=='wall':
             if comp_uu == 'uv':
-                ax.set_ylabel(r"$-\langle %s\rangle/u_\tau^2$"% comp_uu,fontsize=20)
+                ax.set_ylabel(r"$-\langle %s\rangle/u_\tau^2$"% comp_uu)# ,fontsize=20)
             else:
-                ax.set_ylabel(r"$\langle %s\rangle/u_\tau^2$"% comp_uu,fontsize=20)
+                ax.set_ylabel(r"$\langle %s\rangle/u_\tau^2$"% comp_uu)# ,fontsize=20)
         elif norm=='local-bulk':
             if comp_uu == 'uv':
-                ax.set_ylabel(r"$-\langle %s\rangle/U_b^2$"% comp_uu,fontsize=20)
+                ax.set_ylabel(r"$-\langle %s\rangle/U_b^2$"% comp_uu)# ,fontsize=20)
             else:
-                ax.set_ylabel(r"$\langle %s\rangle/U_b^2$"% comp_uu,fontsize=20)
+                ax.set_ylabel(r"$\langle %s\rangle/U_b^2$"% comp_uu)# ,fontsize=20)
         else:
             if comp_uu == 'uv':
-                ax.set_ylabel(r"$-\langle %s\rangle/U_{b0}^2$"% comp_uu,fontsize=20)
+                ax.set_ylabel(r"$-\langle %s\rangle/U_{b0}^2$"% comp_uu)# ,fontsize=20)
             else:
-                ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"% comp_uu,fontsize=20)
+                ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"% comp_uu)# ,fontsize=20)
         
         if Y_plus:
-            ax.set_xlabel(r"$Y^+$",fontsize=20)
+            ax.set_xlabel(r"$Y^+$")# ,fontsize=20)
         else:
-            ax.set_xlabel(r"$y/\delta$",fontsize=20)
-        ax.grid()
+            ax.set_xlabel(r"$y/\delta$")# ,fontsize=20)
+        #ax.grid()
         
-            
+        fig.tight_layout()
         
         return fig, ax
     def plot_Reynolds_x(self,comp1,comp2,y_vals_list,Y_plus=True,PhyTime='',fig='',ax='',**kwargs):
@@ -1071,7 +1093,9 @@ class CHAPSim_AVG():
             rms_vals = UU-U1_mean*U2_mean
             rms_vals = np.amax(rms_vals,axis=0)
         if not fig:
-            fig,ax = cplt.subplots(figsize=[10,5])
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [10,5]
+            fig,ax = cplt.subplots(**kwargs)
         elif not ax:
             ax=fig.c_add_subplot(1,1,1)
 
@@ -1084,55 +1108,61 @@ class CHAPSim_AVG():
             axes_items_num = len(ax.get_lines())
             ncol = 4 if axes_items_num>3 else axes_items_num
             ax.clegend(vertical=False,ncol=ncol, fontsize=16)
-            ax.set_xlabel(r"$x/\delta$",fontsize=20)
-            ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)$"%comp_uu,fontsize=20)#,fontsize=22)
+            ax.set_xlabel(r"$x/\delta$")# ,fontsize=20)
+            ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)$"%comp_uu)# ,fontsize=20)#)# ,fontsize=22)
             
         else:
             ax.cplot(x_coords,rms_vals,label=r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%comp_uu)
-            ax.set_xlabel(r"$x/\delta$",fontsize=20)
-            ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%comp_uu,fontsize=20)#,fontsize=22)
+            ax.set_xlabel(r"$x/\delta$")# ,fontsize=20)
+            ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%comp_uu)# ,fontsize=20)#)# ,fontsize=22)
         
         # ax.set_xlabel(r"$x/\delta$",text_kwargs)
-        # ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%comp_uu,text_kwargs)#,fontsize=22)
-        ax.grid()
-        # fig.tight_layout()
+        # ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%comp_uu,text_kwargs)#)# ,fontsize=22)
+        #ax.grid()
+        fig.tight_layout()
         return fig, ax
     
-    def plot_bulk_velocity(self,PhyTime,fig='',ax=''):
+    def plot_bulk_velocity(self,PhyTime,relative=True,fig='',ax='',**kwargs):
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
        
         U_mean = self.flow_AVGDF.loc[PhyTime,'u'].copy().values.reshape((self.NCL[1],self.NCL[0]))
-        wall_velo = self._meta_data.moving_wall_calc()
-        for i in range(self.NCL[1]):
-            U_mean[i] = U_mean[i] - wall_velo 
+        if relative:
+            wall_velo = self._meta_data.moving_wall_calc()
+            for i in range(self.NCL[1]):
+                U_mean[i] = U_mean[i] - wall_velo 
         x_coords = self.CoordDF['x'].dropna().values
         y_coords = self.CoordDF['y'].dropna().values
         bulk_velo = np.zeros(self.NCL[0])
         for i in range(self.NCL[0]):
             bulk_velo[i] = 0.5*integrate.simps(U_mean[:,i],y_coords)
         if not fig:
-            fig, ax=cplt.subplots()
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [7,5]
+            fig, ax=cplt.subplots(**kwargs)
         elif not ax:
             ax =fig.add_subplot(1,1,1)
         ax.cplot(x_coords,bulk_velo)
-        ax.set_ylabel(r"$U_b^*$",fontsize=20)
-        ax.set_xlabel(r"$x/\delta$",fontsize=20)
-        ax.grid()
+        ax.set_ylabel(r"$U_b^*$")# ,fontsize=20)
+        ax.set_xlabel(r"$x/\delta$")# ,fontsize=20)
+        #ax.grid()
         return fig, ax
-    def plot_accel_param(self,PhyTime,fig='',ax=''):
+    def plot_accel_param(self,PhyTime,fig='',ax='',**kwargs):
         accel_param = self.accel_param_calc(PhyTime)
         x_coords = self.CoordDF['x'].dropna().values
         if not fig:
-            fig,ax=cplt.subplots()
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [7,5]
+            fig,ax=cplt.subplots(**kwargs)
         elif not ax:
             ax =fig.add_subplot(1,1,1)
         
         ax.cplot(x_coords,accel_param)
-        ax.set_xlabel(r"$x$ direction")
-        ax.set_ylabel(r"Acceleration parameter, $K$")
+        ax.set_xlabel(r"$x/\delta$")# ,fontsize=18)
+        ax.set_ylabel(r"$K$")# ,fontsize=18)
         ax.ticklabel_format(style='sci',axis='y',scilimits=(-5,5))
-        ax.grid()
+        #ax.grid()
+        fig.tight_layout()
         return fig,ax
     def tau_calc(self,PhyTime):
         if type(PhyTime) == float:
@@ -1195,7 +1225,7 @@ class CHAPSim_AVG():
     #     skin_friction = (2.0/(rho_star*bulk_velo**2))*(1/REN)*tau_star
 
     #     return skin_friction
-    def plot_skin_friction(self,PhyTime,fig='',ax=''):
+    def plot_skin_friction(self,PhyTime,fig='',ax='',**kwargs):
         rho_star = 1.0
         REN = self._metaDF.loc['REN'].values[0]
         tau_star = self.tau_calc(PhyTime)
@@ -1204,17 +1234,19 @@ class CHAPSim_AVG():
         skin_friction = (2.0/(rho_star*bulk_velo*bulk_velo))*(1/REN)*tau_star
         xcoords = self.CoordDF['x'].dropna().values
         if not fig:
-            fig,ax = cplt.subplots()
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [7,5]
+            fig,ax = cplt.subplots(**kwargs)
         elif not ax:
             ax = fig.add_subplot(1,1,1)
         
         ax.cplot(xcoords,skin_friction)
-        ax.set_xlabel(r"$x/\delta$",fontsize=20)
-        ax.set_ylabel(r"$C_f$",fontsize=20)
-        
-        ax.grid()
+        ax.set_xlabel(r"$x/\delta$")# ,fontsize=20)
+        ax.set_ylabel(r"$C_f$")# ,fontsize=20)
+        fig.tight_layout()
+        #ax.grid()
         return fig, ax
-    def plot_eddy_visc(self,x_loc,PhyTime='',Y_plus=True,Y_plus_max=100,fig='',ax=''):
+    def plot_eddy_visc(self,x_loc,PhyTime='',Y_plus=True,Y_plus_max=100,fig='',ax='',**kwargs):
         
         if PhyTime:
             if type(PhyTime) == float:
@@ -1249,7 +1281,9 @@ class CHAPSim_AVG():
         
         
         if not fig:
-            fig, ax = cplt.subplots(figsize=[10,5])
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [10,5]
+            fig, ax = cplt.subplots(**kwargs)
         elif not ax:
             ax = fig.add_subplot(1,1,1)
         linestyle_list=['-','--','-.']
@@ -1272,18 +1306,18 @@ class CHAPSim_AVG():
                 y_coord_local = y_coord
                 nu_t_local = nu_t[:,i]
             
-            label = r"$x/\delta = %.2g$" %x_coord[x_loc_local[i]]
+            label = r"$x/\delta = %.3g$" %x_coord[x_loc_local[i]]
             
             ax.cplot(y_coord_local,nu_t_local,label=label)
             if Y_plus:
-                ax.set_xlabel(r"$Y^+$",fontsize=18)
+                ax.set_xlabel(r"$Y^+$")# ,fontsize=18)
                 ax.set_xlim([0,Y_plus_max])
                 ax.set_ylim([-0.5,max(nu_t_local)*1.2])
             else:
-                ax.set_xlabel(r"$y/\delta$",fontsize=18)
+                ax.set_xlabel(r"$y/\delta$")# ,fontsize=18)
                 ax.set_xlim([-1,-0.1])
                 ax.set_ylim([-0.5,max(nu_t_local)*1.2])
-            ax.set_ylabel(r"$\mu_t/\mu$",fontsize=16)
+            ax.set_ylabel(r"$\mu_t/\mu$")# ,fontsize=16)
 
             axes_items_num = len(ax.get_lines())
             ncol = 4 if axes_items_num>3 else axes_items_num
@@ -1347,7 +1381,7 @@ class CHAPSim_peturb():
         for i in range(1,self.__AVGDF.NCL[0]):
             rms_velo_peturb[:,i] = (velo_rms[:,i] - velo_rms[:,0])/(bulk_velo[i]-bulk_velo[0])
         return rms_velo_peturb
-    def plot_peturb_velo(self,x_indices,mode='mean',comp='u',Y_plus=False,Y_plus_max=100,fig='',ax =''):
+    def plot_peturb_velo(self,x_indices,mode='mean',comp='u',Y_plus=False,Y_plus_max=100,fig='',ax ='',**kwargs):
         try:
             if mode =='mean':
                 velo_peturb = self.mean_velo_peturb_calc(comp)
@@ -1359,7 +1393,9 @@ class CHAPSim_peturb():
             warnings.warn("\033[1;33This function can only be used if moving wall is used, ignoring")
             return None, None
         if not fig:
-            fig, ax = cplt.subplots(figsize=[10,5])
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [10,5]
+            fig, ax = cplt.subplots(**kwargs)
         elif not ax:
             ax = fig.add_subplot(1,1,1)
         y_coord = self._meta_data.CoordDF['y'].dropna().values
@@ -1378,24 +1414,24 @@ class CHAPSim_peturb():
         else:
             y_max= Y_plus_max*delta_v_star[0]-1.0
         for x,j in zip(x_indices,range(len(x_indices))):
-            label=r"$x/\delta = %.2f$" % x_coord[x_indices[j]]
+            label=r"$x/\delta = %.3g$" % x_coord[x_indices[j]]
             ax.cplot(velo_peturb[:,x],y_coord,label=label)
         if mode =='mean':
-            ax.set_xlabel(r"$\bar{U}^{\wedge}$",fontsize=18)
+            ax.set_xlabel(r"$\bar{U}^{\wedge}$")# ,fontsize=18)
         elif mode =='rms':
-            ax.set_xlabel(r"${%s\prime}_{rms}^{\wedge}$" % comp,fontsize=18)
+            ax.set_xlabel(r"${%s\prime}_{rms}^{\wedge}$" % comp)# ,fontsize=18)
         if Y_plus:
-            ax.set_ylabel(r"$Y^+$",fontsize=16)
+            ax.set_ylabel(r"$Y^+$")# ,fontsize=16)
             ax.set_ylim([0,Y_plus_max])
         else:
-            ax.set_ylabel(r"$y/\delta$",fontsize=16)
+            ax.set_ylabel(r"$y/\delta$")# ,fontsize=16)
             ax.set_ylim([-1,y_max])
         axes_items_num = len(ax.get_lines())
         ncol = 4 if axes_items_num>3 else axes_items_num
         ax.clegend(vertical=False,ncol=ncol, fontsize=16)
         fig.tight_layout()
         return fig, ax
-    def plot_peturb_cf(self,wall_units=False,fig='',ax=''):
+    def plot_peturb_cf(self,wall_units=False,fig='',ax='',**kwargs):
         try:
             tau_du = self.tau_du_calc()
         except UnboundLocalError:
@@ -1415,18 +1451,20 @@ class CHAPSim_peturb():
         x_coord = self._meta_data.CoordDF['x'].dropna().values[1:] 
         
         if not fig:
-            fig, ax = cplt.subplots(figsize=[10,5])
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [10,5]
+            fig, ax = cplt.subplots(**kwargs)
         elif not ax:
             ax = fig.add_subplot(1,1,1)
             
         ax.cplot(x_coord, Cf_du)
-        ax.set_xlabel(r"$x/\delta$",fontsize=18)
+        ax.set_xlabel(r"$x/\delta$")# ,fontsize=18)
         if wall_units:
-            ax.set_ylabel(r"$C\prime_{f,du}$",fontsize=16)
+            ax.set_ylabel(r"$C\prime_{f,du}$")# ,fontsize=16)
         else:
-            ax.set_ylabel(r"$C_{f,du}$",fontsize=16)
+            ax.set_ylabel(r"$C_{f,du}$")# ,fontsize=16)
         ax.set_ylim([0,2*Cf_du[-1]])
-        ax.grid()
+        #ax.grid()
         return fig, ax
     
 class CHAPSim_fluct():
@@ -1579,9 +1617,9 @@ class CHAPSim_fluct():
                 ax2 = ax1.axes
                 ax1.set_clim(min_val,max_val)
                 cbar=fig.colorbar(ax1,ax=ax[i])
-                cbar.set_label(r"$%s^\prime$"%comp,fontsize=12)
-                ax2.set_xlabel(r"$%s/\delta$" % 'x',fontsize=20)
-                ax2.set_ylabel(r"$%s/\delta$" % 'z',fontsize=20)
+                cbar.set_label(r"$%s^\prime$"%comp)# ,fontsize=12)
+                ax2.set_xlabel(r"$%s/\delta$" % 'x')# ,fontsize=20)
+                ax2.set_ylabel(r"$%s/\delta$" % 'z')# ,fontsize=20)
                 ax[i]=ax1
         else:
             ax=ax.flatten()
@@ -1596,9 +1634,9 @@ class CHAPSim_fluct():
                     ax2 = ax1.axes
                     ax1.set_clim(min_val,max_val)
                     cbar=fig.colorbar(ax1,ax=ax[j*len(y_vals)+i])
-                    cbar.set_label(r"$%s^\prime$"%comp,fontsize=12)
-                    ax2.set_xlabel(r"$%s/\delta$" % 'x',fontsize=20)
-                    ax2.set_ylabel(r"$%s/\delta$" % 'z',fontsize=20)
+                    cbar.set_label(r"$%s^\prime$"%comp)# ,fontsize=12)
+                    ax2.set_xlabel(r"$%s/\delta$" % 'x')# ,fontsize=20)
+                    ax2.set_ylabel(r"$%s/\delta$" % 'z')# ,fontsize=20)
                     ax[j*len(y_vals)+i]=ax1
                     ax[j*len(y_vals)+i].axes.set_aspect('equal')
         fig.tight_layout()
@@ -1713,13 +1751,13 @@ class CHAPSim_fluct():
                                      fluct[:,i,x_coords_split[j]:x_coords_split[j+1]],
                                      rstride=1, cstride=1, cmap='jet',
                                             linewidth=0, antialiased=False)
-                ax[j*len(y_vals)+i].set_ylabel(r'$x/\delta$',fontsize=20)
-                ax[j*len(y_vals)+i].set_xlabel(r'$z/\delta$',fontsize=20)
-                ax[j*len(y_vals)+i].set_zlabel(r'$%s^\prime$'%comp,fontsize=20)
+                ax[j*len(y_vals)+i].set_ylabel(r'$x/\delta$')# ,fontsize=20)
+                ax[j*len(y_vals)+i].set_xlabel(r'$z/\delta$')# ,fontsize=20)
+                ax[j*len(y_vals)+i].set_zlabel(r'$%s^\prime$'%comp)# ,fontsize=20)
                 ax[j*len(y_vals)+i].set_zlim(min_val,max_val)
                 surf.set_clim(min_val,max_val)
                 cbar=fig.colorbar(surf,ax=ax[j*len(y_vals)+i])
-                cbar.set_label(r"$%s^\prime$"%comp,fontsize=12)
+                cbar.set_label(r"$%s^\prime$"%comp)# ,fontsize=12)
                 #ax_list.append(ax)
                 ax[j*len(y_vals)+i]=surf
         fig.tight_layout()
@@ -1786,7 +1824,7 @@ class CHAPSim_fluct():
                 fig, ax = fluct_data.plot_contour(comp,y_vals,time,x_split_list=x_split_list,fig=fig)
             else:
                 fig,ax = fluct_data.plot_fluct3D_xz(y_vals,comp,time,x_split_list,fig)
-            ax[0].axes.set_title(r"$t^*=%.3f$"%time)
+            ax[0].axes.set_title(r"$t^*=%.3g$"%time)
 
             for im in ax:
                 im.set_clim(lim_min,lim_max)
@@ -1795,7 +1833,7 @@ class CHAPSim_fluct():
             return ax
         anim = mpl.animation.FuncAnimation(fig,animate,frames=frames)
         
-        # print("\033[1;32m The colorbar limits are set to (%.3f,%.3f) the maximum limits are (%.3f,%.3f)\033[0;37m\n"%(lim_min,lim_max,lims[0],lims[1]))
+        # print("\033[1;32m The colorbar limits are set to (%.3g,%.3g) the maximum limits are (%.3g,%.3g)\033[0;37m\n"%(lim_min,lim_max,lims[0],lims[1]))
         # del lims
         return anim
 
@@ -1812,12 +1850,12 @@ class CHAPSim_meta():
         if not fromfile:
             self.CoordDF, self.NCL, self.Coord_ND_DF,\
             self.metaDF, self.path_to_folder,\
-            self._abs_path = self.__extract_meta(*args,**kwargs)
+            self._abs_path, self.__moving_wall = self.__extract_meta(*args,**kwargs)
 
         else:
             self.CoordDF, self.NCL, self.Coord_ND_DF,\
             self.metaDF, self.path_to_folder,\
-            self._abs_path = self.__hdf_extract(*args,**kwargs)
+            self._abs_path, self.__moving_wall = self.__hdf_extract(*args,**kwargs)
 
     def __extract_meta(self,path_to_folder='',abs_path=True,tgpost=False):
         CoordDF, NCL = self._coord_extract(path_to_folder,abs_path,tgpost)
@@ -1825,7 +1863,8 @@ class CHAPSim_meta():
         metaDF = self._readdata_extract(path_to_folder,abs_path)
         path_to_folder = path_to_folder
         abs_path = abs_path
-        return CoordDF, NCL, Coord_ND_DF, metaDF, path_to_folder, abs_path
+        moving_wall = self.__moving_wall_setup(NCL,path_to_folder,abs_path,metaDF)
+        return CoordDF, NCL, Coord_ND_DF, metaDF, path_to_folder, abs_path, moving_wall
 
     @classmethod
     def from_hdf(cls,*args,**kwargs):
@@ -1842,8 +1881,9 @@ class CHAPSim_meta():
         NCL = hdf_file[base_name+'/NCL'][:]
         path_to_folder = hdf_file[base_name].attrs['path_to_folder'].decode('utf-8')
         abs_path = bool(hdf_file[base_name].attrs['abs_path'])
+        moving_wall = hdf_file[base_name+'/moving_wall'][:]
         hdf_file.close()
-        return CoordDF, NCL, Coord_ND_DF, metaDF, path_to_folder, abs_path
+        return CoordDF, NCL, Coord_ND_DF, metaDF, path_to_folder, abs_path, moving_wall
     
     def save_hdf(self,file_name,write_mode,group_name=''):
         base_name=group_name if group_name else 'CHAPSim_meta'
@@ -1853,6 +1893,7 @@ class CHAPSim_meta():
         group.attrs["path_to_folder"] = self.path_to_folder.encode('utf-8')
         group.attrs["abs_path"] = int(self._abs_path)
         group.create_dataset("NCL",data=self.NCL)
+        group.create_dataset("moving_wall",data=self.__moving_wall)
         hdf_file.close()
         self.metaDF.to_hdf(file_name,key=base_name+'/metaDF',mode='a',format='fixed',data_columns=True)
         self.CoordDF.to_hdf(file_name,key=base_name+'/CoordDF',mode='a',format='fixed',data_columns=True)
@@ -2006,20 +2047,22 @@ class CHAPSim_meta():
         Z_series = pd.Series(ZND)
         CoordDF = pd.DataFrame({'x':X_series,'y':Y_series,'z':Z_series})
         return CoordDF
-    def moving_wall_calc(self):
-        wall_velo = np.zeros(self.NCL[0])
-        if int(self.metaDF.loc['moving_wallflg',0]) == 1:
-            if not self._abs_path:
-                file_path = os.path.abspath(os.path.join(self.path_to_folder,'CHK_MOVING_WALL.dat'))
+    def __moving_wall_setup(self,NCL,path_to_folder,abs_path,metaDF):
+        wall_velo = np.zeros(NCL[0])
+        if int(metaDF.loc['moving_wallflg',0]) == 1:
+            if not abs_path:
+                file_path = os.path.abspath(os.path.join(path_to_folder,'CHK_MOVING_WALL.dat'))
             else:
-                file_path = os.path.join(self.path_to_folder,'CHK_MOVING_WALL.dat')
+                file_path = os.path.join(path_to_folder,'CHK_MOVING_WALL.dat')
             
             mw_file = open(file_path)
             wall_velo_ND = np.loadtxt(mw_file,comments='#',usecols=1)
-            for i in range(1,self.NCL[0]+1):
+            for i in range(1,NCL[0]+1):
                 wall_velo[i-1] = 0.5*(wall_velo_ND[i+1] + wall_velo_ND[i])
 
         return wall_velo
+    def moving_wall_calc(self):
+        return self.__moving_wall
     def __str__(self):
         return self.metaDF.__str__()
 class CHAPSim_budget():
@@ -2296,7 +2339,7 @@ class CHAPSim_budget():
         
         dissipation = -(2/REN)*(du1dxdu2dx + du1dydu2dy)
         return dissipation.reshape(self.AVG_DF.NCL[0]*self.AVG_DF.NCL[1])
-    def budget_plot(self,PhyTime, x_list,wall_units=True, fig='', ax =''):
+    def budget_plot(self,PhyTime, x_list,wall_units=True, fig='', ax ='',**kwargs):
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
         #wall_params = self.AVG_DF._metaDF.loc['moving_wallflg':'VeloWall']
@@ -2319,13 +2362,20 @@ class CHAPSim_budget():
             ax_size = 1
 
         ax_size=(int(np.ceil(ax_size/2)),2) if ax_size >2 else (ax_size,1)
-        print(ax_size)
+
+        kwargs['squeeze'] = False
         lower_extent= 0.2
-        gridspec_kw={'bottom': lower_extent,'wspace':0.3,'hspace':0.3}
+        kwargs['gridspec_kw'] = {'bottom': lower_extent}
+        kwargs['constrained_layout'] = False
+        # gridspec_kw={'bottom': lower_extent}
         if not fig:
-            fig, ax = cplt.subplots(*ax_size,figsize=[6*ax_size[1],4.5*ax_size[0]],squeeze=False,gridspec_kw=gridspec_kw,constrained_layout=False)
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize']=[7*ax_size[1],5*ax_size[0]+1]
+            else:
+                warnings.warn("Figure size calculator overidden: Figure quality may be degraded")
+            fig, ax = cplt.subplots(*ax_size,**kwargs)
         elif not ax:
-            ax=fig.subplots(*ax_size,squeeze=False,gridspec_kw=gridspec_kw,constrained_layout=False)
+            ax=fig.subplots(*ax_size,**kwargs)
             
         comp_list = tuple([x[1] for x in self.budgetDF.index])
         #print(comp_list)
@@ -2355,35 +2405,36 @@ class CHAPSim_budget():
                 if wall_units:
                     ax[i].set_xscale('log')
                     ax[i].set_xlim(left=1.0)
-                    ax[i].set_xlabel(r"$Y^+$",fontsize=18)
+                    ax[i].set_xlabel(r"$Y^+$")# ,fontsize=18)
                 else:
-                    ax[i].set_xlabel(r"$y/\delta$",fontsize=18)
+                    ax[i].set_xlabel(r"$y/\delta$")# ,fontsize=18)
                 
-                ax[i].set_title(r"$x/\delta=%.3f$" %x_coords[x],loc='right',pad=-20)
+                ax[i].set_title(r"$x/\delta=%.3g$" %x_coords[x],loc='right',pad=-20)
                 if i[1] == 0:
                     if mpl.rcParams['text.usetex'] == True:
-                        ax[i].set_ylabel("Loss\ \ \ \ \ \ \ \ Gain",fontsize=18)
+                        ax[i].set_ylabel("Loss\ \ \ \ \ \ \ \ Gain")# ,fontsize=18)
                     else:
-                        ax[i].set_ylabel("Loss        Gain",fontsize=18)
+                        ax[i].set_ylabel("Loss        Gain")# ,fontsize=18)
                 
-                ax[i].grid()
+                #ax[i].grid()
 
                 handles, labels = ax[0,0].get_legend_handles_labels()
                 handles = cplt.flip_leg_col(handles,4)
                 labels = cplt.flip_leg_col(labels,4)
 
-                fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.15),ncol=4,fontsize=17)
-                #ax[0,0].clegend(vertical=False,loc = 'lower left',ncol=4, bbox_to_anchor=(0,1.02),fontsize=13)
+                fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.1),ncol=4)# ,fontsize=17)
+                #ax[0,0].clegend(vertical=False,loc = 'lower left',ncol=4, bbox_to_anchor=(0,1.02))# ,fontsize=13)
                 
             k += 1
         # if type(ax_size)==tuple:
         #     while k <ax_size[0]*ax_size[1]:
         #         i=ax_convert(k)
-        #         ax[i].remove()
+        #         ax[i].remove()exit
         #         k+=1   
-        # fig.tight_layout()         
+        gs = ax[0,0].get_gridspec()
+        gs.tight_layout(fig,rect=(0,0.1,1,1))
         return fig, ax
-    def plot_integral_budget(self,PhyTime,wall_units=True,fig='',ax=''):
+    def plot_integral_budget(self,PhyTime,wall_units=True,fig='',ax='',**kwargs):
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
         comp_list = tuple([x[1] for x in self.budgetDF.index])
@@ -2391,7 +2442,9 @@ class CHAPSim_budget():
         x_coords = self.AVG_DF.CoordDF['x'].dropna().values
         u_tau_star, delta_v_star = wall_unit_calc(self.AVG_DF,PhyTime)
         if not fig:
-            fig,ax = cplt.subplots(figsize=[10,5])
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [10,5]
+            fig,ax = cplt.subplots(**kwargs)
         elif not ax:
             ax = fig.add_subplots(1,1,1)
         for comp in comp_list:
@@ -2405,12 +2458,12 @@ class CHAPSim_budget():
             ax.cplot(x_coords,integral_budget,label=comp.title())
         
         if wall_units:
-            ax.set_ylabel(r"$\int_{-\delta}^{\delta} %s$ budget $dy\times u_{\tau}^4\delta/\nu $" %self.comp,fontsize=16)
+            ax.set_ylabel(r"$\int_{-\delta}^{\delta} %s$ budget $dy\times u_{\tau}^4\delta/\nu $" %self.comp)# ,fontsize=16)
         else:
-            ax.set_ylabel(r"$\int_{-\delta}^{\delta} %s$ budget $dy\times 1/U_{b0}^3 $"%self.comp,fontsize=16)
-        ax.set_xlabel(r"$x/\delta$",fontsize=18)
+            ax.set_ylabel(r"$\int_{-\delta}^{\delta} %s$ budget $dy\times 1/U_{b0}^3 $"%self.comp)# ,fontsize=16)
+        ax.set_xlabel(r"$x/\delta$")# ,fontsize=18)
         ax.clegend(ncol=4,vertical=False)
-        ax.grid()
+        #ax.grid()
         return fig, ax
     def __str__(self):
         return self.budgetDF.__str__()
@@ -2902,7 +2955,7 @@ class CHAPSim_k_budget(CHAPSim_budget):
 #                 comp_size= wavenumber_spectra.size
 #                 wavenumber_comp = np.arange(comp_size)*Fs/comp_size
                 
-#                 ax.plot(wavenumber_comp,np.abs(wavenumber_spectra),label="x=%.3f"%x_coord[i-1])
+#                 ax.plot(wavenumber_comp,np.abs(wavenumber_spectra),label="x=%.3g"%x_coord[i-1])
 #             wavenumber_comp = wavenumber_comp[wavenumber_comp>0]
 #             ax.plot(wavenumber_comp,wavenumber_comp**(-5/3),label='Kolmogorov spectrum')
 #             handles, labels = ax.get_legend_handles_labels()
@@ -2910,10 +2963,10 @@ class CHAPSim_k_budget(CHAPSim_budget):
 #                   loc = 'upper center',ncol=4*(len(labels)>3)+len(labels)*(len(labels)<4),
 #                   bbox_to_anchor=(0.5,-0.2),
 #                   fontsize=16)
-#         ax.set_xlabel(r"$\kappa_%s$"%comp,fontsize=20)
+#         ax.set_xlabel(r"$\kappa_%s$"%comp)# ,fontsize=20)
 #         string= (ord(self.comp[0])-ord('u')+1,ord(self.comp[1])-ord('u')+1,comp)
-#         ax.set_ylabel(r"$E_{%d%d}(\kappa_%s)$"%string,fontsize=20)
-#         ax.grid()
+#         ax.set_ylabel(r"$E_{%d%d}(\kappa_%s)$"%string)# ,fontsize=20)
+#         #ax.grid()
 #         ax.set_xscale('log')
 #         fig.tight_layout()
 #         #ax.set_yscale('log')
@@ -3024,9 +3077,9 @@ class CHAPSim_k_budget(CHAPSim_budget):
                 
 #                 ax.plot(wavenumber_comp,np.abs(wavenumber_spectra))
 #             ax.plot(wavenumber_comp,wavenumber_comp**(-5/3))
-#         ax.set_xlabel(r"$\kappa_z$",fontsize=18)
+#         ax.set_xlabel(r"$\kappa_z$")# ,fontsize=18)
 #         ax.set_ylabel(r"$E(\kappa_z)$")
-#         ax.grid()
+#         #ax.grid()
 #         ax.set_xscale('log')
 #         ax.set_yscale('log')
 #         return fig, ax
@@ -3111,7 +3164,7 @@ class CHAPSim_autocov2():
         hdf_file = h5py.File(file_name,'r')
         max_x_sep = hdf_file[base_name].attrs["max_x_sep"]
         max_z_sep = hdf_file[base_name].attrs["max_z_sep"]
-        comp = tuple(hdf_file[base_name].attrs["comp"][:])
+        comp = tuple(np.char.decode(hdf_file[base_name].attrs["comp"][:]))
         hdf_file.close()
 
         meta_data = CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
@@ -3218,7 +3271,7 @@ class CHAPSim_autocov2():
                 ax1.axes.set_ylabel(r"$Y^{+}$", fontsize=20)
             else:
                 ax1.axes.set_ylabel(r"$y/\delta$", fontsize=20)
-            ax1.axes.set_title(r"$x=%.3f$"%axis_vals[i],loc='left')
+            ax1.axes.set_title(r"$x=%.3g$"%axis_vals[i],loc='left')
             if Y_plus_max:
                 ax1.axes.set_ylim(top=Y_plus_max)
             fig.colorbar(ax1,ax=ax1.axes)
@@ -3263,14 +3316,14 @@ class CHAPSim_autocov2():
             ax1.axes.set_xlabel(r"$x/\delta$", fontsize=20)
             
             ax1.axes.set_ylabel(r"$\Delta %s/\delta$" %comp, fontsize=20)
-            title = r"$%s=%.3f$"%("y" if axis_mode=='half_channel' \
+            title = r"$%s=%.3g$"%("y" if axis_mode=='half_channel' \
                         else "\delta_u" if axis_mode=='disp_thickness' \
                         else "\theta" if axis_mode=='mom_thickness' else "Y^+", axis_vals[i] )
-            ax1.axes.set_title(title,fontsize=15,loc='left')
+            ax1.axes.set_title(title)# ,fontsize=15,loc='left')
             fig.colorbar(ax1,ax=ax1.axes)
         fig.tight_layout()
         return fig, ax
-    def plot_autocorr_line(self,comp,axis_vals,y_vals,y_mode='half_channel',norm=True,fig='',ax=''):
+    def plot_autocorr_line(self,comp,axis_vals,y_vals,y_mode='half_channel',norm_xval=None,norm=True,fig='',ax='',**kwargs):
         if comp == 'x':
             shape=(self.max_x_sep,self.NCL[1],self.NCL[0]-self.max_x_sep)
         elif comp=='z':
@@ -3282,13 +3335,17 @@ class CHAPSim_autocov2():
             axis_index = [axis_index]
             #raise TypeError("Variable `axis_vals' must be an int or iterable\n")
 
-        
+        if norm_xval is not None:
+            x_axis_vals=[norm_xval]*len(axis_vals)
+            print(x_axis_vals)
+        else:
+            x_axis_vals=axis_vals
 
         coord = self._meta_data.CoordDF[comp].dropna().values[:shape[0]]
         if not hasattr(y_vals,'__iter__'):
             y_vals = [y_vals]
         y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
-                                                    y_vals,axis_vals,y_mode)
+                                                    y_vals,x_axis_vals,y_mode)
         Ruu = self.autocorrDF.loc[comp].dropna().values.reshape(shape)#[:,axis_vals,:]
         # Ruu=np.zeros((shape[0],len(y_vals),len(axis_index)))
         # for x_index,y_indices in zip(axis_index,y_index_axis_vals):
@@ -3298,33 +3355,43 @@ class CHAPSim_autocov2():
             Ruu_0=Ruu[0].copy()
             for i in range(shape[0]):
                 Ruu[i]/=Ruu_0
-        linestyle_list=['-','--','-.']
+
         if not fig:
-            fig,ax = cplt.subplots(len(y_vals),figsize=[10,4*len(y_vals)],squeeze=False)
+            if 'figsize' not in kwargs:
+                kwargs['figsize'] = [10,5*len(y_vals)]
+                if len(y_vals) >1:
+                    warnings.warn("figure size algorithm overrided: may result in poor quality graphs")
+            kwargs['squeeze'] = False
+            fig,ax = cplt.subplots(len(y_vals),**kwargs)
         elif not ax:
-            subplot_kw={'squeeze',False}
-            ax = fig.subplots(len(y_vals),subplot_kw=subplot_kw)
+            kwargs['subplot_kw'] = {'squeeze',False}
+            ax = fig.subplots(len(y_vals),**kwargs)
+
         ax=ax.flatten()
         coord = self._meta_data.CoordDF[comp].dropna().values[:shape[0]]
 
         for j in range(len(y_vals)):
             for i in range(len(axis_index)):
                 ax[j].cplot(coord,Ruu[:,y_index_axis_vals[i][j],axis_index[i]],
-                        label=r"$x=%.3f$"%(axis_vals[i]))
+                        label=r"$x=%.3g$"%(axis_vals[i]))
+                #creating title label
                 y_unit="y" if y_mode=='half_channel' \
                         else "\delta_u" if y_mode=='disp_thickness' \
-                        else "\theta" if y_mode=='mom_thickness' else "Y^+"
-                ax[j].set_title(r"$%s=%.3f$"%(y_unit,y_vals[j]),loc='left')
-            ax[j].set_ylabel(r"$R_{%s%s}$"%self.comp,fontsize=20)
-            ax[j].set_xlabel(r"$%s/\delta$"%comp,fontsize=20)
-            if j==0:
-                axes_items_num = len(ax.get_lines())
-                ncol = 4 if axes_items_num>3 else axes_items_num
-                ax[j].clegend(vertical=False,ncol=ncol,fontsize=15)
-        
-        fig.tight_layout()
+                        else "\theta" if y_mode=='mom_thickness' \
+                        else "Y^+" if norm_xval !=0 else "Y^{+0}"
+ 
+
+                ax[j].set_title(r"$%s=%.3g$"%(y_unit,y_vals[j]),loc='left')
+            ax[j].set_ylabel(r"$R_{%s%s}$"%self.comp)# ,fontsize=20)
+            ax[j].set_xlabel(r"$%s/\delta$"%comp)# ,fontsize=20)
+            
+        axes_items_num = len(ax[0].get_lines())
+        ncol = 4 if axes_items_num>3 else axes_items_num
+        ax[0].clegend(vertical=False,ncol=ncol)# ,fontsize=15)
+        ax[0].get_gridspec().tight_layout(fig)
+
         return fig, ax
-    def plot_spectra(self,comp,axis_vals,y_vals,y_mode='half_channel',fig='',ax=''):
+    def plot_spectra(self,comp,axis_vals,y_vals,y_mode='half_channel',norm_xval=None,fig='',ax='',**kwargs):
         if comp == 'x':
             shape=(self.max_x_sep,self.NCL[1],self.NCL[0]-self.max_x_sep)
         elif comp=='z':
@@ -3336,48 +3403,56 @@ class CHAPSim_autocov2():
             axis_index = [axis_index]
             #raise TypeError("Variable `axis_vals' must be an int or iterable\n")
 
-        
+        if norm_xval is not None:
+            x_axis_vals=[norm_xval]*len(axis_vals)
+        else:
+            x_axis_vals=axis_vals
 
         coord = self._meta_data.CoordDF[comp].dropna().values[:shape[0]]
         if not hasattr(y_vals,'__iter__'):
             y_vals = [y_vals]
         y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
-                                                    y_vals,axis_vals,y_mode)
+                                                    y_vals,x_axis_vals,y_mode)
         Ruu = self.autocorrDF.loc[comp].dropna().values.reshape(shape)#[:,axis_vals,:]
         # Ruu=np.zeros((shape[0],len(y_vals),len(axis_index)))
         # for x_index,y_indices in zip(axis_index,y_index_axis_vals):
         #     Ruu[:,:,i] = Ruu_all[:,y_indices,x_index].reshape(Ruu[:,y_indices,x_index].shape)
         # print(Ruu.shape)
-        linestyle_list=['-','--','-.']
+
         if not fig:
-            fig,ax = cplt.subplots(len(y_vals),figsize=[10,4*len(y_vals)],squeeze=False)
+            if 'figsize' not in kwargs:
+                kwargs['figsize'] = [10,5*len(y_vals)]
+                if len(y_vals) >1:
+                    warnings.warn("figure size algorithm overrided: may result in poor quality graphs")
+            kwargs['squeeze'] = False
+            fig,ax = cplt.subplots(len(y_vals),**kwargs)
         elif not ax:
-            subplot_kw={'squeeze',False}
-            ax = fig.subplots(len(y_vals),subplot_kw=subplot_kw)
+            kwargs['subplot_kw'] = {'squeeze',False}
+            ax = fig.subplots(len(y_vals),**kwargs)
         ax=ax.flatten()
 
         for j in range(len(y_vals)):
             for i in range(len(axis_index)):
-                wavenumber_spectra = fftpack.dct(Ruu[:,y_index_axis_vals[i][j],axis_index[i]])
+                wavenumber_spectra = fft.rfft(Ruu[:,y_index_axis_vals[i][j],axis_index[i]])
                 delta_comp = coord[1]-coord[0]
                 Fs = (2.0*np.pi)/delta_comp
-                comp_size= wavenumber_spectra.size
-                wavenumber_comp = np.arange(comp_size)*Fs/comp_size
+                comp_size= Ruu[:,y_index_axis_vals[i][j],axis_index[i]].size
+                wavenumber_comp = 2*np.pi*fft.rfftfreq(comp_size,coord[1]-coord[0])
                 y_unit="y" if y_mode=='half_channel' \
                         else "\delta_u" if y_mode=='disp_thickness' \
-                        else "\theta" if y_mode=='mom_thickness' else "Y^+"
-                ax[j].cplot(wavenumber_comp,np.abs(wavenumber_spectra),
-                        label=r"$x=%.3f$"%(axis_vals[i]))
-                ax[j].set_title(r"$%s=%.3f$"%(y_unit,y_vals[j]),loc='left')
+                        else "\theta" if y_mode=='mom_thickness' \
+                        else "Y^+" if norm_xval !=0 else "Y^{+0}"
+                ax[j].cplot(wavenumber_comp,2*np.abs(wavenumber_spectra),
+                        label=r"$x=%.3g$"%(axis_vals[i]))
+                ax[j].set_title(r"$%s=%.3g$"%(y_unit,y_vals[j]),loc='left')
             string= (ord(self.comp[0])-ord('u')+1,ord(self.comp[1])-ord('u')+1,comp)
-            ax[j].set_ylabel(r"$E_{%d%d}(\kappa_%s)$"%string,fontsize=20)
-            ax[j].set_xlabel(r"$\kappa_%s$"%comp,fontsize=20)
+            ax[j].set_ylabel(r"$E_{%d%d}(\kappa_%s)$"%string)# ,fontsize=20)
+            ax[j].set_xlabel(r"$\kappa_%s$"%comp)# ,fontsize=20)
         
-            if j==0:
-                axes_items_num = len(ax.get_lines())
-                ncol = 4 if axes_items_num>3 else axes_items_num
-                ax[j].clegend(ncol=ncol,vertical=False,fontsize=15)
-        fig.tight_layout()
+        axes_items_num = len(ax[0].get_lines())
+        ncol = 4 if axes_items_num>3 else axes_items_num
+        ax[0].clegend(ncol=ncol,vertical=False)# ,fontsize=15)
+        ax[0].get_gridspec().tight_layout(fig)
         return fig, ax
 #==================================================================================================
     def spectrum_contour(self,comp,axis_vals,axis_mode='half_channel',fig='',ax=''):
@@ -3420,14 +3495,14 @@ class CHAPSim_autocov2():
             ax1 = ax[i].pcolormesh(X,Y,np.abs(wavenumber_spectra),cmap='jet')
             ax1.axes.set_xlabel(r"$x/\delta$", fontsize=20)
             ax1.axes.set_ylabel(r"$\kappa_%s$"%comp, fontsize=20)
-            title = r"$%s=%.3f$"%("y" if axis_mode=='half_channel' \
+            title = r"$%s=%.3g$"%("y" if axis_mode=='half_channel' \
                         else "\delta_u" if axis_mode=='disp_thickness' \
                         else "\theta" if axis_mode=='mom_thickness' else "Y^+", axis_vals[i] )
             ax1.axes.set_ylim([np.amin(wavenumber_comp[1:]),np.amax(wavenumber_comp)])
-            ax1.axes.set_title(title,fontsize=15,loc='left')
+            ax1.axes.set_title(title)# ,fontsize=15,loc='left')
             fig.colorbar(ax1,ax=ax1.axes)
             ax_out.append(ax1)
-        fig.tight_layout()
+        axes[0].get_gridspec().tight_layout(fig)
         return fig, np.array(ax_out)
 
 class CHAPSim_Quad_Anal():
@@ -3602,11 +3677,12 @@ class CHAPSim_Quad_Anal():
                     else:
                         quad_anal_index=quad_anal[index[j],:] if prop_dir == 'x' else quad_anal[:,index[j]].T
                     ax[i-1,j].cplot(coords,quad_anal_index,label=r"$h=%.5g$"%h)
-                    ax[i-1,j].set_xlabel(r"$%s/\delta$"%prop_dir,fontsize=20)
-                    ax[i-1,j].set_ylabel(r"$Q%d$"%i,fontsize=20)
-                    ax[i-1,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left',fontsize=16)
-            
-        ax[0,0].clegend(fontsize=12)
+                    ax[i-1,j].set_xlabel(r"$%s/\delta$"%prop_dir)# ,fontsize=20)
+                    ax[i-1,j].set_ylabel(r"$Q%d$"%i)# ,fontsize=20)
+                    ax[i-1,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')# ,fontsize=16)
+                    ax[i-1,j].toggle_default_line_markers()
+        ax[0,0].clegend(vertical=False)# ,fontsize=12)
+
         fig.tight_layout()
         return fig, ax
     
@@ -3724,7 +3800,7 @@ class CHAPSim_mom_balance():
         Reynolds = Reynolds.reshape((self._AVG_data.NCL[1]*self._AVG_data.NCL[0]))
         ReynoldsDF = pd.DataFrame(Reynolds)
         return ReynoldsDF
-    def diff_contour(self,comp='',norm=False,abs=False,fig='',ax=''):
+    def diff_contour(self,comp='',norm=False,abs=False,fig='',ax='',**kwargs):
         term_list = ['Advection','P_grad','Viscous','Reynolds']
         momentum = np.zeros((3,self.NCL[1]*self.NCL[0]))
         if norm:
@@ -3745,7 +3821,9 @@ class CHAPSim_mom_balance():
         
         if comp:
             if not fig:
-                fig, ax = plt.subplots(figsize=[10,5])
+                if 'figsize' not in kwargs.keys():
+                    kwargs['figsize'] = [10,5]  
+                fig, ax = plt.subplots(**kwargs)
             elif not ax:
                 ax = fig.add_subplot(1,1,1)
             momentum_comp = momentumDF.loc[comp].copy().values.reshape((self.NCL[1],self.NCL[0]))
@@ -3760,8 +3838,8 @@ class CHAPSim_mom_balance():
             ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
             ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
             fig.colorbar(ax1,ax=ax)
-            ax.set_xlabel(r"$x/\delta$",fontsize=18)
-            ax.set_ylabel(r"$y/\delta$",fontsize=18)
+            ax.set_xlabel(r"$x/\delta$")# ,fontsize=18)
+            ax.set_ylabel(r"$y/\delta$")# ,fontsize=18)
         else:
             if not fig:
                 fig, ax = plt.subplots(3,figsize=[10,15])
@@ -3775,8 +3853,8 @@ class CHAPSim_mom_balance():
                 ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
                 ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
                 fig.colorbar(ax1,ax=ax)
-                ax.set_xlabel(r"$x/\delta$",fontsize=18)
-                ax.set_ylabel(r"$y/\delta$",fontsize=18)
+                ax.set_xlabel(r"$x/\delta$")# ,fontsize=18)
+                ax.set_ylabel(r"$y/\delta$")# ,fontsize=18)
                 i+=1
         return fig, ax
     def plot_total_imbalance(self,comp,norm=False,abs=False,fig='',ax=''):
@@ -3820,7 +3898,7 @@ class CHAPSim_mom_balance():
         if abs:
             total_imbal = np.abs(total_imbal)    
         ax.cplot(x_coord,total_imbal)
-        ax.grid()
+        #ax.grid()
         ax.set_xlabel(r"$x/\delta$")
         ax.set_ylabel(r"$\int^\delta_{-\delta}$ Momentum Imabalance $dy \times 1/U_{bo}^2$")
         return fig, ax
@@ -3930,9 +4008,9 @@ def _vector_plot(CoordDF,twoD_DF,NCL,fig,ax,axis1_spacing,\
                 local_y_coords[j] = y_coords[j*axis2_spacing]
     q = ax.quiver(local_x_coords,local_y_coords,vector_array[0],vector_array[1],angles='uv', scale_units=None, scale=None)
     key_size = np.max(vector_array)
-    ax.quiverkey(q,0.8,-0.125,key_size,r'$U/U_{b0}=%0.3f$'%key_size,labelpos='E',coordinates='axes')
-    ax.set_xlabel(r"$%s$ direction" % axis1)
-    ax.set_ylabel(r"$%s$ direction" % axis2)
+    ax.quiverkey(q,0.8,-0.125,key_size,r'$U/U_{b0}=%0.3g$'%key_size,labelpos='E',coordinates='axes')
+    ax.set_xlabel(r"$%s$  " % axis1)
+    ax.set_ylabel(r"$%s$  " % axis2)
     return fig,ax
 def _axis_check(axis1,axis2):
     try:
