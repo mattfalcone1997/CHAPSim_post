@@ -524,7 +524,7 @@ class CHAPSim_AVG():
         metaDF = meta_data.metaDF
         NCL=meta_data.NCL
 
-        flow_AVFDF = pd.read_hdf(file_name,key=base_name+'/flow_AVGDF')
+        flow_AVGDF = pd.read_hdf(file_name,key=base_name+'/flow_AVGDF')
         PU_vectorDF = pd.read_hdf(file_name,key=base_name+'/PU_vectorDF')
         UU_tensorDF = pd.read_hdf(file_name,key=base_name+'/UU_tensorDF')
         UUU_tensorDF = pd.read_hdf(file_name,key=base_name+'/UUU_tensorDF')
@@ -534,7 +534,7 @@ class CHAPSim_AVG():
 
         times = list(set([x[0] for x in flow_AVGDF.index]))
         shape = (NCL[1],NCL[1])
-        return_list = [meta_data, CoordDF, metaDF, NCL,shape, times,flow_AVFDF,
+        return_list = [meta_data, CoordDF, metaDF, NCL,shape, times,flow_AVGDF,
                     PU_vectorDF,UU_tensorDF,UUU_tensorDF,Velo_grad_tensorDF,
                     PR_Velo_grad_tensorDF,DUDX2_tensorDF]
         return itertools.chain(return_list)
