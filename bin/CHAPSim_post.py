@@ -457,14 +457,14 @@ class CHAPSim_AVG():
         fromfile= kwargs.pop('fromfile',False)
         if not fromfile:
             self._meta_data, self.CoordDF,self._metaDF,\
-            self.NCL,self.flow_AVGDF,self.PU_vectorDF,\
+            self.NCL,self.shape,self.__times,self.flow_AVGDF,self.PU_vectorDF,\
             self.UU_tensorDF,self.UUU_tensorDF,\
             self.Velo_grad_tensorDF, self.PR_Velo_grad_tensorDF,\
             self.DUDX2_tensorDF = self.__extract_avg(*args,**kwargs)
 
         else:
             self._meta_data, self.CoordDF,self._metaDF,\
-            self.NCL,self.flow_AVGDF,self.PU_vectorDF,\
+            self.NCL,self.shape,self.__times,self.flow_AVGDF,self.PU_vectorDF,\
             self.UU_tensorDF,self.UUU_tensorDF,\
             self.Velo_grad_tensorDF, self.PR_Velo_grad_tensorDF,\
             self.DUDX2_tensorDF = self.__hdf_extract(*args,**kwargs)
@@ -480,7 +480,7 @@ class CHAPSim_AVG():
             DF_list = self.__AVG_extract(time,time0,path_to_folder,abs_path,tgpost)
         elif hasattr(time,'__iter__'):
             for PhyTime in time:
-                if 'flow_AVGDF' not in locals():
+                if 'DF_list' not in locals():
                     DF_list = self.__AVG_extract(PhyTime,time0,path_to_folder,abs_path,tgpost)
                 else:
                     DF_temp=[]
@@ -494,7 +494,10 @@ class CHAPSim_AVG():
         else:
             raise TypeError("\033[1;32 `time' can only be a float or a list")
         
-        return_list = [meta_data, CoordDF, metaDF, NCL, *DF_list]
+        times = list(set([x[0] for x in DF_list[0].index]))
+        shape = (NCL[1],NCL[1])
+
+        return_list = [meta_data, CoordDF, metaDF, NCL,shape,times, *DF_list]
         return itertools.chain(return_list)
     @classmethod
     def from_hdf(cls,*args,**kwargs):
@@ -529,7 +532,9 @@ class CHAPSim_AVG():
         PR_Velo_grad_tensorDF = pd.read_hdf(file_name,key=base_name+'/PR_Velo_grad_tensorDF')
         DUDX2_tensorDF = pd.read_hdf(file_name,key=base_name+'/DUDX2_tensorDF')
 
-        return_list = [meta_data, CoordDF, metaDF, NCL, flow_AVFDF,
+        times = list(set([x[0] for x in flow_AVGDF.index]))
+        shape = (NCL[1],NCL[1])
+        return_list = [meta_data, CoordDF, metaDF, NCL,shape, times,flow_AVFDF,
                     PU_vectorDF,UU_tensorDF,UUU_tensorDF,Velo_grad_tensorDF,
                     PR_Velo_grad_tensorDF,DUDX2_tensorDF]
         return itertools.chain(return_list)
@@ -1327,7 +1332,213 @@ class CHAPSim_AVG():
     def __str__(self):
         return self.flow_AVGDF.__str__()
     
+class CHAPSim_AVG_tg_base():
+    def __init__(self,*args,**kwargs):
+        fromfile = kwargs.pop("fromfile",False)
+        if not fromfile:
+            self._meta_data, self.CoordDF,self._metaDF,\
+            self.NCL,self.shape, self.__times,self.flow_AVGDF,self.PU_vectorDF,\
+            self.UU_tensorDF,self.UUU_tensorDF,\
+            self.Velo_grad_tensorDF, self.PR_Velo_grad_tensorDF,\
+            self.DUDX2_tensorDF = self.__extract_avg(*args,**kwargs)
+        else:
+            self._meta_data, self.CoordDF,self._metaDF,\
+            self.NCL,self.shape, self.__times,self.flow_AVGDF,self.PU_vectorDF,\
+            self.UU_tensorDF,self.UUU_tensorDF,\
+            self.Velo_grad_tensorDF, self.PR_Velo_grad_tensorDF,\
+            self.DUDX2_tensorDF = self.__hdf_extract(*args,**kwargs)
+
+    def __extract_avg(self,PhyTimes,meta_data='',path_to_folder='',time0='',abs_path=True):
+        if not meta_data:
+            meta_data = CHAPSim_meta(path_to_folder,abs_path,tgpost=True)
+        CoordDF = meta_data.CoordDF
+        metaDF = meta_data.metaDF
+        NCL = meta_data.NCL
+        if isinstance(PhyTimes,float):
+            times = [PhyTimes]
+            DF_list = self.__AVG_extract(PhyTimes,path_to_folder,abs_path)
+        elif hasattr(PhyTimes,'__iter__'):
+            times = ['%.9g' % time for time in PhyTimes]
+            for PhyTime in PhyTimes:
+                if 'DF_list' not in locals():
+                    DF_list = self.__AVG_extract(PhyTime,path_to_folder,abs_path)
+                else:
+                    DF_temp=[]
+                    local_DF_list = self.__AVG_extract(PhyTime,path_to_folder,abs_path)
+                    for DF, local_DF in zip(DF_list, local_DF_list):
+                        concat_DF = [DF, local_DF]
+                        DF_temp.append(pd.concat(concat_DF,axis=1))
+                    DF_list=DF_temp
+            
+
+            old_shape = (len(times),NCL[1])
+            flat_shape = (NCL[1]*len(times))
+            for DF in DF_list:
+                DF.columns = range(flat_shape)
+                for index, row in DF.iterrows():
+                    DF.loc[index] = pd.Series(row.values.reshape(old_shape).T.reshape(flat_shape))
+        else:
+            raise TypeError("\033[1;32 `PhyTimes' can only be a float or a list")
+
+        
+                    
                 
+        return_list = [meta_data, CoordDF, metaDF, NCL,old_shape[::-1],times,*DF_list]
+        return itertools.chain(return_list)
+    def __AVG_extract(self,PhyTime,path_to_folder,abs_path):
+        instant = "%0.9E" % PhyTime
+        
+        file_string = "DNS_perixz_AVERAGD_T" + instant + "_FLOW.D"
+        
+        file_folder = "2_averagd_D"
+        if not abs_path:
+            file_path = os.path.abspath(os.path.join(path_to_folder, \
+                                        file_folder, file_string))
+        else:
+            file_path = os.path.join(path_to_folder, \
+                                        file_folder, file_string)
+                
+        file = open(file_path,'rb')
+        
+        int_info = np.zeros(4)
+        r_info = np.zeros(3)
+        int_info = np.fromfile(file,dtype='int32',count=4)    
+        
+        NCL2 = int_info[0]
+        NSZ = int_info[1]
+        ITERG = int_info[2]
+        NSTATIS = int_info[3]
+        dummy_size = NCL2*NSZ
+        r_info = np.fromfile(file,dtype='float64',count=3)
+        
+        PhyTime = r_info[0]
+        AVG_info = np.zeros(dummy_size)
+        AVG_info = np.fromfile(file,dtype='float64',count=dummy_size)
+
+        AVG_info = AVG_info.reshape(NSZ,NCL2)
+
+        flow_AVG = AVG_info[:4]
+        PU_vector = AVG_info[4:7]
+        UU_tensor = AVG_info[7:13]
+        UUU_tensor = AVG_info[13:23]
+        Velo_grad_tensor = AVG_info[23:32]
+        Pr_Velo_grad_tensor = AVG_info[32:41]
+        DUDX2_tensor = AVG_info[41:]
+
+        Phy_string = '%.9g' % PhyTime
+        flow_index = [[None]*4,['u','v','w','P']]
+        vector_index = [[None]*3,['u','v','w']]
+        sym_2_tensor_index = [[None]*6,['uu','uv','uw','vv','vw','ww']]
+        sym_3_tensor_index = [[None]*10,['uuu','uuv','uuw','uvv',\
+                                'uvw','uww','vvv','vvw','vww','www']]
+        tensor_2_index = [[None]*9,['uu','uv','uw','vu','vv','vw',\
+                                         'wu','wv','ww']]
+        du_list = ['du','dv','dw']
+        dx_list = ['dx','dy','dz']
+        Phy_string_list = [None]*81
+        comp_string_index =[]            
+        for du1 in du_list:
+            for dx1 in dx_list:
+                for du2 in du_list:
+                    for dx2 in dx_list:
+                        comp_string = du1 + dx1 + du2 + dx2
+                        comp_string_index.append(comp_string)
+        tensor_4_index=[Phy_string_list,comp_string_index]
+
+        flow_AVGDF = pd.DataFrame(flow_AVG,index=flow_index)
+        PU_vectorDF = pd.DataFrame(PU_vector,index=vector_index)
+        UU_tensorDF = pd.DataFrame(UU_tensor,index=sym_2_tensor_index)
+        UUU_tensorDF = pd.DataFrame(UUU_tensor,index=sym_3_tensor_index)
+        Velo_grad_tensorDF = pd.DataFrame(Velo_grad_tensor,index=tensor_2_index)
+        PR_Velo_grad_tensorDF = pd.DataFrame(Pr_Velo_grad_tensor,index=tensor_2_index)
+        DUDX2_tensorDF = pd.DataFrame(DUDX2_tensor,index=tensor_4_index)
+
+        return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
+                    Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
+    
+    def __hdf_extract(self,file_name,group_name=''):
+        base_name=group_name if group_name else 'CHAPSim_AVG'
+        meta_data = CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
+        CoordDF = meta_data.CoordDF
+        metaDF = meta_data.metaDF
+        NCL=meta_data.NCL
+        hdf_file = h5py.File(file_name,'r')
+        shape = tuple(hdf_file[base_name].attrs["shape"][:])
+        times = list(np.char.decode(hdf_file[base_name].attrs["times"][:]))
+        flow_AVFDF = pd.read_hdf(file_name,key=base_name+'/flow_AVGDF')
+        PU_vectorDF = pd.read_hdf(file_name,key=base_name+'/PU_vectorDF')
+        UU_tensorDF = pd.read_hdf(file_name,key=base_name+'/UU_tensorDF')
+        UUU_tensorDF = pd.read_hdf(file_name,key=base_name+'/UUU_tensorDF')
+        Velo_grad_tensorDF = pd.read_hdf(file_name,key=base_name+'/Velo_grad_tensorDF')
+        PR_Velo_grad_tensorDF = pd.read_hdf(file_name,key=base_name+'/PR_Velo_grad_tensorDF')
+        DUDX2_tensorDF = pd.read_hdf(file_name,key=base_name+'/DUDX2_tensorDF')
+
+        return_list = [meta_data, CoordDF, metaDF, NCL,shape, times,flow_AVFDF,
+                    PU_vectorDF,UU_tensorDF,UUU_tensorDF,Velo_grad_tensorDF,
+                    PR_Velo_grad_tensorDF,DUDX2_tensorDF]
+        return itertools.chain(return_list)
+    @classmethod
+    def from_hdf(cls,*args,**kwargs):
+        return cls(fromfile=True,*args,**kwargs)
+    def save_hdf(self,file_name,write_mode,group_name=''):
+        base_name=group_name if group_name else 'CHAPSim_AVG'
+        hdf_file = h5py.File(file_name,write_mode)
+        group = hdf_file.create_group(base_name)
+        group.attrs['shape'] = np.array(self.shape)
+        group.attrs['times'] = np.array([np.string_(x) for x in self.__times])
+        hdf_file.close()
+        self._meta_data.save_hdf(file_name,'a',group_name=base_name+'/meta_data')
+        self.flow_AVGDF.to_hdf(file_name,key=base_name+'/flow_AVGDF',mode='a',format='fixed',data_columns=True)
+        self.PU_vectorDF.to_hdf(file_name,key=base_name+'/PU_vectorDF',mode='a',format='fixed',data_columns=True)
+        self.UU_tensorDF.to_hdf(file_name,key=base_name+'/UU_tensorDF',mode='a',format='fixed',data_columns=True)
+        self.UUU_tensorDF.to_hdf(file_name,key=base_name+'/UUU_tensorDF',mode='a',format='fixed',data_columns=True)
+        self.Velo_grad_tensorDF.to_hdf(file_name,key=base_name+'/Velo_grad_tensorDF',mode='a',format='fixed',data_columns=True)
+        self.PR_Velo_grad_tensorDF.to_hdf(file_name,key=base_name+'/PR_Velo_grad_tensorDF',mode='a',format='fixed',data_columns=True)
+        self.DUDX2_tensorDF.to_hdf(file_name,key=base_name+'/DUDX2_tensorDF',mode='a',format='fixed',data_columns=True)
+    def get_times(self):
+        return self.__times
+    def _time_to_index(self,PhyTime):
+        if type(PhyTime) == float:
+            PhyTime = "{:.9g}".format(PhyTime)
+
+        if PhyTime not in self.__times:
+            raise ValueError("times not present")
+        for i in range(len(self.__times)):
+            if PhyTime==self.__times[i]:
+                return i
+
+    def __getitem__(self,key):
+        raise NotImplementedError
+
+    def avg_line_plot(self,times,comp,fig='',ax='',**kwargs):
+
+        if not fig:
+            if "figsize" not in kwargs.keys():
+                kwargs['figsize'] = [8,6]
+            fig, ax = cplt.subplots()
+        elif not ax:
+            ax = fig.subplots()
+        if not hasattr(times,"__iter__"):
+            times=[times]
+        y_coords = self.CoordDF['y'].dropna().values
+        for time in times:
+            index = self._time_to_index(time)
+            velo_mean=self.flow_AVGDF.loc[float("NaN"),comp].values.reshape(self.shape)[:,index]
+            ax.cplot(y_coords,velo_mean)
+
+
+        return fig, ax
+
+    def bulk_velo_calc(self,times,comp):
+        y_coords = self.CoordDF['y'].dropna().values
+        bulk_velo=[]
+        for time in times:
+            index = self._time_to_index(time)
+            velo_mean=self.flow_AVGDF.loc[float("NaN"),comp].values.reshape(self.shape)[:,index]
+            bulk_velo.append(0.5*integrate.simps(velo_mean,y_coords))
+
+        return bulk_velo
+
         
 class CHAPSim_peturb():
     def __init__(self,time,AVG_DF='', meta_data='',path_to_folder='',time0='',abs_path=True,tgpost=False):
@@ -1858,12 +2069,14 @@ class CHAPSim_meta():
             self._abs_path, self.__moving_wall = self.__hdf_extract(*args,**kwargs)
 
     def __extract_meta(self,path_to_folder='',abs_path=True,tgpost=False):
-        CoordDF, NCL = self._coord_extract(path_to_folder,abs_path,tgpost)
-        Coord_ND_DF = self.Coord_ND_extract(path_to_folder,NCL,abs_path,tgpost)
         metaDF = self._readdata_extract(path_to_folder,abs_path)
+        ioflg = metaDF.loc['NCL1_tg_io'].values[1] > 2
+        CoordDF, NCL = self._coord_extract(path_to_folder,abs_path,tgpost,ioflg)
+        Coord_ND_DF = self.Coord_ND_extract(path_to_folder,NCL,abs_path,tgpost,ioflg)
+        
         path_to_folder = path_to_folder
         abs_path = abs_path
-        moving_wall = self.__moving_wall_setup(NCL,path_to_folder,abs_path,metaDF)
+        moving_wall = self.__moving_wall_setup(NCL,path_to_folder,abs_path,metaDF,tgpost)
         return CoordDF, NCL, Coord_ND_DF, metaDF, path_to_folder, abs_path, moving_wall
 
     @classmethod
@@ -1930,7 +2143,7 @@ class CHAPSim_meta():
         meta_DF = meta_DF.dropna(how='all')
         return meta_DF
         
-    def _coord_extract(self,path_to_folder,abs_path,tgpost):
+    def _coord_extract(self,path_to_folder,abs_path,tgpost,ioflg):
         """ Function to extract the coordinates from their .dat file """
     
         if not abs_path:
@@ -1950,14 +2163,18 @@ class CHAPSim_meta():
         x_size=  int(x_coord[0])
         x_coord=np.delete(x_coord,0)
         
-        if tgpost:
+        if tgpost and not ioflg:
             XND = x_coord[:-1]
         else:
             for i in range(x_size):
                 if x_coord[i] == 0.0:
                     index=i
                     break
-            XND = x_coord[index+1:]#np.delete(x_coord,np.arange(index+1))
+            if tgpost and ioflg:
+                XND = x_coord[:index+1]
+                XND -= XND[0]
+            else:
+                XND = x_coord[index+1:]#np.delete(x_coord,np.arange(index+1))
         
         #===========================================================
     
@@ -2001,7 +2218,7 @@ class CHAPSim_meta():
             ZCC[i] = 0.5*(ZND[i+1] + ZND[i])
     
         return XCC, ZCC
-    def Coord_ND_extract(self,path_to_folder,NCL,abs_path,tgpost):
+    def Coord_ND_extract(self,path_to_folder,NCL,abs_path,tgpost,ioflg):
         if not abs_path:
             x_coord_file = os.path.abspath(os.path.join(path_to_folder,'CHK_COORD_XND.dat'))
             y_coord_file = os.path.abspath(os.path.join(path_to_folder,'CHK_COORD_YND.dat'))
@@ -2019,15 +2236,19 @@ class CHAPSim_meta():
         x_size=  int(x_coord[0])
         x_coord=np.delete(x_coord,0)
         
-        if tgpost:
+        if tgpost and not ioflg:
             XND = x_coord[:-1]
         else:
             for i in range(x_size):
                 if x_coord[i] == 0.0:
                     index=i
                     break
-            XND = x_coord[index+1:]#np.delete(x_coord,np.arange(index+1))
-        
+            if tgpost and ioflg:
+                XND = x_coord[:index+1]
+                XND -= XND[0]
+            else:
+                XND = x_coord[index+1:]#np.delete(x_coord,np.arange(index+1))
+
         #===========================================================
     
         #Extracting YCC from the .dat file
@@ -2047,9 +2268,9 @@ class CHAPSim_meta():
         Z_series = pd.Series(ZND)
         CoordDF = pd.DataFrame({'x':X_series,'y':Y_series,'z':Z_series})
         return CoordDF
-    def __moving_wall_setup(self,NCL,path_to_folder,abs_path,metaDF):
+    def __moving_wall_setup(self,NCL,path_to_folder,abs_path,metaDF,tgpost):
         wall_velo = np.zeros(NCL[0])
-        if int(metaDF.loc['moving_wallflg',0]) == 1:
+        if int(metaDF.loc['moving_wallflg',0]) == 1 and not tgpost:
             if not abs_path:
                 file_path = os.path.abspath(os.path.join(path_to_folder,'CHK_MOVING_WALL.dat'))
             else:
@@ -3544,7 +3765,7 @@ class CHAPSim_Quad_Anal():
                 local_quad_anal_array = self.__quad_calc(avg_data,fluct_uv,quadrant_array,NCL,h_list,timing)
                 assert local_quad_anal_array.shape == quad_anal_array.shape, "shape of previous array (%d,%d) " % quad_anal_array.shape\
                     + " and current array (%d,%d) must be the same" % local_quad_anal_array.shape
-                autocorr = quad_anal_array*coe3 + local_quad_anal_array*coe2
+                quad_anal_array = quad_anal_array*coe3 + local_quad_anal_array*coe2
             i += 1
         index=[[],[]]
         for h in h_list:

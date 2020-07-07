@@ -16,3 +16,4 @@ dependencies:
   - ipython
   - pytables
   - ffmpeg
+  - conda-build

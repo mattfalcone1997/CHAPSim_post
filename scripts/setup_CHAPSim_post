@@ -52,19 +52,22 @@ if hash conda &>/dev/null ; then
 		wait
 		#testing by importing module
 		echo -e "### Testing conda environment\n "
-		
-		if $CONDA_PREFIX/bin/python -c "import CHAPSim_post; import CHAPSim_parallel; import CHAPSim_Tools;\
-						 import CHAPSim_plot" ; then
-			echo -e "Import test complete" 
-		else
-			#If it fails it removes the created environment
-			echo -e "Import test failed"
-			conda remove --name CHAPSim_post -y --all
-			exit 1
-		fi
-	
-		conda deactivate
 	fi
+	
+	if $CONDA_PREFIX/bin/python -c "import CHAPSim_post; import CHAPSim_parallel; import CHAPSim_Tools;\
+						import CHAPSim_plot" ; then
+		echo -e "Import test complete" 
+		conda deactivate
+	else
+		#If it fails it removes the created environment
+		echo -e "Import test failed"
+		conda deactivate
+		conda remove --name CHAPSim_post -y --all
+		exit 1
+	fi
+
+		
+
 fi
 
 echo -e "### Finished Setup of CHAPSim_post"
