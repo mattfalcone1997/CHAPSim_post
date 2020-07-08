@@ -948,8 +948,7 @@ class CHAPSim_AVG():
             ax = fig.c_add_subplot(1,1,1)
         ax.cplot(x_coords,shape_factor)
         ax.set_xlabel(r"$x/\delta$ ")# ,fontsize=18)
-        ylabel= "H_{rel}" if relative else "H"
-        ax.set_ylabel(r"$%s$"%ylabel)# ,fontsize=18)
+        ax.set_ylabel(r"$H$")# ,fontsize=18)
         #ax.grid()
         fig.tight_layout()
         return fig, ax
@@ -3709,7 +3708,7 @@ class CHAPSim_autocov2():
         for i in range(len(axis_vals)):
             wavenumber_spectra = np.zeros((shape[0],shape[2]))
             for j in range(shape[2]):
-                wavenumber_spectra[:,j]=fftpack.dct(Ruu[:,i,j])
+                wavenumber_spectra[:,j]=fft.rfft(Ruu[:,i,j])
             delta_comp = coord[1]-coord[0]
             Fs = (2.0*np.pi)/delta_comp
             comp_size= shape[0]
@@ -3725,7 +3724,7 @@ class CHAPSim_autocov2():
             ax1.axes.set_title(title)# ,fontsize=15,loc='left')
             fig.colorbar(ax1,ax=ax1.axes)
             ax_out.append(ax1)
-        axes[0].get_gridspec().tight_layout(fig)
+        ax[0].get_gridspec().tight_layout(fig)
         return fig, np.array(ax_out)
 
 class CHAPSim_Quad_Anal():
