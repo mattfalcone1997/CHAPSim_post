@@ -817,11 +817,11 @@ class CHAPSim_AVG():
 
             if isinstance(x_loc,int):
                 ax.cplot(Y_plus[x_loc,:int(self.NCL[1]/2)],U_plus[:int(self.NCL[1]/2),x_loc],label=r"$x/\delta =%.3g$" % self.CoordDF['x'].dropna().values[x_loc])
-                ax.cplot(Y_plus[x_loc,:int(self.NCL[1]/2)],Y_plus[x_loc,:int(self.NCL[1]/2)],'r--',label=r"$U^+=Y^+$")
+                ax.cplot(Y_plus[x_loc,:int(self.NCL[1]/2)],Y_plus[x_loc,:int(self.NCL[1]/2)],'r--',label=r"$\bar{u}^+=y^+$")
             elif isinstance(x_loc,list):
                 for x,j in zip(x_loc,range(len(x_loc))):    
                     ax.cplot(Y_plus[x,:int(self.NCL[1]/2)],U_plus[:int(self.NCL[1]/2),x],label=r"$x/\delta =%.3g$" % self.CoordDF['x'].dropna().values[x])
-                ax.cplot(Y_plus[x_loc[0],:int(self.NCL[1]/2)],Y_plus[x_loc[0],:int(self.NCL[1]/2)],color='red',linestyle='--',linewidth=1.5,label=r"$U^+=Y^+$")
+                ax.cplot(Y_plus[x_loc[0],:int(self.NCL[1]/2)],Y_plus[x_loc[0],:int(self.NCL[1]/2)],color='red',linestyle='--',linewidth=1.5,label=r"$\bar{u}^+=y^+$")
                 
                 axes_items_num = len(ax.get_lines())
                 ncol = 4 if axes_items_num>3 else axes_items_num
@@ -829,8 +829,8 @@ class CHAPSim_AVG():
             else:
                 raise TypeError("\033[1;32 Not a valid type")
             ax.set_xscale('log')
-            ax.set_ylabel(r"$U^+$")# ,fontsize=18)
-            ax.set_xlabel(r"$Y^+$")# ,fontsize=18)
+            ax.set_ylabel(r"$\bar{u}^+$")# ,fontsize=18)
+            ax.set_xlabel(r"$y^+$")# ,fontsize=18)
             ax.set_ylim(top=1.2*np.max(U_plus),bottom=0.0)
             #ax.grid()
 
@@ -868,7 +868,7 @@ class CHAPSim_AVG():
                     if i==0:
                         ax[i].yaxis.set_ticks_position('left')
                         if Y_plus_lim:
-                            ax[i].set_ylabel(r"$Y^+$")# ,fontsize=20)
+                            ax[i].set_ylabel(r"$y^+$")# ,fontsize=20)
                         else:
                             ax[i].set_ylabel(r"$y/\delta$")# ,fontsize=20)
                     if Y_plus_lim:
@@ -1035,24 +1035,26 @@ class CHAPSim_AVG():
             ax.clegend(vertical=False,ncol=ncol, fontsize=16)
         else:
             raise TypeError("\033[1;32 x_loc must be of type list or int")
+
+        y_label = comp_uu[0] +'\'' + comp_uu[1] +'\''
         if norm=='wall':
             if comp_uu == 'uv':
-                ax.set_ylabel(r"$-\langle %s\rangle/u_\tau^2$"% comp_uu)# ,fontsize=20)
+                ax.set_ylabel(r"$-\langle %s\rangle/u_\tau^2$"% y_label)# ,fontsize=20)
             else:
-                ax.set_ylabel(r"$\langle %s\rangle/u_\tau^2$"% comp_uu)# ,fontsize=20)
+                ax.set_ylabel(r"$\langle %s\rangle/u_\tau^2$"% y_label)# ,fontsize=20)
         elif norm=='local-bulk':
             if comp_uu == 'uv':
-                ax.set_ylabel(r"$-\langle %s\rangle/U_b^2$"% comp_uu)# ,fontsize=20)
+                ax.set_ylabel(r"$-\langle %s\rangle/U_b^2$"% y_label)# ,fontsize=20)
             else:
-                ax.set_ylabel(r"$\langle %s\rangle/U_b^2$"% comp_uu)# ,fontsize=20)
+                ax.set_ylabel(r"$\langle %s\rangle/U_b^2$"% y_label)# ,fontsize=20)
         else:
             if comp_uu == 'uv':
-                ax.set_ylabel(r"$-\langle %s\rangle/U_{b0}^2$"% comp_uu)# ,fontsize=20)
+                ax.set_ylabel(r"$-\langle %s\rangle/U_{b0}^2$"% y_label)# ,fontsize=20)
             else:
-                ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"% comp_uu)# ,fontsize=20)
+                ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"% y_label)# ,fontsize=20)
         
         if Y_plus:
-            ax.set_xlabel(r"$Y^+$")# ,fontsize=20)
+            ax.set_xlabel(r"$y^+$")# ,fontsize=20)
         else:
             ax.set_xlabel(r"$y/\delta$")# ,fontsize=20)
         #ax.grid()
@@ -1109,7 +1111,7 @@ class CHAPSim_AVG():
         if y_vals_list != 'max':
            
             for i in range(len(y_index)):
-                ax.cplot(x_coords,rms_vals[i],label=r"$Y^+=%.3g$"% y_vals_list[i])
+                ax.cplot(x_coords,rms_vals[i],label=r"$y^+=%.3g$"% y_vals_list[i])
             axes_items_num = len(ax.get_lines())
             ncol = 4 if axes_items_num>3 else axes_items_num
             ax.clegend(vertical=False,ncol=ncol, fontsize=16)
@@ -1315,7 +1317,7 @@ class CHAPSim_AVG():
             
             ax.cplot(y_coord_local,nu_t_local,label=label)
             if Y_plus:
-                ax.set_xlabel(r"$Y^+$")# ,fontsize=18)
+                ax.set_xlabel(r"$y^+$")# ,fontsize=18)
                 ax.set_xlim([0,Y_plus_max])
                 ax.set_ylim([-0.5,max(nu_t_local)*1.2])
             else:
@@ -1632,7 +1634,7 @@ class CHAPSim_peturb():
         elif mode =='rms':
             ax.set_xlabel(r"${%s\prime}_{rms}^{\wedge}$" % comp)# ,fontsize=18)
         if Y_plus:
-            ax.set_ylabel(r"$Y^+$")# ,fontsize=16)
+            ax.set_ylabel(r"$y^+$")# ,fontsize=16)
             ax.set_ylim([0,Y_plus_max])
         else:
             ax.set_ylabel(r"$y/\delta$")# ,fontsize=16)
@@ -2626,7 +2628,7 @@ class CHAPSim_budget():
                 if wall_units:
                     ax[i].set_xscale('log')
                     ax[i].set_xlim(left=1.0)
-                    ax[i].set_xlabel(r"$Y^+$")# ,fontsize=18)
+                    ax[i].set_xlabel(r"$y^+$")# ,fontsize=18)
                 else:
                     ax[i].set_xlabel(r"$y/\delta$")# ,fontsize=18)
                 
@@ -3539,7 +3541,7 @@ class CHAPSim_autocov2():
             ax1.axes.set_ylabel(r"$\Delta %s/\delta$" %comp, fontsize=20)
             title = r"$%s=%.3g$"%("y" if axis_mode=='half_channel' \
                         else "\delta_u" if axis_mode=='disp_thickness' \
-                        else "\theta" if axis_mode=='mom_thickness' else "Y^+", axis_vals[i] )
+                        else "\theta" if axis_mode=='mom_thickness' else "y^+", axis_vals[i] )
             ax1.axes.set_title(title)# ,fontsize=15,loc='left')
             fig.colorbar(ax1,ax=ax1.axes)
         fig.tight_layout()
@@ -3599,7 +3601,7 @@ class CHAPSim_autocov2():
                 y_unit="y" if y_mode=='half_channel' \
                         else "\delta_u" if y_mode=='disp_thickness' \
                         else "\theta" if y_mode=='mom_thickness' \
-                        else "Y^+" if norm_xval !=0 else "Y^{+0}"
+                        else "y^+" if norm_xval !=0 else "Y^{+0}"
  
 
                 ax[j].set_title(r"$%s=%.3g$"%(y_unit,y_vals[j]),loc='left')
@@ -3662,7 +3664,7 @@ class CHAPSim_autocov2():
                 y_unit="y" if y_mode=='half_channel' \
                         else "\delta_u" if y_mode=='disp_thickness' \
                         else "\theta" if y_mode=='mom_thickness' \
-                        else "Y^+" if norm_xval !=0 else "Y^{+0}"
+                        else "y^+" if norm_xval !=0 else "Y^{+0}"
                 ax[j].cplot(wavenumber_comp,2*np.abs(wavenumber_spectra),
                         label=r"$x=%.3g$"%(axis_vals[i]))
                 ax[j].set_title(r"$%s=%.3g$"%(y_unit,y_vals[j]),loc='left')
@@ -3718,7 +3720,7 @@ class CHAPSim_autocov2():
             ax1.axes.set_ylabel(r"$\kappa_%s$"%comp, fontsize=20)
             title = r"$%s=%.3g$"%("y" if axis_mode=='half_channel' \
                         else "\delta_u" if axis_mode=='disp_thickness' \
-                        else "\theta" if axis_mode=='mom_thickness' else "Y^+", axis_vals[i] )
+                        else "\theta" if axis_mode=='mom_thickness' else "y^+", axis_vals[i] )
             ax1.axes.set_ylim([np.amin(wavenumber_comp[1:]),np.amax(wavenumber_comp)])
             ax1.axes.set_title(title)# ,fontsize=15,loc='left')
             fig.colorbar(ax1,ax=ax1.axes)
@@ -3882,7 +3884,7 @@ class CHAPSim_Quad_Anal():
 
         unit="x/\delta"if prop_dir =='y' else "y/\delta" if y_mode=='half_channel' \
                 else "\delta_u" if y_mode=='disp_thickness' \
-                else "\theta" if y_mode=='mom_thickness' else "Y^+" \
+                else "\theta" if y_mode=='mom_thickness' else "y^+" \
                 if x_vals is None or x_vals!=0 else "Y^{+0}"
 
         for i in range(1,5):
