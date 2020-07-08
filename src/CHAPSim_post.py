@@ -1106,7 +1106,7 @@ class CHAPSim_AVG():
             ax=fig.c_add_subplot(1,1,1)
 
         x_coords = self.CoordDF['x'].dropna().values            
-
+        y_label = comp_uu[0] +'\'' + comp_uu[1] +'\''
         if y_vals_list != 'max':
            
             for i in range(len(y_index)):
@@ -1115,12 +1115,12 @@ class CHAPSim_AVG():
             ncol = 4 if axes_items_num>3 else axes_items_num
             ax.clegend(vertical=False,ncol=ncol, fontsize=16)
             ax.set_xlabel(r"$x/\delta$")# ,fontsize=20)
-            ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)$"%comp_uu)# ,fontsize=20)#)# ,fontsize=22)
+            ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)$"%y_label)# ,fontsize=20)#)# ,fontsize=22)
             
         else:
-            ax.cplot(x_coords,rms_vals,label=r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%comp_uu)
+            ax.cplot(x_coords,rms_vals,label=r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%y_label)
             ax.set_xlabel(r"$x/\delta$")# ,fontsize=20)
-            ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%comp_uu)# ,fontsize=20)#)# ,fontsize=22)
+            ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%y_label)# ,fontsize=20)#)# ,fontsize=22)
         
         # ax.set_xlabel(r"$x/\delta$",text_kwargs)
         # ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%comp_uu,text_kwargs)#)# ,fontsize=22)
