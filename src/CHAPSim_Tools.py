@@ -1,11 +1,23 @@
 import numpy as np
 import CHAPSim_parallel as cpar
 import CHAPSim_post as cp
+import CHAPSim_post_v2 as cp2
 import warnings
 import matplotlib as mpl
 from scipy.integrate import solve_bvp
 import sympy
 import itertools
+
+
+def max_time_calc(path_to_folder,abs_path):
+    if isinstance(path_to_folder,list):
+        max_time = np.float('inf')
+        for path in path_to_folder:
+            max_time=min(max_time,max_time_calc(path,abs_path))
+    else:
+        max_time=max(cp2.time_extract(path_to_folder,abs_path))
+       
+    return max_time
 
 def moving_wall_similarity(Re_0,U_grad):
     def moving_wall_calc(y_vals,Eh):
@@ -258,7 +270,7 @@ def y_coord_index_norm(AVG_DF,CoordDF,coord_list,x_vals='',mode='half_channel'):
                                  + "Y_plus given: %g, max Y_plus: %g. Ignoring values beyond this" % (coord,max(y_coords_thick)))
                 break
         y_thick_index.append(y_thick)
-    print(y_thick_index)
+    # print(y_thick_index)
     # if len(coord_list)==1:
     #     y_thick_index= list(itertools.chain(*y_thick_index))
     return y_thick_index

@@ -75,7 +75,7 @@ try:
 except ImportError:
     warnings.warn("\033[1;33module `pyvista' has missing modules will not work correctly")
 
-
+warnings.warn("This module will soon be replaced by CHAPSim_post_v2",DeprecationWarning)
 
 class CHAPSim_Inst():
     def __init__(self,*args,**kwargs):

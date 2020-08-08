@@ -5,10 +5,18 @@ This is a postprocessing module for CHAPSim_post library
 import matplotlib as mpl 
 import matplotlib.pyplot as plt
 import numpy as np
-
+import os 
+import subprocess
+import warnings
 from shutil import which
 from cycler import cycler
 import itertools
+import sys
+try:
+    import pyvista as pv
+    import pyvistaqt as pvqt
+except ImportError:
+    warnings.warn("PyVista module unavailable")
 
 mpl.rcParams['axes.prop_cycle'] = cycler(color='bgrcmyk')
 mpl.rcParams['lines.markerfacecolor'] = 'white'
@@ -26,7 +34,7 @@ if which('lualatex') is not None:
     mpl.rcParams['pgf.texsystem'] = 'lualatex'
     mpl.rcParams['text.latex.preamble'] =r'\usepackage{amsmath}'
 
-class Figure(mpl.figure.Figure):
+class CHAPSimFigure(mpl.figure.Figure):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.__clegend = None
@@ -39,6 +47,8 @@ class Figure(mpl.figure.Figure):
     def c_add_subplot(self,*args, **kwargs):
         kwargs['projection']='AxesCHAPSim'
         return super().add_subplot(*args,**kwargs)
+    def get_legend(self):
+        return self.__clegend
     def update_legend_fontsize(self, fontsize,tight_layout=True,**kwargs):
         if self.__clegend is not None:
             texts=self.__clegend.get_texts()
@@ -181,10 +191,266 @@ def flip_leg_col(items, ncol):
 mpl.projections.register_projection(AxesCHAPSim)
 
 def subplots(nrows=1, ncols=1, sharex=False, sharey=False, squeeze=True, subplot_kw=None, gridspec_kw=None,*args, **fig_kw):
-    fig = plt.figure(FigureClass=Figure,*args,**fig_kw)
+    fig = plt.figure(FigureClass=CHAPSimFigure,*args,**fig_kw)
     if subplot_kw is None:
         subplot_kw = {'projection':'AxesCHAPSim'}
     else:
         subplot_kw['projection'] = 'AxesCHAPSim'
-    ax=fig.subplots(nrows, ncols, sharex, sharey, squeeze, subplot_kw, gridspec_kw)
+    ax=fig.subplots(nrows, ncols, sharex=sharex, sharey=sharey, squeeze=squeeze, 
+                    subplot_kw=subplot_kw, gridspec_kw=gridspec_kw)
     return fig, ax
+
+
+
+matlab_path =  which('matlab')
+octave_path = which('octave')
+if matlab_path is not None:
+    try:
+        import matlab.engine as me
+        import matlab
+    except ImportError:
+        setup_file = os.path.join(os.path.dirname(matlab_path),
+                                '..','extern','engines','python','setup.py')
+        subprocess.run(['python',setup_file,'install'])
+        import matlab.engine as me
+        import matlab
+if octave_path is not None:
+    import oct2py
+
+if matlab_path is None and octave_path is None:
+    warnings.warn("Cannot process isosurfaces Matlab or GNU Octave are not installed ")
+
+module = sys.modules[__name__]
+
+module.useMATLAB =True
+
+module.matlab_ref_count=0
+module.oct_ref_count=0
+module.eng = None
+
+class mPlotEngine():
+
+    @staticmethod
+    def inc_ref_count():
+        if module.useMATLAB:
+            module.matlab_ref_count +=1
+            if module.matlab_ref_count ==1:
+                module.eng = me.start_matlab()
+        else:
+            module.oct_ref_count +=1
+            if module.oct_ref_count ==1:
+                module.eng = oct2py.Oct2Py()
+    @staticmethod
+    def dec_ref_count():
+        if module.useMATLAB:
+            module.matlab_ref_count -=1
+            if module.matlab_ref_count ==0:
+                mPlotEngine.quit()
+        else:
+            module.oct_ref_count -=1
+            if module.oct_ref_count ==0:
+                mPlotEngine.quit()
+    @staticmethod
+    def quit():
+        try:
+            if module.useMATLAB:
+                if module.matlab_ref_count ==0:
+                    eng.quit()       
+            else:
+                if module.oct_ref_count ==0:
+                    eng.exit()
+        except AttributeError:
+            warnings.warn(".m engine changed during "+\
+                "runtime cannot quit %s engine" %"octave"\
+                            if  useMATLAB else "matlab")
+                
+
+mEngine = mPlotEngine()
+
+
+
+class matlabFigure():
+    def __init__(self, *args):
+        mEngine.inc_ref_count()
+        
+        self._figure = eng.figure(*args)
+        list_pair = [ [args[i], args[i+1]] for i in range(0,len(args),2)]
+        attr_dict = { x[0]:x[1] for x in list_pair}
+        for key, val in attr_dict.items():
+            setattr(self,key,val)
+
+        self._matlab_objs=[]
+
+    def Axes(self,*args):
+        axes = matlabAxes(self,*args)
+        self._matlab_objs.append(axes)
+        return axes
+
+    def savefig(self,filename):
+        eng.saveas(self._figure,filename,nargout=0)
+    def __del__(self):
+        mEngine.dec_ref_count()
+
+class matlabAxes():
+    def __init__(self, fig, *args):
+        assert type(fig) == matlabFigure, 'fig must be must be of type %s'%matlabFigure
+        self._axes = eng.axes(fig._figure,*args)
+
+        mEngine.inc_ref_count()
+
+        list_pair = [ [args[i], args[i+1]] for i in range(0,len(args),2)]
+        attr_dict = { x[0]:x[1] for x in list_pair}
+        for key, val in attr_dict.items():
+            setattr(self,key,val)
+        self._matlab_objs=[]
+
+    def plot(self,*args):
+        args = list(args)
+        for i in range(len(args)):
+            if isinstance(args[i],np.ndarray):
+                args[i] = matlab.double(args[i].tolist())
+        self._matlab_objs.append(eng.plot(self._axes,*args))
+        eng.hold(self._axes,'on',nargout=0)
+    
+    def plot_isosurface(self,*args):
+        args = list(args)
+        for i in range(len(args)):
+            if isinstance(args[i],np.ndarray):
+                args[i] = matlab.double(args[i].tolist())
+
+        self.make_3d()
+        bin_path = os.path.dirname(os.path.realpath(__file__))
+        eng.addpath(bin_path)
+
+        patch = matlabPatch(self,eng.isosurface(*args))
+        patch.set_color()
+        eng.hold(self._axes,'on',nargout=0)
+        self._matlab_objs.append(patch)
+        return patch
+    def get_objects(self):
+        return self._matlab_objs
+    def make_3d(self):
+        eng.view(self._axes,3,nargout=0)
+    def set_view(self,*args):
+        view_ret = eng.view(self._axes,*args)
+        setattr(self,'view',view_ret)
+    def set_ratios(self,ratio):
+        eng.pbaspect(self._axes,ratio,nargout=0)
+    def __del__(self):
+        mEngine.dec_ref_count()
+
+class matlabPatch():
+    def __init__(self,ax,*args,from_matlab=False):
+        assert type(ax) == matlabAxes, 'ax must be must be of type %s'%matlabAxes
+        if from_matlab:
+            self._patch = args[0]
+        else:
+            self._patch =  eng.patch(ax._axes,*args)
+        self._ax = ax._axes
+        
+        mEngine.inc_ref_count()
+        
+    
+        # not_Args = itertools.takewhile(lambda x: type(x)!=string,args)
+        # args = list(set(args).difference(not_Args))
+        # list_pair = [ [args[i], args[i+1]] for i in range(0,len(args),2)]
+        # attr_dict = { x[0]:x[1] for x in list_pair}
+        # for key, val in attr_dict.items():
+        #     setattr(self,key,val)
+
+
+        self._matlab_objs=[]
+    @classmethod
+    def from_matlab(cls,p):
+        return cls(p,from_matlab=True)
+    def set_color(self):
+        eng.colormap(self._ax,'hot')
+        eng.set(self._patch,'FaceColor','interp','EdgeColor','none')
+
+    def __del__(self):
+        mEngine.dec_ref_count()
+
+class octaveFigure():
+    def __init__(self, *args):
+        mEngine.inc_ref_count()
+        
+        self._figure = eng.figure(*args)
+        list_pair = [ [args[i], args[i+1]] for i in range(0,len(args),2)]
+        attr_dict = { x[0]:x[1] for x in list_pair}
+        for key, val in attr_dict.items():
+            setattr(self,key,val)
+
+        self._mObjs=[]
+
+    def Axes(self,*args):
+        axes = octaveAxes(self,*args)
+        self._mObjs.append(axes)
+        return axes
+    def savefig(self,filename):
+        eng.saveas(self._figure,filename)
+    def __del__(self):
+        mEngine.dec_ref_count()
+
+
+class octaveAxes():
+    def __init__(self,fig,*args):
+        mEngine.inc_ref_count()
+        self._axes = eng.axes(*args)
+
+        list_pair = [ [args[i], args[i+1]] for i in range(0,len(args),2)]
+        attr_dict = { x[0]:x[1] for x in list_pair}
+        for key, val in attr_dict.items():
+            setattr(self,key,val)
+        self._mObjs=[]
+
+    def plot(self,*args):
+        mAx = eng.plot(*args)
+        self._mObjs.append(mAx)
+        return mAx
+
+    def plot_isosurface(self,*args):
+        p=eng.patch(self._axes,eng.isosurface(*args))
+        self._mObjs.append(p)
+        eng.set(p,'FaceColor','interp','EdgeColor','none')
+        cmap = eng.colormap('hot')
+        return p
+    def __del__(self):
+        mEngine.dec_ref_count()
+
+class vtkFigure(pvqt.BackgroundPlotter):
+    def Axes(self):
+        pass
+    def savefig(self,filename):
+        pass
+
+class vtkAxes(pv.StructuredGrid):
+    def plot_isosurface(self,*args):
+        pass
+
+class mCHAPSimAxes(matlabAxes,octaveAxes):
+    def __new__(cls,*args):
+        if module.useMATLAB:
+            if 'matlab.engine' not in sys.modules:
+                raise ModuleNotFoundError("Matlab not found,"+\
+                                " cannot use this functionality")
+            return matlabAxes(*args)
+        else:
+            if 'oct2py' not in sys.modules:
+                raise ModuleNotFoundError("Octave not found,"+\
+                                " cannot use this functionality")
+            return octaveAxes(*args)
+
+class mCHAPSimFigure(matlabFigure,octaveFigure):
+    def __new__(cls,*args):
+        if module.useMATLAB:
+            if 'matlab.engine' not in sys.modules:
+                raise ModuleNotFoundError("Matlab not found,"+\
+                                " cannot use this functionality")
+            return matlabFigure(*args)
+        else:
+            if 'oct2py' not in sys.modules:
+                raise ModuleNotFoundError("Octave not found,"+\
+                                " cannot use this functionality")
+            return octaveFigure(*args)
+
+

@@ -11,9 +11,11 @@ dependencies:
   - numba
   - h5py
   - pyvista
+  - pyvistaqt
   - sympy
   - mpi4py
   - ipython
   - pytables
   - ffmpeg
   - conda-build
+  - oct2py

@@ -69,6 +69,8 @@ from mpi4py import MPI #Importing MPI
 import numba
 mpl.rcParams['mathtext.fontset'] = 'stix'
 
+warnings.warn("This module is obselete",DeprecationWarning)
+
 class parallel():
     # Class for paralllelising a particular direction
     def __init__(self,NCL2): # input length to be parallelised
