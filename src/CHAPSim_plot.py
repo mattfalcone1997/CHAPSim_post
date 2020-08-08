@@ -416,16 +416,17 @@ class octaveAxes():
         return p
     def __del__(self):
         mEngine.dec_ref_count()
-
-class vtkFigure(pvqt.BackgroundPlotter):
-    def Axes(self):
-        pass
-    def savefig(self,filename):
-        pass
-
-class vtkAxes(pv.StructuredGrid):
-    def plot_isosurface(self,*args):
-        pass
+        
+if 'pyvistaqt' in sys.modules:
+    class vtkFigure(pvqt.BackgroundPlotter):
+        def Axes(self):
+            pass
+        def savefig(self,filename):
+            pass
+if 'pyvista' in sys.modules:
+    class vtkAxes(pv.StructuredGrid):
+        def plot_isosurface(self,*args):
+            pass
 
 class mCHAPSimAxes(matlabAxes,octaveAxes):
     def __new__(cls,*args):
