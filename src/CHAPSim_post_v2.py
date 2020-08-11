@@ -1421,6 +1421,31 @@ class CHAPSim_meta():
             ZCC[i] = 0.5*(ZND[i+1] + ZND[i])
     
         return XCC, ZCC
+
+    def return_edge_data(self):
+        XCC = self.CoordDF['x'].dropna().values
+        YCC = self.CoordDF['y'].dropna().values
+        ZCC = self.CoordDF['z'].dropna().values
+
+        XND = np.zeros(XCC.size+1) 
+        YND = np.zeros(YCC.size+1)
+        ZND = np.zeros(ZCC.size+1)
+
+        XND[0] = 0.0
+        YND[0] = -1.0
+        ZND[0] = 0.0
+
+        for i in  range(1,XND.size):
+            XND[i] = 2*XCC[i-1]-XND[i-1]
+        
+        for i in  range(1,YND.size):
+            YND[i] = 2*YCC[i-1]-YND[i-1]
+
+        for i in  range(1,ZND.size):
+            ZND[i] = 2*ZCC[i-1]-ZND[i-1]
+
+        return XND, YND, ZND
+        
     def Coord_ND_extract(self,path_to_folder,NCL,abs_path,tgpost,ioflg):
         if not abs_path:
             x_coord_file = os.path.abspath(os.path.join(path_to_folder,'CHK_COORD_XND.dat'))

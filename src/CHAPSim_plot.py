@@ -419,14 +419,38 @@ class octaveAxes():
         
 if 'pyvistaqt' in sys.modules:
     class vtkFigure(pvqt.BackgroundPlotter):
-        def Axes(self):
-            pass
+        def __init__(self,*args,**kwargs):
+            if 'notebook' not in kwargs.keys():
+                kwargs['notebook'] = False
+            super().__init__(*args, **kwargs)
+            self.grid = None
+            self.set_background('white')
+            self.show_bounds(color='black')
+
+        def plot_isosurface(self,X,Y,Z,V,isovalue,color='',*args):
+
+            self.grid = pv.StructuredGrid(X,Y,Z)
+            if self.grid is not None:
+                num = len(self.grid.keys())
+            else:
+                num = 1
+            self.grid.cell_arrays['iso_'+num] = V
+            pgrid = grid.cell_data_to_point_data()
+            color_list = ['Greens_r','Blues_r','Reds_r' ]
+            if color:
+                color = color.title() + "s_r"
+            else:
+                color = color_list[num%len(color_list)]
+
+            contour = pgrid.contour(isosurfaces=1,scalars='iso_'+num,
+                                    preference='point',rng=(val,val))
+
+            self.add_mesh(contour,interpolate_before_map=True,cmap=color)
+            self.remove_scalarbar()
+
+        
         def savefig(self,filename):
-            pass
-if 'pyvista' in sys.modules:
-    class vtkAxes(pv.StructuredGrid):
-        def plot_isosurface(self,*args):
-            pass
+            self.show(screenshot=filename)
 
 class mCHAPSimAxes(matlabAxes,octaveAxes):
     def __new__(cls,*args):

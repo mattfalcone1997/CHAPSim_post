@@ -847,9 +847,7 @@ class CHAPSim_fluct_base():
             PhyTime = fluct_time
         else:
             assert PhyTime in set([x[0] for x in self.fluctDF.index]), "PhyTime must be present in CHAPSim_AVG class"
-        x_coords = np.asfortranarray(self.meta_data.CoordDF['x'].dropna().values)
-        y_coords = np.asfortranarray(self.meta_data.CoordDF['y'].dropna().values)
-        z_coords = np.asfortranarray(self.meta_data.CoordDF['z'].dropna().values)
+        x_coords, y_coords , z_coords = self.meta_data.return_edge_data()
         fluct = self.fluctDF.loc[PhyTime,comp].values\
                 .reshape(self.shape)
         
@@ -861,29 +859,32 @@ class CHAPSim_fluct_base():
             y_coords=y_coords[:y_index]
             fluct=fluct[:,:y_index,:]
 
-        Z,Y,X = np.meshgrid(z_coords,y_coords,x_coords,indexing='ij')
-        Z = np.asfortranarray(Z) ; Y = np.asfortranarray(Y) ; 
-        X = np.asfortranarray(X) ; fluct = np.asfortranarray(fluct)
-        print(X.shape,Y.shape,Z.shape,fluct.shape)
+        Y,X,Z = np.meshgrid(y_coords,x_coords,z_coords)
+        
         if not fig:
-            fig = cplt.mCHAPSimFigure('visible','off')
-        else:
-            if not isinstance(fig, cplt.matlabFigure):
-                raise TypeError("fig must be of type %s not %s"\
-                                %(cplt.matlabFigure,type(fig)))
-        if not ax:
-            ax = fig.Axes()
-        else:
-            if not isinstance(fig, cplt.matlabAxes):
-                raise TypeError("fig must be of type %s not %s"\
-                                %(cplt.matlabAxes,type(ax)))
-        if not colors:
-            colors = ['green','blue','red']
-        for val,i in zip(vals_list,range(len(vals_list))):
-            patch = ax.plot_isosurface(Z,X,Y,fluct,val,fluct,*args)
+            fig = cplt.vtkFigure()
+        for val in vals_list:
+            fig.plot_isosurface(X,Z,Y,fluct,val)
+        # print(X.shape,Y.shape,Z.shape,fluct.shape)
+        # if not fig:
+        #     fig = cplt.mCHAPSimFigure('visible','off')
+        # else:
+        #     if not isinstance(fig, cplt.matlabFigure):
+        #         raise TypeError("fig must be of type %s not %s"\
+        #                         %(cplt.matlabFigure,type(fig)))
+        # if not ax:
+        #     ax = fig.Axes()
+        # else:
+        #     if not isinstance(fig, cplt.matlabAxes):
+        #         raise TypeError("fig must be of type %s not %s"\
+        #                         %(cplt.matlabAxes,type(ax)))
+        # if not colors:
+        #     colors = ['green','blue','red']
+        # for val,i in zip(vals_list,range(len(vals_list))):
+        #     patch = ax.plot_isosurface(Z,X,Y,fluct,val,fluct,*args)
             # patch.set_color(colors[i%len(colors)])
 
-        return fig, ax
+        return fig
     def plot_fluct3D_xz(self,comp,y_vals,PhyTime='',x_split_list='',fig='',ax=''):
         if PhyTime:
             if type(PhyTime) == float:
