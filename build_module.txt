@@ -1,0 +1,347 @@
+
+ *** SETTING UP CHAPSim_post ***
+
+Making CHAPSim_post
+
+rm -r bin/*
+cp src/* bin
+### Creating conda environment
+
+Collecting package metadata (repodata.json): ...working... done
+Solving environment: ...working... 
+Warning: 2 possible package resolutions (only showing differing packages):
+  - defaults/linux-64::jedi-0.17.0-py36_0, defaults/noarch::parso-0.8.0-py_0
+  - defaults/linux-64::jedi-0.17.1-py36_0, defaults/noarch::parso-0.7.0-py_0done
+Preparing transaction: ...working... done
+Verifying transaction: ...working... done
+Executing transaction: ...working... done
+Installing pip dependencies: ...working... Ran pip subprocess with arguments:
+['/home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/bin/python', '-m', 'pip', 'install', '-U', '-r', '/home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt']
+Pip subprocess output:
+Collecting matlab_kernel
+  Using cached matlab_kernel-0.16.9-py3-none-any.whl (9.0 kB)
+Requirement already satisfied, skipping upgrade: metakernel>=0.23.0 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (0.24.3)
+Collecting wurlitzer>=1.0.2; platform_system != "Windows"
+  Using cached wurlitzer-2.0.1-py2.py3-none-any.whl (6.1 kB)
+Requirement already satisfied, skipping upgrade: ipython>=4.0.0 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (7.16.1)
+Requirement already satisfied, skipping upgrade: jupyter-client>=4.4.0 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (6.1.6)
+Requirement already satisfied, skipping upgrade: ipykernel<6.0 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from metakernel>=0.23.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (5.3.4)
+Requirement already satisfied, skipping upgrade: portalocker in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from metakernel>=0.23.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (2.0.0)
+Requirement already satisfied, skipping upgrade: pexpect>=4.2 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from metakernel>=0.23.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (4.8.0)
+Requirement already satisfied, skipping upgrade: ipyparallel in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from metakernel>=0.23.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (6.3.0)
+Requirement already satisfied, skipping upgrade: pickleshare in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from ipython>=4.0.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (0.7.5)
+Requirement already satisfied, skipping upgrade: jedi>=0.10 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from ipython>=4.0.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (0.17.0)
+Requirement already satisfied, skipping upgrade: backcall in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from ipython>=4.0.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (0.2.0)
+Requirement already satisfied, skipping upgrade: pygments in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from ipython>=4.0.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (2.6.1)
+Requirement already satisfied, skipping upgrade: setuptools>=18.5 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from ipython>=4.0.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (49.6.0.post20200814)
+Requirement already satisfied, skipping upgrade: prompt-toolkit!=3.0.0,!=3.0.1,<3.1.0,>=2.0.0 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from ipython>=4.0.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (3.0.5)
+Requirement already satisfied, skipping upgrade: traitlets>=4.2 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from ipython>=4.0.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (4.3.3)
+Requirement already satisfied, skipping upgrade: decorator in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from ipython>=4.0.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (4.4.2)
+Requirement already satisfied, skipping upgrade: tornado>=4.1 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from jupyter-client>=4.4.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (6.0.4)
+Requirement already satisfied, skipping upgrade: pyzmq>=13 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from jupyter-client>=4.4.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (19.0.1)
+Requirement already satisfied, skipping upgrade: python-dateutil>=2.1 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from jupyter-client>=4.4.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (2.8.1)
+Requirement already satisfied, skipping upgrade: jupyter-core>=4.6.0 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from jupyter-client>=4.4.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (4.6.3)
+Requirement already satisfied, skipping upgrade: ptyprocess>=0.5 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from pexpect>=4.2->metakernel>=0.23.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (0.6.0)
+Requirement already satisfied, skipping upgrade: ipython-genutils in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from ipyparallel->metakernel>=0.23.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (0.2.0)
+Requirement already satisfied, skipping upgrade: parso>=0.7.0 in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from jedi>=0.10->ipython>=4.0.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (0.8.0)
+Requirement already satisfied, skipping upgrade: wcwidth in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from prompt-toolkit!=3.0.0,!=3.0.1,<3.1.0,>=2.0.0->ipython>=4.0.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (0.2.5)
+Requirement already satisfied, skipping upgrade: six in /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages (from traitlets>=4.2->ipython>=4.0.0->matlab_kernel->-r /home/mfalcone/Documents/Python/CHAPSim_post/scripts/condaenv.rszn9ubd.requirements.txt (line 1)) (1.15.0)
+Installing collected packages: wurlitzer, matlab-kernel
+Successfully installed matlab-kernel-0.16.9 wurlitzer-2.0.1
+
+done
+#
+# To activate this environment, use
+#
+#     $ conda activate CHAPSim_post
+#
+# To deactivate an active environment, use
+#
+#     $ conda deactivate
+
+added /home/mfalcone/Documents/Python/CHAPSim_post/bin
+completed operation for: /home/mfalcone/Documents/Python/CHAPSim_post/bin
+### Testing conda environment
+ 
+running build
+running build_py
+running install
+running install_lib
+creating /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/mlarray.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/__init__.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab
+creating /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/_internal
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/_internal/mlarray_utils.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/_internal
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/_internal/__init__.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/_internal
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/_internal/mlarray_sequence.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/_internal
+creating /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/engine/futureresult.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/engine/enginesession.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/engine/matlabfuture.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/engine/__init__.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/engine/enginehelper.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/engine/basefuture.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/engine/fevalfuture.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/engine/matlabengine.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/engine/engineerror.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/engine/_arch.txt -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine
+copying /home/mfalcone/Documents/Python/CHAPSim_post/bin/../libs/lib/matlab/mlexceptions.py -> /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/mlarray.py to mlarray.cpython-36.pyc
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/__init__.py to __init__.cpython-36.pyc
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/_internal/mlarray_utils.py to mlarray_utils.cpython-36.pyc
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/_internal/__init__.py to __init__.cpython-36.pyc
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/_internal/mlarray_sequence.py to mlarray_sequence.cpython-36.pyc
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine/futureresult.py to futureresult.cpython-36.pyc
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine/enginesession.py to enginesession.cpython-36.pyc
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine/matlabfuture.py to matlabfuture.cpython-36.pyc
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine/__init__.py to __init__.cpython-36.pyc
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine/enginehelper.py to enginehelper.cpython-36.pyc
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine/basefuture.py to basefuture.cpython-36.pyc
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine/fevalfuture.py to fevalfuture.cpython-36.pyc
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine/matlabengine.py to matlabengine.cpython-36.pyc
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine/engineerror.py to engineerror.cpython-36.pyc
+byte-compiling /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/mlexceptions.py to mlexceptions.cpython-36.pyc
+running install_egg_info
+Writing /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlabengineforpython-R2020a-py3.6.egg-info
+Traceback (most recent call last):
+  File "/home/mfalcone/Documents/Python/CHAPSim_post/bin/CHAPSim_plot.py", line 210, in <module>
+    import matlab.engine as me
+ModuleNotFoundError: No module named 'matlab'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine/__init__.py", line 45, in <module>
+    pythonengine = importlib.import_module("matlabengineforpython"+_PYTHONVERSION)
+  File "/home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 994, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 971, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 953, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'matlabengineforpython3_6'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine/__init__.py", line 61, in <module>
+    pythonengine = importlib.import_module("matlabengineforpython"+_PYTHONVERSION)
+  File "/home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 994, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 971, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 955, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 658, in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 571, in module_from_spec
+  File "<frozen importlib._bootstrap_external>", line 922, in create_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+ImportError: /home/mfalcone/SOFTWARE/MATLAB/R2020a/Build/extern/engines/python/dist/matlab/engine/glnxa64/../../../../../../../bin/glnxa64/libmwi18n.so: undefined symbol: UCNV_FROM_U_CALLBACK_STOP_WITH_INVISIBLE_CHARS_64
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/home/mfalcone/Documents/Python/CHAPSim_post/bin/CHAPSim_post.py", line 65, in <module>
+    import CHAPSim_Tools as CT
+  File "/home/mfalcone/Documents/Python/CHAPSim_post/bin/CHAPSim_Tools.py", line 4, in <module>
+    import CHAPSim_post_v2 as cp2
+  File "/home/mfalcone/Documents/Python/CHAPSim_post/bin/CHAPSim_post_v2.py", line 67, in <module>
+    import CHAPSim_plot as cplt
+  File "/home/mfalcone/Documents/Python/CHAPSim_post/bin/CHAPSim_plot.py", line 224, in <module>
+    import matlab.engine as me
+  File "/home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.6/site-packages/matlab/engine/__init__.py", line 64, in <module>
+    'MathWorks Technical Support for assistance: %s' % e)
+OSError: Please reinstall MATLAB Engine for Python or contact MathWorks Technical Support for assistance: /home/mfalcone/SOFTWARE/MATLAB/R2020a/Build/extern/engines/python/dist/matlab/engine/glnxa64/../../../../../../../bin/glnxa64/libmwi18n.so: undefined symbol: UCNV_FROM_U_CALLBACK_STOP_WITH_INVISIBLE_CHARS_64
+Import test failed
+
+## Package Plan ##
+
+  environment location: /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post
+
+
+The following packages will be REMOVED:
+
+  _libgcc_mutex-0.1-main
+  appdirs-1.4.4-py_0
+  backcall-0.2.0-py_0
+  bcrypt-3.1.7-py36h7b6447c_1
+  beautifulsoup4-4.9.1-py36_0
+  blas-1.0-mkl
+  blosc-1.16.3-hd408876_0
+  brotlipy-0.7.0-py36h7b6447c_1000
+  bzip2-1.0.8-h7b6447c_0
+  ca-certificates-2020.6.24-0
+  certifi-2020.6.20-py36_0
+  cffi-1.14.0-py36h2e261b9_0
+  cftime-1.2.1-py36heb32a55_0
+  chardet-3.0.4-py36_1003
+  conda-4.8.4-py36_0
+  conda-build-3.18.11-py36_0
+  conda-package-handling-1.6.1-py36h7b6447c_0
+  cryptography-2.9.2-py36h1ba5d50_0
+  curl-7.71.1-hbc83047_1
+  cycler-0.10.0-py36_0
+  dbus-1.13.16-hb2f20db_0
+  decorator-4.4.2-py_0
+  expat-2.2.9-he6710b0_2
+  fastcache-1.1.0-py36h7b6447c_0
+  ffmpeg-4.2.2-h20bf706_0
+  filelock-3.0.12-py_0
+  fontconfig-2.13.1-h86ecdb6_1001
+  freetype-2.10.2-h5ab3b9f_0
+  future-0.18.2-py36_1
+  glib-2.63.1-h5a9c865_0
+  glob2-0.7-py_0
+  gmp-6.1.2-h6c8ec71_1
+  gmpy2-2.0.8-py36h10f8cd9_2
+  gnutls-3.6.5-h71b1129_1002
+  gst-plugins-base-1.14.5-h0935bb2_2
+  gstreamer-1.14.5-h36ae1b5_2
+  h5py-2.10.0-py36h7918eee_0
+  hdf4-4.2.13-h3ca952b_2
+  hdf5-1.10.4-hb1b8bf9_0
+  icu-64.2-he1b5a44_1
+  idna-2.10-py_0
+  imageio-2.9.0-py_0
+  intel-openmp-2020.1-217
+  ipykernel-5.3.4-py36h5ca1d4c_0
+  ipyparallel-6.3.0-py36_0
+  ipython-7.16.1-py36h5ca1d4c_0
+  ipython_genutils-0.2.0-py36_0
+  jedi-0.17.0-py36_0
+  jinja2-2.11.2-py_0
+  jpeg-9d-h516909a_0
+  jsoncpp-1.8.4-hfd86e86_0
+  jupyter_client-6.1.6-py_0
+  jupyter_core-4.6.3-py36_0
+  kiwisolver-1.2.0-py36hfd86e86_0
+  krb5-1.18.2-h173b8e3_0
+  lame-3.100-h7b6447c_0
+  lcms2-2.11-h396b838_0
+  ld_impl_linux-64-2.33.1-h53a641e_7
+  libarchive-3.3.3-h5d8350f_5
+  libclang-9.0.1-default_hde54327_0
+  libcurl-7.71.1-h20c2e04_1
+  libedit-3.1.20191231-h14c3975_1
+  libffi-3.2.1-hd88cf55_4
+  libgcc-ng-9.1.0-hdf63c60_0
+  libgfortran-ng-7.3.0-hdf63c60_0
+  liblief-0.10.1-he6710b0_0
+  libllvm9-9.0.1-h4a3c616_1
+  libnetcdf-4.6.1-h11d0813_2
+  libogg-1.3.2-h7b6447c_0
+  libopus-1.3.1-h7b6447c_0
+  libpng-1.6.37-hbc83047_0
+  libsodium-1.0.18-h7b6447c_0
+  libssh2-1.9.0-h1ba5d50_1
+  libstdcxx-ng-9.1.0-hdf63c60_0
+  libtheora-1.1.1-h5ab3b9f_1
+  libtiff-4.1.0-h2733197_0
+  libuuid-2.32.1-h14c3975_1000
+  libvorbis-1.3.6-h7b6447c_0
+  libvpx-1.7.0-h439df22_0
+  libxcb-1.14-h7b6447c_0
+  libxkbcommon-0.10.0-he1b5a44_0
+  libxml2-2.9.9-hea5a465_1
+  llvmlite-0.33.0-py36hc6ec683_1
+  lz4-c-1.8.1.2-h14c3975_0
+  lzo-2.10-h7b6447c_2
+  markupsafe-1.1.1-py36h7b6447c_0
+  matplotlib-3.2.2-0
+  matplotlib-base-3.2.2-py36hb8e4980_0
+  meshio-4.1.0-py_0
+  metakernel-0.24.3-py_0
+  mkl-2020.1-217
+  mkl-service-2.3.0-py36he904b0f_0
+  mkl_fft-1.1.0-py36h23d657b_0
+  mkl_random-1.1.1-py36h0573a6f_0
+  mock-4.0.2-py_0
+  mpc-1.1.0-h10f8cd9_1
+  mpfr-4.0.2-hb69a4c5_1
+  mpi-1.0-mpich
+  mpi4py-3.0.3-py36h028fd6f_0
+  mpich-3.3.2-hc856adb_0
+  mpmath-1.1.0-py36_0
+  ncurses-6.2-he6710b0_1
+  netcdf4-1.4.2-py36h808af73_0
+  nettle-3.4.1-hbb512f6_0
+  nspr-4.22-he6710b0_0
+  nss-3.46.1-hab99668_0
+  numba-0.50.1-py36h0573a6f_1
+  numexpr-2.7.1-py36h423224d_0
+  numpy-1.19.1-py36hbc911f0_0
+  numpy-base-1.19.1-py36hfa32c7d_0
+  oct2py-5.2.0-pyh9f0ad1d_0
+  octave_kernel-0.32.0-pyh9f0ad1d_0
+  olefile-0.46-py36_0
+  openh264-2.1.0-hd408876_0
+  openssl-1.1.1g-h7b6447c_0
+  pandas-1.1.0-py36he6710b0_0
+  paramiko-2.7.1-py_0
+  parso-0.8.0-py_0
+  patchelf-0.11-he6710b0_0
+  pcre-8.44-he6710b0_0
+  pexpect-4.8.0-py36_0
+  pickleshare-0.7.5-py36_0
+  pillow-7.2.0-py36hb39fc2d_0
+  pip-20.2.2-py36_0
+  pkginfo-1.5.0.1-py36_0
+  portalocker-2.0.0-py36_0
+  prompt-toolkit-3.0.5-py_0
+  psutil-5.7.0-py36h7b6447c_0
+  ptyprocess-0.6.0-py36_0
+  py-lief-0.10.1-py36h403a769_0
+  pycosat-0.6.3-py36h7b6447c_0
+  pycparser-2.20-py_2
+  pygments-2.6.1-py_0
+  pynacl-1.4.0-py36h7b6447c_1
+  pyopenssl-19.1.0-py_1
+  pyparsing-2.4.7-py_0
+  pyqt-5.12.3-py36haa643ae_3
+  pysocks-1.7.1-py36_0
+  pytables-3.6.1-py36h71ec239_0
+  python-3.6.10-hcf32534_1
+  python-dateutil-2.8.1-py_0
+  python-libarchive-c-2.9-py_0
+  python_abi-3.6-1_cp36m
+  pytz-2020.1-py_0
+  pyvista-0.25.3-py_0
+  pyvistaqt-0.1.1-py_0
+  pyyaml-5.3.1-py36h7b6447c_1
+  pyzmq-19.0.1-py36he6710b0_1
+  qt-5.12.5-hd8c4c69_1
+  readline-8.0-h7b6447c_0
+  requests-2.24.0-py_0
+  ripgrep-11.0.2-he32d670_0
+  ruamel_yaml-0.15.87-py36h7b6447c_1
+  scipy-1.5.0-py36h0b6359f_0
+  scooby-0.5.6-pyh9f0ad1d_0
+  scp-0.13.2-py_0
+  setuptools-49.6.0-py36_0
+  six-1.15.0-py_0
+  snappy-1.1.8-he6710b0_0
+  soupsieve-2.0.1-py_0
+  sqlite-3.32.3-h62c20be_0
+  sympy-1.6.1-py36_0
+  tbb-2020.0-hfd86e86_0
+  tk-8.6.10-hbc83047_0
+  tornado-6.0.4-py36h7b6447c_1
+  tqdm-4.48.2-py_0
+  traitlets-4.3.3-py36_0
+  urllib3-1.25.10-py_0
+  vtk-8.2.0-py36haa4764d_200
+  wcwidth-0.2.5-py_0
+  wheel-0.34.2-py36_0
+  x264-1!157.20191217-h7b6447c_0
+  xz-5.2.5-h7b6447c_0
+  yaml-0.2.5-h7b6447c_0
+  zeromq-4.3.2-he6710b0_2
+  zlib-1.2.11-h7b6447c_3
+  zstd-1.3.7-h0b5b093_0
+
+
+Preparing transaction: ...working... done
+Verifying transaction: ...working... done
+Executing transaction: ...working... done
+
+Remove all packages in environment /home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post:
+

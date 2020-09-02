@@ -2,12 +2,41 @@ import numpy as np
 import CHAPSim_parallel as cpar
 import CHAPSim_post as cp
 import CHAPSim_post_v2 as cp2
+
 import warnings
 import matplotlib as mpl
 from scipy.integrate import solve_bvp
 import sympy
 import itertools
+import os
+import paramiko
+from scp import SCPClient
+import termios
+import sys
+def from_HPC2Local(remote,remote_path,file,**kwargs):
+    ssh = paramiko.SSHClient()
+    ssh.load_system_host_keys()
+    uname, host = remote.split('@')
+    try:
+        os.system("stty -echo")
+        ssh.connect(host,username=uname)
+        os.system("stty echo")
+        termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+    except paramiko.PasswordRequiredException as e:
+        import getpass
+        
+        password = getpass.getpass("%s, enter password/phrase: "%e)
+        try:
+            ssh.connect(host,username=uname,password=password)
+        except paramiko.PasswordRequiredException as e:
+            passphrase = getpass.getpass("%s, enter password/phrase: "%e)
+            ssh.connect(host,username=uname,password=password,passphrase=passphrase)
 
+    scp = SCPClient(ssh.get_transport(),**kwargs)
+
+    file_path = os.path.join(remote_path, file)
+    scp.get(file_path)
+    scp.close()
 
 def max_time_calc(path_to_folder,abs_path):
     if isinstance(path_to_folder,list):

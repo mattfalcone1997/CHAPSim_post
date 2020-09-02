@@ -75,7 +75,7 @@ import h5py
 try: 
     import pyvista as pv
 except ImportError:
-    warnings.warn("\033[1;33module `pyvista' has missing modules will not work correctly")
+    warnings.warn("\033[1;33module `pyvista' has missing modules will not work correctly", stacklevel=2)
 
 TEST = False
 
@@ -84,12 +84,12 @@ class CHAPSim_Inst():
         fromfile= kwargs.pop('fromfile',False)
         if not fromfile:
             self._meta_data, self.CoordDF, self.NCL,\
-            self.InstDF,self.shape = self.__inst_extract(*args,**kwargs)
+            self.InstDF,self.shape = self._inst_extract(*args,**kwargs)
         else:
             self._meta_data, self.CoordDF, self.NCL,\
             self.InstDF,self.shape = self._hdf_extract(*args,**kwargs)
 
-    def __inst_extract(self,time,meta_data='',path_to_folder='',abs_path = True,tgpost=False):
+    def _inst_extract(self,time,meta_data='',path_to_folder='',abs_path = True,tgpost=False):
         if not meta_data:
             meta_data = CHAPSim_meta(path_to_folder,abs_path,tgpost)
         CoordDF = meta_data.CoordDF
@@ -341,7 +341,7 @@ class CHAPSim_Inst():
         #             eigs = np.sort(S2_Omega2_eigvals[i,j,k,:])
         #             lambda2[i,j,k] = eigs[1]
         return lambda2
-    def plot_lambda2(self,lambda_min=-float("inf"),lambda_max=float("inf"),PhyTime='',ylim='',Y_plus=True,avg_data='',plotter='',cmap='Reds_r'):
+    def plot_lambda2(self,vals_list,x_split_list='',PhyTime='',ylim='',Y_plus=True,avg_data='',colors='',fig=None,ax=None,**kwargs):
         if PhyTime:
             if type(PhyTime) == float:
                 PhyTime = "{:.9g}".format(PhyTime)
@@ -349,48 +349,74 @@ class CHAPSim_Inst():
         if len(set([x[0] for x in self.InstDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.InstDF.index]))[0]
             if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
             PhyTime = avg_time
         else:
             assert PhyTime in set([x[0] for x in self.InstDF.index]), "PhyTime must be present in CHAPSim_AVG class"
             
         lambda2 = self.lambda2_calc(PhyTime)
         
-        
-        x_coords = self._meta_data.Coord_ND_DF['x'].dropna().values
-        y_coords = self._meta_data.Coord_ND_DF['y'].dropna().values
-        z_coords = self._meta_data.Coord_ND_DF['z'].dropna().values
+        if not hasattr(vals_list,'__iter__'):
+            vals_list = [vals_list]
+        X = self._meta_data.CoordDF['x'].dropna().values
+        Y = self._meta_data.CoordDF['y'].dropna().values
+        Z = self._meta_data.CoordDF['z'].dropna().values
         if ylim:
             if Y_plus:
                 y_index= CT.Y_plus_index_calc(avg_data,self.CoordDF,ylim)
             else:
                 y_index=CT.coord_index_calc(self.CoordDF,'y',ylim)
-            y_coords=y_coords[:y_index+1]
+            Y=Y[:y_index]
             lambda2=lambda2[:,:y_index,:]
+        if not x_split_list:
+            x_split_list = [np.amin(X),np.amax(X)]
+        
+        if fig is None:
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [9,5.5*(len(x_split_list)-1)]
+            fig = cplt.mCHAPSimFigure(visible='off',**kwargs)
+        else:
+            if not isinstance(fig, cplt.matlabFigure):
+                raise TypeError("fig must be of type %s not %s"\
+                                %(cplt.matlabFigure,type(fig)))
+        if ax is None:
+            ax = fig.subplots(len(x_split_list)-1,squeeze=False)
+        else:
+            if not isinstance(ax, cplt.matlabAxes) and not isinstance(ax,np.ndarray):
+                raise TypeError("fig must be of type %s not %s"\
+                                %(cplt.matlabAxes,type(ax)))
+        for j in range(len(x_split_list)-1):
+            x_start = CT.coord_index_calc(self.CoordDF,'x',x_split_list[j])
+            x_end = CT.coord_index_calc(self.CoordDF,'x',x_split_list[j+1])
+            for val,i in zip(vals_list,range(len(vals_list))):
+                
+                color = colors[i%len(colors)] if colors else ''
+                patch = ax[j].plot_isosurface(Y,Z,X[x_start:x_end],lambda2[:,:,x_start:x_end],val,color)
+                ax[j].add_lighting()
+                # patch.set_color(colors[i%len(colors)])            
+        # Y,X,Z = np.meshgrid(y_coords,x_coords,z_coords)
+        
+        # grid = pv.StructuredGrid(X,Z,Y)
+        # grid.cell_arrays['lambda_2']=lambda2.flatten()
+        # pgrid=grid.cell_data_to_point_data()
+        # contour=pgrid.contour(isosurfaces=1,scalars='lambda_2',preference='point',rng=(lambda_min,lambda_max))
+        # #grid.set_active_scalars('lambda_2')
+        # if not plotter:
+        #     plotter = pv.BackgroundPlotter(notebook=False)
+        #     plotter.set_background('white')
+        #     plotter.show_bounds(color='black')
             
-        Y,X,Z = np.meshgrid(y_coords,x_coords,z_coords)
         
-        grid = pv.StructuredGrid(X,Z,Y)
-        grid.cell_arrays['lambda_2']=lambda2.flatten()
-        pgrid=grid.cell_data_to_point_data()
-        contour=pgrid.contour(isosurfaces=1,scalars='lambda_2',preference='point',rng=(lambda_min,lambda_max))
-        #grid.set_active_scalars('lambda_2')
-        if not plotter:
-            plotter = pv.BackgroundPlotter(notebook=False)
-            plotter.set_background('white')
-            plotter.show_bounds(color='black')
-            
-        
-        #plotter.add_mesh(grid)
-        #filter_grid = grid.threshold((lambda_min,lambda_max),'lambda_2')
+        # #plotter.add_mesh(grid)
+        # #filter_grid = grid.threshold((lambda_min,lambda_max),'lambda_2')
         
         
-        #plotter.add_axes(color='black')
-        plotter.add_mesh(contour,interpolate_before_map=True,cmap=cmap)
-        plotter.remove_scalar_bar()
+        # #plotter.add_axes(color='black')
+        # plotter.add_mesh(contour,interpolate_before_map=True,cmap=cmap)
+        # plotter.remove_scalar_bar()
         
         
-        return plotter
+        return fig, ax
 
     def vorticity_calc(self):
         pass
@@ -404,6 +430,38 @@ class CHAPSim_Inst():
 
         self.InstDF = pd.concat([self.InstDF,inst_data.InstDF])
         return self
+
+class CHAPSim_Inst_io(CHAPSim_Inst):
+    def _inst_extract(self,*args,**kwargs):
+        kwargs['tgpost'] = False
+        return super()._inst_extract(*args,**kwargs)
+
+class CHAPSim_Inst_tg(CHAPSim_Inst):
+    def _inst_extract(self,*args,**kwargs):
+        kwargs['tgpost'] = True
+        meta_data,CoordDF,NCL,InstDF, shape = super()._inst_extract(*args,**kwargs)
+        
+        NCL1_io = meta_data.metaDF.loc['HX_tg_io'].values[1]
+        ioflowflg = True if NCL1_io > 2 else False
+        
+        if ioflowflg:
+            NCL[0] -= 1
+        shape = (NCL[2],NCL[1],NCL[0])
+
+        return meta_data,CoordDF,NCL,InstDF, shape
+
+    # def _hdf_extract(self,*args,**kwargs):
+    #     meta_data, CoordDF, NCL, InstDF, shape = super()._hdf_extract(*args,**kwargs)
+
+    #     NCL1_io = meta_data.metaDF.loc['HX_tg_io'].values[1]
+    #     ioflowflg = True if NCL1_io > 2 else False
+        
+    #     if ioflowflg:
+    #         NCL[0] -= 1
+
+    #     shape = (NCL[2],NCL[1],NCL[0])
+    #     return meta_data, CoordDF, NCL, InstDF, shape
+        
 
 
 class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
@@ -604,14 +662,22 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
     def _return_index(self,x_val):
         return CT.coord_index_calc(self.CoordDF,'x',x_val)
     
-    def wall_unit_calc(self,PhyTime):
+    def wall_unit_calc(self,PhyTime=''):
+        if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
+            avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
+            if PhyTime and PhyTime != avg_time:
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
+            PhyTime = avg_time
+        else:
+            assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
+
         return self._wall_unit_calc(PhyTime)
 
     def plot_shape_factor(self, PhyTime='',fig='',ax='',**kwargs):
         if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
             if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
             PhyTime = avg_time
         else:
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -625,12 +691,47 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         ax.autoscale_view()
         return fig, ax
 
+    def plot_mom_thickness(self, PhyTime='',fig='',ax='',**kwargs):
+        if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
+            avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
+            if PhyTime and PhyTime != avg_time:
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
+            PhyTime = avg_time
+        else:
+            assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
+        fig, ax = super().plot_mom_thickness(PhyTime,fig=fig,ax=ax,**kwargs)
+        x_coords = self.CoordDF['x'].dropna().values
+        line = ax.get_lines()[-1]
+        line.set_xdata(x_coords)
+        ax.set_xlabel(r"$x^*$")
+        ax.relim()
+        ax.autoscale_view()
+        return fig, ax
+
+    def plot_disp_thickness(self, PhyTime='',fig='',ax='',**kwargs):
+        if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
+            avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
+            if PhyTime and PhyTime != avg_time:
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
+            PhyTime = avg_time
+        else:
+            assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
+        
+        fig, ax = super().plot_disp_thickness(PhyTime,fig=fig,ax=ax,**kwargs)
+        x_coords = self.CoordDF['x'].dropna().values
+        line = ax.get_lines()[-1]
+        line.set_xdata(x_coords)
+        ax.set_xlabel(r"$x^*$")
+        ax.relim()
+        ax.autoscale_view()
+        return fig, ax
+
     def plot_Reynolds(self,comp1,comp2,x_vals,PhyTime='',norm=None,Y_plus=True,fig='',ax='',**kwargs):
 
         if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
             if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
             PhyTime = avg_time
         else:
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -656,7 +757,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
             if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
             PhyTime = avg_time
         else:
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -674,15 +775,24 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         ax.autoscale_view()
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
-    def bulk_velo_calc(self,PhyTime):
-        return super()._bulk_velo_calc(PhyTime)
+    def bulk_velo_calc(self,PhyTime=''):
+
+        if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
+            avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
+            if PhyTime and PhyTime != avg_time:
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
+            PhyTime = avg_time
+        else:
+            assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
+
+        return self._bulk_velo_calc(PhyTime)
 
     def plot_bulk_velocity(self,PhyTime='',fig='',ax='',**kwargs):
         
         if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
             if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
             PhyTime = avg_time
         else:
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -696,7 +806,15 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         ax.autoscale_view()
         return fig, ax
 
-    def tau_calc(self,PhyTime):
+    def tau_calc(self,PhyTime=''):
+        if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
+            avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
+            if PhyTime and PhyTime != avg_time:
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
+            PhyTime = avg_time
+        else:
+            assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
+            
         return self._tau_calc(PhyTime)
 
     def plot_skin_friction(self,PhyTime='',fig='',ax='',**kwargs):
@@ -704,7 +822,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
             if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
             PhyTime = avg_time
         else:
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -724,7 +842,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
             if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
             PhyTime = avg_time
         else:
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -745,7 +863,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
             if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
             PhyTime = avg_time
         else:
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -765,7 +883,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
             if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
             PhyTime = avg_time
         else:
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -803,12 +921,12 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
 
         if isinstance(PhyTimes,float):
             times = ['%.9g' % PhyTimes]
-            DF_list = self._AVG_extract(PhyTimes,folder_path,abs_path)
+            DF_list = self._AVG_extract(PhyTimes,folder_path,abs_path,metaDF,time0)
         elif hasattr(PhyTimes,'__iter__'):
             times = ['%.9g' % time for time in PhyTimes]
             for PhyTime in PhyTimes:
                 if 'DF_list' not in locals():
-                    DF_list = self._AVG_extract(PhyTime,folder_path,abs_path)
+                    DF_list = self._AVG_extract(PhyTime,folder_path,abs_path,metaDF,time0)
                 else:
                     DF_temp=[]
                     local_DF_list = self._AVG_extract(PhyTime,folder_path,abs_path)
@@ -860,8 +978,7 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
 
     def Perform_ensemble(self):
         raise NotImplementedError
-    
-    def _AVG_extract(self,PhyTime,path_to_folder,abs_path):
+    def _extract_file(self,PhyTime,path_to_folder,abs_path):
         instant = "%0.9E" % PhyTime
         
         file_string = "DNS_perixz_AVERAGD_T" + instant + "_FLOW.D"
@@ -893,6 +1010,45 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
 
         AVG_info = AVG_info.reshape(NSZ,NCL2)
 
+        return AVG_info, NSTATIS
+    def _AVG_extract(self,PhyTime,path_to_folder,abs_path,metaDF,time0):
+        # instant = "%0.9E" % PhyTime
+        
+        # file_string = "DNS_perixz_AVERAGD_T" + instant + "_FLOW.D"
+        
+        # file_folder = "2_averagd_D"
+        # if not abs_path:
+        #     file_path = os.path.abspath(os.path.join(path_to_folder, \
+        #                                 file_folder, file_string))
+        # else:
+        #     file_path = os.path.join(path_to_folder, \
+        #                                 file_folder, file_string)
+                
+        # file = open(file_path,'rb')
+        
+        # int_info = np.zeros(4)
+        # r_info = np.zeros(3)
+        # int_info = np.fromfile(file,dtype='int32',count=4)    
+        
+        # NCL2 = int_info[0]
+        # NSZ = int_info[1]
+        # ITERG = int_info[2]
+        # NSTATIS = int_info[3]
+        # dummy_size = NCL2*NSZ
+        # r_info = np.fromfile(file,dtype='float64',count=3)
+        
+        # PhyTime = r_info[0]
+        # AVG_info = np.zeros(dummy_size)
+        # AVG_info = np.fromfile(file,dtype='float64',count=dummy_size)
+
+        # AVG_info = AVG_info.reshape(NSZ,NCL2)
+
+        AVG_info, NSTATIS1 = self._extract_file(PhyTime,path_to_folder,abs_path)
+        ioflowflg = True if metaDF.loc['HX_tg_io'].values[1]>2 else False
+        if ioflowflg and time0:
+            AVG_info0, NSTATIS0 = self._extract_file(time0,path_to_folder,abs_path)
+            AVG_info = (AVG_info*NSTATIS1 - AVG_info0*NSTATIS0)/(NSTATIS1-NSTATIS0)
+        
         flow_AVG = AVG_info[:4]
         PU_vector = AVG_info[4:7]
         UU_tensor = AVG_info[7:13]
@@ -1510,6 +1666,7 @@ class CHAPSim_budget_io(cbase.CHAPSim_budget_base):
             PhyTime = list(set([x[0] for x in self.avg_data.flow_AVGDF.index]))[0]
         self.comp = comp1+comp2
         self.budgetDF = self._budget_extract(PhyTime,comp1,comp2)
+        self.shape = self.avg_data.shape
 
     def _advection_extract(self,PhyTime,comp1,comp2):
         uu_comp = comp1 + comp2 
@@ -1663,7 +1820,7 @@ class CHAPSim_budget_io(cbase.CHAPSim_budget_base):
         if len(set([x[0] for x in self.avg_data.UU_tensorDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.avg_data.UU_tensorDF.index]))[0]
             if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
             PhyTime = avg_time
         else:
             assert PhyTime in set([x[0] for x in self.avg_data.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -1686,7 +1843,7 @@ class CHAPSim_budget_io(cbase.CHAPSim_budget_base):
         if len(set([x[0] for x in self.avg_data.UU_tensorDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.avg_data.UU_tensorDF.index]))[0]
             if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
             PhyTime = avg_time
         else:
             assert PhyTime in set([x[0] for x in self.avg_data.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -1697,6 +1854,42 @@ class CHAPSim_budget_io(cbase.CHAPSim_budget_base):
             line.set_x_data(x_coords)
         ax.relim()
         ax.autoscale_view()
+        return fig, ax
+    def plot_budget_x(self,comp=None,y_vals_list='max',Y_plus=True,PhyTime='',fig='',ax='',**kwargs):
+        if len(set([x[0] for x in self.avg_data.UU_tensorDF.index])) == 1:
+            avg_time = list(set([x[0] for x in self.avg_data.UU_tensorDF.index]))[0]
+            if PhyTime and PhyTime != avg_time:
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
+            PhyTime = avg_time
+        else:
+            assert PhyTime in set([x[0] for x in self.avg_data.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
+        
+        if not fig:
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [10,5]
+            fig,ax = cplt.subplots(**kwargs)
+        elif not ax:
+            ax=fig.c_add_subplot(1,1,1)
+
+        
+        if comp ==None:
+            comp_list = [x[1] for x in self.budgetDF.index]
+            comp_len = len(comp_list)
+            for comp in comp_list:
+                fig, ax = super()._plot_budget_x(comp,y_vals_list,Y_plus,PhyTime,fig=fig, ax=ax)
+        else:
+            comp_len = 1
+            fig, ax = super()._plot_budget_x(comp,y_vals_list,Y_plus,PhyTime,fig=fig, ax=ax)
+        
+        line_no = comp_len*( 1 if y_vals_list == 'max' else len(y_vals_list))
+        lines = ax.get_lines()[-line_no:]
+        x_coord = self.avg_data.CoordDF['x'].dropna().values
+        for line in lines:
+            line.set_xdata(x_coord)
+        ax.set_xlabel(r"$x^*$")
+        ax.relim()
+        ax.autoscale_view()
+        ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
 class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
@@ -1833,7 +2026,7 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
     def autocorr_contour_y(self,comp,axis_vals,*args,**kwargs):
         fig, ax = super().autocorr_contour_y(comp,axis_vals,*args,**kwargs)
         for a, val in zip(ax,axis_vals):
-            a.set_title(r"$x=%.3g$"%val)
+            a.axes.set_title(r"$x=%.3g$"%val,loc='right')
         return fig, ax
 
     def autocorr_contour_x(self,comp,*args,**kwargs):

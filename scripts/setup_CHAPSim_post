@@ -54,7 +54,7 @@ if hash conda &>/dev/null ; then
 		echo -e "### Testing conda environment\n "
 	fi
 	
-	if $CONDA_PREFIX/bin/python -c "import CHAPSim_post; import CHAPSim_parallel; import CHAPSim_Tools;\
+	if $CONDA_PREFIX/bin/python -c "import CHAPSim_post_v2; import CHAPSim_parallel; import CHAPSim_Tools;\
 						import CHAPSim_plot" ; then
 		echo -e "Import test complete" 
 		conda deactivate

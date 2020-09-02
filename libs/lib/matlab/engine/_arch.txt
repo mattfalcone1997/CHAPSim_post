@@ -1,0 +1,3 @@
+glnxa64
+/home/mfalcone/SOFTWARE/MATLAB/R2019b/build/extern/engines/python/../../../bin/glnxa64
+/home/mfalcone/SOFTWARE/MATLAB/R2019b/build/extern/engines/python/dist/matlab/engine/glnxa64

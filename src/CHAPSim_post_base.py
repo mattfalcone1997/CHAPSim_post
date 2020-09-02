@@ -24,7 +24,7 @@ try:
     import pyvista as pv
     import pyvistaqt as pvqt
 except ImportError:
-    warnings.warn("\033[1;33module `pyvista' has missing modules will not work correctly")
+    warnings.warn("\033[1;33module `pyvista' has missing modules will not work correctly", stacklevel=2)
 
 
 
@@ -238,6 +238,38 @@ class CHAPSim_AVG_base():
         fig.tight_layout()
         return fig, ax
 
+    def plot_mom_thickness(self,*arg,fig='',ax='',**kwargs):
+        delta, theta, shape_factor = self.int_thickness_calc(*arg)
+        # x_coords = self.CoordDF['x'].dropna().values
+        if not fig:
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [7,5]
+            fig, ax = cplt.subplots(**kwargs)
+        elif not ax:
+            ax = fig.c_add_subplot(1,1,1)
+        ax.cplot(theta)
+        # ax.set_xlabel(r"$x/\delta$ ")# ,fontsize=18)
+        ax.set_ylabel(r"$\theta$")# ,fontsize=18)
+        #ax.grid()
+        fig.tight_layout()
+        return fig, ax
+
+    def plot_disp_thickness(self,*arg,fig='',ax='',**kwargs):
+        delta, theta, shape_factor = self.int_thickness_calc(*arg)
+        # x_coords = self.CoordDF['x'].dropna().values
+        if not fig:
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [7,5]
+            fig, ax = cplt.subplots(**kwargs)
+        elif not ax:
+            ax = fig.c_add_subplot(1,1,1)
+        ax.cplot(delta)
+        # ax.set_xlabel(r"$x/\delta$ ")# ,fontsize=18)
+        ax.set_ylabel(r"$\delta^*$")# ,fontsize=18)
+        #ax.grid()
+        fig.tight_layout()
+        return fig, ax
+
     def _avg_line_plot(self,x_vals, PhyTime,comp,fig='',ax='',**kwargs):
         if not isinstance(PhyTime,str) and not np.isnan(PhyTime):
             PhyTime = "{:.9g}".format(PhyTime)
@@ -252,7 +284,7 @@ class CHAPSim_AVG_base():
             try:
                 index = self._return_index(x)
             except ValueError:
-                warnings.warn("Wrong time input")
+                warnings.warn("Wrong time input", stacklevel=2)
                 continue
 
             velo_mean=self.flow_AVGDF.loc[PhyTime,comp].values.reshape(self.shape)[:,index]
@@ -288,7 +320,9 @@ class CHAPSim_AVG_base():
             ylim = ax.get_ylim()[1]
             ax.set_ylim(top=1.1*max(ylim,np.amax(y_data)))
         ax.cplot(y_plus[x_loc],y_plus[x_loc],color='red',linestyle='--',
-                            linewidth=1.5,label=r"$\bar{u}^+=y^+$")
+                            label=r"$\bar{u}^+=y^+$")
+        ax.set_xlabel(r"$y^+$")
+        ax.set_ylabel(r"$\bar{u}^+$")
         ax.set_xscale('log')
         ax.relim()
         ax.autoscale_view()
@@ -651,8 +685,8 @@ class CHAPSim_budget_base():
             if 'figsize' not in kwargs.keys():
                 kwargs['figsize']=[7*ax_size[1],5*ax_size[0]+1]
             else:
-                warnings.warn("Figure size calculator overidden: Figure quality may be degraded")
-            fig, ax = cplt.subplots(*ax_size,**kwargs)
+                warnings.warn("Figure size calculator overidden: Figure quality may be degraded", stacklevel=2)
+                fig, ax = cplt.subplots(*ax_size,**kwargs)
         elif not ax:
             ax=fig.subplots(*ax_size,**kwargs)
         ax=ax.flatten()
@@ -745,6 +779,50 @@ class CHAPSim_budget_base():
         ax.clegend(ncol=4,vertical=False)
         #ax.grid()
         return fig, ax
+    def _plot_budget_x(self,comp,y_vals_list,Y_plus=True,PhyTime='',fig='',ax='',**kwargs):
+        if PhyTime:
+            if not isinstance(PhyTime,str) and not np.isnan(PhyTime):
+                PhyTime = "{:.9g}".format(PhyTime)
+        
+        comp_index = [x[1] for x in self.budgetDF.index]
+        if not comp.lower() in comp_index:
+            msg = "comp must be a component of the"+\
+                        " Reynolds stress budget: %s" %comp_index
+            raise KeyError(msg) 
+        if y_vals_list != 'max':
+            if Y_plus:
+                y_index = CT.Y_plus_index_calc(self, self.CoordDF, y_vals_list)
+            else:
+                y_index = CT.coord_index_calc(self.CoordDF,'y',y_vals_list)
+            budget_term = self.budgetDF.loc[PhyTime,comp].values.reshape(self.avg_data.shape)[y_index]
+            
+        else:
+            y_index = [None]
+            budget_term = self.budgetDF.loc[PhyTime,comp].values.reshape(self.avg_data.shape)
+            budget_term = np.amax(budget_term,axis=0)
+
+        if not fig:
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [10,5]
+            fig,ax = cplt.subplots(**kwargs)
+        elif not ax:
+            ax=fig.c_add_subplot(1,1,1)
+        
+        if y_vals_list != 'max':
+            for i in range(len(y_index)):
+                ax.cplot(budget_term[i],label=r"$y^+=%.3g$"% y_vals_list[i])
+            axes_items_num = len(ax.get_lines())
+            ncol = 4 if axes_items_num>3 else axes_items_num
+            ax.clegend(vertical=False,ncol=ncol, fontsize=16)
+            # ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)$"%y_label)# ,fontsize=20)#)# ,fontsize=22)
+            
+        else:
+            ax.cplot(budget_term,label=r"maximum %s"%comp)
+            # ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%y_label)# ,fontsize=20)#)# ,fontsize=22)
+
+        fig.tight_layout()
+        return fig, ax
+
     def __str__(self):
         return self.budgetDF.__str__()
         
@@ -758,7 +836,7 @@ class CHAPSim_fluct_base():
         self.meta_data.save_hdf(file_name,'a',base_name+'/meta_data')
         self.fluctDF.to_hdf(file_name,key=base_name+'/fluctDF',mode='a',format='fixed',data_columns=True)
 
-    def plot_contour(self,comp,y_vals,PhyTime='',x_split_list='',fig='',ax=''):
+    def plot_contour(self,comp,y_vals,PhyTime='',x_split_list='',Y_plus=True,fig='',ax='',**kwargs):
         if PhyTime:
             if type(PhyTime) == float:
                 PhyTime = "{:.9g}".format(PhyTime)
@@ -766,35 +844,44 @@ class CHAPSim_fluct_base():
         if len(set([x[0] for x in self.fluctDF.index])) == 1:
             fluct_time = list(set([x[0] for x in self.fluctDF.index]))[0]
             if PhyTime and PhyTime != fluct_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time), stacklevel=2)
             PhyTime = fluct_time
         else:
             assert PhyTime in set([x[0] for x in self.fluctDF.index]), "PhyTime must be present in CHAPSim_AVG class"
         
-        if isinstance(y_vals,int):
+        
+
+        if not hasattr(y_vals,"__iter__"):
             y_vals=[y_vals]
-        elif not isinstance(y_vals,list):
-            raise TypeError("\033[1;32 y_vals must be type int or list but is type %s"%type(y_vals))
+
+        y_index = CT.y_coord_index_norm(self.avg_data,self.avg_data.CoordDF,
+                                        y_vals,x_vals=0,mode='wall')
+        y_index = list(itertools.chain(*y_index))
         x_coords = self.CoordDF['x'].dropna().values
         z_coords = self.CoordDF['z'].dropna().values
         X,Z = np.meshgrid(x_coords,z_coords)
         fluct = self.fluctDF.loc[PhyTime,comp].values\
-                .reshape(self.shape)[:,y_vals,:]
+                .reshape(self.shape)[:,y_index,:]
         
         #fluct=fluct.reshape((self.NCL[2],self.NCL[0]))
-        if isinstance(y_vals,int):
-            y_vals=[y_vals]
-        elif not isinstance(y_vals,list):
-            raise TypeError("\033[1;32 y_vals must be type int or list but is type %s"%type(y_vals))
+        # if isinstance(y_vals,int):
+        #     y_vals=[y_vals]
+        # elif not isinstance(y_vals,list):
+        #     raise TypeError("\033[1;32 y_vals must be type int or list but is type %s"%type(y_vals))
         
         if not x_split_list:
                 x_split_list=[np.amin(x_coords),np.amax(x_coords)]
+        
+        kwargs['squeeze'] = False
         if not fig:
-            fig, ax = plt.subplots(len(x_split_list)-1,len(y_vals),
-                                    figsize=[10*len(y_vals),3*(len(x_split_list)-1)],
-                                    squeeze=False)
+            if  'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [10*len(y_vals),3*(len(x_split_list)-1)]
+            else:
+                warnings.warn('Figure size algorithm overridden', stacklevel=2)
+            fig, ax = cplt.subplots(len(x_split_list)-1,len(y_vals),**kwargs)
         elif not ax:
             ax=fig.subplots(len(x_split_list)-1,len(y_vals),squeeze=False)
+        
         ax=ax.flatten()
         x_coords_split=CT.coord_index_calc(self.CoordDF,'x',x_split_list)
         X, Z = np.meshgrid(x_coords, z_coords)
@@ -812,6 +899,7 @@ class CHAPSim_fluct_base():
                 cbar.set_label(r"$%s^\prime$"%comp)# ,fontsize=12)
                 ax2.set_xlabel(r"$%s/\delta$" % 'x')# ,fontsize=20)
                 ax2.set_ylabel(r"$%s/\delta$" % 'z')# ,fontsize=20)
+                ax2.set_title(r"$y^{+0}=%.3g$"%y_vals[i],loc='right')
                 ax[i]=ax1
         else:
             ax=ax.flatten()
@@ -829,13 +917,14 @@ class CHAPSim_fluct_base():
                     cbar.set_label(r"$%s^\prime$"%comp)# ,fontsize=12)
                     ax2.set_xlabel(r"$%s/\delta$" % 'x')# ,fontsize=20)
                     ax2.set_ylabel(r"$%s/\delta$" % 'z')# ,fontsize=20)
+                    ax2.set_title(r"$y^{+0}=%.3g$"%y_vals[i],loc='right')
                     ax[j*len(y_vals)+i]=ax1
                     ax[j*len(y_vals)+i].axes.set_aspect('equal')
         fig.tight_layout()
 
         return fig, ax
 
-    def plot_streaks(self,comp,vals_list,PhyTime='',ylim='',Y_plus=True,*args,colors='',fig='',ax=''):
+    def plot_streaks(self,comp,vals_list,x_split_list='',PhyTime='',ylim='',Y_plus=True,*args,colors='',fig=None,ax=None,**kwargs):
         if PhyTime:
             if type(PhyTime) == float:
                 PhyTime = "{:.9g}".format(PhyTime)
@@ -843,11 +932,10 @@ class CHAPSim_fluct_base():
         if len(set([x[0] for x in self.fluctDF.index])) == 1:
             fluct_time = list(set([x[0] for x in self.fluctDF.index]))[0]
             if PhyTime and PhyTime != fluct_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time), stacklevel=2)
             PhyTime = fluct_time
         else:
             assert PhyTime in set([x[0] for x in self.fluctDF.index]), "PhyTime must be present in CHAPSim_AVG class"
-        x_coords, y_coords , z_coords = self.meta_data.return_edge_data()
         fluct = self.fluctDF.loc[PhyTime,comp].values\
                 .reshape(self.shape)
         
@@ -856,35 +944,49 @@ class CHAPSim_fluct_base():
                 y_index= CT.Y_plus_index_calc(self.avg_data,self.CoordDF,ylim)
             else:
                 y_index=CT.coord_index_calc(self.CoordDF,'y',ylim)
-            y_coords=y_coords[:y_index]
+            # y_coords=y_coords[:(y_index+1)]
             fluct=fluct[:,:y_index,:]
+        else:
+            y_index = self.shape[1]
+        # x_coords, y_coords , z_coords = self.meta_data.return_edge_data()
+        # y_coords=y_coords[:(y_index+1)]
 
-        Y,X,Z = np.meshgrid(y_coords,x_coords,z_coords)
+        # Y,X,Z = np.meshgrid(y_coords,x_coords,z_coords)
         
-        if not fig:
-            fig = cplt.vtkFigure()
-        for val in vals_list:
-            fig.plot_isosurface(X,Z,Y,fluct,val)
-        # print(X.shape,Y.shape,Z.shape,fluct.shape)
         # if not fig:
-        #     fig = cplt.mCHAPSimFigure('visible','off')
-        # else:
-        #     if not isinstance(fig, cplt.matlabFigure):
-        #         raise TypeError("fig must be of type %s not %s"\
-        #                         %(cplt.matlabFigure,type(fig)))
-        # if not ax:
-        #     ax = fig.Axes()
-        # else:
-        #     if not isinstance(fig, cplt.matlabAxes):
-        #         raise TypeError("fig must be of type %s not %s"\
-        #                         %(cplt.matlabAxes,type(ax)))
-        # if not colors:
-        #     colors = ['green','blue','red']
-        # for val,i in zip(vals_list,range(len(vals_list))):
-        #     patch = ax.plot_isosurface(Z,X,Y,fluct,val,fluct,*args)
-            # patch.set_color(colors[i%len(colors)])
+        #     fig = cplt.vtkFigure()
+        # for val in vals_list:
+        #     fig.plot_isosurface(X,Z,Y,fluct,val)
+        X = self.meta_data.CoordDF['x'].dropna().values
+        Y = self.meta_data.CoordDF['y'].dropna().values[:y_index]
+        Z = self.meta_data.CoordDF['z'].dropna().values
+        # print(X.shape,Y.shape,Z.shape,fluct.shape)
+        if fig is None:
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [9,5.5*(len(x_split_list)-1)]
+            fig = cplt.mCHAPSimFigure(visible='off',**kwargs)
+        else:
+            if not isinstance(fig, cplt.matlabFigure):
+                raise TypeError("fig must be of type %s not %s"\
+                                %(cplt.matlabFigure,type(fig)))
+        if ax is None:
+            ax = fig.subplots(len(x_split_list)-1,squeeze=False)
+        else:
+            if not isinstance(ax, cplt.matlabAxes) and not isinstance(ax,np.ndarray):
+                raise TypeError("fig must be of type %s not %s"\
+                                %(cplt.matlabAxes,type(ax)))
+        for j in range(len(x_split_list)-1):
+            x_start = CT.coord_index_calc(self.CoordDF,'x',x_split_list[j])
+            x_end = CT.coord_index_calc(self.CoordDF,'x',x_split_list[j+1])
+            for val,i in zip(vals_list,range(len(vals_list))):
+                
+                
+                color = colors[i%len(colors)] if colors else ''
+                patch = ax[j].plot_isosurface(Y,Z,X[x_start:x_end],fluct[:,:,x_start:x_end],val,color)
+                ax[j].add_lighting()
+                # patch.set_color(colors[i%len(colors)])
 
-        return fig
+        return fig, ax
     def plot_fluct3D_xz(self,comp,y_vals,PhyTime='',x_split_list='',fig='',ax=''):
         if PhyTime:
             if type(PhyTime) == float:
@@ -893,7 +995,7 @@ class CHAPSim_fluct_base():
         if len(set([x[0] for x in self.fluctDF.index])) == 1:
             fluct_time = list(set([x[0] for x in self.fluctDF.index]))[0]
             if PhyTime and PhyTime != fluct_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time))
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time), stacklevel=2)
             PhyTime = fluct_time
         else:
             assert PhyTime in set([x[0] for x in self.fluctDF.index]), "PhyTime must be present in CHAPSim_AVG class"
@@ -926,6 +1028,7 @@ class CHAPSim_fluct_base():
             ax=np.array(ax_list)
         
         ax=ax.flatten()
+        max_val = -np.float('inf'); min_val = np.float('inf')
         for j in range(len(x_split_list)-1):
             for i in range(len(y_vals)):
                 max_val = np.amax(fluct[:,i,:]); min_val=np.amin(fluct[:,i,:])
@@ -950,7 +1053,7 @@ class CHAPSim_fluct_base():
 
     @staticmethod
     def create_video(y_vals,comp,contour=True,meta_data='',path_to_folder='',time0='',
-                            abs_path=True,tgpost=False,x_split_list='',lim_min=-1.,lim_max=1,
+                            abs_path=True,tgpost=False,x_split_list='',lim_min=None,lim_max=None,
                             fig='',ax=''):
         file_names= time_extract(path_to_folder,abs_path)
         time_list =[]
@@ -972,7 +1075,7 @@ class CHAPSim_fluct_base():
         if not x_split_list:
             x_split_list=[np.min(x_coords),np.max(x_coords)]
         if not fig:
-            fig = plt.figure(figsize=[7*len(y_vals),3*(len(x_split_list)-1)])
+            fig = cplt.figure(figsize=[7*len(y_vals),3*(len(x_split_list)-1)])
         fig_list = [fig]*len(times)
 
         
@@ -989,10 +1092,11 @@ class CHAPSim_fluct_base():
                 fig, ax = fluct_data.plot_contour(comp,y_vals,time,x_split_list=x_split_list,fig=fig)
             else:
                 fig,ax = fluct_data.plot_fluct3D_xz(y_vals,comp,time,x_split_list,fig)
-            ax[0].axes.set_title(r"$t^*=%.3g$"%time)
+            ax[0].axes.set_title(r"$t^*=%.3g$"%time,loc='left')
 
             for im in ax:
-                im.set_clim(lim_min,lim_max)
+                im.set_clim(vmin=lim_min)
+                im.set_clim(vmax=lim_max)
 
             fig.tight_layout()
             return ax
@@ -1068,7 +1172,7 @@ class CHAPSim_autocov_base():
             if 'figsize' not in kwargs:
                 kwargs['figsize'] = [10,5*len(y_vals)]
                 if len(y_vals) >1:
-                    warnings.warn("figure size algorithm overrided: may result in poor quality graphs")
+                    warnings.warn("figure size algorithm overrided: may result in poor quality graphs", stacklevel=2)
             kwargs['squeeze'] = False
             fig,ax = cplt.subplots(len(y_vals),**kwargs)
         elif not ax:
@@ -1125,7 +1229,7 @@ class CHAPSim_autocov_base():
             if 'figsize' not in kwargs:
                 kwargs['figsize'] = [10,5*len(y_vals)]
                 if len(y_vals) >1:
-                    warnings.warn("figure size algorithm overrided: may result in poor quality graphs")
+                    warnings.warn("figure size algorithm overrided: may result in poor quality graphs", stacklevel=2)
             kwargs['squeeze'] = False
             fig,ax = cplt.subplots(len(y_vals),**kwargs)
         elif not ax:
@@ -1152,7 +1256,9 @@ class CHAPSim_autocov_base():
         
         return fig, ax
 
-    def autocorr_contour_y(self,comp,axis_vals,Y_plus=False,Y_plus_0=False,Y_plus_max ='',norm=True,fig='',ax=''):
+    def autocorr_contour_y(self,comp,axis_vals,Y_plus=False,Y_plus_0=False,
+                                Y_plus_max ='',norm=True,
+                                show_positive=True,fig=None,ax=None):
         if comp == 'x':
             shape=self.shape_x
         elif comp=='z':
@@ -1170,15 +1276,16 @@ class CHAPSim_autocov_base():
             Ruu_0=Ruu[0].copy()
             for i in range(shape[0]):
                 Ruu[i]/=Ruu_0
-        if not fig:
+        if fig is None:
             fig, ax = plt.subplots(len(axis_vals),figsize=[10,4*len(axis_vals)],squeeze=False)
-        elif not ax:
+        elif ax is None:
             subplot_kw = {'squeeze':'False'}
             ax = fig.subplots(len(axis_vals),subplot_kw)
         ax=ax.flatten()
         x_coord = self._meta_data.CoordDF['x'].copy().dropna()\
                     .values
-        
+        max_val = -np.float('inf'); min_val = np.float('inf')
+
         for i in range(len(axis_vals)):
             y_coord = self._meta_data.CoordDF['y'].copy().dropna()\
                     .values
@@ -1195,21 +1302,34 @@ class CHAPSim_autocov_base():
                     y_coord = (1-np.abs(y_coord))/delta_v_star[0]
                 else:   
                     y_coord = (1-np.abs(y_coord))/delta_v_star[axis_index[i]]
+            min_val = min(min_val,np.amin(np.squeeze(Ruu[:,:,i])))
+            max_val = max(max_val,np.amax(np.squeeze(Ruu[:,:,i])))
 
             X,Y = np.meshgrid(coord,y_coord)
-            ax1 = ax[i].pcolormesh(X,Y,np.squeeze(Ruu[:,:,i]).T,cmap='jet')
-            ax1.axes.set_xlabel(r"$\Delta %s/\delta$" %comp, fontsize=20)
+            ax[i] = ax[i].pcolormesh(X,Y,np.squeeze(Ruu[:,:,i]).T,cmap='jet')
+            ax[i].axes.set_xlabel(r"$\Delta %s/\delta$" %comp)
             if Y_plus and Y_plus_0:
-                ax1.axes.set_ylabel(r"$Y^{+0}$", fontsize=20)
+                ax[i].axes.set_ylabel(r"$Y^{+0}$")
             elif Y_plus and not Y_plus_0:
-                ax1.axes.set_ylabel(r"$Y^{+}$", fontsize=20)
+                ax[i].axes.set_ylabel(r"$Y^{+}$")
             else:
-                ax1.axes.set_ylabel(r"$y/\delta$", fontsize=20)
-            ax1.axes.set_title(r"$x=%.3g$"%axis_vals[i],loc='left')
+                ax[i].axes.set_ylabel(r"$y/\delta$")
             if Y_plus_max:
-                ax1.axes.set_ylim(top=Y_plus_max)
-            fig.colorbar(ax1,ax=ax1.axes)
+                ax[i].axes.set_ylim(top=Y_plus_max)
+            fig.colorbar(ax[i],ax=ax[i].axes)
             fig.tight_layout()
+
+        for a in ax:     
+            a.set_clim(min_val,max_val)
+
+        if not show_positive:
+            for a in ax:   
+                cmap = a.get_cmap()
+                min_val,max_val = a.get_clim()
+                new_color = cmap(np.linspace(0,1,256))[::-1]
+                new_color[-1] = np.array([1,1,1,1])
+                a.set_cmap(mpl.colors.ListedColormap(new_color))
+                a.set_clim(min_val,0)
         return fig, ax
 
     def autocorr_contour_x(self,comp,axis_vals,axis_mode='half_channel',norm=True,fig='',ax=''):
@@ -1375,13 +1495,17 @@ class CHAPSim_Quad_Anl_base():
 
         return fluct_uv, quadrant_array 
 
-    def line_plot(self,h_list,coord_list,prop_dir,x_vals=0,y_mode='half_channel',norm=False,fig='',ax=''):
+    def line_plot(self,h_list,coord_list,prop_dir,x_vals=0,y_mode='half_channel',norm=False,fig='',ax='',**kwargs):
         assert x_vals is None or not hasattr(x_vals,'__iter__')
+        kwargs['squeeze'] = False
         if not fig:
-            fig, ax = cplt.subplots(4,len(coord_list),figsize=[12,5*len(coord_list)],squeeze=False)
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [12,5*len(coord_list)]
+            else:
+                warnings.warn('Figure size algorithm overidden', stacklevel=2)
+            fig, ax = cplt.subplots(4,len(coord_list),**kwargs)
         elif not ax:
-            subplot_kw={'squeeze':False}
-            ax = fig.subplots(4,len(coord_list),figsize=[12,5*len(coord_list)],subplot_kw=subplot_kw)
+            ax = fig.subplots(4,len(coord_list),**kwargs)
         if prop_dir =='y':
             index = [self._avg_data._return_index(x) for x in coord_list]
 
@@ -1401,7 +1525,7 @@ class CHAPSim_Quad_Anl_base():
         unit="x/\delta"if prop_dir =='y' else "y/\delta" if y_mode=='half_channel' \
                 else "\delta_u" if y_mode=='disp_thickness' \
                 else "\theta" if y_mode=='mom_thickness' else "y^+" \
-                if x_vals is None or x_vals!=0 else "Y^{+0}"
+                if x_vals is None or x_vals!=0 else "y^{+0}"
 
         for i in range(1,5):
             for h in h_list:

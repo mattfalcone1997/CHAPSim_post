@@ -171,9 +171,14 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         return fig, ax
 
 class CHAPSim_perturb():
-    def __init__(self,time,avg_data='', meta_data='',path_to_folder='',time0='',abs_path=True):
+    def __init__(self,time='',avg_data='', meta_data='',path_to_folder='',time0='',abs_path=True):
         if avg_data:
             self.__avg_data = avg_data
+            times = list(set([x[0] for x in avg_data.UU_tensorDF.index]))
+            if len(times)>1 and not times:
+                msg="If there is more than one time present in"+\
+                            " CHAPSim_AVG_io, a time must be provided"
+                raise ValueError(msg)
         else:
             assert time, "In the absence of input of class CHAPSim_AVG a time must be provided"
             if not path_to_folder:
@@ -182,9 +187,9 @@ class CHAPSim_perturb():
                 warnings.warn("\033[1;33No time0 input selected in the absence of an CHAPSim_AVG input class")
             self.__avg_data = CHAPSim_AVG_io(time,meta_data,path_to_folder,time0,abs_path,False)
         if not meta_data:
-            meta_data = CHAPSim_meta(path_to_folder,abs_path,False)
+            meta_data = self.__avg_data._meta_data
         self._meta_data = meta_data
-        print(self.__avg_data.shape)
+
     def tau_du_calc(self,PhyTime=''):
         if not PhyTime:
             PhyTime = self.__avg_data.flow_AVGDF.index[0][0]
@@ -321,7 +326,7 @@ class CHAPSim_perturb():
         ax.set_xlabel(r"$x/\delta$")
         ax.set_ylabel(r"$H$")
         ax.set_ylim([0,2*H[-1]])
-
+        ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
     def plot_mom_thickness(self,PhyTime='',fig='',ax='',**kwargs):
@@ -339,11 +344,11 @@ class CHAPSim_perturb():
         x_coords -= start
         delta, theta, H = self.int_thickness_calc(PhyTime)
 
-        ax.cplot(x_coords, theta)
+        ax.cplot(x_coords, theta,label=r"$\theta$")
         ax.set_xlabel(r"$x/\delta$")
-        ax.set_ylabel(r"$H$")
+        ax.set_ylabel(r"$\theta$")
         ax.set_ylim([0,2*theta[-1]])
-
+        ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
     def plot_disp_thickness(self,PhyTime='',fig='',ax='',**kwargs):
@@ -361,11 +366,11 @@ class CHAPSim_perturb():
         x_coords -= start
         delta, theta, H = self.int_thickness_calc(PhyTime)
 
-        ax.cplot(x_coords, delta)
+        ax.cplot(x_coords, delta,label=r"$\delta^*$")
         ax.set_xlabel(r"$x/\delta$")
-        ax.set_ylabel(r"$H$")
+        ax.set_ylabel(r"$\delta^*$")
         ax.set_ylim([0,2*delta[-1]])
-
+        ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
 class CHAPSim_meta(cp.CHAPSim_meta):
@@ -382,7 +387,7 @@ class CHAPSim_meta(cp.CHAPSim_meta):
     def _extract_moving_wall(self,file_name,group_name=''):
         base_name=group_name if group_name else 'CHAPSim_meta'
         hdf_file = h5py.File(file_name,'r')
-        moving_wall = hdf_file[base_name+'/moving_wall'][:]
+        moving_wall = hdf_file[base_name+"/moving_wall"][:]
         hdf_file.close()
         return moving_wall
 
