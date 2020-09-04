@@ -1085,8 +1085,6 @@ class CHAPSim_fluct_base():
         if time0:
             times = list(filter(lambda x: x > time0, times))
         times.sort()
-        if True:
-           times= times[-3:]
 
         max_time = np.amax(times)
         avg_data=module.CHAPSim_AVG(max_time,meta_data,path_to_folder,time0,abs_path,tgpost=cls.tgpost)
