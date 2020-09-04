@@ -38,6 +38,22 @@ def from_HPC2Local(remote,remote_path,file,**kwargs):
     scp.get(file_path)
     scp.close()
 
+def file_extract(path_to_folder,abs_path=True):
+    if abs_path:
+        mypath = os.path.join(path_to_folder,'1_instant_D')
+    else:
+        mypath = os.path.abspath(os.path.join(path_to_folder,'1_instant_D'))
+    file_names = [f for f in os.listdir(mypath) if f[:8]=='DNS_peri']
+    return file_names       
+
+def time_extract(path_to_folder,abs_path=True):
+    file_names = file_extract(path_to_folder,abs_path)
+    time_list =[]
+    for file in file_names:
+        time_list.append(float(file[20:35]))
+    times = list(dict.fromkeys(time_list))
+    return list(set(times))
+
 def max_time_calc(path_to_folder,abs_path):
     if isinstance(path_to_folder,list):
         max_time = np.float('inf')

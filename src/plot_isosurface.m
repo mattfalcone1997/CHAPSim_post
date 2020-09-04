@@ -12,6 +12,6 @@ function p = plot_isosurface(ax,isovalue,color)
     axis(ax,'tight')
     pbaspect(ax,[max(y)-min(y),max(z)-min(z),max(x)-min(x)])
     hold(ax,'on');
-%     camlight
-%     lighting gouraud
+    % camlight
+    lighting gouraud
 end

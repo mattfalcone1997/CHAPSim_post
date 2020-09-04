@@ -26,7 +26,7 @@ try:
 except ImportError:
     warnings.warn("\033[1;33module `pyvista' has missing modules will not work correctly", stacklevel=2)
 
-
+# TEST = cp.TEST
 
 class CHAPSim_AVG_base():
     module = sys.modules[__name__]
@@ -748,12 +748,25 @@ class CHAPSim_budget_base():
         # gs = ax[0,0].get_gridspec()
         # gs.ax[0,0].get_gridspec()tight_layout(fig,rect=(0,0.1,1,1))
         return fig, ax
-    def _plot_integral_budget(self,PhyTime,wall_units=True,fig='',ax='',**kwargs):
+    def _plot_integral_budget(self,comp=None,PhyTime='',wall_units=True,fig='',ax='',**kwargs):
         if type(PhyTime) == float:
             PhyTime = "{:.9g}".format(PhyTime)
-        comp_list = tuple([x[1] for x in self.budgetDF.index])
+        budget_terms = tuple([x[1] for x in self.budgetDF.index])
         y_coords = self.avg_data.CoordDF['y'].dropna().values
 
+        if comp is None:
+            comp_list = tuple([x[1] for x in self.budgetDF.index])
+        elif hasattr(comp,"__iter__") and not isinstance(comp,str) :
+            comp_list = comp
+        elif isinstance(comp,str):
+            comp_list = [comp]
+        else:
+            raise TypeError("incorrect time")
+
+        if not all([comp in budget_terms for comp in comp_list]):
+            raise KeyError("Invalid budget term provided")
+
+        
         u_tau_star, delta_v_star = self.avg_data.wall_unit_calc(PhyTime)
         if not fig:
             if 'figsize' not in kwargs.keys():
@@ -761,6 +774,7 @@ class CHAPSim_budget_base():
             fig,ax = cplt.subplots(**kwargs)
         elif not ax:
             ax = fig.add_subplots(1,1,1)
+
         for comp in comp_list:
             integral_budget = np.zeros(self.avg_data.shape[1])
             budget_term = self.budgetDF.loc[PhyTime,comp].copy().values.reshape((self.AVG_DF.NCL[1],self.AVG_DF.NCL[0]))
@@ -770,11 +784,12 @@ class CHAPSim_budget_base():
                     delta_star=1.0
                     integral_budget[i] /=(delta_star*u_tau_star[i]**3/delta_v_star[i])
             ax.cplot(integral_budget,label=comp.title())
-        
-        if wall_units:
-            ax.set_ylabel(r"$\int_{-\delta}^{\delta} %s$ budget $dy\times u_{\tau}^4\delta/\nu $" %self.comp)# ,fontsize=16)
-        else:
-            ax.set_ylabel(r"$\int_{-\delta}^{\delta} %s$ budget $dy\times 1/U_{b0}^3 $"%self.comp)# ,fontsize=16)
+        budget_symbol = {}
+
+        # if wall_units:
+        #     ax.set_ylabel(r"$\int_{-\delta}^{\delta} %s$ budget $dy\times u_{\tau}^4\delta/\nu $" %self.comp)# ,fontsize=16)
+        # else:
+        #     ax.set_ylabel(r"$\int_{-\delta}^{\delta} %s$ budget $dy\times 1/U_{b0}^3 $"%self.comp)# ,fontsize=16)
         ax.set_xlabel(r"$x/\delta$")# ,fontsize=18)
         ax.clegend(ncol=4,vertical=False)
         #ax.grid()
@@ -881,8 +896,14 @@ class CHAPSim_fluct_base():
             fig, ax = cplt.subplots(len(x_split_list)-1,len(y_vals),**kwargs)
         elif not ax:
             ax=fig.subplots(len(x_split_list)-1,len(y_vals),squeeze=False)
-        
-        ax=ax.flatten()
+        if hasattr(ax,'__iter__'):
+            if not isinstance(ax,np.ndarray):
+                ax=np.ndarray(list(ax))   
+            single_input = False         
+        else:
+            single_input=True
+            ax = np.array([ax])
+        ax.flatten()
         x_coords_split=CT.coord_index_calc(self.CoordDF,'x',x_split_list)
         X, Z = np.meshgrid(x_coords, z_coords)
         max_val = np.amax(fluct); min_val=np.amin(fluct)
@@ -921,8 +942,10 @@ class CHAPSim_fluct_base():
                     ax[j*len(y_vals)+i]=ax1
                     ax[j*len(y_vals)+i].axes.set_aspect('equal')
         fig.tight_layout()
-
-        return fig, ax
+        if single_input:
+            return fig, ax[0]
+        else:
+            return fig, ax
 
     def plot_streaks(self,comp,vals_list,x_split_list='',PhyTime='',ylim='',Y_plus=True,*args,colors='',fig=None,ax=None,**kwargs):
         if PhyTime:
@@ -1051,21 +1074,22 @@ class CHAPSim_fluct_base():
         fig.tight_layout()
         return fig, ax
 
-    @staticmethod
-    def create_video(y_vals,comp,contour=True,meta_data='',path_to_folder='',time0='',
+    @classmethod
+    def create_video(cls,y_vals,comp,contour=True,meta_data='',path_to_folder='',time0='',
                             abs_path=True,tgpost=False,x_split_list='',lim_min=None,lim_max=None,
-                            fig='',ax=''):
-        file_names= time_extract(path_to_folder,abs_path)
-        time_list =[]
-        for file in file_names:
-            time_list.append(float(file[20:35]))
-        times = list(dict.fromkeys(time_list))
+                            fig='',ax='',**kwargs):
+
+        module = sys.modules[cls.__module__]
+        times= CT.time_extract(path_to_folder,abs_path)
+        
         if time0:
             times = list(filter(lambda x: x > time0, times))
-        #print(times.sort())
         times.sort()
+        if True:
+           times= times[-3:]
+
         max_time = np.amax(times)
-        avg_data=CHAPSim_AVG(max_time,meta_data,path_to_folder,time0,abs_path,tgpost)
+        avg_data=module.CHAPSim_AVG(max_time,meta_data,path_to_folder,time0,abs_path,tgpost=cls.tgpost)
         if isinstance(y_vals,int):
             y_vals=[y_vals]
         elif not isinstance(y_vals,list):
@@ -1075,7 +1099,9 @@ class CHAPSim_fluct_base():
         if not x_split_list:
             x_split_list=[np.min(x_coords),np.max(x_coords)]
         if not fig:
-            fig = cplt.figure(figsize=[7*len(y_vals),3*(len(x_split_list)-1)])
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [7*len(y_vals),3*(len(x_split_list)-1)]
+            fig = cplt.figure(**kwargs)
         fig_list = [fig]*len(times)
 
         
@@ -1085,8 +1111,7 @@ class CHAPSim_fluct_base():
             ax_list=fig.axes
             for ax in ax_list:
                 ax.remove()
-            fluct_data = CHAPSim_fluct(avg_data,time,meta_data=meta_data,path_to_folder=path_to_folder,
-                                    time0=time0,abs_path=abs_path)
+            fluct_data = cls(time,avg_data,path_to_folder=path_to_folder,abs_path=abs_path)
 
             if contour:
                 fig, ax = fluct_data.plot_contour(comp,y_vals,time,x_split_list=x_split_list,fig=fig)

@@ -12,6 +12,7 @@ import CHAPSim_post_v2 as cp
 import CHAPSim_Tools as CT
 import CHAPSim_plot as cplt
 
+# TEST = cp.TEST
 class CHAPSim_Inst(cp.CHAPSim_Inst):
     pass
 
@@ -169,6 +170,13 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         ax.relim()
         ax.autoscale_view()
         return fig, ax
+
+class CHAPSim_AVG():
+    def __new__(cls,*args,tgpost=False,**kwargs):
+        if not tgpost:
+            return CHAPSim_AVG_io(*args,**kwargs)
+        else:
+            return cp.CHAPSim_AVG_tg(*args, **kwargs)
 
 class CHAPSim_perturb():
     def __init__(self,time='',avg_data='', meta_data='',path_to_folder='',time0='',abs_path=True):

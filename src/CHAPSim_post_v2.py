@@ -77,7 +77,8 @@ try:
 except ImportError:
     warnings.warn("\033[1;33module `pyvista' has missing modules will not work correctly", stacklevel=2)
 
-TEST = False
+module = sys.modules[__name__]
+module.TEST = False
 
 class CHAPSim_Inst():
     def __init__(self,*args,**kwargs):
@@ -304,20 +305,29 @@ class CHAPSim_Inst():
         ax.set_title("Instantaneous velocity vector plot")
         return fig, ax
     
-    def lambda2_calc(self,PhyTime):
+    def lambda2_calc(self,PhyTime,x_start_index=None,x_end_index=None,y_index=None):
         #Calculating strain rate tensor
         velo_list = ['u','v','w']
         coord_list = ['x','y','z']
-        strain_rate = np.zeros((self.NCL[2],self.NCL[1],self.NCL[0],3,3))
-        rot_rate =  np.zeros((self.NCL[2],self.NCL[1],self.NCL[0],3,3))
+        
+        arr_len_y = y_index if y_index is not None else self.NCL[1]
+        
+        if x_start_index is None:
+            x_start_index=0 
+        if x_end_index is None:
+            x_end_index = self.NCL[0]
+        arr_len_x = x_end_index - x_start_index
+
+        strain_rate = np.zeros((self.NCL[2],arr_len_y,arr_len_x,3,3))
+        rot_rate =  np.zeros((self.NCL[2],arr_len_y,arr_len_x,3,3))
         i=0
         for velo1,coord1 in zip(velo_list,coord_list):
             j=0
             for velo2,coord2 in zip(velo_list,coord_list):
                 velo_field1 = self.InstDF.loc[PhyTime,velo1].values\
-                    .reshape((self.NCL[2],self.NCL[1],self.NCL[0]))
+                    .reshape((self.NCL[2],self.NCL[1],self.NCL[0]))[:,:arr_len_y,x_start_index:x_end_index]
                 velo_field2 = self.InstDF.loc[PhyTime,velo2].values\
-                    .reshape((self.NCL[2],self.NCL[1],self.NCL[0]))
+                    .reshape((self.NCL[2],self.NCL[1],self.NCL[0]))[:,:arr_len_y,x_start_index:x_end_index]
                 strain_rate[:,:,:,i,j] = 0.5*(CT.Grad_calc(self.CoordDF,velo_field1,coord2,False) \
                                         + CT.Grad_calc(self.CoordDF,velo_field2,coord1,False))
                 rot_rate[:,:,:,i,j] = 0.5*(CT.Grad_calc(self.CoordDF,velo_field1,coord2,False) \
@@ -329,7 +339,7 @@ class CHAPSim_Inst():
         del strain_rate ; del rot_rate
         #eigs = np.vectorize(np.linalg.eig,otypes=[float],signature='(m,n,o,p,q)->(o,p,q)')
         S2_Omega2_eigvals, e_vecs = np.linalg.eigh(S2_Omega2)
-        del e_vecs
+        del e_vecs; del S2_Omega2
         #lambda2 = np.zeros_like(velo_field1)
         # eigs = np.zeros(3)
         
@@ -354,7 +364,7 @@ class CHAPSim_Inst():
         else:
             assert PhyTime in set([x[0] for x in self.InstDF.index]), "PhyTime must be present in CHAPSim_AVG class"
             
-        lambda2 = self.lambda2_calc(PhyTime)
+        
         
         if not hasattr(vals_list,'__iter__'):
             vals_list = [vals_list]
@@ -367,7 +377,7 @@ class CHAPSim_Inst():
             else:
                 y_index=CT.coord_index_calc(self.CoordDF,'y',ylim)
             Y=Y[:y_index]
-            lambda2=lambda2[:,:y_index,:]
+            # lambda2=lambda2[:,:y_index,:]
         if not x_split_list:
             x_split_list = [np.amin(X),np.amax(X)]
         
@@ -388,11 +398,14 @@ class CHAPSim_Inst():
         for j in range(len(x_split_list)-1):
             x_start = CT.coord_index_calc(self.CoordDF,'x',x_split_list[j])
             x_end = CT.coord_index_calc(self.CoordDF,'x',x_split_list[j+1])
+            lambda2 = self.lambda2_calc(PhyTime,x_start,x_end)
+            if ylim:
+                lambda2=lambda2[:,:y_index,:]
             for val,i in zip(vals_list,range(len(vals_list))):
                 
                 color = colors[i%len(colors)] if colors else ''
-                patch = ax[j].plot_isosurface(Y,Z,X[x_start:x_end],lambda2[:,:,x_start:x_end],val,color)
-                ax[j].add_lighting()
+                patch = ax[j].plot_isosurface(Y,Z,X[x_start:x_end],lambda2,val,color)
+                # ax[j].add_lighting()
                 # patch.set_color(colors[i%len(colors)])            
         # Y,X,Z = np.meshgrid(y_coords,x_coords,z_coords)
         
@@ -432,13 +445,15 @@ class CHAPSim_Inst():
         return self
 
 class CHAPSim_Inst_io(CHAPSim_Inst):
+    tgpost = False
     def _inst_extract(self,*args,**kwargs):
-        kwargs['tgpost'] = False
+        kwargs['tgpost'] = self.tgpost
         return super()._inst_extract(*args,**kwargs)
 
 class CHAPSim_Inst_tg(CHAPSim_Inst):
+    tgpost = True
     def _inst_extract(self,*args,**kwargs):
-        kwargs['tgpost'] = True
+        kwargs['tgpost'] = self.tgpost
         meta_data,CoordDF,NCL,InstDF, shape = super()._inst_extract(*args,**kwargs)
         
         NCL1_io = meta_data.metaDF.loc['HX_tg_io'].values[1]
@@ -466,6 +481,7 @@ class CHAPSim_Inst_tg(CHAPSim_Inst):
 
 class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
     module = sys.modules[__name__]
+    tgpost = False
     def _extract_avg(self,time,meta_data='',path_to_folder='',time0='',abs_path=True):
         
         if not meta_data:
@@ -901,6 +917,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         return fig, ax
 class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
     module = sys.modules[__name__]
+    tgpost = True
     def _extract_avg(self,PhyTimes,*args,meta_data='',path_to_folder='',time0='',abs_path=True,permissive=False):
 
         if isinstance(path_to_folder,list):
@@ -1273,6 +1290,7 @@ class CHAPSim_AVG():
             return cls(fromfile=True,*args,**kwargs)
 
 class CHAPSim_fluct_io(cbase.CHAPSim_fluct_base):
+    tgpost = False
     def __init__(self,time_inst_data_list,avg_data='',path_to_folder='',abs_path=True,*args,**kwargs):
         if not avg_data:
             time = CT.max_time_calc(path_to_folder,abs_path)
@@ -1335,6 +1353,7 @@ class CHAPSim_fluct_io(cbase.CHAPSim_fluct_base):
         return pd.DataFrame(fluct,index=inst_data.InstDF.index)
 
 class CHAPSim_fluct_tg(cbase.CHAPSim_fluct_base):
+    tgpost = True
     def __init__(self,time_inst_data_list,avg_data='',path_to_folder='',abs_path=True,*args,**kwargs):
         if not hasattr(time_inst_data_list,'__iter__'):
             time_inst_data_list = [time_inst_data_list]
@@ -1701,7 +1720,7 @@ class CHAPSim_budget_io(cbase.CHAPSim_budget_base):
         if ord(uu_comp2[0]) > ord(uu_comp2[2]):
             uu_comp2 = uu_comp2[::-1]
         if ord(uu_comp2[1]) > ord(uu_comp2[2]):
-            uu_comp2 = uuu[0] + uu_comp2[1:][::-1]
+            uu_comp2 = uu_comp2[0] + uu_comp2[1:][::-1]
 
         u1u2u = self.avg_data.UUU_tensorDF.loc[PhyTime,uu_comp1]\
                         .values.reshape(self.avg_data.shape)

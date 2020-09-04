@@ -295,6 +295,12 @@ def flip_leg_col(items, ncol):
 
 mpl.projections.register_projection(AxesCHAPSim)
 
+def figure(*args,**kwargs):
+    if 'FigureClass' in kwargs.keys():
+        warnings.warn("FigureClass keyword overriden with CHAPSimFigure\n")
+    kwargs['FigureClass'] = CHAPSimFigure
+    return plt.figure(*args,**kwargs)
+
 def subplots(nrows=1, ncols=1, sharex=False, sharey=False, squeeze=True, subplot_kw=None, gridspec_kw=None,*args, **fig_kw):
     fig = plt.figure(FigureClass=CHAPSimFigure,*args,**fig_kw)
     if subplot_kw is None:
