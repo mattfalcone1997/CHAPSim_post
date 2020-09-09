@@ -83,14 +83,10 @@ class AxesCHAPSim(mpl.axes.Axes):
             kwargs['color'] = colors[counter%len(colors)]
             return super().plot(*args,**kwargs)
     def count_lines(self):
-        sharex_ax = list(itertools.chain(*self.get_shared_x_axes()))
-        sharey_ax = list(itertools.chain(*self.get_shared_y_axes()))
-        axes = sharex_ax + sharey_ax
-        if not sharex_ax and not sharey_ax:
-            axes = [self]
-        no_lines = len(list(itertools.chain(*(x.get_lines() for x in axes) )))
-        if sharex_ax and sharey_ax:
-            no_lines -= len(self.get_lines())
+        no_lines = 0
+        twinned_ax = self._twinned_axes.get_siblings(self)
+        for ax in twinned_ax:
+            no_lines += len(ax.get_lines())
         return no_lines
 
     def clegend(self,*args, **kwargs):

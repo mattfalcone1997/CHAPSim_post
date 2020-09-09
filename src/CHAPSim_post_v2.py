@@ -1212,7 +1212,7 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
         return self._tau_calc(float("NaN"))
 
     def plot_skin_friction(self,fig='',ax='',**kwargs):
-        fig, ax = super().plot_skin_friction(float("NaN"),fig,ax,**kwargs)
+        fig, ax = super().plot_skin_friction(float("NaN"),fig=fig,ax=ax,**kwargs)
         line = ax.get_lines()[-1]
         times = [float(x) for x in self.get_times()]
         line.set_xdata(np.array(times))

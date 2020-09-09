@@ -888,6 +888,7 @@ class CHAPSim_fluct_base():
                 x_split_list=[np.amin(x_coords),np.amax(x_coords)]
         
         kwargs['squeeze'] = False
+        single_input=False
         if not fig:
             if  'figsize' not in kwargs.keys():
                 kwargs['figsize'] = [10*len(y_vals),3*(len(x_split_list)-1)]
@@ -895,15 +896,15 @@ class CHAPSim_fluct_base():
                 warnings.warn('Figure size algorithm overridden', stacklevel=2)
             fig, ax = cplt.subplots(len(x_split_list)-1,len(y_vals),**kwargs)
         elif not ax:
-            ax=fig.subplots(len(x_split_list)-1,len(y_vals),squeeze=False)
-        if hasattr(ax,'__iter__'):
-            if not isinstance(ax,np.ndarray):
-                ax=np.ndarray(list(ax))   
-            single_input = False         
+            ax=fig.subplots(len(x_split_list)-1,len(y_vals),squeeze=False)      
         else:
-            single_input=True
-            ax = np.array([ax])
-        ax.flatten()
+            if isinstance(ax,mpl.axes):
+                single_input=True
+                ax = np.array([ax])
+            elif not isinstance(ax,np.ndarray):
+                msg = "Input axes must be an instance %s or %s"%(mpl.axes,np.ndarray)
+                raise TypeError(msg)
+        ax=ax.flatten()
         x_coords_split=CT.coord_index_calc(self.CoordDF,'x',x_split_list)
         X, Z = np.meshgrid(x_coords, z_coords)
         max_val = np.amax(fluct); min_val=np.amin(fluct)
@@ -1077,14 +1078,14 @@ class CHAPSim_fluct_base():
     @classmethod
     def create_video(cls,y_vals,comp,contour=True,meta_data='',path_to_folder='',time0='',
                             abs_path=True,tgpost=False,x_split_list='',lim_min=None,lim_max=None,
-                            fig='',ax='',**kwargs):
+                            ax_func=None, fig='',ax='',**kwargs):
 
         module = sys.modules[cls.__module__]
         times= CT.time_extract(path_to_folder,abs_path)
         
         if time0:
             times = list(filter(lambda x: x > time0, times))
-        times.sort()
+        times.sort(); times = times[-3:]
 
         max_time = np.amax(times)
         avg_data=module.CHAPSim_AVG(max_time,meta_data,path_to_folder,time0,abs_path,tgpost=cls.tgpost)
@@ -1116,6 +1117,9 @@ class CHAPSim_fluct_base():
             else:
                 fig,ax = fluct_data.plot_fluct3D_xz(y_vals,comp,time,x_split_list,fig)
             ax[0].axes.set_title(r"$t^*=%.3g$"%time,loc='left')
+            
+            if ax_func is not None:
+                ax = ax_func(ax)
 
             for im in ax:
                 im.set_clim(vmin=lim_min)

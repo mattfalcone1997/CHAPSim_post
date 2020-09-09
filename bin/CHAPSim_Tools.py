@@ -222,7 +222,7 @@ def Y_plus_index_calc(AVG_DF,CoordDF,coord_list,x_vals=''):
         par_dir = AVG_DF.par_dir
         u_tau_star, delta_v_star = cpar.wall_unit_calc(AVG_DF,avg_time,par_dir)
     else:
-        u_tau_star, delta_v_star = cp.wall_unit_calc(AVG_DF,avg_time)
+        u_tau_star, delta_v_star = cpAVG_DF.wall_unit_calc(avg_time)
     
     if x_vals:
         Y_plus_list=[]
@@ -279,7 +279,7 @@ def y_coord_index_norm(AVG_DF,CoordDF,coord_list,x_vals='',mode='half_channel'):
     elif mode == 'mom_thickness':
         disp_thickness, norm_distance, shape_factor = AVG_DF.int_thickness_calc(AVG_DF.flow_AVGDF.index[0][0])
     elif mode == 'wall':
-        u_tau_star, norm_distance = cp.wall_unit_calc(AVG_DF,AVG_DF.flow_AVGDF.index[0][0])
+        u_tau_star, norm_distance = AVG_DF.wall_unit_calc(AVG_DF.flow_AVGDF.index[0][0])
     else:
         raise ValueError("The mode of normalisation must be 'half_channel', 'disp_thickness','mom_thickness',"+\
                                 " or 'wall. Value used was %s\n"%mode)
