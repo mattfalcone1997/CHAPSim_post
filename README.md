@@ -1,4 +1,4 @@
-# CHAPSim_post_v0.1
+# CHAPSim_post
 Project providing postprocessing facilities to the CHAPSim fluids solver
 
 ## Setup

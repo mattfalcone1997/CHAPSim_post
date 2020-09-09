@@ -1,15 +1,14 @@
 '''
-#=============================================================================#
-#=============== CHAPSim - postprocessing ====================================#
-# Postprocessing python scripts developed to be run on desktops and           #  
-# workstations. This has been tested on iceberg. Primarily developed for      #
-# postprocessing the instantaneous and averaged fields of individual          #  
-# timesteps . Methods that require extensive use of the filesystem            #
-# particularly creating averages using the instantaneous data from CHAPSim    #
-# are advised to use the parallel module CHAPSim_parallel. Based principally  #
-# on the Pandas DataFrame class                                               #
-#                                                                             #
-#===================== Structures and classes ================================#                                             #  
+# CHAPSim_post - Postprocessing library for CHAPSim Solver
+Postprocessing python scripts developed to be run on desktops and             
+workstations. This has been tested on iceberg. Primarily developed for      
+postprocessing the instantaneous and averaged fields of individual            
+timesteps . Methods that require extensive use of the filesystem            
+particularly creating averages using the instantaneous data from CHAPSim    
+are advised to use the parallel module CHAPSim_parallel. Based principally  
+on the Pandas DataFrame class                                               
+
+## Structures and classes                                          #  
 # = CHAPSim_Inst => Creates DataFrame for the instantaneous flow fields       #  
 #                   velocity vector and pressure                              #  
 #                => methods for producing contour and vector plots            #
