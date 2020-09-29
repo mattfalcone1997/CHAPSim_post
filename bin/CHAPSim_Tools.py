@@ -275,22 +275,23 @@ def y_coord_index_norm(AVG_DF,CoordDF,coord_list,x_vals='',mode='half_channel'):
     if mode=='half_channel':
         norm_distance=np.ones((AVG_DF.NCL[0]))
     elif mode == 'disp_thickness':
-        norm_distance, *other_thickness = AVG_DF.int_thickness_calc(AVG_DF.flow_AVGDF.index[0][0])
+        norm_distance, *other_thickness = AVG_DF._int_thickness_calc(AVG_DF.flow_AVGDF.index[0][0])
     elif mode == 'mom_thickness':
-        disp_thickness, norm_distance, shape_factor = AVG_DF.int_thickness_calc(AVG_DF.flow_AVGDF.index[0][0])
+        disp_thickness, norm_distance, shape_factor = AVG_DF._int_thickness_calc(AVG_DF.flow_AVGDF.index[0][0])
     elif mode == 'wall':
-        u_tau_star, norm_distance = AVG_DF.wall_unit_calc(AVG_DF.flow_AVGDF.index[0][0])
+        u_tau_star, norm_distance = AVG_DF._wall_unit_calc(AVG_DF.flow_AVGDF.index[0][0])
     else:
         raise ValueError("The mode of normalisation must be 'half_channel', 'disp_thickness','mom_thickness',"+\
                                 " or 'wall. Value used was %s\n"%mode)
     #print(norm_distance)
     y_coords=CoordDF['y'].dropna().values
     if x_vals:
-        x_index =coord_index_calc(CoordDF,'x',x_vals)
+        print(x_vals)
+        x_index =[AVG_DF._return_index(x) for x in x_vals]
         if not hasattr(x_index,'__iter__'):
             x_index=[x_index]
     elif x_vals is None:
-        x_index=list(range(AVG_DF.NCL[0]))
+        x_index=list(range(AVG_DF.shape[-1]))
     else:
         x_index=[0]
     if not hasattr(coord_list,'__iter__'):
@@ -399,6 +400,28 @@ def Grad_calc(coordDF,flowArray,comp,two_D=True):
         else:    
             raise Exception
     return grad
+
+def Grad_calc_tg(CoordDF,flowArray):
+    coord_array = CoordDF['y'].dropna().values
+    grad = np.zeros_like(flowArray)
+    dim_size = flowArray.shape[0]
+    dim_size = flowArray.shape[0]
+
+    sol_f, h_list_f = Stencil_calc([0,1,2], 1)
+    a_f, b_f, c_f = Stencil_coeffs_eval(sol_f,h_list_f,[coord_array[1]-coord_array[0],coord_array[2]-coord_array[1]])
+    
+    sol_b, h_list_b = Stencil_calc([-2,-1,0], 1)
+    a_b, b_b, c_b = Stencil_coeffs_eval(sol_b,h_list_b,[coord_array[-2]-coord_array[-3],coord_array[-1]-coord_array[-2]])
+
+    grad[0] = a_f*flowArray[0] + b_f*flowArray[1] + c_f*flowArray[2]
+    grad[-1] = a_b*flowArray[-3] + b_b*flowArray[-2] + c_b*flowArray[-1]
+    for i in range(1,dim_size-1):
+        h1 = coord_array[i+1]-coord_array[i]
+        h0 =  coord_array[i]-coord_array[i-1]
+        grad[i] = -h1/(h0*(h0+h1))*flowArray[i-1] + (h1-h0)/(h0*h1)*flowArray[i] + h0/(h1*(h0+h1))*flowArray[i+1]
+
+    return grad
+
 def scalar_grad(coordDF,flow_array,two_D=True):
     if two_D:
         assert(flow_array.ndim == 2)
@@ -443,3 +466,6 @@ def scalar_laplacian(coordDF,flow_array,two_D=True):
     grad_vector = scalar_grad(coordDF,flow_array,two_D)
     lap_scalar = Vector_div(coordDF,grad_vector,two_D)
     return lap_scalar
+
+def Scalar_laplacian_tg(coordDF,flow_array):
+    return Grad_calc_tg(coordDF,Grad_calc_tg(coordDF,flow_array))

@@ -1,3 +1,4 @@
+from os.path import abspath
 import numpy as np
 import pandas as pd; from pandas.errors import PerformanceWarning 
 import matplotlib as mpl
@@ -10,6 +11,7 @@ import itertools
 import time
 import warnings
 import sys
+import seaborn
 
 import CHAPSim_Tools as CT
 import CHAPSim_plot as cplt
@@ -153,7 +155,7 @@ class CHAPSim_AVG_base():
 
         dudx2_tensor_index = DUDX2_tensorDF.index
         for index in dudx2_tensor_index:
-            vals = DUDX2_tensorDF.loc[index].values
+            # vals = DUDX2_tensorDF.loc[index].values
             comp1 = index[1][1] + index[1][3]
             comp2 = index[1][5] + index[1][7]
             u1x_grad = Velo_grad_tensorDF.loc[index[0],comp1].values
@@ -201,7 +203,7 @@ class CHAPSim_AVG_base():
             y_plus[i] = (1-abs(y_coord))/delta_v_star[i]
         return y_plus
 
-    def int_thickness_calc(self,PhyTime):
+    def _int_thickness_calc(self,PhyTime):
         if not isinstance(PhyTime,str) and not np.isnan(PhyTime):
             PhyTime = "{:.9g}".format(PhyTime)
         U0_index = int(np.floor(self.NCL[1]*0.5))
@@ -630,8 +632,22 @@ class CHAPSim_AVG_base():
     def __iadd__(self,other_avg):
         pass
 class CHAPSim_budget_base():
+    def __init__(self,comp1,comp2,avg_data='',PhyTime='',*args,**kwargs):
+
+        if avg_data:
+            self.avg_data = avg_data
+        elif PhyTime:
+            self.avg_data = CHAPSim_AVG_io(PhyTime,*args,**kwargs)
+        else:
+            raise Exception
+        if not PhyTime:
+            PhyTime = list(set([x[0] for x in self.avg_data.flow_AVGDF.index]))[0]
+        self.comp = comp1+comp2
+        self.budgetDF = self._budget_extract(PhyTime,comp1,comp2)
+        self.shape = self.avg_data.shape
+
     def _budget_extract(self,PhyTime,comp1,comp2):
-        if type(PhyTime) == float:
+        if type(PhyTime) == float and not np.isnan(PhyTime):
             PhyTime = "{:.9g}".format(PhyTime)
             
         production = self._production_extract(PhyTime,comp1,comp2)
@@ -655,9 +671,9 @@ class CHAPSim_budget_base():
         return budgetDF
 
     def _budget_plot(self,PhyTime, x_list,wall_units=True, fig='', ax ='',**kwargs):
-        if type(PhyTime) == float:
+        if type(PhyTime) == float and not np.isnan(PhyTime):
             PhyTime = "{:.9g}".format(PhyTime)
-        u_tau_star, delta_v_star = self.avg_data.wall_unit_calc(PhyTime)
+        u_tau_star, delta_v_star = self.avg_data._wall_unit_calc(PhyTime)
         budget_scale = u_tau_star**3/delta_v_star
         
         Y_extent= int(self.avg_data.shape[0]/2)
@@ -686,7 +702,7 @@ class CHAPSim_budget_base():
                 kwargs['figsize']=[7*ax_size[1],5*ax_size[0]+1]
             else:
                 warnings.warn("Figure size calculator overidden: Figure quality may be degraded", stacklevel=2)
-                fig, ax = cplt.subplots(*ax_size,**kwargs)
+            fig, ax = cplt.subplots(*ax_size,**kwargs)
         elif not ax:
             ax=fig.subplots(*ax_size,**kwargs)
         ax=ax.flatten()
@@ -749,7 +765,7 @@ class CHAPSim_budget_base():
         # gs.ax[0,0].get_gridspec()tight_layout(fig,rect=(0,0.1,1,1))
         return fig, ax
     def _plot_integral_budget(self,comp=None,PhyTime='',wall_units=True,fig='',ax='',**kwargs):
-        if type(PhyTime) == float:
+        if type(PhyTime) == float and not np.isnan(PhyTime):
             PhyTime = "{:.9g}".format(PhyTime)
         budget_terms = tuple([x[1] for x in self.budgetDF.index])
         y_coords = self.avg_data.CoordDF['y'].dropna().values
@@ -762,7 +778,7 @@ class CHAPSim_budget_base():
             comp_list = [comp]
         else:
             raise TypeError("incorrect time")
-
+        # print(budget_terms)
         if not all([comp in budget_terms for comp in comp_list]):
             raise KeyError("Invalid budget term provided")
 
@@ -774,16 +790,17 @@ class CHAPSim_budget_base():
             fig,ax = cplt.subplots(**kwargs)
         elif not ax:
             ax = fig.add_subplots(1,1,1)
+        xaxis_vals = self.avg_data._return_xaxis()
 
         for comp in comp_list:
             integral_budget = np.zeros(self.avg_data.shape[1])
-            budget_term = self.budgetDF.loc[PhyTime,comp].copy().values.reshape((self.AVG_DF.NCL[1],self.AVG_DF.NCL[0]))
+            budget_term = self.budgetDF.loc[PhyTime,comp].copy().values.reshape((self.avg_data.NCL[1],self.avg_data.NCL[0]))
             for i in range(self.avg_data.shape[1]):
                 integral_budget[i] = 0.5*integrate.simps(budget_term[:,i],y_coords)
                 if wall_units:
                     delta_star=1.0
                     integral_budget[i] /=(delta_star*u_tau_star[i]**3/delta_v_star[i])
-            ax.cplot(integral_budget,label=comp.title())
+            ax.cplot(xaxis_vals,integral_budget,label=comp.title())
         budget_symbol = {}
 
         # if wall_units:
@@ -822,7 +839,7 @@ class CHAPSim_budget_base():
             fig,ax = cplt.subplots(**kwargs)
         elif not ax:
             ax=fig.c_add_subplot(1,1,1)
-        
+        xaxis_vals = self.avg_data._return_xaxis()
         if y_vals_list != 'max':
             for i in range(len(y_index)):
                 ax.cplot(budget_term[i],label=r"$y^+=%.3g$"% y_vals_list[i])
@@ -832,7 +849,7 @@ class CHAPSim_budget_base():
             # ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)$"%y_label)# ,fontsize=20)#)# ,fontsize=22)
             
         else:
-            ax.cplot(budget_term,label=r"maximum %s"%comp)
+            ax.cplot(xaxis_vals,budget_term,label=r"maximum %s"%comp)
             # ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%y_label)# ,fontsize=20)#)# ,fontsize=22)
 
         fig.tight_layout()
@@ -1180,6 +1197,8 @@ class CHAPSim_autocov_base():
 
 
         if norm_xval is not None:
+            if norm_xval ==0:
+                norm_xval = np.amin(self._avg_data._return_xaxis())
             x_axis_vals=[norm_xval]*len(axis_vals)
         else:
             x_axis_vals=axis_vals
@@ -1216,7 +1235,7 @@ class CHAPSim_autocov_base():
                 y_unit="y" if y_mode=='half_channel' \
                         else "\delta_u" if y_mode=='disp_thickness' \
                         else "\theta" if y_mode=='mom_thickness' \
-                        else "y^+" if norm_xval !=0 else "Y^{+0}"
+                        else "y^+" if norm_xval !=0 else "y^{+0}"
  
 
                 ax[j].set_title(r"$%s=%.3g$"%(y_unit,y_vals[j]),loc='left')
@@ -1241,7 +1260,10 @@ class CHAPSim_autocov_base():
             #raise TypeError("Variable `axis_vals' must be an int or iterable\n")
 
         if norm_xval is not None:
-            x_axis_vals=[norm_xval]*len(axis_vals)
+            if norm_xval ==0:
+                x_axis_vals = [np.amin(self._avg_data._return_xaxis())]*len(axis_vals)
+            else:
+                x_axis_vals=[norm_xval]*len(axis_vals)
         else:
             x_axis_vals=axis_vals
 
@@ -1274,7 +1296,7 @@ class CHAPSim_autocov_base():
                 y_unit="y" if y_mode=='half_channel' \
                         else "\delta_u" if y_mode=='disp_thickness' \
                         else "\theta" if y_mode=='mom_thickness' \
-                        else "y^+" if norm_xval !=0 else "Y^{+0}"
+                        else "y^+" if norm_xval !=0 else "y^{+0}"
                 ax[j].cplot(wavenumber_comp,2*np.abs(wavenumber_spectra))
                 ax[j].set_title(r"$%s=%.3g$"%(y_unit,y_vals[j]),loc='left')
             string= (ord(self.comp[0])-ord('u')+1,ord(self.comp[1])-ord('u')+1,comp)
@@ -1333,7 +1355,7 @@ class CHAPSim_autocov_base():
             max_val = max(max_val,np.amax(np.squeeze(Ruu[:,:,i])))
 
             X,Y = np.meshgrid(coord,y_coord)
-            ax[i] = ax[i].pcolormesh(X,Y,np.squeeze(Ruu[:,:,i]).T,cmap='jet')
+            ax[i] = ax[i].pcolormesh(X,Y,np.squeeze(Ruu[:,:,i]).T,cmap='jet',shading='auto')
             ax[i].axes.set_xlabel(r"$\Delta %s/\delta$" %comp)
             if Y_plus and Y_plus_0:
                 ax[i].axes.set_ylabel(r"$Y^{+0}$")
@@ -1389,7 +1411,7 @@ class CHAPSim_autocov_base():
             ax = fig.subplots(len(axis_vals),subplot_kw=subplot_kw)
         ax=ax.flatten()
         
-        x_axis = np.arange(Ruu.shape[2])
+        x_axis =self._avg_data._return_xaxis()
         y_coord = self._meta_data.CoordDF['y'].copy().dropna().values
         coord = self._meta_data.CoordDF[comp].copy().dropna()\
                 .values[:shape[0]]
@@ -1398,10 +1420,8 @@ class CHAPSim_autocov_base():
         for i in range(len(axis_vals)):
 
             X,Y = np.meshgrid(x_axis,coord)
-            ax1 = ax[i].pcolormesh(X,Y,Ruu[:,i],cmap='jet')
-            ax1.axes.set_xlabel(r"$x/\delta$", fontsize=20)
-            
-            ax1.axes.set_ylabel(r"$\Delta %s/\delta$" %comp, fontsize=20)
+            ax1 = ax[i].pcolormesh(X,Y,Ruu[:,i],cmap='jet',shading='auto')            
+            ax1.axes.set_ylabel(r"$\Delta %s/\delta$" %comp)
             title = r"$%s=%.3g$"%("y" if axis_mode=='half_channel' \
                         else "\delta_u" if axis_mode=='disp_thickness' \
                         else "\theta" if axis_mode=='mom_thickness' else "y^+", axis_vals[i] )
@@ -1439,7 +1459,7 @@ class CHAPSim_autocov_base():
                 .values[:shape[2]]
         coord = self._meta_data.CoordDF[comp].copy().dropna()\
                 .values[:shape[0]]
-        x_axis = np.arange(Ruu.shape[2])
+        x_axis =self._avg_data._return_xaxis()
 
         ax_out=[]
         for i in range(len(axis_vals)):
@@ -1451,9 +1471,8 @@ class CHAPSim_autocov_base():
             comp_size= shape[0]
             wavenumber_comp = 2*np.pi*fft.rfftfreq(comp_size,coord[1]-coord[0])
             X, Y = np.meshgrid(x_axis,wavenumber_comp)
-            ax1 = ax[i].pcolormesh(X,Y,np.abs(wavenumber_spectra),cmap='jet')
-            ax1.axes.set_xlabel(r"$x/\delta$", fontsize=20)
-            ax1.axes.set_ylabel(r"$\kappa_%s$"%comp, fontsize=20)
+            ax1 = ax[i].pcolormesh(X,Y,np.abs(wavenumber_spectra),cmap='jet',shading='auto')
+            ax1.axes.set_ylabel(r"$\kappa_%s$"%comp)
             title = r"$%s=%.3g$"%("y" if axis_mode=='half_channel' \
                         else "\delta_u" if axis_mode=='disp_thickness' \
                         else "\theta" if axis_mode=='mom_thickness' else "y^+", axis_vals[i] )
@@ -1576,5 +1595,76 @@ class CHAPSim_Quad_Anl_base():
         ax[0,0].clegend(vertical=False,ncol=ncol)
         ax[0,0].get_gridspec().tight_layout(fig)
 
+        fig.tight_layout()
+        return fig, ax
+
+class CHAPSim_joint_PDF_base():
+    _module = sys.modules[__module__]
+    def __init__(self,*args,fromfile=False,**kwargs):
+        if fromfile:
+            self.uv_primeDF, self.avg_data,\
+            self.meta_data, self.NCL, self._y_mode, self._x_loc_norm = self._hdf_extract(*args,**kwargs)
+        else:
+            self.uv_primeDF, self.avg_data,\
+            self.meta_data, self.NCL, self._y_mode,self._x_loc_norm = self._extract_fluct(*args,**kwargs)
+
+    def save_hdf(self,file_name,mode='a',base_name='CHAPSim_joint_PDF_base'):
+        hdf_file = h5py.File(file_name,mode)
+        group = hdf_file.create_group(base_name)
+        group.attrs["y_mode"] = self._y_mode.encode('utf-8')
+        group.create_dataset("x_loc_norm",data=self._x_loc_norm)
+        hdf_file.close()
+        self.uv_primeDF.to_hdf(file_name,key=base_name+'/uv_primeDF',mode='a',format='fixed',data_columns=True)
+        self.meta_data.save_hdf(file_name,'a',base_name+"/meta_data")
+        self.avg_data.save_hdf(file_name,'a',base_name+"/avg_data")
+
+    @classmethod
+    def from_hdf(cls,file_name,base_name=None):
+        return cls(file_name,base_name=base_name,fromfile=True)
+
+    def plot_joint_PDF(self, xy_list,pdf_kwargs=None,fig=None, ax=None,**kwargs):
+        
+        if fig is None:
+            if 'figsize' not in kwargs:
+                kwargs['figsize'] = [8,4*len(xy_list)]
+            else:
+                warnings.warn("figure size algorithm overrided: may result in poor quality graphs", stacklevel=2)
+            kwargs['squeeze'] = False
+            fig,ax = cplt.subplots(len(xy_list),**kwargs)
+        elif ax is None:
+            ax=fig.subplots(len(xy_list),squeeze=False)      
+        ax = ax.flatten()
+
+        if pdf_kwargs is not None:
+            if not isinstance(pdf_kwargs,dict):
+                raise TypeError("pdf_kwargs must be of type dict")
+            msg = "Restricted pdf_kwargs present these have been removed"
+            if 'data' in pdf_kwargs or 'x' in pdf_kwargs or 'y' in pdf_kwargs or 'ax' in pdf_kwargs:
+                warnings.warn(msg,stack_level=2)
+            pdf_kwargs.pop('data',None)
+            pdf_kwargs.pop('x',None)
+            pdf_kwargs.pop('y',None)
+            pdf_kwargs.pop('ax',None)
+        else:
+            pdf_kwargs={}
+        i=0
+        y_unit = "y/\delta" if self._y_mode=='half_channel' \
+                else "\delta_u" if self._y_mode=='disp_thickness' \
+                else "\theta" if self._y_mode=='mom_thickness' else "y^+" \
+                if self._y_mode=='wall' and any(self._x_loc_norm!=0) else "y^{+0}"
+        for xy in xy_list:
+            try:
+                x_vals = self.uv_primeDF['u',xy].values
+                y_vals = self.uv_primeDF['v',xy].values
+            except KeyError:
+                pair_string = " ".join("{}".format(x[1]) for x in self.uv_primeDF.columns)
+                msg = "The u, v pair provided is not present. The pair must "+\
+                    "be one of the following %s"%pair_string
+                raise KeyError(msg)
+            ax[i] = seaborn.kdeplot(x=x_vals,y=y_vals,ax=ax[i],**pdf_kwargs)
+            ax[i].set_xlabel(r"$u'$")
+            ax[i].set_ylabel(r"$v'$")
+            ax[i].set_title(r"$x/\delta=%g$, $%s=%g$"%(xy[0],y_unit,xy[1]),loc='right')
+            i+=1
         fig.tight_layout()
         return fig, ax

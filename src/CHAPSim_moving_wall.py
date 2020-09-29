@@ -123,7 +123,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         fig.tight_layout()
         return fig,ax
 
-    def int_thickness_calc(self,PhyTime):
+    def _int_thickness_calc(self,PhyTime):
         if not isinstance(PhyTime,str) and not np.isnan(PhyTime):
             PhyTime = "{:.9g}".format(PhyTime)
         U0_index = int(np.floor(self.NCL[1]*0.5))
@@ -499,3 +499,6 @@ class CHAPSim_Quad_Anl_io(cp.CHAPSim_Quad_Anl_io):
         QuadAnalDF = pd.read_hdf(file_name,key=base_name+'/QuadAnalDF')
         shape = (NCL[1],NCL[0])
         return meta_data, NCL, avg_data, QuadAnalDF, shape
+
+class CHAPSim_joint_PDF_io(cp.CHAPSim_joint_PDF_io):
+    _module = sys.modules[__module__]

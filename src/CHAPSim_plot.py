@@ -190,7 +190,18 @@ class AxesCHAPSim(mpl.axes.Axes):
                 ydata =  np.array(ydata)/val
             line.set_data(xdata, ydata)
             i+=1
-
+    def apply_func(self,axis,func):
+        lines = self.get_lines()
+        for line in lines:
+            xdata, ydata = line.get_data()
+            if axis == 'y':
+                ydata = func(ydata)
+            elif axis == 'x':
+                xdata = func(xdata)
+            else:
+                raise KeyError
+            line.set_data(xdata,ydata)
+        
 
 
 
@@ -307,7 +318,8 @@ def subplots(nrows=1, ncols=1, sharex=False, sharey=False, squeeze=True, subplot
                     subplot_kw=subplot_kw, gridspec_kw=gridspec_kw)
     return fig, ax
 
-
+def update_prop_cycle(key,val):
+    pass
 # import matlab.engine
 
 matlab_path =  which('matlab')
