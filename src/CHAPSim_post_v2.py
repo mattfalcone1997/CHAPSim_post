@@ -2453,7 +2453,7 @@ class CHAPSim_Quad_Anl_tg(cbase.CHAPSim_Quad_Anl_base):
         return meta_data, NCL, avg_data, QuadAnalDF, shape
 class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
     _module = sys.modules[__module__]
-    def _extract_fluct(self,x,y,path_to_folder=None,time0=None,y_mode='half-channel',norm_xval = None,xy_inner=True,tgpost=False,abs_path=True):
+    def _extract_fluct(self,x,y,path_to_folder=None,time0=None,y_mode='half-channel',use_ini=True,xy_inner=True,tgpost=False,abs_path=True):
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
@@ -2486,7 +2486,7 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
 
         x_index = CT.coord_index_calc(avg_data.CoordDF,'x',x)
 
-        x_loc_norm = x_coord_list if norm_xval is None else [0]*len(y_coord_list)
+        x_loc_norm = x_coord_list if not use_ini else [0]*len(y_coord_list)
         y_index = CT.y_coord_index_norm(avg_data,avg_data.CoordDF,y_coord_list,x_loc_norm,y_mode)
         
         y_index = np.diag(np.array(y_index))
