@@ -2078,7 +2078,8 @@ class CHAPSim_budget_tg(cbase.CHAPSim_budget_base):
 class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
     def _autocov_extract(self,comp1,comp2,path_to_folder='',time0=None,abs_path=True,max_x_sep=None,max_z_sep=None):
         times = time_extract(path_to_folder,abs_path)
-        times = list(filter(lambda x: x > time0, times))
+        if time0 is not None:
+            times = list(filter(lambda x: x > time0, times))
         if TEST:
             times.sort(); times= times[-3:]
             
