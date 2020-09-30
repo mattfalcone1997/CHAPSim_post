@@ -224,8 +224,8 @@ class CHAPSim_AVG_base():
         shape_factor = np.divide(disp_thickness,mom_thickness)
         
         return disp_thickness, mom_thickness, shape_factor
-    def plot_shape_factor(self,*arg,fig='',ax='',**kwargs):
-        delta, theta, shape_factor = self.int_thickness_calc(*arg)
+    def _plot_shape_factor(self,*arg,fig='',ax='',**kwargs):
+        delta, theta, shape_factor = self._int_thickness_calc(*arg)
         # x_coords = self.CoordDF['x'].dropna().values
         if not fig:
             if 'figsize' not in kwargs.keys():
@@ -800,7 +800,8 @@ class CHAPSim_budget_base():
                 if wall_units:
                     delta_star=1.0
                     integral_budget[i] /=(delta_star*u_tau_star[i]**3/delta_v_star[i])
-            ax.cplot(xaxis_vals,integral_budget,label=comp.title())
+            label = r"$\int^{\delta}_{-\delta}$ %s $dy$"%comp.title()
+            ax.cplot(xaxis_vals,integral_budget,label=label)
         budget_symbol = {}
 
         # if wall_units:

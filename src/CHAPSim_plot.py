@@ -190,6 +190,9 @@ class AxesCHAPSim(mpl.axes.Axes):
                 ydata =  np.array(ydata)/val
             line.set_data(xdata, ydata)
             i+=1
+        self.relim()
+        self.autoscale_view(True,True,True)
+
     def apply_func(self,axis,func):
         lines = self.get_lines()
         for line in lines:
@@ -202,9 +205,9 @@ class AxesCHAPSim(mpl.axes.Axes):
                 raise KeyError
             line.set_data(xdata,ydata)
         
-
-
-
+        self.relim()
+        self.autoscale_view(True,True,True)
+        
     def toggle_default_linestyle(self,*args,**kwargs):
         linestyle=['-','--','-.',':']
         lines = self.get_lines()

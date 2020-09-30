@@ -675,6 +675,22 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
             group_name = 'CHAPSim_AVG_io'
         super().save_hdf(file_name,write_mode,group_name)
 
+    def check_times(self,PhyTime):
+        if isinstance(PhyTime,float) or isinstance(PhyTime,int):
+            PhyTime = "%.9g"%PhyTime
+        elif not isinstance(PhyTime,str):
+            raise TypeError("PhyTime is the wrong type")
+
+        if len(self.get_times()) == 1:
+            avg_time = self.get_times()[0]
+            if PhyTime != avg_time:
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
+            PhyTime = avg_time
+        else:
+            if not PhyTime in self.get_times():
+                raise ValueError("The time given is not in this present in class")
+        return PhyTime
+
     def _return_index(self,x_val):
         return CT.coord_index_calc(self.CoordDF,'x',x_val)
 
@@ -711,7 +727,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         else:
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
         
-        fig, ax = super().plot_shape_factor(PhyTime,fig=fig,ax=ax,**kwargs)
+        fig, ax = self._plot_shape_factor(PhyTime,fig=fig,ax=ax,**kwargs)
         x_coords = self.CoordDF['x'].dropna().values
         line = ax.get_lines()[-1]
         line.set_xdata(x_coords)
@@ -1144,7 +1160,7 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
 
     def plot_shape_factor(self,fig='',ax='',**kwargs):
         PhyTime = float("NaN")
-        fig, ax = super().plot_shape_factor(fig=fig,ax=ax,**kwargs)
+        fig, ax = self._plot_shape_factor(fig=fig,ax=ax,**kwargs)
         times = np.array([float(x) for x in self.get_times()])
         line=ax.get_lines()[-1]
         line.set_xdata(times)
@@ -2472,8 +2488,8 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
         if xy_inner:
             if len(x) != len(y):
                 msg = "length of x coordinate array must be same"+\
-                        " as the y coord array. Lengths provided %d (x),"+\
-                            " %d (y)"%(len(x),len(y))
+                        " as the y coord array. Lengths provided %d (x),"%len(x)+\
+                            " %d (y)"%len(y)
                 raise ValueError(msg)
             
             x_coord_list = x; y_coord_list = y
@@ -2484,7 +2500,7 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
                     x_coord_list.append(x_val)
                     y_coord_list.append(y_val)
 
-        x_index = CT.coord_index_calc(avg_data.CoordDF,'x',x)
+        x_index = CT.coord_index_calc(avg_data.CoordDF,'x',x_coord_list)
 
         x_loc_norm = x_coord_list if not use_ini else [0]*len(y_coord_list)
         y_index = CT.y_coord_index_norm(avg_data,avg_data.CoordDF,y_coord_list,x_loc_norm,y_mode)

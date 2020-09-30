@@ -292,6 +292,14 @@ class CHAPSim_perturb():
     def int_thickness_calc(self,PhyTime=''):
         if not PhyTime:
             PhyTime = self.__avg_data.flow_AVGDF.index[0][0]
+
+        if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
+            avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
+            if PhyTime and PhyTime != avg_time:
+                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
+            PhyTime = avg_time
+        else:
+            assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
         mean_velo = self.mean_velo_peturb_calc('u')
 
         start = self._meta_data.metaDF.loc['loc_start_end'].values[0]*self._meta_data.metaDF.loc['HX_tg_io'].values[1]
@@ -338,6 +346,8 @@ class CHAPSim_perturb():
         return fig, ax
 
     def plot_mom_thickness(self,PhyTime='',fig='',ax='',**kwargs):
+
+        
         if not fig:
             if 'figsize' not in kwargs.keys():
                 kwargs['figsize'] = [10,5]
