@@ -1217,7 +1217,7 @@ class CHAPSim_fluct_base():
 
         max_time = np.amax(times)
         avg_data=module.CHAPSim_AVG(max_time,meta_data,path_to_folder,time0,abs_path,tgpost=cls.tgpost)
-        if isinstance(axis_vals,int):
+        if isinstance(axis_vals,(int,float)):
             axis_vals=[axis_vals]
         elif not isinstance(axis_vals,list):
             raise TypeError("\033[1;32 axis_vals must be type int or list but is type %s"%type(axis_vals))
