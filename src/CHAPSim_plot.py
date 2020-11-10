@@ -4,6 +4,7 @@ This is a postprocessing module for CHAPSim_post library
 '''
 import matplotlib as mpl 
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import pcolor
 import numpy as np
 from scipy import io
 import os 
@@ -69,19 +70,20 @@ class AxesCHAPSim(mpl.axes.Axes):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
     def cplot(self,*args, **kwargs):
-        if 'marker' in kwargs.keys() or 'linestyle' in kwargs.keys():
-            return super().plot(*args,**kwargs)
-        else:
-            linestyle=['-','--','-.',':']
-            marker=['x','.','v','^','+']
-            colors = 'bgrcmyk'
-            counter = self.count_lines()
-            if 'markevery' not in kwargs.keys():
-                kwargs['markevery'] = 10
+
+        linestyle=['-','--','-.',':']
+        marker=['x','.','v','^','+']
+        colors = 'bgrcmyk'
+        counter = self.count_lines()
+        if 'markevery' not in kwargs.keys():
+            kwargs['markevery'] = 10
+        if 'linestyle' not in kwargs.keys() and 'ls' not in kwargs.keys():
             kwargs['linestyle'] = linestyle[counter%len(linestyle)]
+        if 'marker' not in kwargs.keys():
             kwargs['marker'] = marker[counter%len(marker)]
+        if 'color' not in kwargs.keys():
             kwargs['color'] = colors[counter%len(colors)]
-            return super().plot(*args,**kwargs)
+        return super().plot(*args,**kwargs)
     def count_lines(self):
         no_lines = 0
         twinned_ax = self._twinned_axes.get_siblings(self)
@@ -324,6 +326,34 @@ def subplots(nrows=1, ncols=1, sharex=False, sharey=False, squeeze=True, subplot
 def update_prop_cycle(key,val):
     pass
 # import matlab.engine
+
+def update_pcolor_kw(pcolor_kw):
+    if pcolor_kw is None:
+        pcolor_kw = {'cmap':'jet','shading':'gouraud'}
+    else:
+        if not isinstance(pcolor_kw,dict):
+            msg = f"pcolor_kw must be None or a dict not a {type(pcolor_kw)}"
+            raise TypeError(msg)
+        if 'cmap' not in pcolor_kw.keys():
+            pcolor_kw['cmap'] = 'jet'
+        if 'shading' not in pcolor_kw.keys():
+            pcolor_kw['shading'] = 'gouraud'
+    return pcolor_kw
+
+def update_quiver_kw(quiver_kw):
+    if quiver_kw is not None:
+        if 'angles' in quiver_kw.keys():
+            del quiver_kw['angles']
+        if 'scale_units' in quiver_kw.keys():
+            del quiver_kw['scale_units']
+        if 'scale' in quiver_kw.keys():
+            del quiver_kw['scale']
+    else:
+        quiver_kw = {}
+    return quiver_kw
+
+def close(*args,**kwargs):
+    plt.close(*args,**kwargs)
 
 matlab_path =  which('matlab')
 octave_path = which('octave')

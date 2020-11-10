@@ -7,48 +7,11 @@ timesteps . Methods that require extensive use of the filesystem
 particularly creating averages using the instantaneous data from CHAPSim    
 are advised to use the parallel module CHAPSim_parallel. Based principally  
 on the Pandas DataFrame class                                               
-
-## Structures and classes                                          #  
-# = CHAPSim_Inst => Creates DataFrame for the instantaneous flow fields       #  
-#                   velocity vector and pressure                              #  
-#                => methods for producing contour and vector plots            #
-# = CHAPSim_AVG => Creates DataFrames for all the average varables            #      
-#                  produced by the CHAPSim Solver                             #  
-#               => methods for producing contour plots for u_rms and u_mean   #
-#         = CHAPSim_perturb => Child of CHAPSim_AVG, a module postprocessing  #
-#                              in terms of perturbing velocity fields         #
-# alongside an array of different line plot options                           #  
-# = CHAPSim_autocov => Deprecated along with child classes - may be upgraded  #
-#                      to include multi-threading                             #
-# = CHAPSim_spectra(2) => Deprecated along with child classes                 #  
-# = CHAPSim_meta=> Calculates meta data including parameters from the         #
-#                  readdata file, the mesh size and a coordinate DataFrame    #
-#                  => ***TO BE COMPLETED                                      #  
-# = CHAPSim_budget => Calculates the budget terms of the components of the    #
-#                     Reynolds stress equation                                #
-#          = CHAPSim_<uu>_budget => Child of CHAPSim_budget calculating       #
-#                                   specific components.                      #
-#          = CHAPSim_k_budget => Child of CHAPSim_budget calculating the      #
-#                                budget of the TKE equation                   #
-#                                                                             #
-# = CHAPSim_mom_balance => Class to calculate the budget of the momentum      #
-#                          equation                                           #
-#                       => Method for plotting the local imbalance to check   #
-#                          solution veracity                                  #
-# = CHAPSim_lambda2 => Class to calculate lambda2 to find vortex cores        #
-#                   => **TO BE COMPLETED
-#=============================================================================# 
-#================ STATUS - In development and testing ========================#
-# 
-# -> testing on heft2 workstation required to enhance module integrity
-# -> Complete peturbing velocity
-# -> Commenting required
-# -> Optimisations and removal of deprecated classes
-#=============================================================================#
 '''
 # MODULE IMPORTS
 
 
+from CHAPSim_Tools import Grad_calc_tg
 from CHAPSim_parallel import CHAPSim_Quad_Anal, CHAPSim_autocov
 import numpy as np
 import pandas as pd; from pandas.errors import PerformanceWarning 
@@ -66,6 +29,7 @@ import sys
 import CHAPSim_Tools as CT
 import CHAPSim_plot as cplt
 import CHAPSim_post_base as cbase
+import CHAPSim_dtypes as cd
 #import plotly.graph_objects as go
 
 #import loop_accel as la
@@ -79,7 +43,7 @@ except ImportError:
 
 module = sys.modules[__name__]
 module.TEST = False
-
+module.dissipation_correction = False
 class CHAPSim_Inst():
     def __init__(self,*args,**kwargs):
         fromfile= kwargs.pop('fromfile',False)
@@ -105,8 +69,8 @@ class CHAPSim_Inst():
                     InstDF = self.__flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
                 else: #Variable already exists
                     local_DF = self.__flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
-                    concat_DF = [self.InstDF,local_DF]
-                    InstDF = pd.concat(concat_DF)
+                    # concat_DF = [self.InstDF,local_DF]
+                    InstDF.concat(local_DF)
         else:
             raise TypeError("\033[1;32 `time' must be either float or list")
         shape = (NCL[2],NCL[1],NCL[0])
@@ -122,15 +86,15 @@ class CHAPSim_Inst():
         CoordDF=meta_data.CoordDF
         NCL=meta_data.NCL
 
-        InstDF = pd.read_hdf(file_name,base_name+'/InstDF')
         shape = (NCL[2],NCL[1],NCL[0])
-
+        
+        InstDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
         return meta_data, CoordDF, NCL, InstDF, shape
 
     def save_hdf(self,file_name,write_mode,group_name=''):
         base_name=group_name if group_name else 'CHAPSim_Inst'
         self._meta_data.save_hdf(file_name,write_mode,group_name=base_name+'/meta_data')
-        self.InstDF.to_hdf(file_name,key=base_name+'/InstDF',mode='a',format='fixed',data_columns=True)
+        self.InstDF.to_hdf(file_name,key=base_name+'/InstDF',mode='a')
 
     def __flow_extract(self,Time_input,path_to_folder,abs_path,tgpost):
         """ Extract velocity and pressure from the instantanous files """
@@ -189,13 +153,13 @@ class CHAPSim_Inst():
         #     flow_info1 = flow_info1.reshape((4,dummy_size))
         # else:
         flow_info1 = self.__velo_interp(flow_info,NCL3,NCL2,NCL1)
-        flow_info1 = flow_info1.reshape((4,dummy_size-NCL3*NCL2))
-        flow_info=flow_info.reshape((4,dummy_size))
+        # flow_info1 = flow_info1.reshape((4,dummy_size-NCL3*NCL2))
         Phy_string = '%.9g' % PhyTime
         # creating dataframe index
-        index=pd.MultiIndex.from_arrays([[Phy_string,Phy_string,Phy_string,Phy_string],['u','v','w','P']])
+        index = [[Phy_string]*4,['u','v','w','P']]
+        # index=pd.MultiIndex.from_arrays([[Phy_string]*4,['u','v','w','P']])
         # creating dataframe so that data can be easily accessible elsewhere
-        Instant_DF = pd.DataFrame(flow_info1,index=index)
+        Instant_DF = cd.datastruct(flow_info1,index=index)# pd.DataFrame(flow_info1,index=index)
         
         return Instant_DF
     def __velo_interp(self,flow_info,NCL3, NCL2, NCL1):
@@ -244,17 +208,14 @@ class CHAPSim_Inst():
             axis2 = axis1
             axis1 = axis_temp
         
-        axis1_coords = self.CoordDF[axis1].dropna().values
-        axis2_coords = self.CoordDF[axis2].dropna().values
+        axis1_coords = self.CoordDF[axis1]
+        axis2_coords = self.CoordDF[axis2]
         if flow_field == 'u' or flow_field =='v' or flow_field =='w' or flow_field =='P':
-            local_velo = self.InstDF.loc[PhyTime,flow_field].values
+            local_velo = self.InstDF[PhyTime,flow_field]
         elif flow_field == 'mag':
-            index = pd.MultiIndex.from_arrays([[PhyTime,PhyTime,\
-                                                PhyTime],['u','v','w']])
-            local_velo = np.sqrt(np.square(self.InstDF.loc[index]).sum(axis=0)).values
+            local_velo = np.sqrt(np.square(self.InstDF.values[:3]).sum(axis=0))
         else:
             raise ValueError("\033[1;32 Not a valid argument")
-        local_velo = local_velo.reshape(self.NCL[2],self.NCL[1],self.NCL[0])
         
         axis1_mesh, axis2_mesh = np.meshgrid(axis1_coords,axis2_coords)
         
@@ -299,7 +260,7 @@ class CHAPSim_Inst():
             fig = plt.figure()
         if not ax:
             ax = fig.add_subplot(1,1,1)
-        fig, ax = _vector_plot(self.CoordDF,self.InstDF.loc[PhyTime],self.NCL,\
+        fig, ax = _vector_plot(self.CoordDF,self.InstDF[PhyTime],self.NCL,\
                                fig,ax,axis1_spacing,axis2_spacing,axis1,axis2,axis3_value)
         
         ax.set_title("Instantaneous velocity vector plot")
@@ -324,10 +285,8 @@ class CHAPSim_Inst():
         for velo1,coord1 in zip(velo_list,coord_list):
             j=0
             for velo2,coord2 in zip(velo_list,coord_list):
-                velo_field1 = self.InstDF.loc[PhyTime,velo1].values\
-                    .reshape((self.NCL[2],self.NCL[1],self.NCL[0]))[:,:arr_len_y,x_start_index:x_end_index]
-                velo_field2 = self.InstDF.loc[PhyTime,velo2].values\
-                    .reshape((self.NCL[2],self.NCL[1],self.NCL[0]))[:,:arr_len_y,x_start_index:x_end_index]
+                velo_field1 = self.InstDF[PhyTime,velo1][:,:arr_len_y,x_start_index:x_end_index]
+                velo_field2 = self.InstDF[PhyTime,velo2][:,:arr_len_y,x_start_index:x_end_index]
                 strain_rate[:,:,:,i,j] = 0.5*(CT.Grad_calc(self.CoordDF,velo_field1,coord2,False) \
                                         + CT.Grad_calc(self.CoordDF,velo_field2,coord1,False))
                 rot_rate[:,:,:,i,j] = 0.5*(CT.Grad_calc(self.CoordDF,velo_field1,coord2,False) \
@@ -352,25 +311,25 @@ class CHAPSim_Inst():
         #             lambda2[i,j,k] = eigs[1]
         return lambda2
     def plot_lambda2(self,vals_list,x_split_list='',PhyTime='',ylim='',Y_plus=True,avg_data='',colors='',fig=None,ax=None,**kwargs):
-        if PhyTime:
-            if type(PhyTime) == float:
-                PhyTime = "{:.9g}".format(PhyTime)
+        # if PhyTime:
+        #     if type(PhyTime) == float:
+        #         PhyTime = "{:.9g}".format(PhyTime)
                 
-        if len(set([x[0] for x in self.InstDF.index])) == 1:
-            avg_time = list(set([x[0] for x in self.InstDF.index]))[0]
-            if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
-            PhyTime = avg_time
-        else:
-            assert PhyTime in set([x[0] for x in self.InstDF.index]), "PhyTime must be present in CHAPSim_AVG class"
+        # if len(set([x[0] for x in self.InstDF.index])) == 1:
+        #     avg_time = list(set([x[0] for x in self.InstDF.index]))[0]
+        #     if PhyTime and PhyTime != avg_time:
+        #         warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
+        #     PhyTime = avg_time
+        # else:
+        #     assert PhyTime in set([x[0] for x in self.InstDF.index]), "PhyTime must be present in CHAPSim_AVG class"
             
         
         
         if not hasattr(vals_list,'__iter__'):
             vals_list = [vals_list]
-        X = self._meta_data.CoordDF['x'].dropna().values
-        Y = self._meta_data.CoordDF['y'].dropna().values
-        Z = self._meta_data.CoordDF['z'].dropna().values
+        X = self._meta_data.CoordDF['x']
+        Y = self._meta_data.CoordDF['y']
+        Z = self._meta_data.CoordDF['z']
         if ylim:
             if Y_plus:
                 y_index= CT.Y_plus_index_calc(avg_data,self.CoordDF,ylim)
@@ -405,34 +364,126 @@ class CHAPSim_Inst():
                 
                 color = colors[i%len(colors)] if colors else ''
                 patch = ax[j].plot_isosurface(Y,Z,X[x_start:x_end],lambda2,val,color)
-                # ax[j].add_lighting()
-                # patch.set_color(colors[i%len(colors)])            
-        # Y,X,Z = np.meshgrid(y_coords,x_coords,z_coords)
-        
-        # grid = pv.StructuredGrid(X,Z,Y)
-        # grid.cell_arrays['lambda_2']=lambda2.flatten()
-        # pgrid=grid.cell_data_to_point_data()
-        # contour=pgrid.contour(isosurfaces=1,scalars='lambda_2',preference='point',rng=(lambda_min,lambda_max))
-        # #grid.set_active_scalars('lambda_2')
-        # if not plotter:
-        #     plotter = pv.BackgroundPlotter(notebook=False)
-        #     plotter.set_background('white')
-        #     plotter.show_bounds(color='black')
-            
-        
-        # #plotter.add_mesh(grid)
-        # #filter_grid = grid.threshold((lambda_min,lambda_max),'lambda_2')
-        
-        
-        # #plotter.add_axes(color='black')
-        # plotter.add_mesh(contour,interpolate_before_map=True,cmap=cmap)
-        # plotter.remove_scalar_bar()
         
         
         return fig, ax
 
-    def vorticity_calc(self):
-        pass
+    def vorticity_calc(self,PhyTime=''):
+        # if PhyTime:
+        #     if type(PhyTime) == float:
+        #         PhyTime = "{:.9g}".format(PhyTime)
+                
+        # if len(set([x[0] for x in self.InstDF.index])) == 1:
+        #     avg_time = list(set([x[0] for x in self.InstDF.index]))[0]
+        #     if PhyTime and PhyTime != avg_time:
+        #         warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
+        #     PhyTime = avg_time
+        # else:
+        #     assert PhyTime in set([x[0] for x in self.InstDF.index]), "PhyTime must be present in CHAPSim_AVG class"
+
+        vorticity = np.zeros((3,*self.shape),dtype='f8')
+        u_velo = self.InstDF[PhyTime,'u']
+        v_velo = self.InstDF[PhyTime,'v']
+        w_velo = self.InstDF[PhyTime,'w']
+
+        vorticity[0] = Grad_calc(self.CoordDF,w_velo,'y',False) - Grad_calc(self.CoordDF,v_velo,'z',False)      
+        vorticity[1] = Grad_calc(self.CoordDF,u_velo,'z',False) - Grad_calc(self.CoordDF,w_velo,'x',False)      
+        vorticity[2] = Grad_calc(self.CoordDF,v_velo,'x',False) - Grad_calc(self.CoordDF,u_velo,'y',False)     
+
+        # vorticity = vorticity.reshape(3,np.prod(self.shape))
+        return cd.datastruct(vorticity,index=['x','y','z'])
+
+    def plot_vorticity_contour(self,comp,slice,ax_val,PhyTime=None,avg_data=None,y_mode='half_channel',pcolor_kw=None,fig=None,ax=None,**kwargs):
+        # if PhyTime is not None:
+        #     if type(PhyTime) == float:
+        #         PhyTime = "{:.9g}".format(PhyTime)
+                
+        # if len(set([x[0] for x in self.InstDF.index])) == 1:
+        #     fluct_time = list(set([x[0] for x in self.InstDF.index]))[0]
+        #     if PhyTime is not None and PhyTime != fluct_time:
+        #         warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time), stacklevel=2)
+        #     PhyTime = fluct_time
+        # else:
+        #     assert PhyTime in set([x[0] for x in self.InstDF.index]), "PhyTime must be present in CHAPSim_AVG class"
+        
+        # if slice not in ['xy','zy','xz']:
+        #     slice = slice[::-1]
+        #     if slice not in ['xy','yz','xz']:
+        #         msg = "The contour slice must be either %s"%['xy','yz','xz']
+        #         raise KeyError(msg)
+        
+        # slice = list(slice)
+        # slice_set = set(slice)
+        # coord_set = set(list('xyz'))
+        # coord = "".join(coord_set.difference(slice_set))
+
+        # if not hasattr(ax_val,'__iter__'):
+        #     if isinstance(ax_val,float) or isinstance(ax_val,int):
+        #         ax_val = [ax_val] 
+        #     else:
+        #         msg = "ax_val must be an interable or a float or an int not a %s"%type(ax_val)
+        #         raise TypeError(msg)
+
+        # if coord == 'y':
+        #     norm_vals = [0]*len(ax_val)
+        #     if avg_data is None:
+        #         msg = f'For contour slice {slice}, avg_data must be provided'
+        #         raise ValueError(msg)
+        #     axis_index = CT.y_coord_index_norm(avg_data,self.CoordDF,ax_val,norm_vals,y_mode)
+        # else:
+        #     axis_index = CT.coord_index_calc(self.CoordDF,coord,ax_val)
+        #     if not hasattr(axis_index,'__iter__'):
+        #         axis_index = [axis_index]
+
+        if not hasattr(ax_val,'__iter__'):
+            if isinstance(ax_val,float) or isinstance(ax_val,int):
+                ax_val = [ax_val] 
+            else:
+                msg = "ax_val must be an interable or a float or an int not a %s"%type(ax_val)
+                raise TypeError(msg)
+
+        slice, coord,axis_index = CT.contour_plane(slice,ax_val,avg_data,y_mode,PhyTime)
+
+        if fig is None:
+            if 'figsize' not in kwargs:
+                kwargs['figsize'] = [8,4*len(ax_val)]
+            else:
+                warnings.warn("figure size algorithm overrided: may result in poor quality graphs", stacklevel=2)
+            kwargs['squeeze'] = False
+            fig,ax = cplt.subplots(len(ax_val),**kwargs)
+        elif ax is None:
+            ax=fig.subplots(len(ax_val),squeeze=False)      
+        ax = ax.flatten()
+
+        VorticityDF = self.vorticity_calc(PhyTime=PhyTime)
+        vort_array = VorticityDF[comp]
+
+        coord_1 = self.CoordDF[slice[0]]
+        coord_2 = self.CoordDF[slice[1]]
+    
+        coord_1_mesh, coord_2_mesh = np.meshgrid(coord_1,coord_2)
+        ax_out=[]
+        pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
+        print(pcolor_kw)
+        for i in range(len(ax_val)):
+            contour_array = CT.contour_indexer(vort_array,axis_index[i],coord)
+            # if coord == 'x':
+            #     contour_array = vort_array[:,:,axis_index[i]].squeeze().T
+            # elif coord == 'y':
+            #     contour_array = vort_array[:,axis_index[i]].squeeze()
+            # else:
+            #     contour_array = vort_array[axis_index[i]].squeeze()
+            print(contour_array.shape)
+            mesh = ax[i].pcolormesh(coord_1_mesh,coord_2_mesh,contour_array,**pcolor_kw)
+            ax[i].set_xlabel(r"$%s^*$"%slice[0])
+            ax[i].set_ylabel(r"$%s$"%slice[1])
+            ax[i].set_title(r"$%s = %.3g$"%(coord,ax_val[i]))
+            cbar=fig.colorbar(mesh,ax=ax[i])
+            cbar.set_label(r"$\omega_%s$"%comp)# ,fontsize=12)
+            ax_out.append(mesh)
+
+        return fig, np.array(ax_out)
+
     def plot_entrophy(self):
         pass
     def __str__(self):
@@ -441,7 +492,7 @@ class CHAPSim_Inst():
         assert self.CoordDF.equals(inst_data.CoordDF), "CHAPSim_Inst are not from the same case"
         assert self.NCL == inst_data.NCL, "CHAPSim_Inst are not from the same case"
 
-        self.InstDF = pd.concat([self.InstDF,inst_data.InstDF])
+        self.InstDF.concat(inst_data.InstDF)
         return self
 
 class CHAPSim_Inst_io(CHAPSim_Inst):
@@ -456,7 +507,7 @@ class CHAPSim_Inst_tg(CHAPSim_Inst):
         kwargs['tgpost'] = self.tgpost
         meta_data,CoordDF,NCL,InstDF, shape = super()._inst_extract(*args,**kwargs)
         
-        NCL1_io = meta_data.metaDF.loc['HX_tg_io'].values[1]
+        NCL1_io = meta_data.metaDF['HX_tg_io'][1]
         ioflowflg = True if NCL1_io > 2 else False
         
         if ioflowflg:
@@ -499,11 +550,9 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
                 else:
                     DF_temp=[]
                     local_DF_list = self._AVG_extract(PhyTime,time0,path_to_folder,abs_path)
-                    for DF, local_DF in zip(DF_list, local_DF_list):
-                        concat_DF = [DF, local_DF]
-                        
-                        DF_temp.append(pd.concat(concat_DF))
-                    DF_list=DF_temp
+                    for i, local_DF in enumerate(DF_list):
+                        DF_list[i].concat(local_DF_list[i])
+                    # DF_list=DF_temp
                     
         else:
             raise TypeError("\033[1;32 `time' can only be a float or a list")
@@ -520,16 +569,19 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         if not group_name:
             group_name = 'CHAPSim_AVG_io'
         
-        parent_list = list(super()._hdf_extract(file_name,group_name))
-
+        
         meta_data = CHAPSim_meta.from_hdf(file_name,group_name+'/meta_data')
         CoordDF = meta_data.CoordDF
         metaDF = meta_data.metaDF
         NCL=meta_data.NCL
-        
+        shape = (NCL[1],NCL[0])
+        parent_list = list(super()._hdf_extract(file_name,shape,group_name))
+        # for DF in parent_list:
+        #     DF.data(shape)
+
         hdf_file = h5py.File(file_name,'r')
         times = list(set([x[0] for x in parent_list[0].index]))
-        shape = (NCL[1],NCL[0])
+    
         hdf_file.close()
 
         return_list = [meta_data,CoordDF,metaDF,NCL,shape,times]
@@ -537,67 +589,14 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         return itertools.chain(return_list + parent_list)
         
     def _AVG_extract(self,Time_input,time0,path_to_folder,abs_path):
-        if time0:
-            instant = "%0.9E" % time0
-            
-            file_string = "DNS_perioz_AVERAGD_T" + instant + "_FLOW.D"
-            file_folder = "2_averagd_D"
-            if not abs_path:
-                file_path = os.path.abspath(os.path.join(path_to_folder, \
-                                         file_folder, file_string))
-            else:
-                file_path = os.path.join(path_to_folder, \
-                                         file_folder, file_string)
-                    
-            file = open(file_path,'rb')
-            
-            int_info = np.zeros(4)
-            r_info = np.zeros(3)
-            int_info = np.fromfile(file,dtype='int32',count=4)    
-            
-            NCL1 = int_info[0]
-            NCL2 = int_info[1]
-            NSTATIS0 = int_info[3]
-            dummy_size = NCL1*NCL2*50*21
-            r_info = np.fromfile(file,dtype='float64',count=3)
-            
-            PhyTime = r_info[0]
-            AVG_info0 = np.zeros(dummy_size)
-            AVG_info0 = np.fromfile(file,dtype='float64',count=dummy_size)
-        
-        
-        instant = "%0.9E" % Time_input
-        
-        file_string = "DNS_perioz_AVERAGD_T" + instant + "_FLOW.D"
 
-        file_folder = "2_averagd_D"
-        if not abs_path:
-            file_path = os.path.abspath(os.path.join(path_to_folder, \
-                                     file_folder, file_string))
-        else:
-            file_path = os.path.join(path_to_folder, \
-                                     file_folder, file_string)
-                
-        file = open(file_path,'rb')
-        
-        int_info = np.zeros(4)
-        r_info = np.zeros(3)
-        int_info = np.fromfile(file,dtype='int32',count=4)    
-        
-        NCL1 = int_info[0]
-        NCL2 = int_info[1]
-        NSTATIS1 = int_info[3]
-        
-        dummy_size = NCL1*NCL2*50*21
-        r_info = np.fromfile(file,dtype='float64',count=3)
-        
-        PhyTime = r_info[0]
-        #REN = r_info[1]
-        #DT = r_info[2]
-        AVG_info = np.zeros(dummy_size)
-        AVG_info = np.fromfile(file,dtype='float64',count=dummy_size)
+        AVG_info, NSTATIS1, PhyTime, NCL = self._extract_file(Time_input,path_to_folder,abs_path)
+
         if time0:
+            AVG_info0, NSTATIS0,_,_ = self._extract_file(time0,path_to_folder,abs_path)
             AVG_info = (AVG_info*NSTATIS1 - AVG_info0*NSTATIS0)/(NSTATIS1-NSTATIS0)
+
+        NCL1, NCL2 = itertools.chain(NCL)
         AVG_info = AVG_info.reshape(21,50,NCL2,NCL1)
             
         #Velo_AVG = np.zeros((3,NCL2,NCL1))
@@ -619,83 +618,113 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
                 DUDX2_tensor[i*9+j] = AVG_info[12+j,i,:,:] 
             
         #======================================================================
-        flow_AVG = flow_AVG.reshape((4,NCL2*NCL1))
+        # flow_AVG = flow_AVG.reshape((4,NCL2*NCL1))
         
-        PU_vector = PU_vector.reshape((3,NCL1*NCL2))
-        UU_tensor = UU_tensor.reshape((6,NCL1*NCL2))
-        UUU_tensor = UUU_tensor.reshape((10,NCL1*NCL2))
-        Velo_grad_tensor = Velo_grad_tensor.reshape((9,NCL1*NCL2))
-        Pr_Velo_grad_tensor = Pr_Velo_grad_tensor.reshape((9,NCL1*NCL2))
-        DUDX2_tensor = DUDX2_tensor.reshape((81,NCL1*NCL2))
+        # PU_vector = PU_vector.reshape((3,NCL1*NCL2))
+        # UU_tensor = UU_tensor.reshape((6,NCL1*NCL2))
+        # UUU_tensor = UUU_tensor.reshape((10,NCL1*NCL2))
+        # Velo_grad_tensor = Velo_grad_tensor.reshape((9,NCL1*NCL2))
+        # Pr_Velo_grad_tensor = Pr_Velo_grad_tensor.reshape((9,NCL1*NCL2))
+        # DUDX2_tensor = DUDX2_tensor.reshape((81,NCL1*NCL2))
         #======================================================================
         #Set up of pandas dataframes
         Phy_string = '%.9g' % PhyTime
-        flow_index = [[Phy_string,Phy_string,Phy_string,Phy_string],\
-                      ['u','v','w','P']]
-        vector_index = [[Phy_string,Phy_string,Phy_string],['u','v','w']]
-        sym_2_tensor_index = [[Phy_string,Phy_string,Phy_string,Phy_string,\
-                             Phy_string,Phy_string],['uu','uv','uw','vv','vw','ww']]
-        sym_3_tensor_index = [[Phy_string,Phy_string,Phy_string,Phy_string,\
-                               Phy_string,Phy_string,Phy_string,Phy_string,\
-                               Phy_string,Phy_string],['uuu','uuv','uuw','uvv',\
+        flow_index = [[Phy_string]*4,['u','v','w','P']]
+        vector_index = [[Phy_string]*3,['u','v','w']]
+        sym_2_tensor_index = [[Phy_string]*6,['uu','uv','uw','vv','vw','ww']]
+        sym_3_tensor_index = [[Phy_string]*10,['uuu','uuv','uuw','uvv',\
                                 'uvw','uww','vvv','vvw','vww','www']]
-        tensor_2_index = [[Phy_string,Phy_string,Phy_string,Phy_string,\
-                               Phy_string,Phy_string,Phy_string,Phy_string,\
-                               Phy_string],['ux','uy','uz','vx','vy','vz',\
+        tensor_2_index = [[Phy_string]*9,['ux','uy','uz','vx','vy','vz',\
                                          'wx','wy','wz']]
         du_list = ['du','dv','dw']
         dx_list = ['dx','dy','dz']
-        Phy_string_list=[]
-        comp_string_list =[]
-        for i in range(81):
-            Phy_string_list.append(Phy_string)
-            
-        for du1 in du_list:
-            for dx1 in dx_list:
-                for du2 in du_list:
-                    for dx2 in dx_list:
-                        comp_string = du1 + dx1 + du2 + dx2
-                        comp_string_list.append(comp_string)
-         
-        tensor_4_index = [Phy_string_list,comp_string_list]
-        flow_AVGDF = pd.DataFrame(flow_AVG,pd.MultiIndex.from_arrays(flow_index))
-        
-        PU_vectorDF = pd.DataFrame(PU_vector,index=pd.MultiIndex.from_arrays(vector_index))
-        UU_tensorDF = pd.DataFrame(UU_tensor,index=pd.MultiIndex.from_arrays(sym_2_tensor_index))
-        UUU_tensorDF = pd.DataFrame(UUU_tensor,index=pd.MultiIndex.from_arrays(sym_3_tensor_index))
-        Velo_grad_tensorDF = pd.DataFrame(Velo_grad_tensor,index=pd.MultiIndex.from_arrays(tensor_2_index))
-        PR_Velo_grad_tensorDF = pd.DataFrame(Pr_Velo_grad_tensor,index=pd.MultiIndex.from_arrays(tensor_2_index))
-        DUDX2_tensorDF = pd.DataFrame(DUDX2_tensor,index=pd.MultiIndex.from_arrays(tensor_4_index))
+
+        dudx_list = list(itertools.product(du_list,dx_list))
+        dudx_list = ["".join(dudx) for dudx in dudx_list]
+        comp_string_list = list(itertools.product(dudx_list,dudx_list))
+        comp_string_list = ["".join(comp_string) for comp_string in comp_string_list]
+
+        # OR:
+        # comp_string_list =[]
+        # for du1 in du_list:
+        #     for dx1 in dx_list: 
+        #         for du2 in du_list:
+        #             for dx2 in dx_list:
+        #                 comp_string_list.append(du1+dx1+du2+dx2)
+
+        shape = [NCL2,NCL1]
+        tensor_4_index = [[Phy_string]*81,comp_string_list]
+
+        flow_AVGDF = cd.datastruct(flow_AVG,index=flow_index)#.data(shape)
+        PU_vectorDF = cd.datastruct(PU_vector,index=vector_index)#.data(shape)
+        UU_tensorDF = cd.datastruct(UU_tensor,index=sym_2_tensor_index)#.data(shape)
+        UUU_tensorDF = cd.datastruct(UUU_tensor,index=sym_3_tensor_index)#.data(shape)
+        Velo_grad_tensorDF = cd.datastruct(Velo_grad_tensor,index=tensor_2_index)#.data(shape)
+        PR_Velo_grad_tensorDF = cd.datastruct(Pr_Velo_grad_tensor,index=tensor_2_index)#.data(shape)
+        DUDX2_tensorDF = cd.datastruct(DUDX2_tensor,index=tensor_4_index)#.data(shape)
 
         return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
                     Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
     
+    def _extract_file(self,PhyTime,path_to_folder,abs_path):
+        instant = "%0.9E" % PhyTime
+        
+        file_string = "DNS_perioz_AVERAGD_T" + instant + "_FLOW.D"
+
+        file_folder = "2_averagd_D"
+        if not abs_path:
+            file_path = os.path.abspath(os.path.join(path_to_folder, \
+                                     file_folder, file_string))
+        else:
+            file_path = os.path.join(path_to_folder, \
+                                     file_folder, file_string)
+                
+        file = open(file_path,'rb')
+        
+        int_info = np.zeros(4)
+        r_info = np.zeros(3)
+        int_info = np.fromfile(file,dtype='int32',count=4)    
+        
+        NCL1 = int_info[0]
+        NCL2 = int_info[1]
+        NSTATIS = int_info[3]
+        
+        dummy_size = NCL1*NCL2*50*21
+        r_info = np.fromfile(file,dtype='float64',count=3)
+        
+        PhyTime = r_info[0]
+        #REN = r_info[1]
+        #DT = r_info[2]
+        AVG_info = np.zeros(dummy_size)
+        AVG_info = np.fromfile(file,dtype='float64',count=dummy_size)
+        return AVG_info, NSTATIS, PhyTime, [NCL1,NCL2]
+
     def save_hdf(self,file_name,write_mode,group_name=''):
         if not group_name:
             group_name = 'CHAPSim_AVG_io'
         super().save_hdf(file_name,write_mode,group_name)
 
-    def check_times(self,PhyTime):
-        if isinstance(PhyTime,float) or isinstance(PhyTime,int):
-            PhyTime = "%.9g"%PhyTime
-        elif not isinstance(PhyTime,str):
-            raise TypeError("PhyTime is the wrong type")
+    # def check_times(self,PhyTime):
+    #     if isinstance(PhyTime,float) or isinstance(PhyTime,int):
+    #         PhyTime = "%.9g"%PhyTime
+    #     elif not isinstance(PhyTime,str):
+    #         raise TypeError("PhyTime is the wrong type")
 
-        if len(self.get_times()) == 1:
-            avg_time = self.get_times()[0]
-            if PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
-            PhyTime = avg_time
-        else:
-            if not PhyTime in self.get_times():
-                raise ValueError("The time given is not in this present in class")
-        return PhyTime
+    #     if len(self.get_times()) == 1:
+    #         avg_time = self.get_times()[0]
+    #         if PhyTime != avg_time:
+    #             warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
+    #         PhyTime = avg_time
+    #     else:
+    #         if not PhyTime in self.get_times():
+    #             raise ValueError("The time given is not in this present in class")
+    #     return PhyTime
 
     def _return_index(self,x_val):
         return CT.coord_index_calc(self.CoordDF,'x',x_val)
 
     def _return_xaxis(self):
-        return self.CoordDF['x'].dropna().values
+        return self.CoordDF['x']
 
     def int_thickness_calc(self, PhyTime=''):
         if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
@@ -728,7 +757,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
         
         fig, ax = self._plot_shape_factor(PhyTime,fig=fig,ax=ax,**kwargs)
-        x_coords = self.CoordDF['x'].dropna().values
+        x_coords = self.CoordDF['x']
         line = ax.get_lines()[-1]
         line.set_xdata(x_coords)
         ax.set_xlabel(r"$x^*$")
@@ -745,7 +774,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         else:
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
         fig, ax = super().plot_mom_thickness(PhyTime,fig=fig,ax=ax,**kwargs)
-        x_coords = self.CoordDF['x'].dropna().values
+        x_coords = self.CoordDF['x']
         line = ax.get_lines()[-1]
         line.set_xdata(x_coords)
         ax.set_xlabel(r"$x^*$")
@@ -763,7 +792,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
             assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
         
         fig, ax = super().plot_disp_thickness(PhyTime,fig=fig,ax=ax,**kwargs)
-        x_coords = self.CoordDF['x'].dropna().values
+        x_coords = self.CoordDF['x']
         line = ax.get_lines()[-1]
         line.set_xdata(x_coords)
         ax.set_xlabel(r"$x^*$")
@@ -812,7 +841,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         
         line_no = 1 if y_vals_list == 'max' else len(y_vals_list)
         lines = ax.get_lines()[-line_no:]
-        x_coord = self.CoordDF['x'].dropna().values
+        x_coord = self.CoordDF['x']
         for line in lines:
             line.set_xdata(x_coord)
         ax.set_xlabel(r"$x^*$")
@@ -844,7 +873,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         
         fig, ax = super().plot_bulk_velocity(PhyTime,fig,ax,**kwargs)
         line = ax.get_lines()[-1]
-        x_coord = self.CoordDF['x'].dropna().values
+        x_coord = self.CoordDF['x']
         line.set_xdata(np.array(x_coord))
         ax.set_xlabel(r"$x^*$")
         ax.relim()
@@ -875,7 +904,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
 
         fig, ax = super().plot_skin_friction(PhyTime,fig,ax,**kwargs)
         line = ax.get_lines()[-1]
-        x_coord = self.CoordDF['x'].dropna().values
+        x_coord = self.CoordDF['x']
         line.set_xdata(np.array(x_coord))
         ax.set_xlabel(r"$x^*$")
         ax.relim()
@@ -924,6 +953,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         ax.clegend(vertical=False,ncol=ncol)
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
+
     def plot_near_wall(self,x_vals,PhyTime='',fig='',ax='',**kwargs):
         if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
             avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
@@ -944,6 +974,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         ax.clegend(vertical=False,ncol=ncol)
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
+
 class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
     module = sys.modules[__name__]
     tgpost = True
@@ -958,6 +989,8 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
             folder_path=path_to_folder
             PhyTimes = list(set(PhyTimes).intersection(time_extract(path_to_folder,abs_path)))
         PhyTimes=sorted(PhyTimes)
+        if TEST:
+            PhyTimes=PhyTimes[-3:]
 
         if not meta_data:
             meta_data = CHAPSim_meta(folder_path,abs_path,tgpost=True)
@@ -976,26 +1009,26 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
                 else:
                     DF_temp=[]
                     local_DF_list = self._AVG_extract(PhyTime,folder_path,abs_path,metaDF,time0)
-                    for DF, local_DF in zip(DF_list, local_DF_list):
-                        concat_DF = [DF, local_DF]
-                        DF_temp.append(pd.concat(concat_DF,axis=1))
-                    DF_list=DF_temp
+                    for i, DF in enumerate(DF_list):
+                        DF_list[i].append(local_DF_list[i],axis=0)
+                    # DF_list=DF_temp
             
 
         else:
             raise TypeError("\033[1;32 `PhyTimes' can only be a float or a list") 
         
-        old_shape = (len(times),NCL[1])
-        flat_shape = (NCL[1]*len(times))
-        for DF in DF_list:
-            DF.columns = range(flat_shape)
-            for index, row in DF.iterrows():
-                DF.loc[index] = pd.Series(row.values.reshape(old_shape).T.reshape(flat_shape))
-
+        old_shape =[NCL[1],len(PhyTimes)]
+        for i,DF in enumerate(DF_list):
+            for key, val in DF_list[i]:
+                DF_list[i][key] = DF_list[i][key].T
+            # DF.columns = range(flat_shape)
+            # for index, row in DF.iterrows():
+            #     DF.loc[index] = pd.Series(row.values.reshape(old_shape).T.reshape(flat_shape))
+            # DF.data(old_shape[::-1])
 
         DF_list=self._Reverse_decomp(*DF_list)
 
-        return_list = [meta_data, CoordDF, metaDF, NCL,old_shape[::-1],times,*DF_list]
+        return_list = [meta_data, CoordDF, metaDF, NCL,old_shape,times,*DF_list]
         if isinstance(path_to_folder,list):
             i=2
             for path in path_to_folder[1:]:                
@@ -1015,8 +1048,8 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
             assert return_list[5] == AVG_list[5], "Times must be same for non permissive ensemble averaging"
             for i in range(6,13):
                 index = return_list[i].index
-                array = coe2*return_list[i].values + coe3*AVG_list[i].values
-                return_list[i] = pd.DataFrame(array,index = index)
+                return_list[i] = coe2*return_list[i] + coe3*AVG_list[i]
+                # return_list[i] = cd.datastruct(array,index = index).data(AVG_list[i].data.FrameShape)
         else:
             raise NotImplementedError
 
@@ -1059,9 +1092,9 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
         return AVG_info, NSTATIS
     def _AVG_extract(self,PhyTime,path_to_folder,abs_path,metaDF,time0):
 
-        factor = metaDF.loc['NCL1_tg_io'].values[0]*metaDF.loc['NCL3'].values[0]
+        factor = metaDF['NCL1_tg_io'][0]*metaDF['NCL3'] if module.dissipation_correction else 1.0
         AVG_info, NSTATIS1 = self._extract_file(PhyTime,path_to_folder,abs_path)
-        ioflowflg = True if metaDF.loc['NCL1_tg_io'].values[1]>2 else False
+        ioflowflg = True if metaDF['NCL1_tg_io'][1]>2 else False
         if ioflowflg and time0:
             AVG_info0, NSTATIS0 = self._extract_file(time0,path_to_folder,abs_path)
             AVG_info = (AVG_info*NSTATIS1 - AVG_info0*NSTATIS0)/(NSTATIS1-NSTATIS0)
@@ -1084,23 +1117,21 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
                                          'wx','wy','wz']]
         du_list = ['du','dv','dw']
         dx_list = ['dx','dy','dz']
-        Phy_string_list = [None]*81
-        comp_string_index =[]            
-        for du1 in du_list:
-            for dx1 in dx_list:
-                for du2 in du_list:
-                    for dx2 in dx_list:
-                        comp_string = du1 + dx1 + du2 + dx2
-                        comp_string_index.append(comp_string)
-        tensor_4_index=[Phy_string_list,comp_string_index]
 
-        flow_AVGDF = pd.DataFrame(flow_AVG,index=flow_index)
-        PU_vectorDF = pd.DataFrame(PU_vector,index=vector_index)
-        UU_tensorDF = pd.DataFrame(UU_tensor,index=sym_2_tensor_index)
-        UUU_tensorDF = pd.DataFrame(UUU_tensor,index=sym_3_tensor_index)
-        Velo_grad_tensorDF = pd.DataFrame(Velo_grad_tensor,index=tensor_2_index)
-        PR_Velo_grad_tensorDF = pd.DataFrame(Pr_Velo_grad_tensor,index=tensor_2_index)
-        DUDX2_tensorDF = pd.DataFrame(DUDX2_tensor,index=tensor_4_index)
+        dudx_list = list(itertools.product(du_list,dx_list))
+        dudx_list = ["".join(dudx) for dudx in dudx_list]
+        comp_string_list = list(itertools.product(dudx_list,dudx_list))
+        comp_string_list = ["".join(comp_string) for comp_string in comp_string_list]
+        
+        tensor_4_index=[[None]*81,comp_string_list]
+
+        flow_AVGDF = cd.datastruct(flow_AVG,index=flow_index)
+        PU_vectorDF = cd.datastruct(PU_vector,index=vector_index)
+        UU_tensorDF = cd.datastruct(UU_tensor,index=sym_2_tensor_index)
+        UUU_tensorDF = cd.datastruct(UUU_tensor,index=sym_3_tensor_index)
+        Velo_grad_tensorDF = cd.datastruct(Velo_grad_tensor,index=tensor_2_index)
+        PR_Velo_grad_tensorDF = cd.datastruct(Pr_Velo_grad_tensor,index=tensor_2_index)
+        DUDX2_tensorDF = cd.datastruct(DUDX2_tensor,index=tensor_4_index)
 
         return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
                     Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
@@ -1109,18 +1140,20 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
         if not group_name:
             group_name = 'CHAPSim_AVG_tg'
         base_name = group_name
-
-        parent_list = list(super()._hdf_extract(file_name,group_name))
-
-        meta_data = CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
-        CoordDF = meta_data.CoordDF
-        metaDF = meta_data.metaDF
-        NCL=meta_data.NCL
         
         hdf_file = h5py.File(file_name,'r')
         shape = tuple(hdf_file[base_name].attrs["shape"][:])
         times = list(np.char.decode(hdf_file[base_name].attrs["times"][:]))
         hdf_file.close()
+
+        parent_list = list(super()._hdf_extract(file_name,shape,group_name=base_name))
+        meta_data = CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
+        CoordDF = meta_data.CoordDF
+        metaDF = meta_data.metaDF
+        NCL=meta_data.NCL
+
+        # for DF in parent_list:
+        #     DF.data(shape)
 
         return_list = [meta_data,CoordDF,metaDF,NCL,shape,times]
 
@@ -1131,6 +1164,7 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
             group_name = 'CHAPSim_AVG_tg'
         super().save_hdf(file_name,write_mode,group_name)
         base_name=group_name if group_name else 'CHAPSim_AVG'
+
         hdf_file = h5py.File(file_name,'a')
         group = hdf_file[base_name]
         group.attrs['shape'] = np.array(self.shape)
@@ -1152,15 +1186,15 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
         return np.array([float(time) for time in self.get_times()])
 
     def wall_unit_calc(self):
-        return self._wall_unit_calc(float("NaN"))
+        return self._wall_unit_calc(None)
 
     def int_thickness_calc(self):
-        PhyTime = float("NaN")
+        PhyTime = None
         return super()._int_thickness_calc(PhyTime)
 
     def plot_shape_factor(self,fig='',ax='',**kwargs):
-        PhyTime = float("NaN")
-        fig, ax = self._plot_shape_factor(fig=fig,ax=ax,**kwargs)
+        PhyTime = None
+        fig, ax = self._plot_shape_factor(PhyTime,fig=fig,ax=ax,**kwargs)
         times = np.array([float(x) for x in self.get_times()])
         line=ax.get_lines()[-1]
         line.set_xdata(times)
@@ -1171,7 +1205,7 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
 
     def plot_Reynolds(self,comp1,comp2,PhyTime,norm=None,Y_plus=True,fig='',ax='',**kwargs):
 
-        fig, ax = super().plot_Reynolds(comp1,comp2,PhyTime,float("NaN"),
+        fig, ax = super().plot_Reynolds(comp1,comp2,PhyTime,None,
                                         norm=norm,Y_plus=Y_plus,
                                         fig=fig,ax=ax,**kwargs)
         lines = ax.get_lines()[-len(PhyTime):]
@@ -1182,11 +1216,13 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
         ax.clegend(vertical=False,ncol=ncol)
         ax.relim()
         ax.autoscale_view()
+
+        fig.tight_layout()
         return fig, ax
 
     def plot_Reynolds_x(self,comp1,comp2,y_vals_list,Y_plus=True,fig='',ax='',**kwargs):
         fig, ax = super().plot_Reynolds_x(comp1,comp2,y_vals_list,Y_plus=True,
-                                            PhyTime=float("NaN"),fig=fig,ax=ax,**kwargs)
+                                            PhyTime=None,fig=fig,ax=ax,**kwargs)
         
         line_no = 1 if y_vals_list == 'max' else len(y_vals_list)
         lines = ax.get_lines()[-line_no:]
@@ -1200,10 +1236,10 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
         return fig, ax    
 
     def bulk_velo_calc(self):
-        return super()._bulk_velo_calc(float('NaN'))
+        return super()._bulk_velo_calc(None)
 
     def plot_bulk_velocity(self,fig='',ax='',**kwargs):
-        fig, ax = super().plot_bulk_velocity(float('NaN'),fig,ax,**kwargs)
+        fig, ax = super().plot_bulk_velocity(None,fig,ax,**kwargs)
         line = ax.get_lines()[-1]
         times = [float(x) for x in self.get_times()]
         line.set_xdata(np.array(times))
@@ -1213,10 +1249,10 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
         return fig, ax
 
     def tau_calc(self):
-        return self._tau_calc(float("NaN"))
+        return self._tau_calc(None)
 
     def plot_skin_friction(self,fig='',ax='',**kwargs):
-        fig, ax = super().plot_skin_friction(float("NaN"),fig=fig,ax=ax,**kwargs)
+        fig, ax = super().plot_skin_friction(None,fig=fig,ax=ax,**kwargs)
         line = ax.get_lines()[-1]
         times = [float(x) for x in self.get_times()]
         line.set_xdata(np.array(times))
@@ -1226,7 +1262,7 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
         return fig, ax
 
     def plot_eddy_visc(self,times,Y_plus=True,Y_plus_max=100,fig='',ax='',**kwargs):
-        fig, ax = super().plot_eddy_visc(times,float("NaN"),Y_plus,Y_plus_max,fig,ax,**kwargs)
+        fig, ax = super().plot_eddy_visc(times,None,Y_plus,Y_plus_max,fig,ax,**kwargs)
         lines = ax.get_lines()[-len(times):]
         try:
             for line, time in zip(lines,times):
@@ -1243,11 +1279,13 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
 
     def avg_line_plot(self,times,*args,fig='',ax='',**kwargs):
         
-        fig, ax = super().avg_line_plot(times,float("NaN"),*args,fig=fig,ax=ax,**kwargs)
+        fig, ax = super().avg_line_plot(times,None,*args,fig=fig,ax=ax,**kwargs)
 
         lines = ax.get_lines()[-len(times):]
         for line, time in zip(lines,times):
-            line.set_label(r"$t^*=%.3f$"% time)
+            if not isinstance(time,float):
+                time = float(time)
+            line.set_label(r"$t^*=%g$"% time)
             
         axes_items_num = len(times)
         ncol = 4 if axes_items_num>3 else axes_items_num
@@ -1257,7 +1295,7 @@ class CHAPSim_AVG_tg_base(cbase.CHAPSim_AVG_base):
         return fig, ax
 
     def plot_near_wall(self,times,fig='',ax='',**kwargs):
-        fig, ax = super().plot_near_wall(times,float('nan'),fig=fig,ax=ax,**kwargs)
+        fig, ax = super().plot_near_wall(times,None,fig=fig,ax=ax,**kwargs)
         line_no=len(times)
         lines = ax.get_lines()[-line_no:]
         for line, time in zip(lines,times):
@@ -1321,18 +1359,18 @@ class CHAPSim_fluct_io(cbase.CHAPSim_fluct_base):
         self.CoordDF = self.meta_data.CoordDF
         self.shape = inst_data.shape
 
-    def _fluct_calc(self,inst_data,avg_data):
-        inst_shape = inst_data.shape
-        avg_shape = avg_data.shape
-        fluct_array = np.zeros((4,*inst_shape))
-        j=0
-        for (index, inst), (index_avg, avg) in zip(inst_data.InstDF.iterrows(),avg_data.flow_AVGDF.iterrows()):
-            inst = inst.values.reshape(inst_data.shape)
-            avg = avg.values.reshpe(avg_data.shape)
-            for i in range(inst_shape[0]):
-                fluct_array[j,i] = inst[i] - avg
-            j+=1
-        return fluct_array.reshape((4,np.prod(inst_shape)))
+    # def _fluct_calc(self,inst_data,avg_data):
+    #     inst_shape = inst_data.shape
+    #     avg_shape = avg_data.shape
+    #     fluct_array = np.zeros((4,*inst_shape))
+    #     j=0
+    #     for (index, inst), (index_avg, avg) in zip(inst_data.InstDF,avg_data.flow_AVGDF):
+    #         # inst = inst.values.reshape(inst_data.shape)
+    #         # avg = avg.values.reshpe(avg_data.shape)
+    #         for i in range(inst_shape[0]):
+    #             fluct_array[j,i] = inst[i] - avg
+    #         j+=1
+    #     return fluct_array.reshape((4,np.prod(inst_shape)))
         
     def _fluctDF_calc(self, inst_data, avg_data):
         inst_times = list(set([x[0] for x in inst_data.InstDF.index]))
@@ -1347,15 +1385,15 @@ class CHAPSim_fluct_io(cbase.CHAPSim_fluct_base):
         
         for time in inst_times:
             for comp,index in zip(u_comp,avg_index):
-                avg_values = avg_data.flow_AVGDF.loc[index].values.reshape(avg_data.shape)
-                inst_values = inst_data.InstDF.loc[time,comp].values.reshape(inst_data.shape)
+                avg_values = avg_data.flow_AVGDF[index]
+                inst_values = inst_data.InstDF[time,comp]
 
                 for i in range(inst_data.shape[0]):
                     fluct[j,i] = inst_values[i] -avg_values
                 j+=1
-        fluct = fluct.reshape((len(inst_data.InstDF.index),np.prod(inst_data.shape)))
-        return pd.DataFrame(fluct,index=inst_data.InstDF.index)
-
+        # fluct = fluct.reshape((len(inst_data.InstDF.index),np.prod(inst_data.shape)))
+        return cd.datastruct(fluct,index=inst_data.InstDF.index)
+    
 class CHAPSim_fluct_tg(cbase.CHAPSim_fluct_base):
     tgpost = True
     def __init__(self,time_inst_data_list,avg_data='',path_to_folder='',abs_path=True,*args,**kwargs):
@@ -1395,25 +1433,29 @@ class CHAPSim_fluct_tg(cbase.CHAPSim_fluct_base):
             for time in inst_times:
                 avg_index=avg_data._return_index(time)
                 for comp in u_comp:
-                    avg_values = avg_data.flow_AVGDF.loc[float('nan'),comp].values.reshape(avg_data.shape)
-                    inst_values = inst_data.InstDF.loc[time,comp].values.reshape(inst_data.shape)
+                    avg_values = avg_data.flow_AVGDF[None,comp]
+                    inst_values = inst_data.InstDF[time,comp]
 
                     for i in range(inst_data.shape[0]):
                         for k in range(inst_data.shape[2]):
                             fluct[j,i,:,k] = inst_values[i,:,k] -avg_values[:,avg_index]
                     j+=1
         elif all(time in avg_times for time in inst_times):
-            for index, j in zip(indices,range(len(indices))):
+            for j,index in enumerate(indices):
                 avg_index=avg_data._return_index(index[0])
-                avg_values = avg_data.flow_AVGDF.loc[float('nan'),index[1]].values.reshape(avg_data.shape)
-                inst_values = inst_data.InstDF.loc[index].values.reshape(inst_data.shape)
+                avg_values = avg_data.flow_AVGDF[None,index[1]]
+                inst_values = inst_data.InstDF[index]
                 for i in range(inst_data.shape[0]):
                     for k in range(inst_data.shape[2]):
                         fluct[j,i,:,k] = inst_values[i,:,k] -avg_values[:,avg_index]
         else:
             raise ValueError("avg_data must either be length 1 or the same length as inst_data")
-        
-        return pd.DataFrame(fluct.reshape(len(indices),np.prod(inst_data.shape)),index=inst_data.InstDF.index)
+        # DF_shape = (len(indices),np.prod(inst_data.shape))
+        return cd.datastruct(fluct,index=inst_data.InstDF.index)#.data(inst_data.shape)
+    
+    def plot_vector(self,*args,**kwargs):
+        PhyTime = None
+        return super().plot_vector(*args,PhyTime=PhyTime,**kwargs)
 
 class CHAPSim_meta():
     def __init__(self,*args,**kwargs):
@@ -1437,7 +1479,7 @@ class CHAPSim_meta():
 
     def __extract_meta(self,path_to_folder='',abs_path=True,tgpost=False):
         metaDF = self._readdata_extract(path_to_folder,abs_path)
-        ioflg = metaDF.loc['NCL1_tg_io'].values[1] > 2
+        ioflg = metaDF['NCL1_tg_io'][1] > 2
         CoordDF, NCL = self._coord_extract(path_to_folder,abs_path,tgpost,ioflg)
         Coord_ND_DF = self.Coord_ND_extract(path_to_folder,NCL,abs_path,tgpost,ioflg)
         
@@ -1456,10 +1498,10 @@ class CHAPSim_meta():
 
     def _hdf_extract(self,file_name,group_name=''):
         base_name=group_name if group_name else 'CHAPSim_meta'
-
-        CoordDF = pd.read_hdf(file_name,key=base_name+'/CoordDF')
-        Coord_ND_DF = pd.read_hdf(file_name,key=base_name+'/Coord_ND_DF')
-        metaDF = pd.read_hdf(file_name,key=base_name+'/metaDF')
+        
+        CoordDF = cd.datastruct.from_hdf(file_name,key=base_name+'/CoordDF')#pd.read_hdf(file_name,key=base_name+'/CoordDF').coord()
+        Coord_ND_DF = cd.datastruct.from_hdf(file_name,key=base_name+'/Coord_ND_DF')#pd.read_hdf(file_name,key=base_name+'/Coord_ND_DF').coord()
+        metaDF = cd.metastruct.from_hdf(file_name,key=base_name+'/metaDF')#pd.read_hdf(file_name,key=base_name+'/metaDF')
         
         hdf_file = h5py.File(file_name,'r')
         NCL = hdf_file[base_name+'/NCL'][:]
@@ -1468,6 +1510,7 @@ class CHAPSim_meta():
         # moving_wall = hdf_file[base_name+'/moving_wall'][:]
         hdf_file.close()
         return CoordDF, NCL, Coord_ND_DF, metaDF, path_to_folder, abs_path
+   
     def _copy_extract(self,meta_data):
         CoordDF = meta_data.CoordDF
         NCL = meta_data.NCL
@@ -1488,9 +1531,9 @@ class CHAPSim_meta():
         group.create_dataset("NCL",data=self.NCL)
         # group.create_dataset("moving_wall",data=self.__moving_wall)
         hdf_file.close()
-        self.metaDF.to_hdf(file_name,key=base_name+'/metaDF',mode='a',format='fixed',data_columns=True)
-        self.CoordDF.to_hdf(file_name,key=base_name+'/CoordDF',mode='a',format='fixed',data_columns=True)
-        self.Coord_ND_DF.to_hdf(file_name,key=base_name+'/Coord_ND_DF',mode='a',format='fixed',data_columns=True)
+        self.metaDF.to_hdf(file_name,key=base_name+'/metaDF',mode='a')#,format='fixed',data_columns=True)
+        self.CoordDF.to_hdf(file_name,key=base_name+'/CoordDF',mode='a')#,format='fixed',data_columns=True)
+        self.Coord_ND_DF.to_hdf(file_name,key=base_name+'/Coord_ND_DF',mode='a')#,format='fixed',data_columns=True)
 
     def _readdata_extract(self,path_to_folder,abs_path):
         
@@ -1500,27 +1543,26 @@ class CHAPSim_meta():
            readdata_file = os.path.join(path_to_folder,'readdata.ini')
         with open(readdata_file) as file_object:
             lines = (line.rstrip() for line in file_object)
-            lines = list(line for line in lines if line)
-            meta_list=[]
-            meta_out = np.zeros((len(lines),2))
-            i=0
+            lines = list(line for line in lines if line.count('=')>0)
+        
+        meta_list=[]
+        key_list=[]
         for line in lines:
-            meta_list.append(line.split(None,1)[0][:-1])
-            try:
-                
-                if line.split()[2] == ';':
-                    meta_out[i][0] = line.split()[1]
-                    meta_out[i][1] = float('NaN')
-                else:
-                    meta_out[i][0] = line.split()[1][:-1]
-                    meta_out[i][1] = line.split()[2]
-            except IndexError:
-                meta_out[i] = float('NaN')
-            except ValueError:
-                meta_out[i] = float('NaN')
-            i += 1
-        meta_DF = pd.DataFrame(meta_out,index=meta_list)
-        meta_DF = meta_DF.dropna(how='all')
+            line_split = line.split(';')[0]
+            key = line_split.split('=')[0]
+            vals= line_split.split('=')[1]
+
+            key_list.append(key)
+            if len(vals.split(',')) ==1:
+                try:
+                    args = float(vals.split(',')[0])
+                except ValueError:
+                    args = vals.split(',')[0]
+            else:
+                args = [float(x) for x in vals.split(',')]
+            meta_list.append(args)
+
+        meta_DF = cd.metastruct(meta_list,index=key_list)
         return meta_DF
         
     def _coord_extract(self,path_to_folder,abs_path,tgpost,ioflg):
@@ -1580,10 +1622,8 @@ class CHAPSim_meta():
         z_size = ZCC.size
         x_size = XCC.size
         y_size = YCC.size
-        X_series = pd.Series(XCC)
-        Y_series = pd.Series(YCC)
-        Z_series = pd.Series(ZCC)
-        CoordDF = pd.DataFrame({'x':X_series,'y':Y_series,'z':Z_series})
+
+        CoordDF = cd.datastruct.from_dict({'x':XCC,'y':YCC,'z':ZCC})
         NCL = [x_size, y_size, z_size]
         return CoordDF, NCL
         
@@ -1668,27 +1708,22 @@ class CHAPSim_meta():
         z_coord=np.loadtxt(file,comments='#')
         
         ZND=np.delete(z_coord,0)
-        X_series = pd.Series(XND)
-        Y_series = pd.Series(YND)
-        Z_series = pd.Series(ZND)
-        CoordDF = pd.DataFrame({'x':X_series,'y':Y_series,'z':Z_series})
+        CoordDF = cd.datastruct.from_dict({'x':XND,'y':YND,'z':ZND})
         return CoordDF
 
 class CHAPSim_budget_io(cbase.CHAPSim_budget_base):
     def _advection_extract(self,PhyTime,comp1,comp2):
         uu_comp = comp1 + comp2 
 
-        uu = self.avg_data.UU_tensorDF.loc[PhyTime,uu_comp]\
-                        .values.reshape(self.avg_data.shape)
-        U_mean = self.avg_data.flow_AVGDF.loc[PhyTime,'u']\
-                        .values.reshape(self.avg_data.shape)
-        V_mean = self.avg_data.flow_AVGDF.loc[PhyTime,'v']\
-                        .values.reshape(self.avg_data.shape)
+        uu = self.avg_data.UU_tensorDF[PhyTime,uu_comp]
+        U_mean = self.avg_data.flow_AVGDF[PhyTime,'u']
+        V_mean = self.avg_data.flow_AVGDF[PhyTime,'v']
+
         uu_dx = Grad_calc(self.avg_data.CoordDF,uu,'x')
         uu_dy = Grad_calc(self.avg_data.CoordDF,uu,'y')
 
         advection = -(U_mean*uu_dx + V_mean*uu_dy)
-        return advection.flatten()
+        return advection
 
     def _turb_transport(self,PhyTime,comp1,comp2):
         uu_comp = comp1+comp2
@@ -1710,28 +1745,25 @@ class CHAPSim_budget_io(cbase.CHAPSim_budget_base):
         if ord(uu_comp2[1]) > ord(uu_comp2[2]):
             uu_comp2 = uu_comp2[0] + uu_comp2[1:][::-1]
 
-        u1u2u = self.avg_data.UUU_tensorDF.loc[PhyTime,uu_comp1]\
-                        .values.reshape(self.avg_data.shape)
-        u1u2v = self.avg_data.UUU_tensorDF.loc[PhyTime,uu_comp2]\
-                        .values.reshape(self.avg_data.shape)
+        u1u2u = self.avg_data.UUU_tensorDF[PhyTime,uu_comp1]
+        u1u2v = self.avg_data.UUU_tensorDF[PhyTime,uu_comp2]
 
         u1u2u_dx = Grad_calc(self.avg_data.CoordDF,u1u2u,'x')
         u1u2v_dy = Grad_calc(self.avg_data.CoordDF,u1u2v,'y')
 
         turb_transport = -(u1u2u_dx + u1u2v_dy)
-        return turb_transport.flatten()
+        return turb_transport
 
     def _pressure_strain(self,PhyTime,comp1,comp2):
         u1u2 = comp1 + chr(ord(comp2)-ord('u')+ord('x'))
         u2u1 = comp2 + chr(ord(comp1)-ord('u')+ord('x'))
 
         rho_star = 1.0
-        pdu1dx2 = self.avg_data.PR_Velo_grad_tensorDF.loc[PhyTime,u1u2]\
-                        .values.reshape(self.avg_data.shape)
-        pdu2dx1 = self.avg_data.PR_Velo_grad_tensorDF.loc[PhyTime,u2u1]\
-                        .values.reshape(self.avg_data.shape)
+        pdu1dx2 = self.avg_data.PR_Velo_grad_tensorDF[PhyTime,u1u2]
+        pdu2dx1 = self.avg_data.PR_Velo_grad_tensorDF[PhyTime,u2u1]\
+
         pressure_strain = (1/rho_star)*(pdu1dx2 + pdu2dx1) 
-        return pressure_strain.flatten()
+        return pressure_strain
 
     def _pressure_diffusion(self,PhyTime,comp1,comp2):
         if comp1 == 'u' and comp2 =='u':
@@ -1747,26 +1779,23 @@ class CHAPSim_budget_io(cbase.CHAPSim_budget_base):
         else:
             raise ValueError
 
-        pu1 = self.avg_data.PU_vectorDF.loc[PhyTime,comp1]\
-                        .values.reshape(self.avg_data.shape)
-        pu2 = self.avg_data.PU_vectorDF.loc[PhyTime,comp2]\
-                        .values.reshape(self.avg_data.shape)
+        pu1 = self.avg_data.PU_vectorDF[PhyTime,comp1]
+        pu2 = self.avg_data.PU_vectorDF[PhyTime,comp2]
 
         rho_star = 1.0
         pu1_grad = Grad_calc(self.avg_data.CoordDF,pu1,diff1)
         pu2_grad = Grad_calc(self.avg_data.CoordDF,pu2,diff2)
 
         pressure_diff = -(1/rho_star)*(pu1_grad + pu2_grad)
-        return pressure_diff.flatten()
+        return pressure_diff
 
     def _viscous_diff(self,PhyTime,comp1,comp2):
         uu_comp = comp1 + comp2
-        u1u2 = self.avg_data.UU_tensorDF.loc[PhyTime,uu_comp]\
-                        .values.reshape(self.avg_data.shape)
+        u1u2 = self.avg_data.UU_tensorDF[PhyTime,uu_comp]
 
-        REN = self.avg_data._metaDF.loc['REN'].values[0]
+        REN = self.avg_data._metaDF['REN']
         viscous_diff = (1/REN)*_scalar_laplacian(self.avg_data.CoordDF,u1u2)
-        return viscous_diff.flatten()
+        return viscous_diff
 
     def _production_extract(self,PhyTime,comp1,comp2):
         U1U_comp = comp1 + 'u'
@@ -1780,31 +1809,23 @@ class CHAPSim_budget_io(cbase.CHAPSim_budget_base):
                 uu_comp_list[i] = uu_comp_list[i][::-1]
                 
         U1U_comp, U2U_comp,U1V_comp, U2V_comp = itertools.chain(uu_comp_list)
-        u1u = self.avg_data.UU_tensorDF.loc[PhyTime,U1U_comp]\
-                        .values.reshape(self.avg_data.shape)
-        u2u = self.avg_data.UU_tensorDF.loc[PhyTime,U2U_comp]\
-                        .values.reshape(self.avg_data.shape)
-        u1v = self.avg_data.UU_tensorDF.loc[PhyTime,U1V_comp]\
-                        .values.reshape(self.avg_data.shape)
-        u2v = self.avg_data.UU_tensorDF.loc[PhyTime,U2V_comp]\
-                        .values.reshape(self.avg_data.shape)
+        u1u = self.avg_data.UU_tensorDF[PhyTime,U1U_comp]
+        u2u = self.avg_data.UU_tensorDF[PhyTime,U2U_comp]
+        u1v = self.avg_data.UU_tensorDF[PhyTime,U1V_comp]
+        u2v = self.avg_data.UU_tensorDF[PhyTime,U2V_comp]
 
         U1x_comp = comp1 + 'x'
         U2x_comp = comp2 + 'x'
         U1y_comp = comp1 + 'y'
         U2y_comp = comp2 + 'y'
         
-        du1dx = self.avg_data.Velo_grad_tensorDF.loc[PhyTime,U1x_comp]\
-                        .values.reshape(self.avg_data.shape)
-        du2dx = self.avg_data.Velo_grad_tensorDF.loc[PhyTime,U2x_comp]\
-                        .values.reshape(self.avg_data.shape)
-        du1dy = self.avg_data.Velo_grad_tensorDF.loc[PhyTime,U1y_comp]\
-                        .values.reshape(self.avg_data.shape)
-        du2dy = self.avg_data.Velo_grad_tensorDF.loc[PhyTime,U2y_comp]\
-                        .values.reshape(self.avg_data.shape)
+        du1dx = self.avg_data.Velo_grad_tensorDF[PhyTime,U1x_comp]
+        du2dx = self.avg_data.Velo_grad_tensorDF[PhyTime,U2x_comp]
+        du1dy = self.avg_data.Velo_grad_tensorDF[PhyTime,U1y_comp]
+        du2dy = self.avg_data.Velo_grad_tensorDF[PhyTime,U2y_comp]
 
         production = -(u1u*du2dx + u2u*du1dx + u1v*du2dy + u2v*du1dy)
-        return production.flatten()
+        return production
     def _dissipation_extract(self,PhyTime,comp1,comp2):
         dU1dxdU2dx_comp = 'd'+ comp1 + 'dx' + 'd' + comp2 + 'dx'
         dU1dydU2dy_comp = 'd'+ comp1 + 'dy' + 'd' + comp2 + 'dy'
@@ -1814,14 +1835,12 @@ class CHAPSim_budget_io(cbase.CHAPSim_budget_base):
         dU1dy_comp = comp1 + 'v'
         dU2dy_comp = comp2 + 'v'
         
-        du1dxdu2dx = self.avg_data.DUDX2_tensorDF.loc[PhyTime,dU1dxdU2dx_comp]\
-                        .values.reshape(self.avg_data.shape)
-        du1dydu2dy = self.avg_data.DUDX2_tensorDF.loc[PhyTime,dU1dydU2dy_comp]\
-                        .values.reshape(self.avg_data.shape)
+        du1dxdu2dx = self.avg_data.DUDX2_tensorDF[PhyTime,dU1dxdU2dx_comp]
+        du1dydu2dy = self.avg_data.DUDX2_tensorDF[PhyTime,dU1dydU2dy_comp]
 
-        REN = self.avg_data._metaDF.loc['REN'].values[0]
+        REN = self.avg_data._metaDF['REN']
         dissipation = -(2/REN)*(du1dxdu2dx + du1dydu2dy)
-        return dissipation.flatten()
+        return dissipation
 
     def budget_plot(self, x_list,PhyTime='',wall_units=True, fig='', ax ='',**kwargs):
         if len(set([x[0] for x in self.avg_data.UU_tensorDF.index])) == 1:
@@ -1891,22 +1910,19 @@ class CHAPSim_budget_tg(cbase.CHAPSim_budget_base):
     def __init__(self,*args,**kwargs):
         if 'PhyTime' in kwargs.keys():
             raise KeyError("PhyTime cannot be used in tg class\n")
-        super().__init__(*args,PhyTime=float('nan'),**kwargs)
+        super().__init__(*args,PhyTime=None,**kwargs)
 
     def _advection_extract(self,PhyTime,comp1,comp2):
         uu_comp = comp1 + comp2 
 
-        uu = self.avg_data.UU_tensorDF.loc[PhyTime,uu_comp]\
-                        .values.reshape(self.avg_data.shape)
-        U_mean = self.avg_data.flow_AVGDF.loc[PhyTime,'u']\
-                        .values.reshape(self.avg_data.shape)
-        V_mean = self.avg_data.flow_AVGDF.loc[PhyTime,'v']\
-                        .values.reshape(self.avg_data.shape)
+        uu = self.avg_data.UU_tensorDF[PhyTime,uu_comp]
+        U_mean = self.avg_data.flow_AVGDF[PhyTime,'u']
+        V_mean = self.avg_data.flow_AVGDF[PhyTime,'v']
         # uu_dx = Grad_calc(self.avg_data.CoordDF,uu,'x')
         uu_dy = CT.Grad_calc_tg(self.avg_data.CoordDF,uu)
 
         advection = -V_mean*uu_dy
-        return advection.flatten()
+        return advection#.flatten()
 
     def _turb_transport(self,PhyTime,comp1,comp2):
         uu_comp = comp1+comp2
@@ -1919,25 +1935,23 @@ class CHAPSim_budget_tg(cbase.CHAPSim_budget_base):
         if ord(uu_comp2[1]) > ord(uu_comp2[2]):
             uu_comp2 = uu_comp2[0] + uu_comp2[1:][::-1]
 
-        u1u2v = self.avg_data.UUU_tensorDF.loc[PhyTime,uu_comp2]\
-                        .values.reshape(self.avg_data.shape)
+        u1u2v = self.avg_data.UUU_tensorDF[PhyTime,uu_comp2]
 
         u1u2v_dy = CT.Grad_calc_tg(self.avg_data.CoordDF,u1u2v)
 
         turb_transport = -u1u2v_dy
-        return turb_transport.flatten()
+        return turb_transport#.flatten()
 
     def _pressure_strain(self,PhyTime,comp1,comp2):
         u1u2 = comp1 + chr(ord(comp2)-ord('u')+ord('x'))
         u2u1 = comp2 + chr(ord(comp1)-ord('u')+ord('x'))
 
         rho_star = 1.0
-        pdu1dx2 = self.avg_data.PR_Velo_grad_tensorDF.loc[PhyTime,u1u2]\
-                        .values.reshape(self.avg_data.shape)
-        pdu2dx1 = self.avg_data.PR_Velo_grad_tensorDF.loc[PhyTime,u2u1]\
-                        .values.reshape(self.avg_data.shape)
+        pdu1dx2 = self.avg_data.PR_Velo_grad_tensorDF[PhyTime,u1u2]
+        pdu2dx1 = self.avg_data.PR_Velo_grad_tensorDF[PhyTime,u2u1]
+
         pressure_strain = (1/rho_star)*(pdu1dx2 + pdu2dx1) 
-        return pressure_strain.flatten()
+        return pressure_strain#.flatten()
 
     def _pressure_diffusion(self,PhyTime,comp1,comp2):
 
@@ -1949,10 +1963,8 @@ class CHAPSim_budget_tg(cbase.CHAPSim_budget_base):
         if comp2 not in comp_list:
             raise ValueError("comp2 must be %s, %s, or %s not %s"%(*comp_list,comp2))
 
-        pu1 = self.avg_data.PU_vectorDF.loc[PhyTime,comp1]\
-                        .values.reshape(self.avg_data.shape)
-        pu2 = self.avg_data.PU_vectorDF.loc[PhyTime,comp2]\
-                        .values.reshape(self.avg_data.shape)
+        pu1 = self.avg_data.PU_vectorDF[PhyTime,comp1]
+        pu2 = self.avg_data.PU_vectorDF[PhyTime,comp2]
 
         rho_star = 1.0
         if diff1 == 'y':
@@ -1966,16 +1978,15 @@ class CHAPSim_budget_tg(cbase.CHAPSim_budget_base):
             pu2_grad = np.zeros(self.avg_data.shape)
 
         pressure_diff = -(1/rho_star)*(pu1_grad + pu2_grad)
-        return pressure_diff.flatten()
+        return pressure_diff#.flatten()
 
     def _viscous_diff(self,PhyTime,comp1,comp2):
         uu_comp = comp1 + comp2
-        u1u2 = self.avg_data.UU_tensorDF.loc[PhyTime,uu_comp]\
-                        .values.reshape(self.avg_data.shape)
+        u1u2 = self.avg_data.UU_tensorDF[PhyTime,uu_comp]
 
-        REN = self.avg_data._metaDF.loc['REN'].values[0]
+        REN = self.avg_data._metaDF['REN']
         viscous_diff = (1/REN)*CT.Scalar_laplacian_tg(self.avg_data.CoordDF,u1u2)
-        return viscous_diff.flatten()
+        return viscous_diff#.flatten()
 
     def _production_extract(self,PhyTime,comp1,comp2):
         U1U_comp = comp1 + 'u'
@@ -1989,52 +2000,42 @@ class CHAPSim_budget_tg(cbase.CHAPSim_budget_base):
                 uu_comp_list[i] = uu_comp_list[i][::-1]
                 
         U1U_comp, U2U_comp,U1V_comp, U2V_comp = itertools.chain(uu_comp_list)
-        u1u = self.avg_data.UU_tensorDF.loc[PhyTime,U1U_comp]\
-                        .values.reshape(self.avg_data.shape)
-        u2u = self.avg_data.UU_tensorDF.loc[PhyTime,U2U_comp]\
-                        .values.reshape(self.avg_data.shape)
-        u1v = self.avg_data.UU_tensorDF.loc[PhyTime,U1V_comp]\
-                        .values.reshape(self.avg_data.shape)
-        u2v = self.avg_data.UU_tensorDF.loc[PhyTime,U2V_comp]\
-                        .values.reshape(self.avg_data.shape)
+        u1u = self.avg_data.UU_tensorDF[PhyTime,U1U_comp]
+        u2u = self.avg_data.UU_tensorDF[PhyTime,U2U_comp]
+        u1v = self.avg_data.UU_tensorDF[PhyTime,U1V_comp]
+        u2v = self.avg_data.UU_tensorDF[PhyTime,U2V_comp]
 
         U1x_comp = comp1 + 'x'
         U2x_comp = comp2 + 'x'
         U1y_comp = comp1 + 'y'
         U2y_comp = comp2 + 'y'
         
-        du1dx = self.avg_data.Velo_grad_tensorDF.loc[PhyTime,U1x_comp]\
-                        .values.reshape(self.avg_data.shape)
-        du2dx = self.avg_data.Velo_grad_tensorDF.loc[PhyTime,U2x_comp]\
-                        .values.reshape(self.avg_data.shape)
-        du1dy = self.avg_data.Velo_grad_tensorDF.loc[PhyTime,U1y_comp]\
-                        .values.reshape(self.avg_data.shape)
-        du2dy = self.avg_data.Velo_grad_tensorDF.loc[PhyTime,U2y_comp]\
-                        .values.reshape(self.avg_data.shape)
+        du1dx = self.avg_data.Velo_grad_tensorDF[PhyTime,U1x_comp]
+        du2dx = self.avg_data.Velo_grad_tensorDF[PhyTime,U2x_comp]
+        du1dy = self.avg_data.Velo_grad_tensorDF[PhyTime,U1y_comp]
+        du2dy = self.avg_data.Velo_grad_tensorDF[PhyTime,U2y_comp]
 
         production = -(u1u*du2dx + u2u*du1dx + u1v*du2dy + u2v*du1dy)
-        return production.flatten()
+        return production#.flatten()
     
     def _dissipation_extract(self,PhyTime,comp1,comp2):
         dU1dxdU2dx_comp = 'd'+ comp1 + 'dx' + 'd' + comp2 + 'dx'
         dU1dydU2dy_comp = 'd'+ comp1 + 'dy' + 'd' + comp2 + 'dy'
         
-        du1dxdu2dx = self.avg_data.DUDX2_tensorDF.loc[PhyTime,dU1dxdU2dx_comp]\
-                        .values.reshape(self.avg_data.shape)
-        du1dydu2dy = self.avg_data.DUDX2_tensorDF.loc[PhyTime,dU1dydU2dy_comp]\
-                        .values.reshape(self.avg_data.shape)
-        print(dU1dxdU2dx_comp,du1dxdu2dx)
-        print(dU1dydU2dy_comp,du1dydu2dy)
-        REN = self.avg_data._metaDF.loc['REN'].values[0]
+        du1dxdu2dx = self.avg_data.DUDX2_tensorDF[PhyTime,dU1dxdU2dx_comp]
+        du1dydu2dy = self.avg_data.DUDX2_tensorDF[PhyTime,dU1dydU2dy_comp]
+
+
+        REN = self.avg_data._metaDF['REN']
         dissipation = -(2/REN)*(du1dxdu2dx + du1dydu2dy)
-        return dissipation.flatten()
+        return dissipation#.flatten()
 
     def budget_plot(self, times_list,wall_units=True, fig='', ax ='',**kwargs):
-        PhyTime = float('nan')
+        PhyTime = None
         fig, ax = super()._budget_plot(PhyTime, times_list,wall_units=wall_units, fig=fig, ax =ax,**kwargs)
 
         for a,t in zip(ax,times_list):
-            a.set_title(r"$t^*=%.2f$"%t,loc='right')
+            a.set_title(r"$t^*=%s$"%t,loc='right')
             a.relim()
             a.autoscale_view()
         handles, labels = ax[0].get_legend_handles_labels()
@@ -2047,13 +2048,13 @@ class CHAPSim_budget_tg(cbase.CHAPSim_budget_base):
         return fig, ax
 
     def plot_integral_budget(self,comp=None, wall_units=True, fig='', ax='', **kwargs):
-        PhyTime = float('nan')
+        PhyTime = None
         fig, ax = super()._plot_integral_budget(comp=comp,PhyTime=PhyTime, wall_units=wall_units, fig=fig, ax=ax, **kwargs)
         ax.set_xlabel(r"$t^*$")
         return fig, ax
 
     def plot_budget_x(self,comp=None,y_vals_list='max',Y_plus=True,PhyTime='',fig='',ax='',**kwargs):
-        PhyTime = float('nan')        
+        PhyTime = None
         if not fig:
             if 'figsize' not in kwargs.keys():
                 kwargs['figsize'] = [10,5]
@@ -2076,6 +2077,7 @@ class CHAPSim_budget_tg(cbase.CHAPSim_budget_base):
         return fig, ax
 
 class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
+    _module = sys.modules[__module__]
     def _autocov_extract(self,comp1,comp2,path_to_folder='',time0=None,abs_path=True,max_x_sep=None,max_z_sep=None):
         times = time_extract(path_to_folder,abs_path)
         if time0 is not None:
@@ -2083,14 +2085,14 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
         if TEST:
             times.sort(); times= times[-3:]
             
-        meta_data = CHAPSim_meta(path_to_folder)
+        meta_data = self._module.CHAPSim_meta(path_to_folder)
         comp=(comp1,comp2)
         NCL = meta_data.NCL
         try:
-            avg_data = CHAPSim_AVG_io(max(times),meta_data,path_to_folder,time0,abs_path)
+            avg_data = self._module.CHAPSim_AVG_io(max(times),meta_data,path_to_folder,time0,abs_path)
         except Exception:
             times.remove(max(times))
-            avg_data = CHAPSim_AVG_io(max(times),meta_data,path_to_folder,time0)
+            avg_data = self._module.CHAPSim_AVG_io(max(times),meta_data,path_to_folder,time0)
         i=1
 
         if max_z_sep is None:
@@ -2104,7 +2106,7 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
         shape_x = (max_x_sep,NCL[1],NCL[0]-max_x_sep)
         shape_z = (max_z_sep,NCL[1],NCL[0])
         for timing in times:
-            fluct_data = CHAPSim_fluct_io(timing,avg_data,time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
+            fluct_data = self._module.CHAPSim_fluct_io(timing,avg_data,time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
             coe3 = (i-1)/i
             coe2 = 1/i
             if i==1:
@@ -2116,7 +2118,7 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
                 autocorr = autocorr*coe3 + local_autocorr*coe2
             i += 1
             index=['x','z']
-            autocorrDF = pd.DataFrame(autocorr.T,index=index)
+            autocorrDF = cd.datastruct(autocorr,index=index)#.data([shape_x,shape_z])
         return meta_data, comp, NCL, avg_data, autocorrDF, shape_x, shape_z
    
     def _hdf_extract(self,file_name, group_name=''):
@@ -2125,11 +2127,12 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
         shape_x = tuple(hdf_file[base_name].attrs["shape_x"][:])
         shape_z = tuple(hdf_file[base_name].attrs["shape_z"][:])
         comp = tuple(np.char.decode(hdf_file[base_name].attrs["comp"][:]))
-        hdf_file.close()        
-        autocorrDF = pd.read_hdf(file_name,key=base_name+'/autocorrDF')
-        meta_data = CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
+        hdf_file.close()       
+
+        autocorrDF = cd.datastruct.from_hdf(file_name,shapes=(shape_x,shape_z),key=base_name+'/autocorrDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
+        meta_data = self._module.CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
         NCL=meta_data.NCL
-        avg_data = CHAPSim_AVG_io.from_hdf(file_name,base_name+'/avg_data')
+        avg_data = self._module.CHAPSim_AVG_io.from_hdf(file_name,base_name+'/avg_data')
         return meta_data, comp, NCL, avg_data, autocorrDF, shape_x, shape_z
     
     def save_hdf(self, file_name, write_mode, group_name=''):
@@ -2143,8 +2146,8 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
             PhyTime = "{:.9g}".format(PhyTime)
         NCL=fluct_data.NCL        
 
-        fluct_vals1=fluct_data.fluctDF.loc[PhyTime,comp1].values.reshape(fluct_data.shape)
-        fluct_vals2=fluct_data.fluctDF.loc[PhyTime,comp2].values.reshape(fluct_data.shape)
+        fluct_vals1=fluct_data.fluctDF[PhyTime,comp1]
+        fluct_vals2=fluct_data.fluctDF[PhyTime,comp2]
         time1=time.time()
         
         R_x = CHAPSim_autocov_io._autocov_calc_x(fluct_vals1,fluct_vals2,*NCL,max_x_sep)
@@ -2153,13 +2156,13 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
         R_z = R_z/(NCL[2]-max_z_sep)
         R_x = R_x/(NCL[2])
 
-        R_z = R_z.reshape((max_z_sep*NCL[1]*NCL[0]))
-        Rz_DF = pd.DataFrame(R_z)
-        R_x = R_x.reshape((max_x_sep*NCL[1]*(NCL[0]-max_x_sep)))
-        Rx_DF = pd.DataFrame(R_x)
-        R_DF=pd.concat([Rx_DF,Rz_DF],axis=1)
+        # R_z = R_z.reshape((max_z_sep*NCL[1]*NCL[0]))
+        # Rz_DF = pd.DataFrame(R_z)
+        # R_x = R_x.reshape((max_x_sep*NCL[1]*(NCL[0]-max_x_sep)))
+        # Rx_DF = pd.DataFrame(R_x)
+        R_array=np.stack([Rx,Rz],axis=0)
         
-        return R_DF.values
+        return R_array
     @staticmethod
     @numba.njit(parallel=True)
     def _autocov_calc_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
@@ -2226,6 +2229,7 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
         return fig, ax
 
 class CHAPSim_autocov_tg(cbase.CHAPSim_autocov_base):
+    _module = sys.modules[__module__]
     def _autocov_extract(self,comp1,comp2,path_to_folder='',time0=None,abs_path=True,max_x_sep=None,max_z_sep=None):
         times = time_extract(path_to_folder,abs_path)
         if time0 is not None:
@@ -2234,10 +2238,10 @@ class CHAPSim_autocov_tg(cbase.CHAPSim_autocov_base):
         if TEST:
             times.sort(); times= times[-3:]
             
-        meta_data = CHAPSim_meta(path_to_folder)
+        meta_data = self._module.CHAPSim_meta(path_to_folder)
         comp=(comp1,comp2)
         NCL = meta_data.NCL
-        avg_data = CHAPSim_AVG_tg_base(times,meta_data=meta_data,path_to_folder=path_to_folder,time0=time0,abs_path=abs_path)
+        avg_data = self._module.CHAPSim_AVG_tg_base(times,meta_data=meta_data,path_to_folder=path_to_folder,time0=time0,abs_path=abs_path)
 
         if max_z_sep is None:
             max_z_sep=int(NCL[2]/2)
@@ -2250,21 +2254,18 @@ class CHAPSim_autocov_tg(cbase.CHAPSim_autocov_base):
         shape_x = (max_x_sep,NCL[1],len(times))
         shape_z = (max_z_sep,NCL[1],len(times))
         for timing in times:
-            fluct_data = CHAPSim_fluct_tg(timing,avg_data,path_to_folder=path_to_folder,abs_path=abs_path)
+            fluct_data = self._module.CHAPSim_fluct_tg(timing,avg_data,path_to_folder=path_to_folder,abs_path=abs_path)
             if 'R_z' not in locals():
                 R_z, R_x = self._autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
             else:
                 local_R_z, local_R_x = self._autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
                 R_z = np.vstack([R_z,local_R_z])
-                print(R_z.shape)
                 R_x = np.vstack([R_x,local_R_x])
 
-        R_z = pd.Series(R_z.T.flatten())
-        R_x = pd.Series(R_x.T.flatten())
+        R_z = R_z.T.reshape(shape_z)
+        R_x = R_x.T.reshape(shape_x)
         
-        autocorr = pd.concat([R_x,R_z],axis=1)
-        index=['x','z']
-        autocorrDF = pd.DataFrame(autocorr.values.T,index=index)
+        autocorrDF = cd.datastruct({'x':R_x,'z':R_z})
         return meta_data, comp, NCL, avg_data, autocorrDF, shape_x, shape_z
     
     def _hdf_extract(self,file_name, group_name=''):
@@ -2274,10 +2275,11 @@ class CHAPSim_autocov_tg(cbase.CHAPSim_autocov_base):
         shape_z = tuple(hdf_file[base_name].attrs["shape_z"][:])
         comp = tuple(np.char.decode(hdf_file[base_name].attrs["comp"][:]))
         hdf_file.close()        
-        autocorrDF = pd.read_hdf(file_name,key=base_name+'/autocorrDF')
-        meta_data = CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
+
+        autocorrDF = cd.datastruct.from_hdf(file_name,shapes=(shape_x,shape_z),key=base_name+'/autocorrDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
+        meta_data = self._module.CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
         NCL=meta_data.NCL
-        avg_data = CHAPSim_AVG_tg.from_hdf(file_name,base_name+'/avg_data')
+        avg_data = self._module.CHAPSim_AVG_tg.from_hdf(file_name,base_name+'/avg_data')
         return meta_data, comp, NCL, avg_data, autocorrDF, shape_x, shape_z
     
     def save_hdf(self, file_name, write_mode, group_name=''):
@@ -2291,8 +2293,8 @@ class CHAPSim_autocov_tg(cbase.CHAPSim_autocov_base):
             PhyTime = "{:.9g}".format(PhyTime)
         NCL=fluct_data.NCL    
 
-        fluct_vals1=fluct_data.fluctDF.loc[PhyTime,comp1].values.reshape(fluct_data.shape)
-        fluct_vals2=fluct_data.fluctDF.loc[PhyTime,comp2].values.reshape(fluct_data.shape)
+        fluct_vals1=fluct_data.fluctDF[PhyTime,comp1]
+        fluct_vals2=fluct_data.fluctDF[PhyTime,comp2]
         print(PhyTime)
         R_x = CHAPSim_autocov_tg._autocov_calc_x(fluct_vals1,fluct_vals2,*NCL,max_x_sep)
         R_z = CHAPSim_autocov_tg._autocov_calc_z(fluct_vals1,fluct_vals2,*NCL,max_z_sep)
@@ -2376,16 +2378,16 @@ class CHAPSim_Quad_Anl_io(cbase.CHAPSim_Quad_Anl_base):
             times = list(filter(lambda x: x > time0, times))
         if TEST:
             times.sort(); times= times[-3:]
-        meta_data = CHAPSim_meta(path_to_folder,abs_path)
+        meta_data = self._module.CHAPSim_meta(path_to_folder,abs_path)
         NCL = meta_data.NCL
         try:
-            avg_data = CHAPSim_AVG_io(max(times),meta_data,path_to_folder,time0,abs_path)
+            avg_data = self._module.CHAPSim_AVG_io(max(times),meta_data,path_to_folder,time0,abs_path)
         except Exception:
             times.remove(max(times))
-            avg_data = CHAPSim_AVG_io(max(times),meta_data,path_to_folder,time0)
+            avg_data = self._module.CHAPSim_AVG_io(max(times),meta_data,path_to_folder,time0)
         i=1
         for timing in times:
-            fluct_data = CHAPSim_fluct_io(timing,avg_data,time0=time0,path_to_folder=path_to_folder,
+            fluct_data = self._module.CHAPSim_fluct_io(timing,avg_data,time0=time0,path_to_folder=path_to_folder,
                                         abs_path=abs_path)
             fluct_uv, quadrant_array = self._quadrant_extract(fluct_data.fluctDF,timing,NCL)
             coe3 = (i-1)/i
@@ -2402,17 +2404,20 @@ class CHAPSim_Quad_Anl_io(cbase.CHAPSim_Quad_Anl_base):
         for h in h_list:
             index[0].extend([h]*4)
         index[1]=[1,2,3,4]*len(h_list)
-        QuadAnalDF=pd.DataFrame(quad_anal_array,index=index)
-        shape = avg_data.shape
+        shape = avg_data.shape        
+        QuadAnalDF=cd.datastruct(quad_anal_array,index=index)
+
         return meta_data, NCL, avg_data, QuadAnalDF, shape
 
     def _hdf_extract(self,file_name,group_name=''):
         base_name=group_name if group_name else 'CHAPSim_Quad_Anal'
-        meta_data = CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
+        meta_data = self._module.CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
         NCL= meta_data.NCL
-        avg_data = CHAPSim_AVG_io.from_hdf(file_name,base_name+'/avg_data')
-        QuadAnalDF = pd.read_hdf(file_name,key=base_name+'/QuadAnalDF')
+        avg_data = self._module.CHAPSim_AVG_io.from_hdf(file_name,base_name+'/avg_data')
         shape = (NCL[1],NCL[0])
+        
+        QuadAnalDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/QuadAnalDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
+                
         return meta_data, NCL, avg_data, QuadAnalDF, shape
 
     @staticmethod
@@ -2424,8 +2429,8 @@ class CHAPSim_Quad_Anl_io(cbase.CHAPSim_Quad_Anl_base):
         uv_q=np.zeros((4,*NCL[::-1][1:]))
 
     
-        uu=avg_data.UU_tensorDF.loc[avg_time,'uu'].values.reshape(NCL[::-1][1:])
-        vv=avg_data.UU_tensorDF.loc[avg_time,'vv'].values.reshape(NCL[::-1][1:])
+        uu=avg_data.UU_tensorDF[avg_time,'uu']
+        vv=avg_data.UU_tensorDF.loc[avg_time,'vv']
         u_rms = np.sqrt(uu)
         v_rms = np.sqrt(vv)
 
@@ -2436,7 +2441,7 @@ class CHAPSim_Quad_Anl_io(cbase.CHAPSim_Quad_Anl_base):
                 # print(quad_array)
                 fluct_array = np.abs(quad_array*fluct_uv) > h*u_rms*v_rms
                 uv_q[i-1]=np.mean(fluct_uv*fluct_array,axis=0)
-            quad_anal_array[j*4:j*4+4]=uv_q.reshape((4,NCL[0]*NCL[1]))
+            quad_anal_array[j*4:j*4+4]=uv_q
         return quad_anal_array
 
 class CHAPSim_Quad_Anl_tg(cbase.CHAPSim_Quad_Anl_base):
@@ -2446,13 +2451,13 @@ class CHAPSim_Quad_Anl_tg(cbase.CHAPSim_Quad_Anl_base):
             times = list(filter(lambda x: x > time0, times))
         if TEST:
             times.sort(); times= times[-3:]
-        meta_data = CHAPSim_meta(path_to_folder,abs_path)
+        meta_data = self._module.CHAPSim_meta(path_to_folder,abs_path)
         NCL = meta_data.NCL
 
-        avg_data = CHAPSim_AVG_tg_base(times,meta_data=meta_data,path_to_folder=path_to_folder,time0=time0,abs_path=abs_path)
+        avg_data = self._module.CHAPSim_AVG_tg_base(times,meta_data=meta_data,path_to_folder=path_to_folder,time0=time0,abs_path=abs_path)
         
         for timing in times:
-            fluct_data = CHAPSim_fluct_tg(timing,avg_data,path_to_folder=path_to_folder,abs_path=abs_path)
+            fluct_data = self._module.CHAPSim_fluct_tg(timing,avg_data,path_to_folder=path_to_folder,abs_path=abs_path)
             fluct_uv, quadrant_array = self._quadrant_extract(fluct_data.fluctDF,timing,NCL)
             
             if 'quad_anal_array' not in locals():
@@ -2465,8 +2470,9 @@ class CHAPSim_Quad_Anl_tg(cbase.CHAPSim_Quad_Anl_base):
         for h in h_list:
             index[0].extend([h]*4)
         index[1]=[1,2,3,4]*len(h_list)
-        QuadAnalDF=pd.DataFrame(quad_anal_array,index=index)
-        shape = avg_data.shape
+        shape = avg_data.shape        
+        QuadAnalDF=pd.DataFrame(quad_anal_array,index=index).data(shape)
+
         return meta_data, NCL, avg_data, QuadAnalDF, shape
 class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
     _module = sys.modules[__module__]
@@ -2512,8 +2518,8 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
         v_prime_array = [ [] for _ in range(len(y_index)) ]
         for time in times:
             fluct_data = CHAPSim_fluct_io(time,avg_data,path_to_folder,abs_path)
-            u_prime_data = fluct_data.fluctDF.loc["%g"%time,'u'].values.reshape(fluct_data.shape)
-            v_prime_data = fluct_data.fluctDF.loc["%g"%time,'v'].values.reshape(fluct_data.shape)
+            u_prime_data = fluct_data.fluctDF[time,'u']
+            v_prime_data = fluct_data.fluctDF.loc[time,'v']
             for i in range(len(y_index)):
                 u_prime_array[i].extend(u_prime_data[:,y_index[i],x_index[i]])
                 v_prime_array[i].extend(v_prime_data[:,y_index[i],x_index[i]])
@@ -2700,7 +2706,8 @@ def Grad_calc(coordDF,flowArray,comp,two_D=True):
         assert(flowArray.ndim == 2)
     else:
         assert(flowArray.ndim == 3)
-    coord_array = coordDF[comp].dropna().values
+
+    coord_array = coordDF[comp]
     grad = np.zeros_like(flowArray)
     sol_f, h_list_f = CT.Stencil_calc([0,1,2], 1)
     a_f, b_f, c_f = CT.Stencil_coeffs_eval(sol_f,h_list_f,[coord_array[1]-coord_array[0],coord_array[2]-coord_array[1]])
@@ -2750,8 +2757,11 @@ def Grad_calc(coordDF,flowArray,comp,two_D=True):
             dim_size = flowArray.shape[1]
             grad[:,0,:] = a_f*flowArray[:,0,:] + b_f*flowArray[:,1,:] + c_f*flowArray[:,2,:] #(flowArray[:,1,:] - flowArray[:,0,:])/(coord_array[1]-coord_array[0])
             for i in range(1,dim_size-1):
-                a_c, b_c, c_c = CT.Stencil_coeffs_eval(sol_c,h_list_c,[coord_array[i]-coord_array[i-1],coord_array[i+1]-coord_array[i]])
-                grad[:,i] = a_c*flowArray[:,i-1] + b_c*flowArray[:,i] + c_c*flowArray[:,i+1]
+                h1 = coord_array[i+1]-coord_array[i]
+                h0 =  coord_array[i]-coord_array[i-1]
+                grad[:,i] = -h1/(h0*(h0+h1))*flowArray[:,i-1] + (h1-h0)/(h0*h1)*flowArray[:,i] + h0/(h1*(h0+h1))*flowArray[:,i+1]
+                # a_c, b_c, c_c = CT.Stencil_coeffs_eval(sol_c,h_list_c,[coord_array[i]-coord_array[i-1],coord_array[i+1]-coord_array[i]])
+                # grad[:,i] = a_c*flowArray[:,i-1] + b_c*flowArray[:,i] + c_c*flowArray[:,i+1]
                 #grad[:,i,:] = (flowArray[:,i+1,:] - flowArray[:,i-1,:])/(coord_array[i+1]-coord_array[i-1])
             grad[:,-1,:] = a_b*flowArray[:,-3,:] + b_b*flowArray[:,-2,:] + c_b*flowArray[:,-1,:]#(flowArray[:,dim_size-1,:] - flowArray[:,dim_size-2,:])/(coord_array[dim_size-1]-coord_array[dim_size-2])
         elif comp=='z':

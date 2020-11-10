@@ -1,3 +1,9 @@
+"""
+# CHAPSim_Tools
+Module of auxilliary functions to support but the internals and users 
+of CHAPSim_post. 
+"""
+
 import numpy as np
 import CHAPSim_parallel as cpar
 import CHAPSim_post as cp
@@ -212,7 +218,7 @@ def Y_plus_index_calc(AVG_DF,CoordDF,coord_list,x_vals=''):
     if x_vals:
         index_list = coord_index_calc(CoordDF,'x',x_vals)
         
-    y_coords = CoordDF['y'].dropna().values
+    y_coords = CoordDF['y']
     if isinstance(coord_list,float) or isinstance(coord_list,int):
         coord_list = [coord_list]
     elif not isinstance(coord_list,list):
@@ -284,9 +290,9 @@ def y_coord_index_norm(AVG_DF,CoordDF,coord_list,x_vals='',mode='half_channel'):
         raise ValueError("The mode of normalisation must be 'half_channel', 'disp_thickness','mom_thickness',"+\
                                 " or 'wall. Value used was %s\n"%mode)
     #print(norm_distance)
-    y_coords=CoordDF['y'].dropna().values
+    y_coords=CoordDF['y']
     if x_vals:
-        print(x_vals)
+        # print(x_vals)
         x_index =[AVG_DF._return_index(x) for x in x_vals]
         if not hasattr(x_index,'__iter__'):
             x_index=[x_index]
@@ -321,7 +327,7 @@ def y_coord_index_norm(AVG_DF,CoordDF,coord_list,x_vals='',mode='half_channel'):
     #     y_thick_index= list(itertools.chain(*y_thick_index))
     return y_thick_index
 def coord_index_calc(CoordDF,comp,coord_list):
-    coords = CoordDF[comp].dropna().values
+    coords = CoordDF[comp]
     if isinstance(coord_list,float) or isinstance(coord_list,int):
         coord_list = [coord_list]
     index_list=[]
@@ -356,7 +362,7 @@ def Grad_calc(coordDF,flowArray,comp,two_D=True):
         assert(flowArray.ndim == 2)
     else:
         assert(flowArray.ndim == 3)
-    coord_array = coordDF[comp].dropna().values
+    coord_array = coordDF[comp]
     grad = np.zeros_like(flowArray)
     if two_D:
         if comp =='x':
@@ -402,7 +408,7 @@ def Grad_calc(coordDF,flowArray,comp,two_D=True):
     return grad
 
 def Grad_calc_tg(CoordDF,flowArray):
-    coord_array = CoordDF['y'].dropna().values
+    coord_array = CoordDF['y']
     grad = np.zeros_like(flowArray)
     dim_size = flowArray.shape[0]
     dim_size = flowArray.shape[0]
@@ -469,3 +475,86 @@ def scalar_laplacian(coordDF,flow_array,two_D=True):
 
 def Scalar_laplacian_tg(coordDF,flow_array):
     return Grad_calc_tg(coordDF,Grad_calc_tg(coordDF,flow_array))
+
+def contour_plane(plane,axis_vals,avg_data,y_mode,PhyTime):
+    if plane not in ['xy','zy','xz']:
+        plane = plane[::-1]
+        if plane not in ['xy','zy','xz']:
+            msg = "The contour slice must be either %s"%['xy','yz','xz']
+            raise KeyError(msg)
+    slice_set = set(plane)
+    coord_set = set(list('xyz'))
+    coord = "".join(coord_set.difference(slice_set))
+
+    
+
+    if coord == 'y':
+        tg_post = True if all([x == 'None' for x in avg_data.flow_AVGDF.times]) else False
+        if not tg_post:
+            norm_val = 0
+        elif tg_post:
+            norm_val = PhyTime
+        else:
+            raise ValueError("problems")
+        norm_vals = [norm_val]*len(axis_vals)
+        if avg_data is None:
+            msg = f'For contour slice {slice}, avg_data must be provided'
+            raise ValueError(msg)
+        axis_index = y_coord_index_norm(avg_data,avg_data.CoordDF,axis_vals,norm_vals,y_mode)
+    else:
+        axis_index = coord_index_calc(avg_data.CoordDF,coord,axis_vals)
+        if not hasattr(axis_index,'__iter__'):
+            axis_index = [axis_index]
+    # print(axis_index)
+    return plane, coord, axis_index
+
+def contour_indexer(array,axis_index,coord):
+    if coord == 'x':
+        indexed_array = array[:,:,axis_index].squeeze().T
+    elif coord == 'y':
+        indexed_array = array[:,axis_index].squeeze()
+    else:
+        indexed_array = array[axis_index].squeeze()
+    return indexed_array
+
+def vector_indexer(U,V,axis_index,coord,spacing_1,spacing_2):
+    if isinstance(axis_index[0],list):
+        ax_index = list(itertools.chain(*axis_index))
+    else:
+        ax_index = axis_index[:]
+    if coord == 'x':
+        U_space = U[::spacing_1,::spacing_2,ax_index]
+        V_space = V[::spacing_1,::spacing_2,ax_index]
+    elif coord == 'y':
+        U_space = U[::spacing_2,ax_index,::spacing_1]
+        V_space = V[::spacing_2,ax_index,::spacing_1]
+        U_space = np.swapaxes(U_space,1,2)
+        U_space = np.swapaxes(U_space,1,0)
+        V_space = np.swapaxes(V_space,1,2)
+        V_space = np.swapaxes(V_space,1,0)
+
+    else:
+        U_space = U[ax_index,::spacing_2,::spacing_1]
+        V_space = V[ax_index,::spacing_2,::spacing_1]
+        U_space = np.swapaxes(U_space,2,0)
+        V_space = np.swapaxes(V_space,0,2)
+        
+    return U_space, V_space
+
+def get_title_symbol(coord_dir,y_mode,local=True):
+    title_symbol = ''
+    if coord_dir =='y':
+        if y_mode == 'half_channel':
+            title_symbol = coord_dir
+        elif y_mode == 'wall' and local:
+            title_symbol = r"%s^+"%coord_dir
+        elif y_mode == 'wall' and not local:
+            title_symbol = r"%s^{+0}"%coord_dir
+        elif y_mode == 'disp_thickness':
+            title_symbol = r"%s/\delta^*"%coord_dir
+        elif y_mode == 'mom_thickness':
+            title_symbol = r"%s/theta^*"%coord_dir
+    else:
+        title_symbol = coord_dir
+
+    return title_symbol
