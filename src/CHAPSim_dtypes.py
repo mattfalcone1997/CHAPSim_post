@@ -91,7 +91,6 @@ class datastruct:
                 self._outer_index = list(set([i[0] for i in self._index]))
             else:
                 self._outer_index = [None]
-            # print(keys,self._index)
         finally:
             hdf_file.close()
 
@@ -131,7 +130,7 @@ class datastruct:
 
         self._index, self._outer_index = self._index_construct(index,array)
         if self._index is None:
-            self._index = tuple(range(array.shape[0]))
+            self._index = list(range(array.shape[0]))
 
         if len(self._index) != len(array):
             msg = "The length of the indices must be the same as the outer dimension of the array"
@@ -153,9 +152,9 @@ class datastruct:
                 inner_index = list(str(k) if not isinstance(k,numbers.Number) else "%g"%k for k in index[1] ) 
                 index = [outer_index,inner_index]
                 outer_index = list(set(outer_index))
-                index = tuple(zip(*index))
+                index = list(zip(*index))
             elif index is not None:
-                index = tuple(str(k) if not isinstance(k,numbers.Number) else "%g"%k for k in index ) 
+                index = list(str(k) if not isinstance(k,numbers.Number) else "%g"%k for k in index ) 
                 outer_index = [None]
             else:
                 index = None
@@ -209,11 +208,14 @@ class datastruct:
         if not isinstance(other_datastruct,datastruct):
             msg = "other_datastruct must be of type datastruct"
             raise TypeError(msg)
-        for i_val1, i_val2 in zip(self,other_datastruct):
-            if not np.array_equal(i_val1[1],i_val2[1]):
-                return False
 
+        for key,val1 in self:
+            if key not in other_datastruct.index:
+                return False
+            if not np.array_equal(val1,other_datastruct[key]):
+                return False
         return True
+
     @property
     def index(self):
         return self._index
@@ -424,7 +426,11 @@ class datastruct:
             indices = self.indices
         return self.__class__(return_array,index=indices)        
 
-        
+    def __eq__(self,other_datastruct):
+        return self.equals(other_datastruct)
+    
+    def __ne__(self,other_datastruct):
+        return not self.equals(other_datastruct)
     
 
 class metastruct():

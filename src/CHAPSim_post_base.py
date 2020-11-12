@@ -110,7 +110,6 @@ class CHAPSim_AVG_base():
 
     def _hdf_extract(self,file_name,shape,group_name=''):
         base_name=group_name if group_name else 'CHAPSim_AVG'
-        print(base_name,group_name)
         flow_AVGDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/flow_AVGDF')#pd.read_hdf(file_name,key=base_name+'/flow_AVGDF')
         PU_vectorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/PU_vectorDF')
         UU_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/UU_tensorDF')
@@ -212,7 +211,6 @@ class CHAPSim_AVG_base():
             PhyTime = "{:.9g}".format(PhyTime)
         U0_index = int(np.floor(self.NCL[1]*0.5))
         U_mean = self.flow_AVGDF[PhyTime,'u'].copy()
-        print(U_mean.shape)
         y_coords = self.CoordDF['y']
 
         U0 = U_mean[U0_index]
@@ -221,7 +219,6 @@ class CHAPSim_AVG_base():
         mom_thickness = np.zeros(self.shape[1])
         disp_thickness = np.zeros(self.shape[1])
         for i in range(U0_index):
-            print(U_mean.shape,U_mean[i].shape,theta_integrand[i])
             theta_integrand[i] = (np.divide(U_mean[i],U0))*(1 - np.divide(U_mean[i],U0))
             delta_integrand[i] = (1 - np.divide(U_mean[i],U0))
         for j in range(self.shape[1]):
@@ -1709,10 +1706,10 @@ class CHAPSim_joint_PDF_base():
     _module = sys.modules[__module__]
     def __init__(self,*args,fromfile=False,**kwargs):
         if fromfile:
-            self.uv_primeDF, self.avg_data,\
+            self.pdf_arrayDF, self.u_arrayDF, self.v_arrayDF, self.avg_data,\
             self.meta_data, self.NCL, self._y_mode, self._x_loc_norm = self._hdf_extract(*args,**kwargs)
         else:
-            self.uv_primeDF, self.avg_data,\
+            self.pdf_arrayDF, self.u_arrayDF, self.v_arrayDF, self.avg_data,\
             self.meta_data, self.NCL, self._y_mode,self._x_loc_norm = self._extract_fluct(*args,**kwargs)
 
     def save_hdf(self,file_name,mode='a',base_name='CHAPSim_joint_PDF_base'):
@@ -1721,7 +1718,10 @@ class CHAPSim_joint_PDF_base():
         group.attrs["y_mode"] = self._y_mode.encode('utf-8')
         group.create_dataset("x_loc_norm",data=self._x_loc_norm)
         hdf_file.close()
-        self.uv_primeDF.to_hdf(file_name,key=base_name+'/uv_primeDF',mode='a',format='fixed',data_columns=True)
+        self.pdf_arrayDF.to_hdf(file_name,key=base_name+'/pdf_arrayDF',mode='a')#,format='fixed',data_columns=True)
+        self.u_arrayDF.to_hdf(file_name,key=base_name+'/u_arrayDF',mode='a')#,format='fixed',data_columns=True)
+        self.v_arrayDF.to_hdf(file_name,key=base_name+'/v_arrayDF',mode='a')#,format='fixed',data_columns=True)     
+        
         self.meta_data.save_hdf(file_name,'a',base_name+"/meta_data")
         self.avg_data.save_hdf(file_name,'a',base_name+"/avg_data")
 
@@ -1729,7 +1729,7 @@ class CHAPSim_joint_PDF_base():
     def from_hdf(cls,file_name,base_name=None):
         return cls(file_name,base_name=base_name,fromfile=True)
 
-    def plot_joint_PDF(self, xy_list,pdf_kwargs=None,fig=None, ax=None,**kwargs):
+    def plot_joint_PDF(self, xy_list,contour_kw=None,fig=None, ax=None,**kwargs):
         
         if fig is None:
             if 'figsize' not in kwargs:
@@ -1742,34 +1742,22 @@ class CHAPSim_joint_PDF_base():
             ax=fig.subplots(len(xy_list),squeeze=False)      
         ax = ax.flatten()
 
-        if pdf_kwargs is not None:
-            if not isinstance(pdf_kwargs,dict):
+        if contour_kw is not None:
+            if not isinstance(contour_kw,dict):
                 raise TypeError("pdf_kwargs must be of type dict")
-            msg = "Restricted pdf_kwargs present these have been removed"
-            if 'data' in pdf_kwargs or 'x' in pdf_kwargs or 'y' in pdf_kwargs or 'ax' in pdf_kwargs:
-                warnings.warn(msg,stack_level=2)
-            pdf_kwargs.pop('data',None)
-            pdf_kwargs.pop('x',None)
-            pdf_kwargs.pop('y',None)
-            pdf_kwargs.pop('ax',None)
         else:
-            pdf_kwargs={}
+            contour_kw={}
         i=0
         y_unit = "y/\delta" if self._y_mode=='half_channel' \
                 else "\delta_u" if self._y_mode=='disp_thickness' \
                 else "\theta" if self._y_mode=='mom_thickness' else "y^+" \
                 if self._y_mode=='wall' and any(self._x_loc_norm!=0) else "y^{+0}"
         for xy in xy_list:
-            try:
-                x_vals = self.uv_primeDF['u',xy].values
-                y_vals = self.uv_primeDF['v',xy].values
-            except KeyError:
-                pair_string = " ".join("{}".format(x[1]) for x in self.uv_primeDF.columns)
-                msg = "The u, v pair provided is not present. The pair must "+\
-                    "be one of the following %s"%pair_string
-                tb = sys.exc_info()[2]
-                raise KeyError(msg).with_traceback(tb)
-            ax[i] = seaborn.kdeplot(x=x_vals,y=y_vals,ax=ax[i],**pdf_kwargs)
+            u_array = self.u_arrayDF[xy]
+            v_array = self.v_arrayDF[xy]
+            pdf_array = self.pdf_arrayDF[xy]
+            U_mesh,V_mesh = np.meshgrid(u_array,v_array) 
+            C = ax[i].contour(U_mesh,V_mesh,pdf_array,**contour_kw)#seaborn.kdeplot(x=x_vals,y=y_vals,ax=ax[i],**pdf_kwargs)
             ax[i].set_xlabel(r"$u'$")
             ax[i].set_ylabel(r"$v'$")
             ax[i].set_title(r"$x/\delta=%g$, $%s=%g$"%(xy[0],y_unit,xy[1]),loc='right')

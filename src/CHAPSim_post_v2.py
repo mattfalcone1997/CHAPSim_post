@@ -20,6 +20,7 @@ from matplotlib import animation
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy import integrate, fft
+import seaborn
 import os
 import itertools
 import time
@@ -464,7 +465,6 @@ class CHAPSim_Inst():
         coord_1_mesh, coord_2_mesh = np.meshgrid(coord_1,coord_2)
         ax_out=[]
         pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
-        print(pcolor_kw)
         for i in range(len(ax_val)):
             contour_array = CT.contour_indexer(vort_array,axis_index[i],coord)
             # if coord == 'x':
@@ -473,7 +473,6 @@ class CHAPSim_Inst():
             #     contour_array = vort_array[:,axis_index[i]].squeeze()
             # else:
             #     contour_array = vort_array[axis_index[i]].squeeze()
-            print(contour_array.shape)
             mesh = ax[i].pcolormesh(coord_1_mesh,coord_2_mesh,contour_array,**pcolor_kw)
             ax[i].set_xlabel(r"$%s^*$"%slice[0])
             ax[i].set_ylabel(r"$%s$"%slice[1])
@@ -2438,7 +2437,6 @@ class CHAPSim_Quad_Anl_io(cbase.CHAPSim_Quad_Anl_base):
         for h,j in zip(h_list,range(len(h_list))):
             for i in range(1,5):
                 quad_array=quadrant_array == i
-                # print(quad_array)
                 fluct_array = np.abs(quad_array*fluct_uv) > h*u_rms*v_rms
                 uv_q[i-1]=np.mean(fluct_uv*fluct_array,axis=0)
             quad_anal_array[j*4:j*4+4]=uv_q
@@ -2475,8 +2473,8 @@ class CHAPSim_Quad_Anl_tg(cbase.CHAPSim_Quad_Anl_base):
 
         return meta_data, NCL, avg_data, QuadAnalDF, shape
 class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
-    _module = sys.modules[__module__]
-    def _extract_fluct(self,x,y,path_to_folder=None,time0=None,y_mode='half-channel',use_ini=True,xy_inner=True,tgpost=False,abs_path=True):
+    _module = sys.modules[__name__]
+    def _extract_fluct(self,x,y,path_to_folder=None,time0=None,gridsize=200,y_mode='half-channel',use_ini=True,xy_inner=True,tgpost=False,abs_path=True):
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
@@ -2513,26 +2511,40 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
         y_index = CT.y_coord_index_norm(avg_data,avg_data.CoordDF,y_coord_list,x_loc_norm,y_mode)
         
         y_index = np.diag(np.array(y_index))
-        print(y_index)
         u_prime_array = [ [] for _ in range(len(y_index)) ]
         v_prime_array = [ [] for _ in range(len(y_index)) ]
+        
         for time in times:
             fluct_data = CHAPSim_fluct_io(time,avg_data,path_to_folder,abs_path)
             u_prime_data = fluct_data.fluctDF[time,'u']
-            v_prime_data = fluct_data.fluctDF.loc[time,'v']
+            v_prime_data = fluct_data.fluctDF[time,'v']
             for i in range(len(y_index)):
                 u_prime_array[i].extend(u_prime_data[:,y_index[i],x_index[i]])
                 v_prime_array[i].extend(v_prime_data[:,y_index[i],x_index[i]])
 
-        val_index = list(zip(x_coord_list,y_coord_list))
-        comp_index = ['u']*len(val_index) + ['v']*len(val_index)
-        columns = [comp_index,val_index*2]
+        pdf_array = [ [] for _ in range(len(y_index)) ]
+        u_array = [ [] for _ in range(len(y_index)) ]
+        v_array = [ [] for _ in range(len(y_index)) ]
+        estimator = seaborn._statistics.KDE(gridsize=gridsize)
+        for i, y in enumerate(y_index):
+            pdf_array[i],(u_array[i],v_array[i]) = estimator(np.array(u_prime_array[i]),
+                                                            np.array(v_prime_array[i]))
 
-        u_prime_array = np.array(u_prime_array); v_prime_array = np.array(v_prime_array)
-        uv_prime_array = np.vstack([u_prime_array,v_prime_array])
+            # ax = seaborn.kdeplot(u_prime_array[i],v_prime_array[i],gridsize=gridsize)
+            # for artist in ax.get_children():
+            #     if isinstance(artist,mpl.contour.QuadContourSet):
 
-        uv_primeDF = pd.DataFrame(uv_prime_array.T,columns = columns)
-        return uv_primeDF, avg_data,meta_data,NCL,y_mode,x_loc_norm
+
+        index = list(zip(x_coord_list,y_coord_list))
+
+        pdf_array = np.array(pdf_array)
+        u_array = np.array(u_array)
+        v_array = np.array(v_array)
+
+        pdf_arrayDF = cd.datastruct(pdf_array,index= index)
+        u_arrayDF = cd.datastruct(u_array,index= index)
+        v_arrayDF = cd.datastruct(v_array,index= index)
+        return pdf_arrayDF, u_arrayDF, v_arrayDF, avg_data,meta_data,NCL,y_mode,x_loc_norm
 
     def save_hdf(self,file_name,mode='a',base_name='CHAPSim_joint_PDF_io'):
         super().save_hdf(file_name,mode,base_name)
@@ -2548,8 +2560,12 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
         meta_data = self._module.CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
         NCL=meta_data.NCL
         avg_data = self._module.CHAPSim_AVG_io.from_hdf(file_name,base_name+'/avg_data')
-        uv_primeDF = pd.read_hdf(file_name,key=base_name+'/uv_primeDF')
-        return uv_primeDF,avg_data, meta_data, NCL, y_mode,x_loc_norm
+        # uv_primeDF = pd.read_hdf(file_name,key=base_name+'/uv_primeDF')
+        pdf_arrayDF = cd.datastruct.from_hdf(file_name,key=base_name+'/pdf_arrayDF')
+        u_arrayDF = cd.datastruct.from_hdf(file_name,key=base_name+'/u_arrayDF')
+        v_arrayDF = cd.datastruct.from_hdf(file_name,key=base_name+'/v_arrayDF')
+
+        return pdf_arrayDF,u_arrayDF,v_arrayDF,avg_data, meta_data, NCL, y_mode,x_loc_norm
 
 
 def file_extract(path_to_folder,abs_path=True):

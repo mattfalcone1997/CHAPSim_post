@@ -26,7 +26,23 @@ if which('lualatex') is not None:
     mpl.rcParams['pgf.texsystem'] = 'lualatex'
     mpl.rcParams['text.latex.preamble'] =r'\usepackage{amsmath}'
 
-mpl.rcParams['axes.prop_cycle'] = cycler(color='bgrcmyk')
+def update_prop_cycle(**kwargs):
+    avail_keys = [x[4:] for x in mpl.lines.Line2D.__dict__.keys() if x[0:3]=='get']
+
+    if not all([key in avail_keys for key in kwargs.keys()]):
+        msg = "The key is invalid for the matplotlib property cycler"
+        raise ValueError(msg)
+
+    item_length = [ len(item) for _,item in kwargs.items()]
+    cycle_length = np.lcm.reduce(item_length)
+    for key, val in kwargs.items():
+        kwargs[key] = list(val)*int(cycle_length/len(val))
+    mpl.rcParams['axes.prop_cycle'] = cycler(**kwargs)
+
+update_prop_cycle(linestyle=['-','--','-.',':'],
+                marker=['x','.','v','^','+'],
+                color = 'bgrcmyk')
+
 mpl.rcParams['lines.markerfacecolor'] = 'white'
 # mpl.rcParams['figure.autolayout'] = True
 mpl.rcParams['mathtext.fontset'] = 'stix'
@@ -34,8 +50,6 @@ mpl.rcParams['legend.edgecolor'] = 'inherit'
 mpl.rcParams['font.size'] = 14
 mpl.rcParams['legend.fontsize'] = 'small'
 mpl.rcParams['axes.grid'] = True
-
-# legend_fontsize=12
 
 class CHAPSimFigure(mpl.figure.Figure):
     def __init__(self,*args,**kwargs):
@@ -71,19 +85,16 @@ class AxesCHAPSim(mpl.axes.Axes):
         super().__init__(*args,**kwargs)
     def cplot(self,*args, **kwargs):
 
-        linestyle=['-','--','-.',':']
-        marker=['x','.','v','^','+']
-        colors = 'bgrcmyk'
         counter = self.count_lines()
-        if 'markevery' not in kwargs.keys():
-            kwargs['markevery'] = 10
-        if 'linestyle' not in kwargs.keys() and 'ls' not in kwargs.keys():
-            kwargs['linestyle'] = linestyle[counter%len(linestyle)]
-        if 'marker' not in kwargs.keys():
-            kwargs['marker'] = marker[counter%len(marker)]
-        if 'color' not in kwargs.keys():
-            kwargs['color'] = colors[counter%len(colors)]
-        return super().plot(*args,**kwargs)
+
+        plot_kw = {}
+        for key,val in mpl.rcParams['axes.prop_cycle'].by_key().items():
+            plot_kw[key] = val[counter%len(val)]
+        for key,val in kwargs.items():
+            plot_kw[key] = val
+        if 'markevery' not in plot_kw:
+            plot_kw['markevery'] = 10
+        return super().plot(*args,**plot_kw)
     def count_lines(self):
         no_lines = 0
         twinned_ax = self._twinned_axes.get_siblings(self)
@@ -322,10 +333,6 @@ def subplots(nrows=1, ncols=1, sharex=False, sharey=False, squeeze=True, subplot
     ax=fig.subplots(nrows, ncols, sharex=sharex, sharey=sharey, squeeze=squeeze, 
                     subplot_kw=subplot_kw, gridspec_kw=gridspec_kw)
     return fig, ax
-
-def update_prop_cycle(key,val):
-    pass
-# import matlab.engine
 
 def update_pcolor_kw(pcolor_kw):
     if pcolor_kw is None:
