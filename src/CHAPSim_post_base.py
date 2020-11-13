@@ -934,9 +934,9 @@ class CHAPSim_fluct_base():
         elif not ax:
             ax=fig.subplots(len(x_split_list)-1,len(axis_vals),squeeze=False)      
         else:
-            if isinstance(ax,mpl.axes):
+            if isinstance(ax,mpl.axes.Axes):
                 single_input=True
-                ax = np.array([ax])
+                ax = np.array([ax]).reshape((1,1))
             elif not isinstance(ax,np.ndarray):
                 msg = "Input axes must be an instance %s or %s"%(mpl.axes,np.ndarray)
                 raise TypeError(msg)
@@ -1165,7 +1165,13 @@ class CHAPSim_fluct_base():
             kwargs['squeeze'] = False
             fig,ax = cplt.subplots(len(ax_val),**kwargs)
         elif ax is None:
-            ax=fig.subplots(len(ax_val),squeeze=False)      
+            ax=fig.subplots(len(ax_val),squeeze=False)   
+        else:
+            if isinstance(ax,mpl.axes.Axes):
+                ax = np.array([ax]).reshape((1,1))
+            elif not isinstance(ax,np.ndarray):
+                msg = "Input axes must be an instance %s or %s"%(mpl.axes,np.ndarray)
+                raise TypeError(msg)
         ax = ax.flatten()
 
 
@@ -1194,8 +1200,10 @@ class CHAPSim_fluct_base():
             ax[i].set_title(r"$%s = %.3g$"%(coord,ax_val[i]),loc='right')
             ax[i].set_title(r"$t^*=%s$"%PhyTime,loc='left')
             ax_out.append(Q)
-
-        return fig, np.array(ax_out)
+        if len(ax_out) ==1:
+            return fig, ax_out[0]
+        else:
+            return fig, np.array(ax_out)
 
 
     @classmethod

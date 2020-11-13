@@ -1382,15 +1382,15 @@ class CHAPSim_fluct_io(cbase.CHAPSim_fluct_base):
         j=0
         avg_index = avg_data.flow_AVGDF.index 
         
-        for time in inst_times:
-            for comp,index in zip(u_comp,avg_index):
-                avg_values = avg_data.flow_AVGDF[index]
-                inst_values = inst_data.InstDF[time,comp]
+        for j, (time, comp) in enumerate(inst_data.InstDF.index):
+            avg_values = avg_data.flow_AVGDF[avg_time[0],comp]
+            inst_values = inst_data.InstDF[time,comp]
 
-                for i in range(inst_data.shape[0]):
-                    fluct[j,i] = inst_values[i] -avg_values
-                j+=1
+            for i in range(inst_data.shape[0]):
+                fluct[j,i] = inst_values[i] -avg_values
+
         # fluct = fluct.reshape((len(inst_data.InstDF.index),np.prod(inst_data.shape)))
+        # print(inst_times,u_comp)
         return cd.datastruct(fluct,index=inst_data.InstDF.index)
     
 class CHAPSim_fluct_tg(cbase.CHAPSim_fluct_base):

@@ -237,24 +237,42 @@ class AxesCHAPSim(mpl.axes.Axes):
 
     def shift_xaxis(self,val):
         lines = self.get_lines()
+        lines = self.get_lines()
         if lines:
             for line in lines:
                 x_data = line.get_xdata().copy()
                 x_data += val
                 line.set_xdata(x_data)
-            if (x_data>self.get_xlim()[0]).any() and (x_data<self.get_xlim()[1]).any(): 
-                xlim = [x+val for x in self.get_xlim()]
-                self.set_xlim(*xlim)
-            else:
-                self.relim()
-                self.autoscale_view(True,True,True)
-        else:
-            quadmesh_list = [x for x in self.get_children()\
-                             if isinstance(x,mpl.collections.QuadMesh)]
-            if not quadmesh_list:
-                raise TypeError("Must contain artist of type Quadmesh or Line2D")
+        # if lines:
+        #     for line in lines:
+        #         x_data = line.get_xdata().copy()
+        #         x_data += val
+        #         line.set_xdata(x_data)
+        #     if (x_data>self.get_xlim()[0]).any() and (x_data<self.get_xlim()[1]).any(): 
+        #         xlim = [x+val for x in self.get_xlim()]
+        #         self.set_xlim(*xlim)
+        #     else:
+        #         self.relim()
+        #         self.autoscale_view(True,True,True)
+        # else:
+        quadmesh_list = [x for x in self.get_children()\
+                            if isinstance(x,mpl.collections.QuadMesh)]
+        quiver_list = [x for x in self.get_children()\
+                            if isinstance(x,mpl.quiver.Quiver)]
+        if quadmesh_list:
             for quadmesh in quadmesh_list:
                 quadmesh._coordinates[:,:,0] += val
+
+        if quiver_list:
+            for i,_ in enumerate(quiver_list):
+                quiver_list[i].X += val
+                quiver_list[i].XY = np.column_stack((quiver_list[i].X,quiver_list[i].Y))
+                offsets = np.asanyarray(quiver_list[i].XY,float)
+                if offsets.shape == (2,):
+                    offsets = offsets[None,:]
+                quiver_list[i]._offsets = offsets
+                quiver_list[i]._transOffset = quiver_list[i].transform
+        if quadmesh_list or quiver_list or lines:
             xlim = [x+val for x in self.get_xlim()]
             self.set_xlim(xlim)
         
@@ -265,23 +283,38 @@ class AxesCHAPSim(mpl.axes.Axes):
             for line in lines:
                 y_data = line.get_ydata().copy()
                 y_data += val
-                line.set_xdata(y_data)
-            if (y_data>self.get_ylim()[0]).all() and (y_data<self.get_ylim()[1]).all(): 
-                ylim = [x+val for x in self.get_ylim()]
-                self.set_ylim(ylim)
-            else:
-                self.relim()
-                self.autoscale_view(True,True,True)
-        else:
-            quadmesh_list = [x for x in self.get_children()\
-                             if isinstance(x,mpl.collections.QuadMesh)]
-            if not quadmesh_list:
-                raise TypeError("Must contain artist of type Quadmesh or Line2D")
+                line.set_ydata(y_data)
+            # if (y_data>self.get_ylim()[0]).all() and (y_data<self.get_ylim()[1]).all(): 
+            #     ylim = [x+val for x in self.get_ylim()]
+            #     self.set_ylim(ylim)
+            # else:
+            #     self.relim()
+            #     self.autoscale_view(True,True,True)
 
+            
+        quadmesh_list = [x for x in self.get_children()\
+                            if isinstance(x,mpl.collections.QuadMesh)]
+
+        quiver_list = [x for x in self.get_children()\
+                            if isinstance(x,mpl.quiver.Quiver)]
+
+        if quadmesh_list:
             for quadmesh in quadmesh_list:
-                quadmesh._coordinates[:,:,1] += val
-            ylim = [x+val for x in self.get_ylim()]
+                quadmesh._coordinates[:,:,0] += val
+        if quiver_list:
+            for i,_ in enumerate(quiver_list):
+                quiver_list[i].Y += val
+                quiver_list[i].XY = np.column_stack((quiver_list[i].X,quiver_list[i].Y))
+                offsets = np.asanyarray(quiver_list[i].XY,float)
+                if offsets.shape == (2,):
+                    offsets = offsets[None,:]
+                quiver_list[i]._offsets = offsets
+                quiver_list[i]._transOffset = quiver_list[i].transform
+
+        if quadmesh_list or quiver_list or lines:
+            ylim = [y+val for y in self.get_ylim()]
             self.set_ylim(ylim)
+
 
     def shift_legend_val(self,val):
         leg = self.get_legend()
