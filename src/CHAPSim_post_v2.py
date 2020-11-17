@@ -602,11 +602,11 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         Velo_grad_tensor = np.zeros((9,NCL2,NCL1))
         Pr_Velo_grad_tensor = np.zeros((9,NCL2,NCL1))
         DUDX2_tensor = np.zeros((81,NCL2,NCL1))
-        flow_AVG = AVG_info[0,:4,:,:]
+        flow_AVG = AVG_info[0,:4,:,:].copy()
         
-        PU_vector = AVG_info[2,:3,:,:]
-        UU_tensor = AVG_info[3,:6,:,:]
-        UUU_tensor = AVG_info[5,:10,:,:]
+        PU_vector = AVG_info[2,:3,:,:].copy()
+        UU_tensor = AVG_info[3,:6,:,:].copy()
+        UUU_tensor = AVG_info[5,:10,:,:].copy()
         
         for i in range(3):
             for j in range(3):
@@ -615,7 +615,8 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         for i in range(9):
             for j in range(9):
                 DUDX2_tensor[i*9+j] = AVG_info[12+j,i,:,:] 
-            
+        
+        del AVG_info
         #======================================================================
         # flow_AVG = flow_AVG.reshape((4,NCL2*NCL1))
         
@@ -1357,7 +1358,6 @@ class CHAPSim_fluct_io(cbase.CHAPSim_fluct_base):
         self.NCL = self.meta_data.NCL
         self.CoordDF = self.meta_data.CoordDF
         self.shape = inst_data.shape
-
     # def _fluct_calc(self,inst_data,avg_data):
     #     inst_shape = inst_data.shape
     #     avg_shape = avg_data.shape
@@ -1372,26 +1372,25 @@ class CHAPSim_fluct_io(cbase.CHAPSim_fluct_base):
     #     return fluct_array.reshape((4,np.prod(inst_shape)))
         
     def _fluctDF_calc(self, inst_data, avg_data):
-        inst_times = list(set([x[0] for x in inst_data.InstDF.index]))
-        u_comp = [x[1] for x in inst_data.InstDF.index]
-        fluct = np.zeros((len(inst_data.InstDF.index),*inst_data.shape))
+        
+        fluct = np.zeros((len(inst_data.InstDF.index),*inst_data.shape[:]))
         avg_time = list(set([x[0] for x in avg_data.flow_AVGDF.index]))
         
         assert len(avg_time) == 1, "In this context therecan only be one time in avg_data"
-        fluct = np.zeros((len(inst_data.InstDF.index),*inst_data.shape))
+        fluct = np.zeros((len(inst_data.InstDF.index),*inst_data.shape[:]))
         j=0
         avg_index = avg_data.flow_AVGDF.index 
         
         for j, (time, comp) in enumerate(inst_data.InstDF.index):
             avg_values = avg_data.flow_AVGDF[avg_time[0],comp]
-            inst_values = inst_data.InstDF[time,comp]
+            inst_values = inst_data.InstDF[time,comp].copy()
 
             for i in range(inst_data.shape[0]):
                 fluct[j,i] = inst_values[i] -avg_values
-
+        
         # fluct = fluct.reshape((len(inst_data.InstDF.index),np.prod(inst_data.shape)))
         # print(inst_times,u_comp)
-        return cd.datastruct(fluct,index=inst_data.InstDF.index)
+        return cd.datastruct(fluct,index=inst_data.InstDF.index.copy())
     
 class CHAPSim_fluct_tg(cbase.CHAPSim_fluct_base):
     tgpost = True
@@ -2475,6 +2474,7 @@ class CHAPSim_Quad_Anl_tg(cbase.CHAPSim_Quad_Anl_base):
 class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
     _module = sys.modules[__name__]
     def _extract_fluct(self,x,y,path_to_folder=None,time0=None,gridsize=200,y_mode='half-channel',use_ini=True,xy_inner=True,tgpost=False,abs_path=True):
+        mem_check = CT.debug_memory()        
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
@@ -2514,7 +2514,7 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
         u_prime_array = [ [] for _ in range(len(y_index)) ]
         v_prime_array = [ [] for _ in range(len(y_index)) ]
         
-        mem_check = CT.debug_memory()
+        
 
         for time in times:
             mem_check.display_top(mem_check.take_snapshot())

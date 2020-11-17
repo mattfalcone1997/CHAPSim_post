@@ -136,7 +136,7 @@ class datastruct:
             msg = "The length of the indices must be the same as the outer dimension of the array"
             raise ValueError(msg)
 
-        self._data = {i : value for i, value in zip(self._index,array)}
+        self._data = {i : value.copy() for i, value in zip(self._index,array)}
     
     @staticmethod
     def _index_construct(index,array):
