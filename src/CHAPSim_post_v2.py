@@ -11,7 +11,7 @@ on the Pandas DataFrame class
 # MODULE IMPORTS
 
 
-from CHAPSim_Tools import Grad_calc_tg
+from CHAPSim_Tools import Grad_calc_tg, debug_memory
 from CHAPSim_parallel import CHAPSim_Quad_Anal, CHAPSim_autocov
 import numpy as np
 import pandas as pd; from pandas.errors import PerformanceWarning 
@@ -2514,13 +2514,17 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
         u_prime_array = [ [] for _ in range(len(y_index)) ]
         v_prime_array = [ [] for _ in range(len(y_index)) ]
         
+        mem_check = CT.debug_memory()
+
         for time in times:
+            mem_check.display_top(mem_check.take_snapshot())
             fluct_data = CHAPSim_fluct_io(time,avg_data,path_to_folder,abs_path)
             u_prime_data = fluct_data.fluctDF[time,'u']
             v_prime_data = fluct_data.fluctDF[time,'v']
             for i in range(len(y_index)):
                 u_prime_array[i].extend(u_prime_data[:,y_index[i],x_index[i]])
                 v_prime_array[i].extend(v_prime_data[:,y_index[i],x_index[i]])
+            del fluct_data
 
         pdf_array = [ [] for _ in range(len(y_index)) ]
         u_array = [ [] for _ in range(len(y_index)) ]
@@ -2785,7 +2789,7 @@ def Grad_calc(coordDF,flowArray,comp,two_D=True):
             grad[0,:,:] = a_f*flowArray[0,:,:] + b_f*flowArray[1,:,:] + c_f*flowArray[2,:,:]#(flowArray[1,:,:] - flowArray[0,:,:])/(coord_array[1]-coord_array[0])
             for i in range(1,dim_size-1):
                 grad[i,:,:] = (flowArray[i+1,:,:] - flowArray[i-1,:,:])/(coord_array[i+1]-coord_array[i-1])
-            grad[dim_size-1,:,:] = a_b*flowArray[-3,:,:] + b_b*flowArray[-2,:,:] + c_b*flowArray[-1,:,:]#(flowArray[dim_size-1,:,:] - flowArray[dim_size-2,:,:])/(coord_array[dim_size-1]-coord_array[dim_size-2])
+            grad[-1,:,:] = a_b*flowArray[-3,:,:] + b_b*flowArray[-2,:,:] + c_b*flowArray[-1,:,:]#(flowArray[dim_size-1,:,:] - flowArray[dim_size-2,:,:])/(coord_array[dim_size-1]-coord_array[dim_size-2])
 
         else:    
             raise Exception
