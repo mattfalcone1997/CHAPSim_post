@@ -602,11 +602,11 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         Velo_grad_tensor = np.zeros((9,NCL2,NCL1))
         Pr_Velo_grad_tensor = np.zeros((9,NCL2,NCL1))
         DUDX2_tensor = np.zeros((81,NCL2,NCL1))
-        flow_AVG = AVG_info[0,:4,:,:].copy()
+        flow_AVG = AVG_info[0,:4,:,:]
         
-        PU_vector = AVG_info[2,:3,:,:].copy()
-        UU_tensor = AVG_info[3,:6,:,:].copy()
-        UUU_tensor = AVG_info[5,:10,:,:].copy()
+        PU_vector = AVG_info[2,:3,:,:]
+        UU_tensor = AVG_info[3,:6,:,:]
+        UUU_tensor = AVG_info[5,:10,:,:]
         
         for i in range(3):
             for j in range(3):
@@ -616,7 +616,6 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
             for j in range(9):
                 DUDX2_tensor[i*9+j] = AVG_info[12+j,i,:,:] 
         
-        del AVG_info
         #======================================================================
         # flow_AVG = flow_AVG.reshape((4,NCL2*NCL1))
         
