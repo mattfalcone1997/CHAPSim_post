@@ -17,13 +17,22 @@ import sys
 import h5py
 import numbers
 import os
+
+import CHAPSim_Tools as CT
 msg = "This module is currently experimental and under testing, it may be integrated into the main library in the future\n"
 warnings.warn(msg,FutureWarning,stacklevel=2)
 
 class datastruct:
     def __init__(self,*args,array=False,dict=False,hdf=False,**kwargs):
         if not array and not dict and not hdf:
-            array=True
+            if isinstance(args[0],np.ndarray):
+                array=True
+            elif isinstance(args[0],dict):
+                dict=True
+            else:
+                msg = "No extract type selected"
+                raise ValueError(msg)
+        
         self.__rmul__=self.__mul__
         if array:
             self._array_ini(*args,**kwargs)
@@ -85,8 +94,8 @@ class datastruct:
                 else:
                     index = key
                 self._index.append(index)
-                self._data[index] = hdf_data[key][:]
-            
+                self._data[index] = np.array(hdf_data[key][:])
+
             if self._is_multidim():
                 self._outer_index = list(set([i[0] for i in self._index]))
             else:
@@ -171,7 +180,10 @@ class datastruct:
         return cls(*args,dict=True,**kwargs)
     
     def _dict_ini(self,dict_data):
-        self._data = dict_data
+        if not all([isinstance(val,np.ndarray) for val in dict_data.values()]):
+            msg = "The type of the values of the dictionary must be a numpy array"
+            raise TypeError(msg)
+        self._data = {key : val.copy() for key, val in dict_data.items()}
         self._index = dict_data.keys()
         if self._is_multidim():
             self._outer_index = list(set([i[0] for i in self._index]))

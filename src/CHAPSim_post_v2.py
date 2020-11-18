@@ -2107,15 +2107,17 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
             coe3 = (i-1)/i
             coe2 = 1/i
             if i==1:
-                autocorr = self._autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
+                R_x, R_z = self._autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
             else:
-                local_autocorr = self._autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
-                assert local_autocorr.shape == autocorr.shape, "shape of previous array (%d,%d) " % autocorr.shape\
-                    + " and current array (%d,%d) must be the same" % local_autocorr.shape
-                autocorr = autocorr*coe3 + local_autocorr*coe2
+                local_R_x, local_R_z = self._autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
+                if R_x.shape != local_R_x.shape or R_z.shape != local_R_z.shape:
+                    msg = "There is a problem. the shapes of the local and averaged array are different"
+                    raise ValueError(msg)
+                R_x = R_x*coe3 + local_R_x*coe2
+                R_z = R_z*coe3 + local_R_z*coe2
             i += 1
-            index=['x','z']
-            autocorrDF = cd.datastruct(autocorr,index=index)#.data([shape_x,shape_z])
+
+            autocorrDF = cd.datastruct.from_dict({'x':R_x,'z':R_z})#.data([shape_x,shape_z])
         return meta_data, comp, NCL, avg_data, autocorrDF, shape_x, shape_z
    
     def _hdf_extract(self,file_name, group_name=''):
@@ -2157,9 +2159,9 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
         # Rz_DF = pd.DataFrame(R_z)
         # R_x = R_x.reshape((max_x_sep*NCL[1]*(NCL[0]-max_x_sep)))
         # Rx_DF = pd.DataFrame(R_x)
-        R_array=np.stack([Rx,Rz],axis=0)
+        # R_array=np.stack([R_x,R_z],axis=0)
         
-        return R_array
+        return R_x,R_z
     @staticmethod
     @numba.njit(parallel=True)
     def _autocov_calc_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
@@ -2216,13 +2218,13 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
     def autocorr_contour_x(self,comp,*args,**kwargs):
         fig, ax =super().autocorr_contour_x(comp,*args,**kwargs)
         for a in ax:
-            a.axes.set_xlabel(r"x^*")
+            a.axes.set_xlabel(r"$x^*$")
         return fig, ax
 
     def spectrum_contour(self, comp,*args,**kwargs):
         fig, ax =  super().spectrum_contour(comp,*args,**kwargs)
         for a in ax:
-            a.axes.set_xlabel(r"x^*")
+            a.axes.set_xlabel(r"$x^*$")
         return fig, ax
 
 class CHAPSim_autocov_tg(cbase.CHAPSim_autocov_base):
@@ -2473,7 +2475,6 @@ class CHAPSim_Quad_Anl_tg(cbase.CHAPSim_Quad_Anl_base):
 class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
     _module = sys.modules[__name__]
     def _extract_fluct(self,x,y,path_to_folder=None,time0=None,gridsize=200,y_mode='half-channel',use_ini=True,xy_inner=True,tgpost=False,abs_path=True):
-        mem_check = CT.debug_memory()        
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
@@ -2516,7 +2517,6 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
         
 
         for time in times:
-            mem_check.display_top(mem_check.take_snapshot())
             fluct_data = CHAPSim_fluct_io(time,avg_data,path_to_folder,abs_path)
             u_prime_data = fluct_data.fluctDF[time,'u']
             v_prime_data = fluct_data.fluctDF[time,'v']
