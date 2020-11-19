@@ -22,7 +22,6 @@ import sys
 import tracemalloc
 import linecache
 
-
 class debug_memory:
     def __init__(self):
         tracemalloc.start()
