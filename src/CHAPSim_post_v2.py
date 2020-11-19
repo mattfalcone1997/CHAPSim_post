@@ -153,14 +153,14 @@ class CHAPSim_Inst():
         #     flow_info1=flow_info
         #     flow_info1 = flow_info1.reshape((4,dummy_size))
         # else:
-        flow_info1 = self.__velo_interp(flow_info,NCL3,NCL2,NCL1)
+        flow_info = self.__velo_interp(flow_info,NCL3,NCL2,NCL1)
         # flow_info1 = flow_info1.reshape((4,dummy_size-NCL3*NCL2))
         Phy_string = '%.9g' % PhyTime
         # creating dataframe index
         index = [[Phy_string]*4,['u','v','w','P']]
         # index=pd.MultiIndex.from_arrays([[Phy_string]*4,['u','v','w','P']])
         # creating dataframe so that data can be easily accessible elsewhere
-        Instant_DF = cd.datastruct(flow_info1,index=index)# pd.DataFrame(flow_info1,index=index)
+        Instant_DF = cd.datastruct(flow_info,index=index)# pd.DataFrame(flow_info1,index=index)
         
         return Instant_DF
     def __velo_interp(self,flow_info,NCL3, NCL2, NCL1):
@@ -594,19 +594,15 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         if time0:
             AVG_info0, NSTATIS0,_,_ = self._extract_file(time0,path_to_folder,abs_path)
             AVG_info = (AVG_info*NSTATIS1 - AVG_info0*NSTATIS0)/(NSTATIS1-NSTATIS0)
-
-        NCL1, NCL2 = itertools.chain(NCL)
+            del AVG_info0
+            
+        (NCL1, NCL2) = NCL
         AVG_info = AVG_info.reshape(21,50,NCL2,NCL1)
             
         #Velo_AVG = np.zeros((3,NCL2,NCL1))
         Velo_grad_tensor = np.zeros((9,NCL2,NCL1))
         Pr_Velo_grad_tensor = np.zeros((9,NCL2,NCL1))
         DUDX2_tensor = np.zeros((81,NCL2,NCL1))
-        flow_AVG = AVG_info[0,:4,:,:]
-        
-        PU_vector = AVG_info[2,:3,:,:]
-        UU_tensor = AVG_info[3,:6,:,:]
-        UUU_tensor = AVG_info[5,:10,:,:]
         
         for i in range(3):
             for j in range(3):
@@ -616,6 +612,12 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
             for j in range(9):
                 DUDX2_tensor[i*9+j] = AVG_info[12+j,i,:,:] 
         
+        flow_AVG = AVG_info[0,:4,:,:].copy()
+        PU_vector = AVG_info[2,:3,:,:].copy()
+        UU_tensor = AVG_info[3,:6,:,:].copy()
+        UUU_tensor = AVG_info[5,:10,:,:].copy()
+
+        del AVG_info
         #======================================================================
         # flow_AVG = flow_AVG.reshape((4,NCL2*NCL1))
         
