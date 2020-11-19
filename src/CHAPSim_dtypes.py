@@ -135,7 +135,7 @@ class datastruct:
     def from_array(cls,*args,**kwargs):
         return cls(*args,array=True,**kwargs)
     
-    def _array_ini(self,array,index=None,copy=True):
+    def _array_ini(self,array,index=None,copy=False):
 
         self._index, self._outer_index = self._index_construct(index,array)
         if self._index is None:
@@ -181,7 +181,7 @@ class datastruct:
     def from_dict(cls,*args,**kwargs):
         return cls(*args,dict=True,**kwargs)
     
-    def _dict_ini(self,dict_data,copy=True):
+    def _dict_ini(self,dict_data,copy=False):
         if not all([isinstance(val,np.ndarray) for val in dict_data.values()]):
             msg = "The type of the values of the dictionary must be a numpy array"
             raise TypeError(msg)
