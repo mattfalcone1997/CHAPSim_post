@@ -135,7 +135,7 @@ class datastruct:
     def from_array(cls,*args,**kwargs):
         return cls(*args,array=True,**kwargs)
     
-    def _array_ini(self,array,index=None):
+    def _array_ini(self,array,index=None,copy=True):
 
         self._index, self._outer_index = self._index_construct(index,array)
         if self._index is None:
@@ -144,8 +144,10 @@ class datastruct:
         if len(self._index) != len(array):
             msg = "The length of the indices must be the same as the outer dimension of the array"
             raise ValueError(msg)
-
-        self._data = {i : value.copy() for i, value in zip(self._index,array)}
+        if copy:
+            self._data = {i : value.copy() for i, value in zip(self._index,array)}
+        else:
+            self._data = {i : value for i, value in zip(self._index,array)}
     
     @staticmethod
     def _index_construct(index,array):
@@ -179,11 +181,14 @@ class datastruct:
     def from_dict(cls,*args,**kwargs):
         return cls(*args,dict=True,**kwargs)
     
-    def _dict_ini(self,dict_data):
+    def _dict_ini(self,dict_data,copy=True):
         if not all([isinstance(val,np.ndarray) for val in dict_data.values()]):
             msg = "The type of the values of the dictionary must be a numpy array"
             raise TypeError(msg)
-        self._data = {key : val.copy() for key, val in dict_data.items()}
+        if copy:
+            self._data = {key : val.copy() for key, val in dict_data.items()}
+        else:
+            self._data = dict_data
         self._index = dict_data.keys()
         if self._is_multidim():
             self._outer_index = list(set([i[0] for i in self._index]))

@@ -160,7 +160,7 @@ class CHAPSim_Inst():
         index = [[Phy_string]*4,['u','v','w','P']]
         # index=pd.MultiIndex.from_arrays([[Phy_string]*4,['u','v','w','P']])
         # creating dataframe so that data can be easily accessible elsewhere
-        Instant_DF = cd.datastruct(flow_info,index=index)# pd.DataFrame(flow_info1,index=index)
+        Instant_DF = cd.datastruct(flow_info,index=index,copy=False)# pd.DataFrame(flow_info1,index=index)
         
         return Instant_DF
     def __velo_interp(self,flow_info,NCL3, NCL2, NCL1):
@@ -595,7 +595,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
             AVG_info0, NSTATIS0,_,_ = self._extract_file(time0,path_to_folder,abs_path)
             AVG_info = (AVG_info*NSTATIS1 - AVG_info0*NSTATIS0)/(NSTATIS1-NSTATIS0)
             del AVG_info0
-            
+
         (NCL1, NCL2) = NCL
         AVG_info = AVG_info.reshape(21,50,NCL2,NCL1)
             
@@ -656,13 +656,13 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         shape = [NCL2,NCL1]
         tensor_4_index = [[Phy_string]*81,comp_string_list]
 
-        flow_AVGDF = cd.datastruct(flow_AVG,index=flow_index)#.data(shape)
-        PU_vectorDF = cd.datastruct(PU_vector,index=vector_index)#.data(shape)
-        UU_tensorDF = cd.datastruct(UU_tensor,index=sym_2_tensor_index)#.data(shape)
-        UUU_tensorDF = cd.datastruct(UUU_tensor,index=sym_3_tensor_index)#.data(shape)
-        Velo_grad_tensorDF = cd.datastruct(Velo_grad_tensor,index=tensor_2_index)#.data(shape)
-        PR_Velo_grad_tensorDF = cd.datastruct(Pr_Velo_grad_tensor,index=tensor_2_index)#.data(shape)
-        DUDX2_tensorDF = cd.datastruct(DUDX2_tensor,index=tensor_4_index)#.data(shape)
+        flow_AVGDF = cd.datastruct(flow_AVG,index=flow_index,copy=False) 
+        PU_vectorDF = cd.datastruct(PU_vector,index=vector_index,copy=False) 
+        UU_tensorDF = cd.datastruct(UU_tensor,index=sym_2_tensor_index,copy=False) 
+        UUU_tensorDF = cd.datastruct(UUU_tensor,index=sym_3_tensor_index,copy=False) 
+        Velo_grad_tensorDF = cd.datastruct(Velo_grad_tensor,index=tensor_2_index,copy=False) 
+        PR_Velo_grad_tensorDF = cd.datastruct(Pr_Velo_grad_tensor,index=tensor_2_index,copy=False) 
+        DUDX2_tensorDF = cd.datastruct(DUDX2_tensor,index=tensor_4_index,copy=False) 
 
         return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
                     Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
