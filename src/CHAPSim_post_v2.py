@@ -2124,7 +2124,9 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
 
                 del local_R_z; del local_R_x
             del fluct_data
+            print(mem_debug.display_top(mem_debug.take_snapshot(),limit=5))
             i += 1
+        print(mem_debug.display_top(mem_debug.take_snapshot(),limit=5))
         autocorrDF = cd.datastruct.from_dict({'x':R_x,'z':R_z})#.data([shape_x,shape_z])
         return meta_data, comp, NCL, avg_data, autocorrDF, shape_x, shape_z
    
