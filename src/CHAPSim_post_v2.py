@@ -2488,7 +2488,7 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
     _module = sys.modules[__name__]
 
     def _extract_fluct(self,x,y,path_to_folder=None,time0=None,gridsize=200,y_mode='half-channel',use_ini=True,xy_inner=True,tgpost=False,abs_path=True):
-        # mem_debug = CT.debug_memory()
+        mem_debug = CT.debug_memory()
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
@@ -2531,7 +2531,7 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
         
 
         for time in times:
-            # print(mem_debug.display_top(mem_debug.take_snapshot()))
+            print(mem_debug.display_top(mem_debug.take_snapshot()))
             fluct_data = CHAPSim_fluct_io(time,avg_data,path_to_folder,abs_path)
             u_prime_data = fluct_data.fluctDF[time,'u']
             v_prime_data = fluct_data.fluctDF[time,'v']
