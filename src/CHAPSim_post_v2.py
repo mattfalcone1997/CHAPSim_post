@@ -98,7 +98,7 @@ class CHAPSim_Inst():
         base_name=group_name if group_name else 'CHAPSim_Inst'
         self._meta_data.save_hdf(file_name,write_mode,group_name=base_name+'/meta_data')
         self.InstDF.to_hdf(file_name,key=base_name+'/InstDF',mode='a')
-    @profile
+    @profile(stream=open("mem_check.txt",'w'))
     def __flow_extract(self,Time_input,path_to_folder,abs_path,tgpost):
         """ Extract velocity and pressure from the instantanous files """
         instant = "%0.9E" % Time_input
@@ -1382,14 +1382,14 @@ class CHAPSim_fluct_io(cbase.CHAPSim_fluct_base):
         assert len(avg_time) == 1, "In this context therecan only be one time in avg_data"
         fluct = np.zeros((len(inst_data.InstDF.index),*inst_data.shape[:]))
         j=0
-        avg_index = avg_data.flow_AVGDF.index 
         
         for j, (time, comp) in enumerate(inst_data.InstDF.index):
             avg_values = avg_data.flow_AVGDF[avg_time[0],comp]
-            inst_values = inst_data.InstDF[time,comp].copy()
+            inst_values = inst_data.InstDF[time,comp]
 
             for i in range(inst_data.shape[0]):
                 fluct[j,i] = inst_values[i] -avg_values
+            del inst_values
         
         # fluct = fluct.reshape((len(inst_data.InstDF.index),np.prod(inst_data.shape)))
         # print(inst_times,u_comp)
@@ -2078,13 +2078,14 @@ class CHAPSim_budget_tg(cbase.CHAPSim_budget_base):
         return fig, ax
 
 class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
-    _module = sys.modules[__module__]
+    _module = sys.modules[__name__]
     def _autocov_extract(self,comp1,comp2,path_to_folder='',time0=None,abs_path=True,max_x_sep=None,max_z_sep=None):
+        mem_debug = CT.debug_memory()
         times = time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
         if TEST:
-            times.sort(); times= times[-3:]
+            times.sort(); times= times[-4:]
             
         meta_data = self._module.CHAPSim_meta(path_to_folder)
         comp=(comp1,comp2)
@@ -2107,6 +2108,7 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
         shape_x = (max_x_sep,NCL[1],NCL[0]-max_x_sep)
         shape_z = (max_z_sep,NCL[1],NCL[0])
         for timing in times:
+            
             fluct_data = self._module.CHAPSim_fluct_io(timing,avg_data,time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
             coe3 = (i-1)/i
             coe2 = 1/i
@@ -2119,9 +2121,11 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
                     raise ValueError(msg)
                 R_x = R_x*coe3 + local_R_x*coe2
                 R_z = R_z*coe3 + local_R_z*coe2
-            i += 1
 
-            autocorrDF = cd.datastruct.from_dict({'x':R_x,'z':R_z})#.data([shape_x,shape_z])
+                del local_R_z; del local_R_x
+            del fluct_data
+            i += 1
+        autocorrDF = cd.datastruct.from_dict({'x':R_x,'z':R_z})#.data([shape_x,shape_z])
         return meta_data, comp, NCL, avg_data, autocorrDF, shape_x, shape_z
    
     def _hdf_extract(self,file_name, group_name=''):
@@ -2264,6 +2268,7 @@ class CHAPSim_autocov_tg(cbase.CHAPSim_autocov_base):
                 local_R_z, local_R_x = self._autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
                 R_z = np.vstack([R_z,local_R_z])
                 R_x = np.vstack([R_x,local_R_x])
+            del fluct_data
 
         R_z = R_z.T.reshape(shape_z)
         R_x = R_x.T.reshape(shape_x)
@@ -2402,6 +2407,7 @@ class CHAPSim_Quad_Anl_io(cbase.CHAPSim_Quad_Anl_base):
                 assert local_quad_anal_array.shape == quad_anal_array.shape, "shape of previous array (%d,%d) " % quad_anal_array.shape\
                     + " and current array (%d,%d) must be the same" % local_quad_anal_array.shape
                 quad_anal_array = quad_anal_array*coe3 + local_quad_anal_array*coe2
+            del fluct_data
             i += 1
         index=[[],[]]
         for h in h_list:
@@ -2480,7 +2486,7 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
     _module = sys.modules[__name__]
 
     def _extract_fluct(self,x,y,path_to_folder=None,time0=None,gridsize=200,y_mode='half-channel',use_ini=True,xy_inner=True,tgpost=False,abs_path=True):
-        mem_debug = CT.debug_memory()
+        # mem_debug = CT.debug_memory()
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
@@ -2523,7 +2529,7 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
         
 
         for time in times:
-            print(mem_debug.display_top(mem_debug.take_snapshot()))
+            # print(mem_debug.display_top(mem_debug.take_snapshot()))
             fluct_data = CHAPSim_fluct_io(time,avg_data,path_to_folder,abs_path)
             u_prime_data = fluct_data.fluctDF[time,'u']
             v_prime_data = fluct_data.fluctDF[time,'v']
