@@ -26,6 +26,7 @@ import itertools
 import time
 import warnings
 import sys
+import gc
 from memory_profiler import profile 
 
 
@@ -156,6 +157,7 @@ class CHAPSim_Inst():
         #     flow_info1 = flow_info1.reshape((4,dummy_size))
         # else:
         flow_info = self.__velo_interp(flow_info,NCL3,NCL2,NCL1)
+        gc.collect()
         # flow_info1 = flow_info1.reshape((4,dummy_size-NCL3*NCL2))
         Phy_string = '%.9g' % PhyTime
         # creating dataframe index
@@ -588,7 +590,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         return_list = [meta_data,CoordDF,metaDF,NCL,shape,times]
 
         return itertools.chain(return_list + parent_list)
-        
+    @profile(stream=open("mem_check_avg.txt",'w'))    
     def _AVG_extract(self,Time_input,time0,path_to_folder,abs_path):
 
         AVG_info, NSTATIS1, PhyTime, NCL = self._extract_file(Time_input,path_to_folder,abs_path)
@@ -619,7 +621,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         UU_tensor = AVG_info[3,:6,:,:].copy()
         UUU_tensor = AVG_info[5,:10,:,:].copy()
 
-        del AVG_info
+        del AVG_info; gc.collect()
         #======================================================================
         # flow_AVG = flow_AVG.reshape((4,NCL2*NCL1))
         
@@ -2121,12 +2123,8 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
                     raise ValueError(msg)
                 R_x = R_x*coe3 + local_R_x*coe2
                 R_z = R_z*coe3 + local_R_z*coe2
-
-                del local_R_z; del local_R_x
-            del fluct_data
-            print(mem_debug.display_top(mem_debug.take_snapshot(),limit=5))
+            gc.collect()
             i += 1
-        print(mem_debug.display_top(mem_debug.take_snapshot(),limit=5))
         autocorrDF = cd.datastruct.from_dict({'x':R_x,'z':R_z})#.data([shape_x,shape_z])
         return meta_data, comp, NCL, avg_data, autocorrDF, shape_x, shape_z
    
@@ -2270,7 +2268,7 @@ class CHAPSim_autocov_tg(cbase.CHAPSim_autocov_base):
                 local_R_z, local_R_x = self._autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
                 R_z = np.vstack([R_z,local_R_z])
                 R_x = np.vstack([R_x,local_R_x])
-            del fluct_data
+            gc.collect()
 
         R_z = R_z.T.reshape(shape_z)
         R_x = R_x.T.reshape(shape_x)
@@ -2409,7 +2407,7 @@ class CHAPSim_Quad_Anl_io(cbase.CHAPSim_Quad_Anl_base):
                 assert local_quad_anal_array.shape == quad_anal_array.shape, "shape of previous array (%d,%d) " % quad_anal_array.shape\
                     + " and current array (%d,%d) must be the same" % local_quad_anal_array.shape
                 quad_anal_array = quad_anal_array*coe3 + local_quad_anal_array*coe2
-            del fluct_data
+            gc.collect()
             i += 1
         index=[[],[]]
         for h in h_list:
@@ -2475,7 +2473,7 @@ class CHAPSim_Quad_Anl_tg(cbase.CHAPSim_Quad_Anl_base):
             else:
                 local_quad_anal_array = self._quad_calc(avg_data,fluct_uv,quadrant_array,NCL,h_list,timing)
                 quad_anal_array = np.vstack([quad_anal_array,local_quad_anal_array])
-
+            gc.collect()
         index=[[],[]]
         for h in h_list:
             index[0].extend([h]*4)
@@ -2488,12 +2486,12 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
     _module = sys.modules[__name__]
 
     def _extract_fluct(self,x,y,path_to_folder=None,time0=None,gridsize=200,y_mode='half-channel',use_ini=True,xy_inner=True,tgpost=False,abs_path=True):
-        mem_debug = CT.debug_memory()
+        
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
         if TEST:
-            times.sort(); times= times[-3:]
+            times.sort(); times= times[-5:]
         meta_data = self._module.CHAPSim_meta(path_to_folder,abs_path)
         NCL = meta_data.NCL
 
@@ -2527,18 +2525,16 @@ class CHAPSim_joint_PDF_io(cbase.CHAPSim_joint_PDF_base):
         y_index = np.diag(np.array(y_index))
         u_prime_array = [ [] for _ in range(len(y_index)) ]
         v_prime_array = [ [] for _ in range(len(y_index)) ]
-        
-        
 
         for time in times:
-            print(mem_debug.display_top(mem_debug.take_snapshot()))
             fluct_data = CHAPSim_fluct_io(time,avg_data,path_to_folder,abs_path)
             u_prime_data = fluct_data.fluctDF[time,'u']
             v_prime_data = fluct_data.fluctDF[time,'v']
             for i in range(len(y_index)):
                 u_prime_array[i].extend(u_prime_data[:,y_index[i],x_index[i]])
                 v_prime_array[i].extend(v_prime_data[:,y_index[i],x_index[i]])
-            del fluct_data
+            # del fluct_data#; del u_prime_data; del v_prime_data
+            gc.collect()
 
         pdf_array = [ [] for _ in range(len(y_index)) ]
         u_array = [ [] for _ in range(len(y_index)) ]
