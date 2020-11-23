@@ -24,5 +24,4 @@ dependencies:
   - scp
   - seaborn
   - pip
-  - pip:
-    - matlab_kernel
+  - memory_profiler

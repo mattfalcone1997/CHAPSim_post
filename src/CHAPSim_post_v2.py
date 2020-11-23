@@ -27,7 +27,7 @@ import time
 import warnings
 import sys
 import gc
-from memory_profiler import profile 
+# from memory_profiler import profile 
 
 
 import CHAPSim_Tools as CT
