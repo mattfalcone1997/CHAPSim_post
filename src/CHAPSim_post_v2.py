@@ -99,7 +99,7 @@ class CHAPSim_Inst():
         base_name=group_name if group_name else 'CHAPSim_Inst'
         self._meta_data.save_hdf(file_name,write_mode,group_name=base_name+'/meta_data')
         self.InstDF.to_hdf(file_name,key=base_name+'/InstDF',mode='a')
-    @profile(stream=open("mem_check.txt",'w'))
+    # @profile(stream=open("mem_check.txt",'w'))
     def __flow_extract(self,Time_input,path_to_folder,abs_path,tgpost):
         """ Extract velocity and pressure from the instantanous files """
         instant = "%0.9E" % Time_input
@@ -590,7 +590,7 @@ class CHAPSim_AVG_io(cbase.CHAPSim_AVG_base):
         return_list = [meta_data,CoordDF,metaDF,NCL,shape,times]
 
         return itertools.chain(return_list + parent_list)
-    @profile(stream=open("mem_check_avg.txt",'w'))    
+    # @profile(stream=open("mem_check_avg.txt",'w'))    
     def _AVG_extract(self,Time_input,time0,path_to_folder,abs_path):
 
         AVG_info, NSTATIS1, PhyTime, NCL = self._extract_file(Time_input,path_to_folder,abs_path)
