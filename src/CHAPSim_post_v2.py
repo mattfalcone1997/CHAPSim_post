@@ -2159,7 +2159,7 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
         
         R_x = CHAPSim_autocov_io._autocov_calc_x(fluct_vals1,fluct_vals2,*NCL,max_x_sep)
         R_z = CHAPSim_autocov_io._autocov_calc_z(fluct_vals1,fluct_vals2,*NCL,max_z_sep)
-        print(time.time()-time1)
+        print(time.time()-time1,flush=True)
         R_z = R_z/(NCL[2]-max_z_sep)
         R_x = R_x/(NCL[2])
 
@@ -2171,7 +2171,7 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
         
         return R_x,R_z
     @staticmethod
-    @numba.njit(parallel=True)
+    @numba.njit(parallel=True,fastmath=True)
     def _autocov_calc_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
         R_z = np.zeros((max_z_step,NCL2,NCL1))
         if max_z_step >0:
@@ -2180,7 +2180,7 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
                     R_z[iz0,:,:] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
         return R_z
     @staticmethod
-    @numba.njit(parallel=True)
+    @numba.njit(parallel=True,fastmath=True)
     def _autocov_calc_x(fluct1,fluct2,NCL1,NCL2,NCL3,max_x_step):
         
         R_x = np.zeros((max_x_step,NCL2,NCL1-max_x_step))
