@@ -27,13 +27,14 @@ import time
 import warnings
 import sys
 import gc
-# from memory_profiler import profile 
+from memory_profiler import profile 
 
 
 import CHAPSim_Tools as CT
 import CHAPSim_plot as cplt
 import CHAPSim_post_base as cbase
 import CHAPSim_dtypes as cd
+import f_autocorr_parallel
 #import plotly.graph_objects as go
 
 #import loop_accel as la
@@ -2156,12 +2157,14 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
         fluct_vals1=fluct_data.fluctDF[PhyTime,comp1]
         fluct_vals2=fluct_data.fluctDF[PhyTime,comp2]
         time1=time.time()
-        
-        R_x = CHAPSim_autocov_io._autocov_calc_x(fluct_vals1,fluct_vals2,*NCL,max_x_sep)
+        # print(f_autocorr_parallel.autocov_calc_z.__doc__)
+        # print(f_autocorr_parallel.autocov_calc_x.__doc__)
+        R_x = CHAPSim_autocov_io._autocov_calc_x(fluct_vals1,fluct_vals2,*NCL,max_x_sep)#.mean(axis=1)
         R_z = CHAPSim_autocov_io._autocov_calc_z(fluct_vals1,fluct_vals2,*NCL,max_z_sep)
-        print(time.time()-time1,flush=True)
         R_z = R_z/(NCL[2]-max_z_sep)
-        R_x = R_x/(NCL[2])
+        print(time.time()-time1,flush=True)
+        
+        # R_x = R_x/(NCL[2])
 
         # R_z = R_z.reshape((max_z_sep*NCL[1]*NCL[0]))
         # Rz_DF = pd.DataFrame(R_z)
@@ -2169,26 +2172,32 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
         # Rx_DF = pd.DataFrame(R_x)
         # R_array=np.stack([R_x,R_z],axis=0)
         
-        return R_x,R_z
+        return R_x.copy(),R_z.copy()
     @staticmethod
-    @numba.njit(parallel=True,fastmath=True)
+    # @profile(stream=open("mem_check_auto.txt",'w'))
+    # @numba.njit(parallel=True,fastmath=True)
     def _autocov_calc_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
-        R_z = np.zeros((max_z_step,NCL2,NCL1))
+        R_z = np.zeros((max_z_step,NCL2,NCL1),order='F')
         if max_z_step >0:
-            for iz0 in numba.prange(max_z_step):
-                for iz in numba.prange(NCL3-max_z_step):
-                    R_z[iz0,:,:] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
-        return R_z
+            # for iz0 in numba.prange(max_z_step):
+            #     for iz in numba.prange(NCL3-max_z_step):
+            #         R_z[iz0,:,:] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
+            R_z = f_autocorr_parallel.autocov_calc_z(fluct1,fluct2,max_z_step,NCL1,NCL2,NCL3)
+    
+        return np.ascontiguousarray(R_z)
     @staticmethod
-    @numba.njit(parallel=True,fastmath=True)
+    # @profile(stream=open("mem_check_auto.txt",'w'))
+    # @numba.jit(fastmath=True)
     def _autocov_calc_x(fluct1,fluct2,NCL1,NCL2,NCL3,max_x_step):
         
         R_x = np.zeros((max_x_step,NCL2,NCL1-max_x_step))
         if max_x_step >0:
-            for ix0 in numba.prange(max_x_step):
-                for ix in numba.prange(NCL1-max_x_step):
-                    for iz in numba.prange(NCL3):
-                       R_x[ix0,:,ix] += fluct1[iz,:,ix]*fluct2[iz,:,ix0+ix]
+            # for ix0 in range(max_x_step):#numba.prange(max_x_step):
+            #     for ix in range(NCL1-max_x_step):#numba.prange(NCL1-max_x_step):
+            #         # for iz in numba.prange(NCL3):
+            #         R_x[ix0,:,ix] += (fluct1[:,:,ix]*fluct2[:,:,ix0+ix]).mean(axis=0)
+            R_x=f_autocorr_parallel.autocov_calc_x(fluct1,fluct2,max_x_step,NCL3,NCL2,NCL1)
+                                                    
         return R_x
 
     def plot_autocorr_line(self, comp, axis_vals,*args,**kwargs):
