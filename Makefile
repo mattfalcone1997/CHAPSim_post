@@ -1,6 +1,6 @@
 
 FC=gfortran
-ifeq ($(FC),ifort)
+ifeq ($(FC),gfortran)
 FOPTS=-O3 -ftree-vectorize -fopenmp -cpp -DCOMP
 else
 FOPTS=-O3 -ftree-vectorize -fopenmp -cpp
