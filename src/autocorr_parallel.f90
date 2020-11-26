@@ -14,8 +14,8 @@ subroutine autocov_calc_z(R_z,fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step)
 
     R_z=0
 #ifdef COMP
-    !$OMP PARALLEL DO, &
-    !$OMP REDUCTION(+:R_z),&
+    !$OMP PARALLEL DO &
+    !$OMP REDUCTION(+:R_z)&
     !$OMP SCHEDULE(DYNAMIC)
 #else
     !$OMP PARALLEL DO
@@ -45,8 +45,8 @@ subroutine autocov_calc_x(R_x,fluct1,fluct2,NCL3,NCL2,NCL1,max_x_step)
     R_x=0
 
 #ifdef COMP
-    !$OMP PARALLEL DO, &
-    !$OMP REDUCTION(+:R_z),&
+    !$OMP PARALLEL DO &
+    !$OMP REDUCTION(+:R_z)&
     !$OMP SCHEDULE(DYNAMIC)
 #else
     !$OMP PARALLEL DO
