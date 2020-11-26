@@ -1,10 +1,7 @@
 
 FC=gfortran
-ifeq ($(FC),gfortran)
-FOPTS=-O3 -ftree-vectorize -fopenmp -cpp -DCOMP
-else
-FOPTS=-O3 -ftree-vectorize -fopenmp -cpp
-endif
+
+FOPTS=-O3 -ftree-vectorize -fopenmp 
 SRC_F2PY=src/autocorr_parallel.f90
 BINS:=bin/$(SRC_F2PY:%.f90=%)
 LOC:=$(shell pwd)
