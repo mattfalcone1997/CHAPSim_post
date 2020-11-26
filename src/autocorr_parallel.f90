@@ -46,11 +46,11 @@ subroutine autocov_calc_x(R_x,fluct1,fluct2,NCL3,NCL2,NCL1,max_x_step)
 
 #ifdef COMP
     !$OMP PARALLEL DO &
-    !$OMP REDUCTION(+:R_z)&
+    !$OMP REDUCTION(+:R_x)&
     !$OMP SCHEDULE(DYNAMIC)
 #else
     !$OMP PARALLEL DO
-    !$OMP& REDUCTION(+:R_z)
+    !$OMP& REDUCTION(+:R_x)
     !$OMP& SCHEDULE(DYNAMIC)
 #endif
     do k = 1,NCL3
