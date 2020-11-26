@@ -13,14 +13,22 @@ subroutine autocov_calc_z(R_z,fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step)
     integer(4) :: i,j
 
     R_z=0
+#ifdef COMP
+    !$OMP PARALLEL DO, &
+    !$OMP REDUCTION(+:R_z),&
+    !$OMP SCHEDULE(DYNAMIC)
+#else
     !$OMP PARALLEL DO
     !$OMP& REDUCTION(+:R_z)
     !$OMP& SCHEDULE(DYNAMIC)
+#endif
     do i = 1,max_z_step
         do j = 1, NCL3-max_z_step
             R_z(i,:,:) = R_z(i,:,:) + fluct1(j,:,:)*fluct2(i+j,:,:)
         enddo
     enddo
+
+    !$OMP END PARALLEL DO
 
     
 end subroutine
@@ -35,10 +43,16 @@ subroutine autocov_calc_x(R_x,fluct1,fluct2,NCL3,NCL2,NCL1,max_x_step)
     !main body
     integer(4) :: i,j,k
     R_x=0
-    
+
+#ifdef COMP
+    !$OMP PARALLEL DO, &
+    !$OMP REDUCTION(+:R_z),&
+    !$OMP SCHEDULE(DYNAMIC)
+#else
     !$OMP PARALLEL DO
-    !$OMP& REDUCTION(+:R_x)
+    !$OMP& REDUCTION(+:R_z)
     !$OMP& SCHEDULE(DYNAMIC)
+#endif
     do k = 1,NCL3
         do i = 1, max_x_step
             do j=1,NCL1-max_x_step
@@ -46,7 +60,9 @@ subroutine autocov_calc_x(R_x,fluct1,fluct2,NCL3,NCL2,NCL1,max_x_step)
             enddo
         enddo
     enddo
-    
+
+    !$OMP END PARALLEL DO
+
 
 
 
