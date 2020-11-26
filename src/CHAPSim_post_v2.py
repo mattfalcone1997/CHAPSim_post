@@ -2123,7 +2123,7 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
                     raise ValueError(msg)
                 R_x = R_x*coe3 + local_R_x*coe2
                 R_z = R_z*coe3 + local_R_z*coe2
-            gc.collect()
+            # gc.collect()
             i += 1
         autocorrDF = cd.datastruct.from_dict({'x':R_x,'z':R_z})#.data([shape_x,shape_z])
         return meta_data, comp, NCL, avg_data, autocorrDF, shape_x, shape_z
@@ -2188,7 +2188,7 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
             for ix0 in numba.prange(max_x_step):
                 for ix in numba.prange(NCL1-max_x_step):
                     for iz in numba.prange(NCL3):
-                        R_x[ix0,:,ix] += fluct1[iz,:,ix]*fluct2[iz,:,ix0+ix]
+                       R_x[ix0,:,ix] += fluct1[iz,:,ix]*fluct2[iz,:,ix0+ix]
         return R_x
 
     def plot_autocorr_line(self, comp, axis_vals,*args,**kwargs):
@@ -2313,7 +2313,7 @@ class CHAPSim_autocov_tg(cbase.CHAPSim_autocov_base):
         return R_z.flatten(), R_x.flatten()
 
     @staticmethod
-    @numba.njit(parallel=True)
+    @numba.njit(parallel=True,fastmath=True)
     def _autocov_calc_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
         R_z = np.zeros((max_z_step,NCL2,NCL1))
         if max_z_step >0:
@@ -2322,7 +2322,7 @@ class CHAPSim_autocov_tg(cbase.CHAPSim_autocov_base):
                     R_z[iz0] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
         return R_z
     @staticmethod
-    @numba.njit(parallel=True)
+    @numba.njit(parallel=True,fastmath=True)
     def _autocov_calc_x(fluct1,fluct2,NCL1,NCL2,NCL3,max_x_step):
         
         R_x = np.zeros((max_x_step,NCL2,NCL1-max_x_step))
