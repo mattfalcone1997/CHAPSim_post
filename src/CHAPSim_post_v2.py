@@ -11,15 +11,15 @@ on the Pandas DataFrame class
 # MODULE IMPORTS
 
 
-from CHAPSim_Tools import Grad_calc_tg, debug_memory
-from CHAPSim_parallel import CHAPSim_Quad_Anal, CHAPSim_autocov
+# from CHAPSim_Tools import Grad_calc_tg, debug_memory
+# from CHAPSim_parallel import CHAPSim_Quad_Anal, CHAPSim_autocov
 import numpy as np
 import pandas as pd; from pandas.errors import PerformanceWarning 
 import matplotlib as mpl
-from matplotlib import animation
+# from matplotlib import animation
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from scipy import integrate, fft
+# from mpl_toolkits.mplot3d import Axes3D
+# from scipy import integrate, fft
 import seaborn
 import os
 import itertools
@@ -27,7 +27,7 @@ import time
 import warnings
 import sys
 import gc
-from memory_profiler import profile 
+# from memory_profiler import profile 
 
 
 import CHAPSim_Tools as CT

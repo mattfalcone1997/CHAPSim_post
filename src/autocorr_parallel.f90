@@ -15,8 +15,8 @@ subroutine autocov_calc_z(R_z,fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step)
     R_z=0
 
     !$OMP PARALLEL DO &
-    !$OMP SCHEDULE(DYNAMIC)
-
+    !$OMP SCHEDULE(DYNAMIC)&
+    !$OMP COLLAPSE(2)
     do i = 1,max_z_step
         do j = 1, NCL3-max_z_step
             R_z(i,:,:) = R_z(i,:,:) + fluct1(j,:,:)*fluct2(i+j,:,:)
@@ -41,7 +41,8 @@ subroutine autocov_calc_x(R_x,fluct1,fluct2,NCL3,NCL2,NCL1,max_x_step)
 
 
     !$OMP PARALLEL DO &
-    !$OMP SCHEDULE(DYNAMIC)
+    !$OMP SCHEDULE(DYNAMIC)&
+    !$OMP COLLAPSE(2)
 
     do k = 1,NCL3
         do i = 1, max_x_step
