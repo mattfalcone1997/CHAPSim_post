@@ -2448,7 +2448,7 @@ class CHAPSim_Quad_Anl_io(cbase.CHAPSim_Quad_Anl_base):
 
     
         uu=avg_data.UU_tensorDF[avg_time,'uu']
-        vv=avg_data.UU_tensorDF.loc[avg_time,'vv']
+        vv=avg_data.UU_tensorDF[avg_time,'vv']
         u_rms = np.sqrt(uu)
         v_rms = np.sqrt(vv)
 
