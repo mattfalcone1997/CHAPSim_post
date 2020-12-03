@@ -2245,7 +2245,7 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
         return fig, ax
 
 class CHAPSim_autocov_tg(cbase.CHAPSim_autocov_base):
-    _module = sys.modules[__module__]
+    _module = sys.modules[__name__]
     def _autocov_extract(self,comp1,comp2,path_to_folder='',time0=None,abs_path=True,max_x_sep=None,max_z_sep=None):
         times = time_extract(path_to_folder,abs_path)
         if time0 is not None:
@@ -2452,7 +2452,7 @@ class CHAPSim_Quad_Anl_io(cbase.CHAPSim_Quad_Anl_base):
         u_rms = np.sqrt(uu)
         v_rms = np.sqrt(vv)
 
-        quad_anal_array=np.empty((len(h_list)*4,NCL[0]*NCL[1]))
+        quad_anal_array=np.empty((len(h_list)*4,NCL[1],NCL[0]))
         for h,j in zip(h_list,range(len(h_list))):
             for i in range(1,5):
                 quad_array=quadrant_array == i
@@ -2462,6 +2462,7 @@ class CHAPSim_Quad_Anl_io(cbase.CHAPSim_Quad_Anl_base):
         return quad_anal_array
 
 class CHAPSim_Quad_Anl_tg(cbase.CHAPSim_Quad_Anl_base):
+    _module = sys.modules[__name__]
     def _quad_extract(self,h_list,path_to_folder='',time0=None,abs_path=True):
         times = time_extract(path_to_folder,abs_path)
         if time0 is not None:
