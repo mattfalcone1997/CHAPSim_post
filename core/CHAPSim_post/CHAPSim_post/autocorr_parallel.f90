@@ -44,6 +44,7 @@ subroutine autocov_calc_x(R_x,fluct1,fluct2,NCL3,NCL2,NCL1,max_x_step)
     !$OMP SCHEDULE(DYNAMIC)&
     !$OMP COLLAPSE(2)
 
+    
     do i = 1, max_x_step
         do j=1,NCL1-max_x_step
             do k = 1,NCL3
