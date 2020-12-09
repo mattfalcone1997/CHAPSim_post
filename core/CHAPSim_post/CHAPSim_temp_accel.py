@@ -14,21 +14,74 @@ import numpy as np
 from scipy import integrate
 
 
-
-
-
-
-
 class CHAPSim_Inst(cp.CHAPSim_Inst_tg):
     _module = sys.modules[__name__]
 _instant_class = CHAPSim_Inst
 
 class CHAPSim_AVG_custom_t(cp.CHAPSim_AVG_tg_base):
     _module = sys.modules[__name__]
+    def conv_distance_calc(self):
+        
+        bulk_velo = self.bulk_velo_calc()
+        times = self._return_xaxis()
+
+        conv_distance = np.zeros_like(bulk_velo)
+        for i , _ in enumerate(bulk_velo):
+            conv_distance[i] = integrate.simps(bulk_velo[:(i+1)],times[:(i+1)])
+        return conv_distance
+
+    def accel_param_calc(self):
+        U_mean = self.flow_AVGDF[None,'u']
+        U_infty = U_mean[int(self.NCL[1]*0.5)]
+
+        times = self._return_xaxis()
+        dudt = np.gradient(U_infty,times,edge_order=2)
+        REN = self._metaDF['REN']
+
+        accel_param = (1/(REN*U_infty**3))*dudt
+        return accel_param
+
+    def plot_accel_param(self,convective=False,fig=None,ax=None,**kwargs):
+        accel_param = self.accel_param_calc()
+        if convective:
+            xaxis = self.conv_distance_calc()
+        else:
+            xaxis = self._return_xaxis()
+
+        if fig is None:
+            if 'figsize' not in kwargs.keys():
+                kwargs['figsize'] = [7,5]
+            fig,ax=cplt.subplots(**kwargs)
+        elif ax is None:
+            ax = fig.add_subplot(1,1,1)
+
+        ax.cplot(xaxis,accel_param,label=r"$K$")
+
+        if convective:
+            ax.set_xlabel(r"$x^*_{conv}$")# ,fontsize=18)
+        else:
+            ax.set_xlabel(r"$t^*$")# ,fontsize=18)
+        ax.set_ylabel(r"$K$")# ,fontsize=18)
+
+        ax.ticklabel_format(style='sci',axis='y',scilimits=(-5,5))
+        #ax.grid()
+        fig.tight_layout()
+        return fig,ax
+
 _avg_tg_base_class = CHAPSim_AVG_custom_t
 
-class CHAPSim_AVG_tg(cp.CHAPSim_AVG_tg):
+class CHAPSim_AVG_tg(CHAPSim_AVG_custom_t):
     _module = sys.modules[__name__]
+    def _extract_avg(self,path_to_folder='',time0='',abs_path=True,*args,**kwargs):
+
+        if isinstance(path_to_folder,list):
+            times = CT.time_extract(path_to_folder[0],abs_path)
+        else:
+            times = CT.time_extract(path_to_folder,abs_path)
+        if time0:
+            times = list(filter(lambda x: x > time0, times))
+        return super()._extract_avg(times,path_to_folder=path_to_folder,time0=time0,abs_path=abs_path,*args,**kwargs)
+        
 _avg_tg_class = CHAPSim_AVG_tg
 
 class CHAPSim_perturb():

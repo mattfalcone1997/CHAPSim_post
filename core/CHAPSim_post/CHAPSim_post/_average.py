@@ -95,8 +95,15 @@ class CHAPSim_AVG_base():
         self.PR_Velo_grad_tensorDF.to_hdf(file_name,key=base_name+'/PR_Velo_grad_tensorDF',mode='a')#,format='fixed',data_columns=True)
         self.DUDX2_tensorDF.to_hdf(file_name,key=base_name+'/DUDX2_tensorDF',mode='a')#,format='fixed',data_columns=True)
 
-    def _hdf_extract(self,file_name,shape,group_name=''):
+    def _hdf_extract(self,file_name,shape=None,group_name=''):
         base_name=group_name if group_name else 'CHAPSim_AVG'
+
+        meta_data = self._module._meta_class.from_hdf(file_name,group_name+'/meta_data')
+        CoordDF = meta_data.CoordDF
+        metaDF = meta_data.metaDF
+        NCL=meta_data.NCL
+        if shape == None:
+            shape = (NCL[1],NCL[0])
         flow_AVGDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/flow_AVGDF')#pd.read_hdf(file_name,key=base_name+'/flow_AVGDF')
         PU_vectorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/PU_vectorDF')
         UU_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/UU_tensorDF')
@@ -105,7 +112,7 @@ class CHAPSim_AVG_base():
         PR_Velo_grad_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/PR_Velo_grad_tensorDF')
         DUDX2_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/DUDX2_tensorDF')
 
-        return_list = [flow_AVGDF,PU_vectorDF,UU_tensorDF,
+        return_list = [meta_data,CoordDF,metaDF,NCL,flow_AVGDF,PU_vectorDF,UU_tensorDF,
                         UUU_tensorDF,Velo_grad_tensorDF,
                         PR_Velo_grad_tensorDF,DUDX2_tensorDF]
         return itertools.chain(return_list)
@@ -231,7 +238,7 @@ class CHAPSim_AVG_base():
         return fig, ax
 
     def plot_mom_thickness(self,*arg,fig='',ax='',**kwargs):
-        _, theta, _ = self.int_thickness_calc(*arg)
+        _, theta, _ = self._int_thickness_calc(*arg)
         # x_coords = self.CoordDF['x'].dropna().values
         if not fig:
             if 'figsize' not in kwargs.keys():
@@ -247,7 +254,7 @@ class CHAPSim_AVG_base():
         return fig, ax
 
     def plot_disp_thickness(self,*arg,fig='',ax='',**kwargs):
-        delta, _, _ = self.int_thickness_calc(*arg)
+        delta, _, _ = self._int_thickness_calc(*arg)
         # x_coords = self.CoordDF['x'].dropna().values
         if not fig:
             if 'figsize' not in kwargs.keys():
@@ -301,7 +308,7 @@ class CHAPSim_AVG_base():
     def plot_near_wall(self,x_vals,PhyTime,fig='',ax='',**kwargs):
         fig, ax = self._avg_line_plot(x_vals,PhyTime,'u',fig=fig,ax=ax,**kwargs)
         lines = ax.get_lines()[-len(x_vals):]
-        u_tau_star, _ = self.wall_unit_calc(PhyTime)
+        u_tau_star, _ = self._wall_unit_calc(PhyTime)
         y_plus = self._y_plus_calc(PhyTime)
         Y_extent = int(self.shape[0]/2)
 
@@ -669,23 +676,25 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
             group_name = 'CHAPSim_AVG_io'
         
         
-        meta_data = self._module._meta_class.from_hdf(file_name,group_name+'/meta_data')
-        CoordDF = meta_data.CoordDF
-        metaDF = meta_data.metaDF
-        NCL=meta_data.NCL
-        shape = (NCL[1],NCL[0])
-        parent_list = list(super()._hdf_extract(file_name,shape,group_name))
+        # meta_data = self._module._meta_class.from_hdf(file_name,group_name+'/meta_data')
+        # CoordDF = meta_data.CoordDF
+        # metaDF = meta_data.metaDF
+        # NCL=meta_data.NCL
+        # shape = (NCL[1],NCL[0])
+        return_list = list(super()._hdf_extract(file_name,group_name=group_name))
         # for DF in parent_list:
         #     DF.data(shape)
-
-        hdf_file = h5py.File(file_name,'r')
-        times = list(set([x[0] for x in parent_list[0].index]))
+        NCL = return_list[3]
+        shape = (NCL[1],NCL[0])
+        # hdf_file = h5py.File(file_name,'r')
+        times = list(set([x[0] for x in return_list[-1].index]))
     
-        hdf_file.close()
+        # hdf_file.close()
+        return_list.insert(4,shape)
+        return_list.insert(5,times)
+        # return_list = [meta_data,CoordDF,metaDF,NCL,shape,times]
 
-        return_list = [meta_data,CoordDF,metaDF,NCL,shape,times]
-
-        return itertools.chain(return_list + parent_list)
+        return itertools.chain(return_list)
     # @profile(stream=open("mem_check_avg.txt",'w'))    
     def _AVG_extract(self,Time_input,time0,path_to_folder,abs_path):
 
@@ -1197,7 +1206,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         return AVG_info, NSTATIS
     def _AVG_extract(self,PhyTime,path_to_folder,abs_path,metaDF,time0):
 
-        factor = metaDF['NCL1_tg_io'][0]*metaDF['NCL3'] if self._module.dissipation_correction else 1.0
+        factor = metaDF['NCL1_tg_io'][0]*metaDF['NCL3'] if cp.Params["dissipation_correction"] else 1.0
         AVG_info, NSTATIS1 = self._extract_file(PhyTime,path_to_folder,abs_path)
         ioflowflg = True if metaDF['NCL1_tg_io'][1]>2 else False
         if ioflowflg and time0:
@@ -1251,18 +1260,19 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         times = list(np.char.decode(hdf_file[base_name].attrs["times"][:]))
         hdf_file.close()
 
-        parent_list = list(super()._hdf_extract(file_name,shape,group_name=base_name))
-        meta_data = self._module._meta_class.from_hdf(file_name,base_name+'/meta_data')
-        CoordDF = meta_data.CoordDF
-        metaDF = meta_data.metaDF
-        NCL=meta_data.NCL
-
+        return_list = list(super()._hdf_extract(file_name,shape=shape,group_name=base_name))
+        # meta_data = self._module._meta_class.from_hdf(file_name,base_name+'/meta_data')
+        # CoordDF = meta_data.CoordDF
+        # metaDF = meta_data.metaDF
+        # NCL=meta_data.NCL
+        return_list.insert(4,shape)
+        return_list.insert(5,times)
         # for DF in parent_list:
         #     DF.data(shape)
 
-        return_list = [meta_data,CoordDF,metaDF,NCL,shape,times]
+        # return_list = [meta_data,CoordDF,metaDF,NCL,shape,times]
 
-        return itertools.chain(return_list + parent_list)
+        return itertools.chain(return_list)
 
     def save_hdf(self,file_name,write_mode,group_name=''):
         if not group_name:

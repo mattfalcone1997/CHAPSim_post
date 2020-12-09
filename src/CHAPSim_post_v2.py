@@ -2110,6 +2110,7 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
             raise ValueError("\033[1;32 Variable max_x_sep must be less than half NCL3 in readdata file\n")
         shape_x = (max_x_sep,NCL[1],NCL[0]-max_x_sep)
         shape_z = (max_z_sep,NCL[1],NCL[0])
+        R_z = None; R_x=None; local_R_z=None; local_R_x=None
         for timing in times:
             
             fluct_data = self._module.CHAPSim_fluct_io(timing,avg_data,time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
@@ -2123,9 +2124,13 @@ class CHAPSim_autocov_io(cbase.CHAPSim_autocov_base):
                     msg = "There is a problem. the shapes of the local and averaged array are different"
                     raise ValueError(msg)
                 R_x = R_x*coe3 + local_R_x*coe2
+                print(R_z)
                 R_z = R_z*coe3 + local_R_z*coe2
+                print(R_z)
+                print(local_R_z)
             # gc.collect()
             i += 1
+        print(R_z)
         autocorrDF = cd.datastruct.from_dict({'x':R_x,'z':R_z})#.data([shape_x,shape_z])
         return meta_data, comp, NCL, avg_data, autocorrDF, shape_x, shape_z
    
