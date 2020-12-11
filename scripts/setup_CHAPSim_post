@@ -44,7 +44,8 @@ if hash conda &>/dev/null ; then
 		#Create conda environment
 		echo -e "### Creating conda environment\n"
 		conda  env create -f scripts/CHAPSim_post.yml
-
+		
+		conda init bash
 		conda activate CHAPSim_post
 		#adds bin to conda's search path
 		conda develop $current_dir/core
