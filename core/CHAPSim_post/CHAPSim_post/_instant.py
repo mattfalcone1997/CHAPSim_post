@@ -488,7 +488,7 @@ class CHAPSim_Inst_tg(CHAPSim_Inst):
         kwargs['tgpost'] = self.tgpost
         meta_data,CoordDF,NCL,InstDF, shape = super()._inst_extract(*args,**kwargs)
         
-        NCL1_io = meta_data.metaDF['HX_tg_io'][1]
+        NCL1_io = meta_data.metaDF['NCL1_tg_io'][1]
         ioflowflg = True if NCL1_io > 2 else False
         
         if ioflowflg:

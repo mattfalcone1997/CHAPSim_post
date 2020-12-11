@@ -15,6 +15,7 @@ import warnings
 import gc
 import itertools
 
+import CHAPSim_post as cp
 from .. import CHAPSim_plot as cplt
 from .. import CHAPSim_Tools as CT
 from .. import CHAPSim_dtypes as cd
@@ -50,6 +51,7 @@ class CHAPSim_budget_base():
         pressure_strain = self._pressure_strain(PhyTime,comp1,comp2)
         viscous_diff = self._viscous_diff(PhyTime,comp1,comp2)
         dissipation = self._dissipation_extract(PhyTime,comp1,comp2)
+
         array_concat = [production,advection,turb_transport,pressure_diffusion,\
                         pressure_strain,viscous_diff,dissipation]
 
@@ -98,6 +100,8 @@ class CHAPSim_budget_base():
             fig, ax = cplt.subplots(*ax_size,**kwargs)
         elif not ax:
             ax=fig.subplots(*ax_size,**kwargs)
+        else:
+            ax =np.array([ax])
         ax=ax.flatten()
         comp_list = tuple([x[1] for x in self.budgetDF.index])
         #print(comp_list)
@@ -572,6 +576,9 @@ class CHAPSim_budget_tg(CHAPSim_budget_base):
         return dissipation#.flatten()
 
     def budget_plot(self, times_list,wall_units=True, fig='', ax ='',**kwargs):
+
+        if not isinstance(times_list,(float,list)):
+            times_list = [times_list]
         PhyTime = None
         fig, ax = super()._budget_plot(PhyTime, times_list,wall_units=wall_units, fig=fig, ax =ax,**kwargs)
 

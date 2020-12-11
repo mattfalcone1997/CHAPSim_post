@@ -20,6 +20,32 @@ _instant_class = CHAPSim_Inst
 
 class CHAPSim_AVG_custom_t(cp.CHAPSim_AVG_tg_base):
     _module = sys.modules[__name__]
+
+    @classmethod
+    def with_phase_average(cls,*args,**kwargs):
+
+        if 'path_to_folder' not in kwargs.keys():
+            msg = "keyword argument `path_to_folder' must be present to use this method"
+            raise ValueError(msg)
+
+        path_to_folder = kwargs['path_to_folder']
+        if not isinstance(path_to_folder,(tuple,list)):
+            msg = f"To use this method, path_to_folder must be a tuple or a list not a {type(path_to_folder)}"
+            raise TypeError(msg)
+        abs_path = kwargs.get('abs_path',True)
+
+        metaDF_list = []
+        for path in path_to_folder:
+            metaDF_list.append(CHAPSim_meta(path,abs_path).metaDF)
+        kwargs['shift_vals'] = [float(metaDF['accel_start_end'][0]) for metaDF in metaDF_list]
+
+        return super().with_phase_average(*args,**kwargs)
+
+    def shift_times(self,val):
+        super().shift_times(val)
+        self._metaDF['accel_start_end'][0] -= val
+        self._metaDF['accel_start_end'][1] -= val
+
     def conv_distance_calc(self):
         
         bulk_velo = self.bulk_velo_calc()
@@ -297,7 +323,8 @@ class CHAPSim_perturb():
 class CHAPSim_meta(cp.CHAPSim_meta):
     _module = sys.modules[__name__]
     def __init__(self,*args,**kwargs):
-        kwargs['tgpost'] = True
+        if len(args) < 3:
+            kwargs['tgpost'] = True
         super().__init__(*args,**kwargs)
 _meta_class = CHAPSim_meta
 

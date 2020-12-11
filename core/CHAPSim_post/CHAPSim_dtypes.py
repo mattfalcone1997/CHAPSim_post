@@ -407,7 +407,7 @@ class datastruct:
             raise TypeError(msg)
     
     def __add__(self,other_datastruct):
-        if not all(self.index==other_datastruct.index):
+        if not self.index==other_datastruct.index:
             msg = "This can only be used if the indices in both datastructs are the same"
             raise ValueError(msg)
         
@@ -417,7 +417,7 @@ class datastruct:
             inner_indices = [x[1] for x in self.index]
             indices = [outer_indices,inner_indices]
         else:
-            indices = self.indices
+            indices = self.index
 
         return self.__class__(return_array,index=indices)
 

@@ -27,6 +27,7 @@ class CHAPSim_meta():
             self.metaDF, self.path_to_folder,\
             self._abs_path = self._hdf_extract(*args,**kwargs)
         elif copy:
+            kwargs.pop("tgpost",None)
             self.CoordDF, self.NCL, self.Coord_ND_DF,\
             self.metaDF, self.path_to_folder,\
             self._abs_path = self._copy_extract(*args,**kwargs)

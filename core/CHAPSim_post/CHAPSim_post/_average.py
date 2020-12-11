@@ -275,7 +275,7 @@ class CHAPSim_AVG_base():
 
         if not fig:
             if "figsize" not in kwargs.keys():
-                kwargs['figsize'] = [8,6]
+                kwargs['figsize'] = [6,6]
             fig, ax = cplt.subplots(**kwargs)
         elif not ax:
             ax = fig.subplots(**kwargs)
@@ -360,7 +360,7 @@ class CHAPSim_AVG_base():
 
         if not fig:
             if 'figsize' not in kwargs.keys():
-                kwargs['figsize'] = [10,5]
+                kwargs['figsize'] = [7,6]
             fig,ax = cplt.subplots(**kwargs)
         elif not ax:
             ax = fig.c_add_subplot(1,1,1)
@@ -693,7 +693,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         return_list.insert(4,shape)
         return_list.insert(5,times)
         # return_list = [meta_data,CoordDF,metaDF,NCL,shape,times]
-
+        
         return itertools.chain(return_list)
     # @profile(stream=open("mem_check_avg.txt",'w'))    
     def _AVG_extract(self,Time_input,time0,path_to_folder,abs_path):
@@ -935,7 +935,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         ax.clegend(vertical=False,ncol=ncol)
         ax.relim()
         ax.autoscale_view()
-
+        ax.get_gridspec().tight_layout(fig)
         return fig, ax        
 
     def plot_Reynolds_x(self,comp1,comp2,y_vals_list,Y_plus=True,PhyTime='',fig='',ax='',**kwargs):
@@ -1090,38 +1090,73 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
     module = sys.modules[__name__]
     tgpost = True
-    def _extract_avg(self,PhyTimes,*args,meta_data='',path_to_folder='',time0='',abs_path=True,permissive=False):
 
-        if isinstance(path_to_folder,list):
-            folder_path=path_to_folder[0]
-            if not permissive:
-                for path in path_to_folder:
-                    PhyTimes = list(set(PhyTimes).intersection(CT.time_extract(path,abs_path)))
-        else:
-            folder_path=path_to_folder
-            PhyTimes = list(set(PhyTimes).intersection(CT.time_extract(path_to_folder,abs_path)))
-        PhyTimes=sorted(PhyTimes)
+    @classmethod
+    def with_phase_average(cls,*args,**kwargs):
+        
+        if 'path_to_folder' not in kwargs.keys():
+            msg = "keyword argument `path_to_folder' must be present to use this method"
+            raise ValueError(msg)
+        
+        abs_path = kwargs.get('abs_path',True)
+        path_to_folder = kwargs['path_to_folder']
+        if not isinstance(path_to_folder,(tuple,list)):
+            msg = f"To use this method, path_to_folder must be a tuple or a list not a {type(path_to_folder)}"
+            raise TypeError(msg)
+        
+        shift_vals = kwargs.pop("shift_vals",[0]*len(path_to_folder))
+        time0 = kwargs.get("time0","")
+        for (i,path),val in zip(enumerate(path_to_folder),shift_vals):
+            if i ==0:
+                PhyTimes = [x-val for x in CT.time_extract(path,abs_path)]
+                if time0:
+                    PhyTimes = list(filter(lambda x: x > (time0-val), PhyTimes))
+            else:
+                times = [x-val for x in CT.time_extract(path,abs_path)]
+                PhyTimes = sorted(set(PhyTimes).intersection(times))
+        
+        for (i,path),val in zip(enumerate(path_to_folder),shift_vals):
+
+            coe1 = i/(i+1)
+            coe2 = 1/(i+1)
+            
+            kwargs['path_to_folder'] = path
+            if path == path_to_folder[0]:
+                avg_data_tg_base = cls(*args,**kwargs)
+                avg_data_tg_base.shift_times(-val)
+                avg_data_tg_base.filter_times(PhyTimes)
+            else:
+                avg_data_tg_base_new = cls(*args,**kwargs)
+                avg_data_tg_base_new.shift_times(-val)
+                avg_data_tg_base_new.filter_times(PhyTimes)
+                avg_data_tg_base = coe1*avg_data_tg_base + coe2*avg_data_tg_base_new
+        
+        return avg_data_tg_base
+
+    def _extract_avg(self,PhyTimes,*,meta_data='',path_to_folder='',time0='',abs_path=True):
+
         if cp.TEST:
             PhyTimes=PhyTimes[-3:]
+        PhyTimes.sort()
 
         if not meta_data:
-            meta_data = self._module._meta_class(folder_path,abs_path,tgpost=True)
+            meta_data = self._module._meta_class(path_to_folder,abs_path,tgpost=True)
+
         CoordDF = meta_data.CoordDF
         metaDF = meta_data.metaDF
         NCL = meta_data.NCL
 
         if isinstance(PhyTimes,float):
             times = ['%.9g' % PhyTimes]
-            DF_list = self._AVG_extract(PhyTimes,folder_path,abs_path,metaDF,time0)
+            DF_list = self._AVG_extract(PhyTimes,path_to_folder,abs_path,metaDF,time0)
         elif hasattr(PhyTimes,'__iter__'):
             times = ['%.9g' % time for time in PhyTimes]
             for PhyTime in PhyTimes:
                 if 'DF_list' not in locals():
-                    DF_list = self._AVG_extract(PhyTime,folder_path,abs_path,metaDF,time0)
+                    DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,metaDF,time0)
                 else:
-                    DF_temp=[]
-                    local_DF_list = self._AVG_extract(PhyTime,folder_path,abs_path,metaDF,time0)
-                    for i, DF in enumerate(DF_list):
+                    local_DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,metaDF,time0)
+                    for i, _ in enumerate(DF_list):
                         DF_list[i].append(local_DF_list[i],axis=0)
                     # DF_list=DF_temp
             
@@ -1130,45 +1165,94 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
             raise TypeError("\033[1;32 `PhyTimes' can only be a float or a list") 
         
         old_shape =[NCL[1],len(PhyTimes)]
-        for i,DF in enumerate(DF_list):
-            for key, val in DF_list[i]:
+        for i,_ in enumerate(DF_list):
+            for key, _ in DF_list[i]:
                 DF_list[i][key] = DF_list[i][key].T
-            # DF.columns = range(flat_shape)
-            # for index, row in DF.iterrows():
-            #     DF.loc[index] = pd.Series(row.values.reshape(old_shape).T.reshape(flat_shape))
-            # DF.data(old_shape[::-1])
+
 
         DF_list=self._Reverse_decomp(*DF_list)
 
         return_list = [meta_data, CoordDF, metaDF, NCL,old_shape,times,*DF_list]
-        if isinstance(path_to_folder,list):
-            i=2
-            for path in path_to_folder[1:]:                
-                AVG_list = list(CHAPSim_AVG_tg_base._extract_avg(self,PhyTimes,meta_data=meta_data,
-                                path_to_folder=path,time0=time0,abs_path=abs_path,permissive=False))
-                return_list = self._ensemble_average(return_list,AVG_list,i,permissive)
-                i+=1
+
 
         # self._Reverse_decomp(*DF_list)
         return itertools.chain(return_list)
 
-    def _ensemble_average(self,return_list, AVG_list,number,permissive=False):
-        if not permissive:
-            coe2 = (number-1)/number ; coe3 = 1/number
-            assert return_list[1].equals(AVG_list[1]), "Coordinates are not the same"
-            assert return_list[3] == AVG_list[3], "Mesh is not the same"
-            assert return_list[5] == AVG_list[5], "Times must be same for non permissive ensemble averaging"
-            for i in range(6,13):
-                index = return_list[i].index
-                return_list[i] = coe2*return_list[i] + coe3*AVG_list[i]
-                # return_list[i] = cd.datastruct(array,index = index).data(AVG_list[i].data.FrameShape)
+    def shift_times(self,val):
+        times = sorted([float(x) for x in self._times])
+        self._times = ["%.9g"%(x+float(val)) for x in times]
+
+    def filter_times(self,times):
+        filter_times = ["%.9g"% time for time in times]
+        time_list = list(set(self._times).intersection(set(filter_times)))
+        time_list = sorted(float(x) for x in time_list)
+        time_list = ["%.9g"%x for x in time_list]
+        index_list = [self._return_index(x) for x in time_list]
+        
+        self._times = time_list
+
+        for index in self.flow_AVGDF.index:
+            self.flow_AVGDF[index] = self.flow_AVGDF[index][:,index_list]
+
+        for index in self.UU_tensorDF.index:
+            self.UU_tensorDF[index] = self.UU_tensorDF[index][:,index_list]
+        
+        for index in self.UUU_tensorDF.index:
+            self.UUU_tensorDF[index] = self.UUU_tensorDF[index][:,index_list]
+
+        for index in self.PU_vectorDF.index:
+            self.PU_vectorDF[index] = self.PU_vectorDF[index][:,index_list]
+
+        for index in self.Velo_grad_tensorDF.index:
+            self.Velo_grad_tensorDF[index] = self.Velo_grad_tensorDF[index][:,index_list]
+        
+        for index in self.PR_Velo_grad_tensorDF.index:
+            self.PR_Velo_grad_tensorDF[index] = self.PR_Velo_grad_tensorDF[index][:,index_list]
+
+        for index in self.DUDX2_tensorDF.index:
+            self.DUDX2_tensorDF[index] = self.DUDX2_tensorDF[index][:,index_list]
+
+        self.shape=(self.shape[0],len(self._times))
+
+    def __mul__(self,val):
+        if isinstance(val,(float,int)):
+            copy_self = self.__class__.copy(self)
+
+            copy_self.flow_AVGDF = copy_self.flow_AVGDF*val
+            copy_self.UU_tensorDF = copy_self.UU_tensorDF*val
+            copy_self.UUU_tensorDF = copy_self.UUU_tensorDF*val
+            copy_self.PU_vectorDF = copy_self.PU_vectorDF*val
+            copy_self.Velo_grad_tensorDF = copy_self.Velo_grad_tensorDF*val
+            copy_self.PR_Velo_grad_tensorDF = copy_self.PR_Velo_grad_tensorDF*val
+            copy_self.DUDX2_tensorDF = copy_self.DUDX2_tensorDF*val
+
+            return copy_self
+        
         else:
-            raise NotImplementedError
+            msg = f"This class can only be multiplies by real scalar not {type(val)}"
+            raise TypeError(msg)
 
-        return return_list
+    def __rmul__(self,val):
+        return self.__mul__(val)
+    
+    def __add__(self,other_avg_tg):
+        if isinstance(other_avg_tg,CHAPSim_AVG_tg_base):
+            copy_self = self.__class__.copy(self)
 
-    def Perform_ensemble(self):
-        raise NotImplementedError
+            copy_self.flow_AVGDF = copy_self.flow_AVGDF + other_avg_tg.flow_AVGDF
+            copy_self.UU_tensorDF = copy_self.UU_tensorDF + other_avg_tg.UU_tensorDF
+            copy_self.UUU_tensorDF = copy_self.UUU_tensorDF + other_avg_tg.UUU_tensorDF
+            copy_self.PU_vectorDF = copy_self.PU_vectorDF + other_avg_tg.PU_vectorDF
+            copy_self.Velo_grad_tensorDF = copy_self.Velo_grad_tensorDF + other_avg_tg.Velo_grad_tensorDF
+            copy_self.PR_Velo_grad_tensorDF = copy_self.PR_Velo_grad_tensorDF + other_avg_tg.PR_Velo_grad_tensorDF
+            copy_self.DUDX2_tensorDF = copy_self.DUDX2_tensorDF + other_avg_tg.DUDX2_tensorDF
+
+            return copy_self
+        
+        else:
+            msg = f"This class can only be added to other {self.__class__} not {type(other_avg_tg)}"
+            raise TypeError(msg)
+
     def _extract_file(self,PhyTime,path_to_folder,abs_path):
         instant = "%0.9E" % PhyTime
         
@@ -1221,7 +1305,6 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         Pr_Velo_grad_tensor = AVG_info[32:41]
         DUDX2_tensor = AVG_info[41:]*factor
 
-        Phy_string = '%.9g' % PhyTime
         flow_index = [[None]*4,['u','v','w','P']]
         vector_index = [[None]*3,['u','v','w']]
         sym_2_tensor_index = [[None]*6,['uu','uv','uw','vv','vw','ww']]

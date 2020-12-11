@@ -21,6 +21,8 @@ try:
 except ImportError:
     warnings.warn("PyVista module unavailable")
 
+import CHAPSim_post as cp
+import CHAPSim_post.CHAPSim_Tools as CT
 if which('lualatex') is not None:
     mpl.rcParams['text.usetex'] = True
     mpl.rcParams['pgf.texsystem'] = 'lualatex'
@@ -32,24 +34,41 @@ def update_prop_cycle(**kwargs):
     if not all([key in avail_keys for key in kwargs.keys()]):
         msg = "The key is invalid for the matplotlib property cycler"
         raise ValueError(msg)
+    
+    cycler_dict = mpl.rcParams['axes.prop_cycle'].by_key()
+    for key, item in kwargs.items():
+        if not hasattr(item,"__iter__"):
+            item = [item]
+        cycler_dict[key] = item
 
-    item_length = [ len(item) for _,item in kwargs.items()]
+    item_length = [ len(item) for _,item in cycler_dict.items()]
     cycle_length = np.lcm.reduce(item_length)
-    for key, val in kwargs.items():
-        kwargs[key] = list(val)*int(cycle_length/len(val))
-    mpl.rcParams['axes.prop_cycle'] = cycler(**kwargs)
 
-update_prop_cycle(linestyle=['-','--','-.',':'],
+    for key, val in cycler_dict.items():
+        cycler_dict[key] = list(val)*int(cycle_length/len(val))
+    mpl.rcParams['axes.prop_cycle'] = cycler(**cycler_dict)
+
+def reset_prop_cycler():
+    update_prop_cycle(linestyle=['-','--','-.',':'],
                 marker=['x','.','v','^','+'],
                 color = 'bgrcmyk')
+
+reset_prop_cycler()
 
 mpl.rcParams['lines.markerfacecolor'] = 'white'
 # mpl.rcParams['figure.autolayout'] = True
 mpl.rcParams['mathtext.fontset'] = 'stix'
 mpl.rcParams['legend.edgecolor'] = 'inherit'
-mpl.rcParams['font.size'] = 14
+mpl.rcParams['font.size'] = 17
+mpl.rcParams['axes.labelsize'] = 'large'
+mpl.rcParams['axes.labelpad'] = 6.0
 mpl.rcParams['legend.fontsize'] = 'small'
 mpl.rcParams['axes.grid'] = True
+mpl.rcParams['ytick.direction'] = "in"
+mpl.rcParams['xtick.direction'] = "in"
+mpl.rcParams['xtick.top'] = True
+mpl.rcParams['ytick.right'] = True
+
 
 class CHAPSimFigure(mpl.figure.Figure):
     def __init__(self,*args,**kwargs):
@@ -111,8 +130,8 @@ class AxesCHAPSim(mpl.axes.Axes):
         if not kwargs.pop('vertical',False):
             ncol = kwargs['ncol'] if 'ncol' in kwargs.keys() else 1
             if len(args)==2:
-                args[0] = flip_leg_col(args[0],ncol)
-                args[1] = flip_leg_col(args[1],ncol)
+                args = (flip_leg_col(args[0],ncol),
+                        flip_leg_col(args[1],ncol))
             elif len(args)==1:
                 args = flip_leg_col(args,ncol)
             elif 'labels' in kwargs.keys() and 'handles' in kwargs.keys():
@@ -187,8 +206,14 @@ class AxesCHAPSim(mpl.axes.Axes):
                 ydata =  np.array(ydata)/norm_val
             line.set_data(xdata, ydata)
             i+=1
-        self.relim()
-        self.autoscale_view(True,True,True)
+
+        if self.get_lines():
+            if axis == 'x':
+                xlims = [x/val for x in self.get_xlim()]
+                self.set_xlim(xlims)
+            else:
+                ylims = [y/val for y in self.get_ylim()]
+                self.set_ylim(ylims)
 
     def array_normalise(self,axis,val):
         i=0
@@ -394,6 +419,29 @@ def update_quiver_kw(quiver_kw):
 
 def close(*args,**kwargs):
     plt.close(*args,**kwargs)
+
+def create_general_video(fig,path_to_folder,abs_path,func,func_args=None,func_kw=None,time_range=None):
+
+    times= CT.time_extract(path_to_folder,abs_path)
+    if time_range is not None:
+        times = filter(lambda x: x>time_range[0],times)
+        times = filter(lambda x: x<time_range[1],times)
+    times.sort()
+    if cp.Params["TEST"]:
+        times = times[-10:]
+
+    if func_args is None:
+        func_args=()
+
+    if func_kw is None:
+        func_kw={}
+
+
+    def animate(time):
+        return func(fig,time,*func_args,**func_kw)
+
+    return mpl.animation.FuncAnimation(fig,animate,frames=times)
+
 
 matlab_path =  which('matlab')
 octave_path = which('octave')

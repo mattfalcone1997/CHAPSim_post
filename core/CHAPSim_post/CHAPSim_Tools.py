@@ -132,9 +132,9 @@ def from_HPC2Local(remote,remote_path,file,**kwargs):
 
 def file_extract(path_to_folder,abs_path=True):
     if abs_path:
-        mypath = os.path.join(path_to_folder,'1_instant_D')
+        mypath = os.path.join(path_to_folder,'2_averagd_D')
     else:
-        mypath = os.path.abspath(os.path.join(path_to_folder,'1_instant_D'))
+        mypath = os.path.abspath(os.path.join(path_to_folder,'2_averagd_D'))
     file_names = [f for f in os.listdir(mypath) if f[:8]=='DNS_peri']
     return file_names       
 

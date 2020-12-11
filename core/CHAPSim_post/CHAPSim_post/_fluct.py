@@ -372,66 +372,88 @@ class CHAPSim_fluct_base():
 
 
     @classmethod
-    def create_video(cls,axis_vals,comp,contour=True,plane='xz',meta_data='',path_to_folder='',time0='',
-                            abs_path=True,tgpost=False,x_split_list='',lim_min=None,lim_max=None,
+    def create_video(cls,axis_vals,comp,avg_data=None,contour=True,plane='xz',meta_data='',path_to_folder='',time_range=None,
+                            abs_path=True,tgpost=False,x_split_list='',plot_kw={},lim_min=None,lim_max=None,
                             ax_func=None,fluct_func=None,fluct_args=(),fluct_kw={}, fig='',ax='',**kwargs):
 
-        module = sys.modules[cls.__module__]
         times= CT.time_extract(path_to_folder,abs_path)
+        max_time = np.amax(times) if time_range is None else time_range[1]
+
+        if avg_data is None and not tgpost:
+            time0 = time_range[0] if time_range is not None else ""
+            avg_data=cls._module._avg_class(max_time,meta_data,path_to_folder,time0,abs_path,tgpost=cls.tgpost)
         
-        if time0:
-            times = sorted(list(filter(lambda x: x > time0, times)))
-
-        if cp.TEST:
-            times = times[-10:]
-
-        max_time = np.amax(times)
-        avg_data=cls._module._avg_class(max_time,meta_data,path_to_folder,time0,abs_path,tgpost=cls.tgpost)
         if isinstance(axis_vals,(int,float)):
             axis_vals=[axis_vals]
         elif not isinstance(axis_vals,list):
             raise TypeError("\033[1;32 axis_vals must be type int or list but is type %s"%type(axis_vals))
         
-        x_coords = avg_data.CoordDF['x']
+        
         if not x_split_list:
+            if not meta_data:
+                meta_data = cls._module._meta_class(path_to_folder,abs_path,tgpost=tgpost)
+            x_coords = meta_data.CoordDF['x']
             x_split_list=[np.min(x_coords),np.max(x_coords)]
         if not fig:
             if 'figsize' not in kwargs.keys():
                 kwargs['figsize'] = [7*len(axis_vals),3*(len(x_split_list)-1)]
             fig = cplt.figure(**kwargs)
-        fig_list = [fig]*len(times)
 
-        frames=list(zip(times,fig_list))
-        def animate(frames):
-            time=frames[0]; fig=frames[1]
-            ax_list=fig.axes
-            for ax in ax_list:
+        def func(fig,time):
+            axes = fig.axes
+            for ax in axes:
                 ax.remove()
+
             fluct_data = cls(time,avg_data,path_to_folder=path_to_folder,abs_path=abs_path)
-
             if contour:
-                fig, ax = fluct_data.plot_contour(comp,axis_vals,plane=plane,PhyTime=time,x_split_list=x_split_list,fig=fig)
+                fig, ax = fluct_data.plot_contour(comp,axis_vals,plane=plane,PhyTime=time,x_split_list=x_split_list,fig=fig,**plot_kw)
             else:
-                fig,ax = fluct_data.plot_fluct3D_xz(axis_vals,comp,time,x_split_list,fig)
+                fig,ax = fluct_data.plot_fluct3D_xz(axis_vals,comp,time,x_split_list,fig,**plot_kw)
             ax[0].axes.set_title(r"$t^*=%.3g$"%time,loc='left')
-
             if fluct_func is not None:
                 fluct_func(fig,ax,time,*fluct_args,**fluct_kw)
-
             if ax_func is not None:
                 ax = ax_func(ax)
-
             for im in ax:
                 im.set_clim(vmin=lim_min)
                 im.set_clim(vmax=lim_max)
 
             fig.tight_layout()
             return ax
-        anim = mpl.animation.FuncAnimation(fig,animate,frames=frames)
+
+        return cplt.create_general_video(fig,path_to_folder,
+                                        abs_path,func,(),{})
+        # frames=list(zip(times,fig_list))
+        # def animate(frames):
+        #     time=frames[0]; fig=frames[1]
+        #     ax_list=fig.axes
+        #     for ax in ax_list:
+        #         ax.remove()
+        #     fluct_data = cls(time,avg_data,path_to_folder=path_to_folder,abs_path=abs_path)
+
+        #     if contour:
+        #         fig, ax = fluct_data.plot_contour(comp,axis_vals,plane=plane,PhyTime=time,x_split_list=x_split_list,fig=fig)
+        #     else:
+        #         fig,ax = fluct_data.plot_fluct3D_xz(axis_vals,comp,time,x_split_list,fig)
+        #     ax[0].axes.set_title(r"$t^*=%.3g$"%time,loc='left')
+
+        #     if fluct_func is not None:
+        #         fluct_func(fig,ax,time,*fluct_args,**fluct_kw)
+
+        #     if ax_func is not None:
+        #         ax = ax_func(ax)
+
+        #     for im in ax:
+        #         im.set_clim(vmin=lim_min)
+        #         im.set_clim(vmax=lim_max)
+
+        #     fig.tight_layout()
+        #     return ax
+        # anim = mpl.animation.FuncAnimation(fig,animate,frames=frames)
         
-        # print("\033[1;32m The colorbar limits are set to (%.3g,%.3g) the maximum limits are (%.3g,%.3g)\033[0;37m\n"%(lim_min,lim_max,lims[0],lims[1]))
-        # del lims
-        return anim
+        # # print("\033[1;32m The colorbar limits are set to (%.3g,%.3g) the maximum limits are (%.3g,%.3g)\033[0;37m\n"%(lim_min,lim_max,lims[0],lims[1]))
+        # # del lims
+        # return anim
 
         
     def __str__(self):
@@ -439,8 +461,8 @@ class CHAPSim_fluct_base():
 
 class CHAPSim_fluct_io(CHAPSim_fluct_base):
     tgpost = False
-    def __init__(self,time_inst_data_list,avg_data='',path_to_folder='',abs_path=True,*args,**kwargs):
-        if not avg_data:
+    def __init__(self,time_inst_data_list,avg_data=None,path_to_folder='',abs_path=True,*args,**kwargs):
+        if avg_data is None:
             time = CT.max_time_calc(path_to_folder,abs_path)
             avg_data = self._module._avg_io_class(time,path_to_folder=path_to_folder,abs_path=abs_path,*args,**kwargs)
         if not hasattr(time_inst_data_list,'__iter__'):
@@ -500,7 +522,7 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
     
 class CHAPSim_fluct_tg(CHAPSim_fluct_base):
     tgpost = True
-    def __init__(self,time_inst_data_list,avg_data='',path_to_folder='',abs_path=True,*args,**kwargs):
+    def __init__(self,time_inst_data_list,avg_data=None,path_to_folder='',abs_path=True,*args,**kwargs):
         if not hasattr(time_inst_data_list,'__iter__'):
             time_inst_data_list = [time_inst_data_list]
         for time_inst_data in time_inst_data_list:
@@ -515,7 +537,7 @@ class CHAPSim_fluct_tg(CHAPSim_fluct_base):
                 else:
                     inst_data += self._module._instant_class(time_inst_data,path_to_folder=path_to_folder,abs_path=abs_path,tgpost=True)
         
-        if not avg_data:
+        if avg_data is None:
             times = [float(x[0]) for x in inst_data.InstDF.index]
             avg_data = self._module._avg_tg_base_class(times,path_to_folder=path_to_folder,abs_path=abs_path)
 
@@ -557,6 +579,11 @@ class CHAPSim_fluct_tg(CHAPSim_fluct_base):
         # DF_shape = (len(indices),np.prod(inst_data.shape))
         return cd.datastruct(fluct,index=inst_data.InstDF.index)#.data(inst_data.shape)
     
-    def plot_vector(self,*args,**kwargs):
-        PhyTime = None
-        return super().plot_vector(*args,PhyTime=PhyTime,**kwargs)
+    # def plot_vector(self,*args,**kwargs):
+    #     PhyTime = None
+    #     return super().plot_vector(*args,PhyTime=PhyTime,**kwargs)
+
+    @classmethod
+    def create_video(cls,*args,**kwargs):
+        kwargs["tgpost"] = True
+        return super().create_video(*args,**kwargs)

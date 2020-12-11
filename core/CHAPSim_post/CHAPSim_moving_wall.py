@@ -197,11 +197,12 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
             return fig, ax
 _avg_io_class = CHAPSim_AVG_io
 class CHAPSim_AVG():
-    def __new__(cls,*args,tgpost=False,**kwargs):
-        if not tgpost:
-            return CHAPSim_AVG_io(*args,**kwargs)
-        else:
-            return cp.CHAPSim_AVG_tg(*args, **kwargs)
+    def __new__(cls,*args,**kwargs):
+        if kwargs.pop("tgpost",False):
+            msg = "This module has not class to postprocess the turbulence generator"
+            raise ValueError(msg)
+        return CHAPSim_AVG_io(*args,**kwargs)
+_avg_class = CHAPSim_AVG
 
 class CHAPSim_perturb():
     def __init__(self,time='',avg_data='', meta_data='',path_to_folder='',time0='',abs_path=True):
