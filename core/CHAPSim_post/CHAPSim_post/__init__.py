@@ -26,9 +26,6 @@ from ._fluct import CHAPSim_fluct_tg
 from ._budget import CHAPSim_budget_io
 from ._budget import CHAPSim_budget_tg
 
-from ._autocov import CHAPSim_autocov_io
-from ._autocov import CHAPSim_autocov_tg
-
 from ._quadrant_a import CHAPSim_Quad_Anl_io
 from ._quadrant_a import CHAPSim_Quad_Anl_tg
 
@@ -75,3 +72,6 @@ except ImportError:
             msg = "There was an issue compiling the fortran accelerator code"
             warnings.warn(msg)
     os.chdir(cwd)
+
+from ._autocov import CHAPSim_autocov_io
+from ._autocov import CHAPSim_autocov_tg
