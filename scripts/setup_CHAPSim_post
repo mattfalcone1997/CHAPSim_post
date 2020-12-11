@@ -45,7 +45,7 @@ if hash conda &>/dev/null ; then
 		echo -e "### Creating conda environment\n"
 		conda  env create -f scripts/CHAPSim_post.yml
 
-		source activate CHAPSim_post
+		conda activate CHAPSim_post
 		#adds bin to conda's search path
 		conda develop $current_dir/core
 		wait
@@ -53,7 +53,7 @@ if hash conda &>/dev/null ; then
 		echo -e "### Testing conda environment\n "
 	fi
 	
-	if $CONDA_PREFIX/bin/python -c "import CHAPSim_post.CHAPSim_post; import CHAPSim_post.CHAPSim_Tools; import CHAPSim_post.CHAPSim_plot; import CHAPSim_post.CHAPSim_dtypes" ; then
+	if $CONDA_PREFIX/bin/python3 -c "import CHAPSim_post.CHAPSim_post; import CHAPSim_post.CHAPSim_Tools; import CHAPSim_post.CHAPSim_plot; import CHAPSim_post.CHAPSim_dtypes" ; then
 		echo -e "Import test complete" 
 		conda deactivate
 	else

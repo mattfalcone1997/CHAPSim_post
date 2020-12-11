@@ -16,7 +16,7 @@ class Params:
 
     def __getitem__(self,key):
         if key not in self.__params.keys():
-            msg = f"Parameter not present must be one of the following: {self.__params.keys}"
+            msg = f"Parameter not present must be one of the following: {self.__params.keys()}"
             raise KeyError(msg)
 
         return self.__params[key]
