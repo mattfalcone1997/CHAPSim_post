@@ -424,8 +424,8 @@ def create_general_video(fig,path_to_folder,abs_path,func,func_args=None,func_kw
 
     times= CT.time_extract(path_to_folder,abs_path)
     if time_range is not None:
-        times = filter(lambda x: x>time_range[0],times)
-        times = filter(lambda x: x<time_range[1],times)
+        times = list(filter(lambda x: x>time_range[0],times))
+        times = list(filter(lambda x: x<time_range[1],times))
     times.sort()
     if cp.Params["TEST"]:
         times = times[-10:]
