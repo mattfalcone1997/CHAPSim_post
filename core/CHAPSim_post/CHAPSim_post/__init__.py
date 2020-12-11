@@ -44,9 +44,9 @@ _meta_class = CHAPSim_meta
 
 
 try:
-   from . import f_autocorr_parallel
-except ImportError:
-
+   from .f_autocorr_parallel import autocov_calc_z, autocov_calc_x
+except ImportError as e:
+    print(e.args)
     if shutil.which("ifort") is not None:
         F90_exec = shutil.which("ifort")
     elif shutil.which("gfortran") is not None:
@@ -59,15 +59,17 @@ except ImportError:
     from numpy import f2py
     cwd = os.getcwd()
     os.chdir(path)
+    extra_args = f"--opt='-O3 -fopenmp' --f90exec='{F90_exec}'"
+    if F90_exec =="gfortran":
+        F90_exec += "-lgomp" 
     err = f2py.compile(fortran_code,"f_autocorr_parallel",
-                    extra_args=f"--opt='-O3 -fopenmp' --f90exec='{F90_exec}'",
-                    verbose=False,extension=".f90")
+                    extra_args=extra_args, verbose=False,extension=".f90")
     if err != 0:
         print("Using gfortran as backend")
         F90_exec="gfortran"
+        extra_args=f"--opt='-O3 -fopenmp' --f90exec='{F90_exec}' -lgomp "
         err = f2py.compile(fortran_code,"f_autocorr_parallel",
-                    extra_args=f"--opt='-O3 -fopenmp' --f90exec='{F90_exec}'",
-                    verbose=False,extension=".f90")
+                    extra_args=extra_args,verbose=False,extension=".f90")
         if err != 0:
             msg = "There was an issue compiling the fortran accelerator code"
             warnings.warn(msg)
