@@ -1,0 +1,42 @@
+package:
+  name: CHAPSim_post
+  version: "0.1dev"
+
+source:
+  git_url: https://github.com/mattfalcone1997/CHAPSim_post.git
+  git_tag: new_master_testing
+
+requirments:
+  build:
+    - python=3.7
+    - numpy
+
+  run:
+    - python=3.7
+    - numpy
+    - pandas
+    - matplotlib
+    - scipy
+    - numba
+    - h5py
+    - pyvista
+    - pyvistaqt
+    - sympy
+    - mpi4py
+    - ipython
+    - pytables
+    - ffmpeg
+    - conda-build
+    - oct2py
+    - paramiko
+    - scp
+    - seaborn
+    - memory_profiler
+
+test:
+  imports:
+    - CHAPSim_post
+    - CHAPSimpost.CHAPSim_post
+    - CHAPSim_plot
+    - CHAPSim_Tools
+  
