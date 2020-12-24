@@ -26,3 +26,4 @@ dependencies:
   - pip
   - memory_profiler
   - cython
+  - llvmlite

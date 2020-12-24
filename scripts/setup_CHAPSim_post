@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 #==============================================================
 # Scipt to setup up machine to use the post processing files 
 # from any directory
@@ -41,7 +41,7 @@ fi
 #Adding path to conda if present
 if hash conda &>/dev/null ; then
 	#Creating conda environment if not already present
-	conda env list | grep CHAPSim_post
+
 	if [ $(conda env list | grep CHAPSim_post ) &>/dev/null ]; then
 		#Create conda environment
 		echo -e "Conda environment exists removing it"
@@ -65,9 +65,7 @@ if hash conda &>/dev/null ; then
 			echo -e "if [ -d $(pwd)/build ]; then" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
 			echo -e "\t export PYTHONPATH=$(pwd)/build" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
 			echo -e "fi" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
-			if [ ! -d build ]; then
-				mkdir build
-			fi
+			
 			$CONDA_PREFIX/bin/python setup.py build --build-lib build "$@"
 		fi
 	else
@@ -98,5 +96,3 @@ else
 fi
 
 echo -e "### Finished Setup of CHAPSim_post"
-
-
