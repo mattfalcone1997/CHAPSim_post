@@ -72,7 +72,7 @@ if hash conda &>/dev/null ; then
 		fi
 	else
 		conda deactivate
-		echo -e "There appear to be an issue with your conda environment as the environment variable CONDA_PREFIX is not set" &>2
+		echo -e "There appear to be an issue with your conda environment as the environment variable CONDA_PREFIX is not set" >&2
 		exit 1
 	fi 
 
