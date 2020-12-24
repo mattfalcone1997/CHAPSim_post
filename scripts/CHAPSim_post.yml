@@ -25,3 +25,4 @@ dependencies:
   - seaborn
   - pip
   - memory_profiler
+  - cython

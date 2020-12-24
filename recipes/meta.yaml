@@ -1,5 +1,5 @@
 package:
-  name: CHAPSim_post
+  name: chapsim_post
   version: "0.1dev"
 
 source:
@@ -9,11 +9,12 @@ source:
 requirments:
   build:
     - python=3.7
-    - numpy
+    - numpy=1.17
+    - cython
 
   run:
     - python=3.7
-    - numpy
+    - numpy=1.17
     - pandas
     - matplotlib
     - scipy
@@ -33,10 +34,9 @@ requirments:
     - seaborn
     - memory_profiler
 
-test:
-  imports:
-    - CHAPSim_post
-    - CHAPSimpost.CHAPSim_post
-    - CHAPSim_plot
-    - CHAPSim_Tools
-  
+# test:
+#   imports:
+#     - CHAPSim_post
+#     - CHAPSim_post.CHAPSim_post
+#     - CHAPSim_plot
+#     - CHAPSim_Tools

@@ -19,10 +19,14 @@ from ._fluct import CHAPSim_fluct_tg
 from ._budget import CHAPSim_budget_io
 from ._budget import CHAPSim_budget_tg
 
+from ._autocov import CHAPSim_autocov_io
+from ._autocov import CHAPSim_autocov_tg
+
 from ._quadrant_a import CHAPSim_Quad_Anl_io
 from ._quadrant_a import CHAPSim_Quad_Anl_tg
 
 from ._joint_pdf import CHAPSim_joint_PDF_io
+
 
 _avg_io_class = CHAPSim_AVG_io
 _avg_tg_class = CHAPSim_AVG_tg
@@ -35,8 +39,7 @@ _fluct_tg_class = CHAPSim_fluct_tg
 
 _meta_class = CHAPSim_meta
 
-from ._autocov import CHAPSim_autocov_io
-from ._autocov import CHAPSim_autocov_tg
+
 # try:
 #    from .f_autocorr_parallel import autocov_calc_z, autocov_calc_x
 # except ImportError as e:

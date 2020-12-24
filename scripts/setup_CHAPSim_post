@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 #==============================================================
 # Scipt to setup up machine to use the post processing files 
 # from any directory
@@ -6,10 +6,10 @@
 #==============================================================
 
 #Checking directory is correct
-if [ ! -d bin ]; then
+if [ ! -d core ]; then
 	cd ../
 fi
-if [ ! -d bin ]; then
+if [ ! -d core ]; then
 	echo -e "This script must be run from either the \
 main directory or the scripts directory...exiting\n"
 	exit 1
@@ -25,35 +25,62 @@ fi
 
 #Modifying PYTHONPATH in .bashrc
 #Ensuring that the .bashrc file isn't modified multiple times
-if [ -f $HOME/.bashrc ]; then 
-	if [ ! $(cat $HOME/.bashrc | grep PYTHONPATH=\"\$PYTHONPATH:\$CHAPSim_bin\") &>/dev/null ]; then
-		current_dir=${current_dir// /"\ "}
-		#Adding to .bashrc
-		bashrc_mod="if [ -d \"$current_dir\" ]; then \n\tCHAPSim_bin=\"$current_dir/core\" \n\texport PYTHONPATH=\"\$PYTHONPATH:\$CHAPSim_bin\" \nfi"
+# if [ -f $HOME/.bashrc ]; then 
+# 	if [ ! $(cat $HOME/.bashrc | grep PYTHONPATH=\"\$PYTHONPATH:\$CHAPSim_bin\") &>/dev/null ]; then
+# 		current_dir=${current_dir// /"\ "}
+# 		#Adding to .bashrc
+# 		bashrc_mod="if [ -d \"$current_dir\" ]; then \n\tCHAPSim_bin=\"$current_dir/core\" \n\texport PYTHONPATH=\"\$PYTHONPATH:\$CHAPSim_bin\" \nfi"
 
-		echo -e "\nModifying $HOME/.bashrc\n"
-		echo -e "\n# *** CHAPSim_post setup ***" >> $HOME/.bashrc
-		echo -e $bashrc_mod >> $HOME/.bashrc
-	fi
-fi
+# 		echo -e "\nModifying $HOME/.bashrc\n"
+# 		echo -e "\n# *** CHAPSim_post setup ***" >> $HOME/.bashrc
+# 		echo -e $bashrc_mod >> $HOME/.bashrc
+# 	fi
+# fi
+
 
 #Adding path to conda if present
 if hash conda &>/dev/null ; then
 	#Creating conda environment if not already present
-	if [ ! $(conda env list | grep CHAPSim_post ) &>/dev/null ]; then
+	conda env list | grep CHAPSim_post
+	if [ $(conda env list | grep CHAPSim_post ) &>/dev/null ]; then
 		#Create conda environment
-		echo -e "### Creating conda environment\n"
-		conda  env create -f scripts/CHAPSim_post.yml
-		
-		conda init bash
-		conda activate CHAPSim_post
-		#adds bin to conda's search path
-		conda develop $current_dir/core
-		wait
-		#testing by importing module
-		echo -e "### Testing conda environment\n "
+		echo -e "Conda environment exists removing it"
+		conda remove --name CHAPSim_post -y --all 
 	fi
-	
+
+	echo -e "### Creating conda environment\n"
+	conda  env create -f scripts/CHAPSim_post.yml
+
+	eval "$(conda shell.bash hook)"
+	conda activate CHAPSim_post
+	#adds bin to conda's search path
+	conda develop $current_dir/build
+	wait
+	if [ $(printenv | grep CONDA_PREFIX=) &>/dev/null ]; then
+		if [ ! -f $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh ]; then
+			echo -e "Setting up PYTHONPATH environment variable"
+			mkdir -p $CONDA_PREFIX/etc/conda/activate.d
+			touch $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
+			echo -e "#!/bin/sh\n" > $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
+			echo -e "if [ -d $(pwd)/build ]; then" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
+			echo -e "\t export PYTHONPATH=$(pwd)/build" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
+			echo -e "fi" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
+			if [ ! -d build ]; then
+				mkdir build
+			fi
+			$CONDA_PREFIX/bin/python setup.py build --build-lib build "$@"
+		fi
+	else
+		conda deactivate
+		echo -e "There appear to be an issue with your conda environment as the environment variable CONDA_PREFIX is not set" &>2
+		exit 1
+	fi 
+
+	conda deactivate
+	#testing by importing module
+	echo -e "### Testing conda environment\n "
+
+	conda activate CHAPSim_post
 	if $CONDA_PREFIX/bin/python3 -c "import CHAPSim_post.CHAPSim_post; import CHAPSim_post.CHAPSim_Tools; import CHAPSim_post.CHAPSim_plot; import CHAPSim_post.CHAPSim_dtypes" ; then
 		echo -e "Import test complete" 
 		conda deactivate
@@ -65,7 +92,8 @@ if hash conda &>/dev/null ; then
 		exit 1
 	fi
 
-		
+else
+	echo -e "It is recommended that you use conda to manage this code"		
 
 fi
 
