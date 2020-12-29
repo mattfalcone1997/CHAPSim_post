@@ -200,6 +200,7 @@ class AxesCHAPSim(mpl.axes.Axes):
                 norm_val = val
             xdata=0; ydata=0
             xdata, ydata = line.get_data()
+            
             if axis=='x':
                 xdata =  np.array(xdata)/norm_val
             else:
@@ -207,12 +208,13 @@ class AxesCHAPSim(mpl.axes.Axes):
             line.set_data(xdata, ydata)
             i+=1
 
+        lim_val = max(val) if hasattr(val,"__iter__") else val
         if self.get_lines():
             if axis == 'x':
-                xlims = [x/val for x in self.get_xlim()]
+                xlims = [x/lim_val for x in self.get_xlim()]
                 self.set_xlim(xlims)
             else:
-                ylims = [y/val for y in self.get_ylim()]
+                ylims = [y/lim_val for y in self.get_ylim()]
                 self.set_ylim(ylims)
 
     def array_normalise(self,axis,val):
@@ -415,7 +417,44 @@ def update_quiver_kw(quiver_kw):
             del quiver_kw['scale']
     else:
         quiver_kw = {}
+
     return quiver_kw
+
+def update_line_kw(line_kw,**kwargs):
+    if line_kw is None:
+        line_kw = {}
+    elif not isinstance(line_kw,dict):
+        raise TypeError("line_kw needs to be a dictionary")
+
+    for key, val in kwargs.items():
+        if key not in line_kw.keys():
+            line_kw[key] = val    
+
+    return line_kw
+
+def update_contour_kw(contour_kw,**kwargs):
+    if contour_kw is None:
+        contour_kw = {}
+    elif not isinstance(contour_kw,dict):
+        raise TypeError("line_kw needs to be a dictionary")
+
+    for key, val in kwargs.items():
+        if key not in contour_kw.keys():
+            contour_kw[key] = val    
+
+    return contour_kw
+
+def update_subplots_kw(subplots_kw,squeeze=True,**kwargs):
+    if subplots_kw is None:
+        subplots_kw = {}
+
+    subplots_kw['squeeze'] = squeeze 
+
+    for key, val in kwargs.items():
+        if key not in subplots_kw.keys():
+            subplots_kw[key] = val    
+
+    return subplots_kw
 
 def close(*args,**kwargs):
     plt.close(*args,**kwargs)

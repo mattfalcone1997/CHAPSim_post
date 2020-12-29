@@ -19,8 +19,6 @@ import numbers
 import os
 
 from . import CHAPSim_Tools as CT
-msg = "This module is currently experimental and under testing, it may be integrated into the main library in the future\n"
-warnings.warn(msg,FutureWarning,stacklevel=2)
 
 class datastruct:
     def __init__(self,*args,array=False,dict=False,hdf=False,**kwargs):
@@ -271,35 +269,40 @@ class datastruct:
         return self._data.__str__()
         
     def __getitem__(self,key):
-
+        key = self._getitem_check_key(key)
+        return self._data[key]
+        
+    def _getitem_check_key(self,key,err_msg=None,warn_msg=None):
         if isinstance(key,tuple):
             if len(key) > 1:
-                return self._getitem_process_multikey(key)
+                return self._getitem_process_multikey(key,err_msg,warn_msg)
             else:
-                return self._getitem_process_singlekey(*key)
+                return self._getitem_process_singlekey(*key,err_msg=err_msg)
         else:
-            return self._getitem_process_singlekey(key)
+            return self._getitem_process_singlekey(key,err_msg=err_msg)
 
-    def _getitem_process_multikey(self,key):
+    def _getitem_process_multikey(self,key,err_msg=None,warn_msg=None):
         if not self._is_multidim():
             msg = "A multidimensional index passed but a single dimensional datastruct"
             raise KeyError(msg)
         key = tuple(str(k) if not isinstance(k,numbers.Number) else "%g"%k for k in key )
 
         if key in self._data.keys():
-            return self._data[key]
+            return key
         elif len(self._outer_index) == 1:
-            warn_msg = f"The outer index provided is incorrect ({key[0]})"+\
+            if warn_msg is None:
+                warn_msg = f"The outer index provided is incorrect ({key[0]})"+\
                     f" that is present (there is only one value present in the"+\
                     f" datastruct ({self._outer_index[0]}))"
             warnings.warn(warn_msg,stacklevel=2)
             key = (self._outer_index[0],*key[1:])
-            return self._data[key]
+            return key
         else:
-            msg = f"The key provided ({key}) to the datastruct is not present and cannot be corrected internally."
-            raise KeyError(msg)
+            if err_msg is None:
+                err_msg = f"The key provided ({key}) to the datastruct is not present and cannot be corrected internally."
+            raise KeyError(err_msg)
 
-    def _getitem_process_singlekey(self,key):
+    def _getitem_process_singlekey(self,key,err_msg=None):
 
         if isinstance(key, numbers.Number):
             key = "%g"%key
@@ -307,14 +310,38 @@ class datastruct:
             key = str(key)
 
         if key in self._data.keys():
-            return self._data[key]
+            return key
         elif len(self._outer_index) == 1:
             key = (self._outer_index[0],key)
-            return self._data[key]
+            return key
         else:
-            msg = f"The key provided ({key}) to the datastruct is not present and cannot be corrected internally."
-            raise KeyError(msg)
+            if err_msg is None:
+                err_msg = f"The key provided ({key}) to the datastruct is not present and cannot be corrected internally."
+            raise KeyError(err_msg)
 
+    def check_index(self,*key,exc_type=None,err_msg=None,warn_msg=None,inner=False,outer=False):
+        
+        if not isinstance(exc_type,(Exception,Warning)):
+            exc_type=None
+
+        if inner and outer:
+            set_key = key
+        elif inner:
+            set_key = (self._outer_index[0],*key)
+        elif outer:
+            inner_index = [x[1] for x in self.index]
+            set_key = (*key,inner_index[0])
+        else:
+            raise ValueError("Not index selected for testing")
+
+        try:
+            set_key = self._getitem_check_key(set_key,err_msg,warn_msg)
+        except KeyError as e:
+            if exc_type is None:
+                exc_type = type(e)
+            raise exc_type(e.args[0]) from None
+        else:
+            return set_key
 
     def __setitem__(self,key,value):
         if not isinstance(value,np.ndarray):

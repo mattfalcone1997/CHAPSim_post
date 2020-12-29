@@ -65,9 +65,8 @@ class CHAPSim_budget_base():
         
         return budgetDF
 
-    def _budget_plot(self,PhyTime, x_list,wall_units=True, fig='', ax ='',**kwargs):
-        if type(PhyTime) == float and PhyTime is not None:
-            PhyTime = "{:.9g}".format(PhyTime)
+    def _budget_plot(self,PhyTime, x_list,wall_units=True, fig=None, ax =None,line_kw=None,**kwargs):
+
         u_tau_star, delta_v_star = self.avg_data._wall_unit_calc(PhyTime)
         budget_scale = u_tau_star**3/delta_v_star
         
@@ -87,18 +86,16 @@ class CHAPSim_budget_base():
 
         ax_size=(int(np.ceil(ax_size/2)),2) if ax_size >2 else (ax_size,1)
 
-        kwargs['squeeze'] = False
         lower_extent= 0.2
-        kwargs['gridspec_kw'] = {'bottom': lower_extent}
-        kwargs['constrained_layout'] = False
-        # gridspec_kw={'bottom': lower_extent}
-        if not fig:
-            if 'figsize' not in kwargs.keys():
-                kwargs['figsize']=[7*ax_size[1],5*ax_size[0]+1]
-            else:
-                warnings.warn("Figure size calculator overidden: Figure quality may be degraded", stacklevel=2)
+        gridspec_kw = {'bottom': lower_extent}
+        figsize= [7*ax_size[1],5*ax_size[0]+1]
+
+        kwargs = cplt.update_subplots_kw(kwargs,squeeze=False,
+                                        gridspec_kw=gridspec_kw)
+        if fig is None:
+            kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
             fig, ax = cplt.subplots(*ax_size,**kwargs)
-        elif not ax:
+        elif ax is None:
             ax=fig.subplots(*ax_size,**kwargs)
         else:
             ax =np.array([ax])
@@ -114,6 +111,7 @@ class CHAPSim_budget_base():
         if not hasattr(x_list,'__iter__'):
             x_list=[x_list]
 
+        line_kw= cplt.update_line_kw(line_kw)
         for i,x_loc in enumerate(x_list):
             for comp in comp_list:
                 budget_values = self.budgetDF[PhyTime,comp].copy()
@@ -126,7 +124,7 @@ class CHAPSim_budget_base():
                 if self.comp == 'uv':
                     budget= budget * -1.0
 
-                ax[i].cplot(Y_coords[x,:],budget,label=comp.title())
+                ax[i].cplot(Y_coords[x,:],budget,label=comp.title(),**line_kw)
     
                 
                 if wall_units:
@@ -139,9 +137,9 @@ class CHAPSim_budget_base():
                 # ax[i].set_title(r"$x/\delta=%.3g$" %x_coords[x],loc='right',pad=-20)
                 # if i == 0:
                 if mpl.rcParams['text.usetex'] == True:
-                    ax[i].set_ylabel("Loss\ \ \ \ \ \ \ \ Gain")# ,fontsize=18)
+                    ax[i].set_ylabel(r"Loss\ \ \ \ \ \ \ \ Gain")# ,fontsize=18)
                 else:
-                    ax[i].set_ylabel("Loss        Gain")# ,fontsize=18)
+                    ax[i].set_ylabel(r"Loss        Gain")# ,fontsize=18)
                 
                 #ax[i].grid()
 
@@ -161,9 +159,8 @@ class CHAPSim_budget_base():
         # gs = ax[0,0].get_gridspec()
         # gs.ax[0,0].get_gridspec()tight_layout(fig,rect=(0,0.1,1,1))
         return fig, ax
-    def _plot_integral_budget(self,comp=None,PhyTime='',wall_units=True,fig='',ax='',**kwargs):
-        if type(PhyTime) == float and PhyTime is not None:
-            PhyTime = "{:.9g}".format(PhyTime)
+    def _plot_integral_budget(self,comp=None,PhyTime='',wall_units=True,fig=None,ax=None,line_kw=None,**kwargs):
+
         budget_terms = tuple([x[1] for x in self.budgetDF.index])
         y_coords = self.avg_data.CoordDF['y']
 
@@ -181,12 +178,14 @@ class CHAPSim_budget_base():
 
         
         u_tau_star, delta_v_star = self.avg_data._wall_unit_calc(PhyTime)
-        if not fig:
-            if 'figsize' not in kwargs.keys():
-                kwargs['figsize'] = [10,5]
+        
+        if fig is None:
+            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
             fig,ax = cplt.subplots(**kwargs)
-        elif not ax:
+        elif ax is None:
             ax = fig.add_subplots(1,1,1)
+
+        line_kw= cplt.update_line_kw(line_kw)
         xaxis_vals = self.avg_data._return_xaxis()
 
         for comp in comp_list:
@@ -198,7 +197,7 @@ class CHAPSim_budget_base():
                     delta_star=1.0
                     integral_budget[i] /=(delta_star*u_tau_star[i]**3/delta_v_star[i])
             label = r"$\int^{\delta}_{-\delta}$ %s $dy$"%comp.title()
-            ax.cplot(xaxis_vals,integral_budget,label=label)
+            ax.cplot(xaxis_vals,integral_budget,label=label,**line_kw)
         budget_symbol = {}
 
         # if wall_units:
@@ -209,16 +208,14 @@ class CHAPSim_budget_base():
         ax.clegend(ncol=4,vertical=False)
         #ax.grid()
         return fig, ax
-    def _plot_budget_x(self,comp,y_vals_list,Y_plus=True,PhyTime='',fig='',ax='',**kwargs):
-        if PhyTime:
-            if not isinstance(PhyTime,str) and PhyTime is not None:
-                PhyTime = "{:.9g}".format(PhyTime)
+    def _plot_budget_x(self,comp,y_vals_list,Y_plus=True,PhyTime=None,fig=None,ax=None,**kwargs):
         
         comp_index = [x[1] for x in self.budgetDF.index]
         if not comp.lower() in comp_index:
             msg = "comp must be a component of the"+\
                         " Reynolds stress budget: %s" %comp_index
             raise KeyError(msg) 
+
         if y_vals_list != 'max':
             if Y_plus:
                 y_index = CT.Y_plus_index_calc(self, self.CoordDF, y_vals_list)
@@ -231,12 +228,12 @@ class CHAPSim_budget_base():
             budget_term = self.budgetDF[PhyTime,comp]
             budget_term = np.amax(budget_term,axis=0)
 
-        if not fig:
-            if 'figsize' not in kwargs.keys():
-                kwargs['figsize'] = [10,5]
+        if fig is None:
+            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
             fig,ax = cplt.subplots(**kwargs)
-        elif not ax:
-            ax=fig.c_add_subplot(1,1,1)
+        elif ax is None:
+            ax=fig.add_subplot(1,1,1)
+
         xaxis_vals = self.avg_data._return_xaxis()
         if y_vals_list != 'max':
             for i in range(len(y_index)):
@@ -387,14 +384,9 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         dissipation = -(2/REN)*(du1dxdu2dx + du1dydu2dy)
         return dissipation
 
-    def budget_plot(self, x_list,PhyTime='',wall_units=True, fig='', ax ='',**kwargs):
-        if len(set([x[0] for x in self.avg_data.UU_tensorDF.index])) == 1:
-            avg_time = list(set([x[0] for x in self.avg_data.UU_tensorDF.index]))[0]
-            if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
-            PhyTime = avg_time
-        else:
-            assert PhyTime in set([x[0] for x in self.avg_data.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
+    def budget_plot(self, x_list,PhyTime=None,wall_units=True, fig=None, ax =None,**kwargs):
+        
+        PhyTime = self.avg_data.check_PhyTime(PhyTime)
 
         fig, ax = super()._budget_plot(PhyTime, x_list,wall_units=wall_units, fig=fig, ax =ax,**kwargs)
         for a,x in zip(ax,x_list):
@@ -410,33 +402,22 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         
         return fig, ax
 
-    def plot_integral_budget(self,comp=None, PhyTime='', wall_units=True, fig='', ax='', **kwargs):
-        if len(set([x[0] for x in self.avg_data.UU_tensorDF.index])) == 1:
-            avg_time = list(set([x[0] for x in self.avg_data.UU_tensorDF.index]))[0]
-            if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
-            PhyTime = avg_time
-        else:
-            assert PhyTime in set([x[0] for x in self.avg_data.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
+    def plot_integral_budget(self,comp=None, PhyTime=None, wall_units=True, fig=None, ax=None, **kwargs):
+        
+        self.avg_data.check_PhyTime(PhyTime)
 
         fig, ax = super()._plot_integral_budget(comp,PhyTime, wall_units=wall_units, fig=fig, ax=ax, **kwargs)
 
         return fig, ax
-    def plot_budget_x(self,comp=None,y_vals_list='max',Y_plus=True,PhyTime='',fig='',ax='',**kwargs):
-        if len(set([x[0] for x in self.avg_data.UU_tensorDF.index])) == 1:
-            avg_time = list(set([x[0] for x in self.avg_data.UU_tensorDF.index]))[0]
-            if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
-            PhyTime = avg_time
-        else:
-            assert PhyTime in set([x[0] for x in self.avg_data.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
+    def plot_budget_x(self,comp=None,y_vals_list='max',Y_plus=True,PhyTime=None,fig=None,ax=None,**kwargs):
         
-        if not fig:
-            if 'figsize' not in kwargs.keys():
-                kwargs['figsize'] = [10,5]
+        self.avg_data.check_PhyTime(PhyTime)
+
+        if fig is None:
+            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
             fig,ax = cplt.subplots(**kwargs)
-        elif not ax:
-            ax=fig.c_add_subplot(1,1,1)
+        elif ax is None:
+            ax=fig.add_subplot(1,1,1)
 
         
         if comp ==None:
@@ -575,7 +556,7 @@ class CHAPSim_budget_tg(CHAPSim_budget_base):
         dissipation = -(2/REN)*(du1dxdu2dx + du1dydu2dy)
         return dissipation#.flatten()
 
-    def budget_plot(self, times_list,wall_units=True, fig='', ax ='',**kwargs):
+    def budget_plot(self, times_list,wall_units=True, fig=None, ax =None,**kwargs):
 
         if not isinstance(times_list,(float,list)):
             times_list = [times_list]
@@ -595,22 +576,20 @@ class CHAPSim_budget_tg(CHAPSim_budget_base):
         
         return fig, ax
 
-    def plot_integral_budget(self,comp=None, wall_units=True, fig='', ax='', **kwargs):
+    def plot_integral_budget(self,comp=None, wall_units=True, fig=None, ax=None, **kwargs):
         PhyTime = None
         fig, ax = super()._plot_integral_budget(comp=comp,PhyTime=PhyTime, wall_units=wall_units, fig=fig, ax=ax, **kwargs)
         ax.set_xlabel(r"$t^*$")
         return fig, ax
 
-    def plot_budget_x(self,comp=None,y_vals_list='max',Y_plus=True,PhyTime='',fig='',ax='',**kwargs):
+    def plot_budget_x(self,comp=None,y_vals_list='max',Y_plus=True,fig=None,ax=None,**kwargs):
         PhyTime = None
         if not fig:
-            if 'figsize' not in kwargs.keys():
-                kwargs['figsize'] = [10,5]
+            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
             fig,ax = cplt.subplots(**kwargs)
         elif not ax:
-            ax=fig.c_add_subplot(1,1,1)
+            ax=fig.add_subplot(1,1,1)
 
-        
         if comp ==None:
             comp_list = [x[1] for x in self.budgetDF.index]
             comp_len = len(comp_list)

@@ -27,33 +27,31 @@ class CHAPSim_Inst():
     def __init__(self,*args,**kwargs):
         fromfile= kwargs.pop('fromfile',False)
         if not fromfile:
-            self._meta_data, self.CoordDF, self.NCL,\
-            self.InstDF,self.shape = self._inst_extract(*args,**kwargs)
+            self._inst_extract(*args,**kwargs)
         else:
-            self._meta_data, self.CoordDF, self.NCL,\
-            self.InstDF,self.shape = self._hdf_extract(*args,**kwargs)
+            self._hdf_extract(*args,**kwargs)
 
     def _inst_extract(self,time,meta_data='',path_to_folder='',abs_path = True,tgpost=False):
         if not meta_data:
             meta_data = self._module._meta_class(path_to_folder,abs_path,tgpost)
-        CoordDF = meta_data.CoordDF
-        NCL = meta_data.NCL
+        self._meta_data = meta_data
+        self.CoordDF = meta_data.CoordDF
+        self.NCL = meta_data.NCL
 
         #Give capacity for both float and lists
-        if isinstance(time,float): 
-            InstDF = self.__flow_extract(time,path_to_folder,abs_path,tgpost)
-        elif hasattr(time,'__iter__'):
+        if isinstance(time,(float,int)): 
+            self.InstDF = self._flow_extract(time,path_to_folder,abs_path,tgpost)
+        elif isinstance(time,(list,tuple)):
             for PhyTime in time:
                 if not hasattr(self, 'InstDF'):
-                    InstDF = self.__flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
+                    self.InstDF = self._flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
                 else: #Variable already exists
-                    local_DF = self.__flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
+                    local_DF = self._flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
                     # concat_DF = [self.InstDF,local_DF]
-                    InstDF.concat(local_DF)
+                    self.InstDF.concat(local_DF)
         else:
             raise TypeError("\033[1;32 `time' must be either float or list")
-        shape = (NCL[2],NCL[1],NCL[0])
-        return meta_data,CoordDF,NCL,InstDF, shape
+        self.shape = (self.NCL[2],self.NCL[1],self.NCL[0])
 
     @classmethod
     def from_hdf(cls,*args,**kwargs):
@@ -61,21 +59,20 @@ class CHAPSim_Inst():
     
     def _hdf_extract(self,file_name,group_name=''):
         base_name=group_name if group_name else 'CHAPSim_Inst'
-        meta_data = self._module._meta_class.from_hdf(file_name,base_name+'/meta_data')
-        CoordDF=meta_data.CoordDF
-        NCL=meta_data.NCL
+        self._meta_data = self._module._meta_class.from_hdf(file_name,base_name+'/meta_data')
+        self.CoordDF=self._meta_data.CoordDF
+        self.NCL=self._meta_data.NCL
 
-        shape = (NCL[2],NCL[1],NCL[0])
+        self.shape = (self.NCL[2],self.NCL[1],self.NCL[0])
         
-        InstDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
-        return meta_data, CoordDF, NCL, InstDF, shape
+        self.InstDF = cd.datastruct.from_hdf(file_name,shapes=self.shape,key=base_name+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
 
     def save_hdf(self,file_name,write_mode,group_name=''):
         base_name=group_name if group_name else 'CHAPSim_Inst'
         self._meta_data.save_hdf(file_name,write_mode,group_name=base_name+'/meta_data')
         self.InstDF.to_hdf(file_name,key=base_name+'/InstDF',mode='a')
     # @profile(stream=open("mem_check.txt",'w'))
-    def __flow_extract(self,Time_input,path_to_folder,abs_path,tgpost):
+    def _flow_extract(self,Time_input,path_to_folder,abs_path,tgpost):
         """ Extract velocity and pressure from the instantanous files """
         instant = "%0.9E" % Time_input
         file_folder = "1_instant_D"
@@ -164,6 +161,18 @@ class CHAPSim_Inst():
                 flow_interp[2,i,:,:] = 0.5*(flow_info[2,i,:,:-1] + flow_info[2,0,:,:-1])
         flow_interp[3,:,:,:] = flow_info[3,:,:,:-1] #Removing final pressure value 
         return flow_interp
+
+    def check_PhyTime(self,PhyTime):
+        warn_msg = f"PhyTime invalid ({PhyTime}), varaible being set to only PhyTime present in datastruct"
+        err_msg = "PhyTime provided is not in the CHAPSim_AVG datastruct, recovery impossible"
+        with warnings.catch_warnings(record=True) as w:
+            key = self.InstDF.check_index(PhyTime,err_msg=err_msg,warn_msg=warn_msg,outer=True)
+            a = w
+        if PhyTime is not None and len(a)>0:
+            for warn in a:
+                warnings.warn(a.message)
+        return key[0]
+
     def inst_contour(self,axis1,axis2,axis3_value,flow_field,PhyTime,fig='',ax='',**kwargs):
         """Function to output velocity contour plot on a particular plane"""
         #======================================================================
@@ -171,8 +180,6 @@ class CHAPSim_Inst():
         # axis3_value is the cell value which will be shown
         # velo field represents the u,v,w or magnitude that will be ploted
         #======================================================================
-        if type(PhyTime) == float: #Convert float to string to be compatible with dataframe
-            PhyTime = "{:.9g}".format(PhyTime)
        
         if axis1 == axis2:
             raise ValueError("\033[1;32 Axes cannot be the same")
@@ -237,8 +244,7 @@ class CHAPSim_Inst():
         return fig, ax1
     def velo_vector(self,axis1,axis2,axis3_value,PhyTime,axis1_spacing,\
                     axis2_spacing, fig='', ax=''):
-        if type(PhyTime) == float:
-            PhyTime = "{:.9g}".format(PhyTime)
+
         if not fig:
             fig = cplt.figure()
         if not ax:
@@ -293,19 +299,9 @@ class CHAPSim_Inst():
         #             eigs = np.sort(S2_Omega2_eigvals[i,j,k,:])
         #             lambda2[i,j,k] = eigs[1]
         return lambda2
-    def plot_lambda2(self,vals_list,x_split_list='',PhyTime='',ylim='',Y_plus=True,avg_data='',colors='',fig=None,ax=None,**kwargs):
-        # if PhyTime:
-        #     if type(PhyTime) == float:
-        #         PhyTime = "{:.9g}".format(PhyTime)
+    def plot_lambda2(self,vals_list,x_split_list='',PhyTime=None,ylim='',Y_plus=True,avg_data='',colors='',fig=None,ax=None,**kwargs):
                 
-        # if len(set([x[0] for x in self.InstDF.index])) == 1:
-        #     avg_time = list(set([x[0] for x in self.InstDF.index]))[0]
-        #     if PhyTime and PhyTime != avg_time:
-        #         warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
-        #     PhyTime = avg_time
-        # else:
-        #     assert PhyTime in set([x[0] for x in self.InstDF.index]), "PhyTime must be present in CHAPSim_AVG class"
-            
+        PhyTime = self.check_PhyTime(PhyTime)            
         
         
         if not hasattr(vals_list,'__iter__'):
@@ -352,90 +348,37 @@ class CHAPSim_Inst():
         return fig, ax
 
     def vorticity_calc(self,PhyTime=''):
-        # if PhyTime:
-        #     if type(PhyTime) == float:
-        #         PhyTime = "{:.9g}".format(PhyTime)
-                
-        # if len(set([x[0] for x in self.InstDF.index])) == 1:
-        #     avg_time = list(set([x[0] for x in self.InstDF.index]))[0]
-        #     if PhyTime and PhyTime != avg_time:
-        #         warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
-        #     PhyTime = avg_time
-        # else:
-        #     assert PhyTime in set([x[0] for x in self.InstDF.index]), "PhyTime must be present in CHAPSim_AVG class"
 
         vorticity = np.zeros((3,*self.shape),dtype='f8')
         u_velo = self.InstDF[PhyTime,'u']
         v_velo = self.InstDF[PhyTime,'v']
         w_velo = self.InstDF[PhyTime,'w']
 
-        vorticity[0] = Grad_calc(self.CoordDF,w_velo,'y',False) - Grad_calc(self.CoordDF,v_velo,'z',False)      
-        vorticity[1] = Grad_calc(self.CoordDF,u_velo,'z',False) - Grad_calc(self.CoordDF,w_velo,'x',False)      
-        vorticity[2] = Grad_calc(self.CoordDF,v_velo,'x',False) - Grad_calc(self.CoordDF,u_velo,'y',False)     
+        vorticity[0] = CT.Grad_calc(self.CoordDF,w_velo,'y',False) - CT.Grad_calc(self.CoordDF,v_velo,'z',False)      
+        vorticity[1] = CT.Grad_calc(self.CoordDF,u_velo,'z',False) - CT.Grad_calc(self.CoordDF,w_velo,'x',False)      
+        vorticity[2] = CT.Grad_calc(self.CoordDF,v_velo,'x',False) - CT.Grad_calc(self.CoordDF,u_velo,'y',False)     
 
         # vorticity = vorticity.reshape(3,np.prod(self.shape))
         return cd.datastruct(vorticity,index=['x','y','z'])
 
     def plot_vorticity_contour(self,comp,slice,ax_val,PhyTime=None,avg_data=None,y_mode='half_channel',pcolor_kw=None,fig=None,ax=None,**kwargs):
-        # if PhyTime is not None:
-        #     if type(PhyTime) == float:
-        #         PhyTime = "{:.9g}".format(PhyTime)
-                
-        # if len(set([x[0] for x in self.InstDF.index])) == 1:
-        #     fluct_time = list(set([x[0] for x in self.InstDF.index]))[0]
-        #     if PhyTime is not None and PhyTime != fluct_time:
-        #         warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_fluct class" %float(fluct_time), stacklevel=2)
-        #     PhyTime = fluct_time
-        # else:
-        #     assert PhyTime in set([x[0] for x in self.InstDF.index]), "PhyTime must be present in CHAPSim_AVG class"
         
-        # if slice not in ['xy','zy','xz']:
-        #     slice = slice[::-1]
-        #     if slice not in ['xy','yz','xz']:
-        #         msg = "The contour slice must be either %s"%['xy','yz','xz']
-        #         raise KeyError(msg)
+        if isinstance(ax_val,(int,float)):
+            ax_val = [ax_val]        
+        elif not isinstance(ax_val,(list,tuple)):
+            msg = "ax_val must be an interable or a float or an int not a %s"%type(ax_val)
+            raise TypeError(msg)
         
-        # slice = list(slice)
-        # slice_set = set(slice)
-        # coord_set = set(list('xyz'))
-        # coord = "".join(coord_set.difference(slice_set))
-
-        # if not hasattr(ax_val,'__iter__'):
-        #     if isinstance(ax_val,float) or isinstance(ax_val,int):
-        #         ax_val = [ax_val] 
-        #     else:
-        #         msg = "ax_val must be an interable or a float or an int not a %s"%type(ax_val)
-        #         raise TypeError(msg)
-
-        # if coord == 'y':
-        #     norm_vals = [0]*len(ax_val)
-        #     if avg_data is None:
-        #         msg = f'For contour slice {slice}, avg_data must be provided'
-        #         raise ValueError(msg)
-        #     axis_index = CT.y_coord_index_norm(avg_data,self.CoordDF,ax_val,norm_vals,y_mode)
-        # else:
-        #     axis_index = CT.coord_index_calc(self.CoordDF,coord,ax_val)
-        #     if not hasattr(axis_index,'__iter__'):
-        #         axis_index = [axis_index]
-
-        if not hasattr(ax_val,'__iter__'):
-            if isinstance(ax_val,float) or isinstance(ax_val,int):
-                ax_val = [ax_val] 
-            else:
-                msg = "ax_val must be an interable or a float or an int not a %s"%type(ax_val)
-                raise TypeError(msg)
+        PhyTime = self.check_PhyTime(PhyTime)
 
         slice, coord,axis_index = CT.contour_plane(slice,ax_val,avg_data,y_mode,PhyTime)
 
         if fig is None:
-            if 'figsize' not in kwargs:
-                kwargs['figsize'] = [8,4*len(ax_val)]
-            else:
-                warnings.warn("figure size algorithm overrided: may result in poor quality graphs", stacklevel=2)
-            kwargs['squeeze'] = False
+            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False,figsize=[8,4*len(ax_val)])
             fig,ax = cplt.subplots(len(ax_val),**kwargs)
         elif ax is None:
-            ax=fig.subplots(len(ax_val),squeeze=False)      
+            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False)
+            ax=fig.subplots(len(ax_val),**kwargs)      
         ax = ax.flatten()
 
         VorticityDF = self.vorticity_calc(PhyTime=PhyTime)
@@ -449,12 +392,6 @@ class CHAPSim_Inst():
         pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
         for i in range(len(ax_val)):
             contour_array = CT.contour_indexer(vort_array,axis_index[i],coord)
-            # if coord == 'x':
-            #     contour_array = vort_array[:,:,axis_index[i]].squeeze().T
-            # elif coord == 'y':
-            #     contour_array = vort_array[:,axis_index[i]].squeeze()
-            # else:
-            #     contour_array = vort_array[axis_index[i]].squeeze()
             mesh = ax[i].pcolormesh(coord_1_mesh,coord_2_mesh,contour_array,**pcolor_kw)
             ax[i].set_xlabel(r"$%s^*$"%slice[0])
             ax[i].set_ylabel(r"$%s$"%slice[1])
@@ -480,19 +417,17 @@ class CHAPSim_Inst_io(CHAPSim_Inst):
     tgpost = False
     def _inst_extract(self,*args,**kwargs):
         kwargs['tgpost'] = self.tgpost
-        return super()._inst_extract(*args,**kwargs)
+        super()._inst_extract(*args,**kwargs)
 
 class CHAPSim_Inst_tg(CHAPSim_Inst):
     tgpost = True
     def _inst_extract(self,*args,**kwargs):
         kwargs['tgpost'] = self.tgpost
-        meta_data,CoordDF,NCL,InstDF, shape = super()._inst_extract(*args,**kwargs)
+        super()._inst_extract(*args,**kwargs)
         
-        NCL1_io = meta_data.metaDF['NCL1_tg_io'][1]
+        NCL1_io = self._meta_data.metaDF['NCL1_tg_io'][1]
         ioflowflg = True if NCL1_io > 2 else False
         
         if ioflowflg:
-            NCL[0] -= 1
-        shape = (NCL[2],NCL[1],NCL[0])
-
-        return meta_data,CoordDF,NCL,InstDF, shape
+            self.NCL[0] -= 1
+        self.shape = (self.NCL[2],self.NCL[1],self.NCL[0])

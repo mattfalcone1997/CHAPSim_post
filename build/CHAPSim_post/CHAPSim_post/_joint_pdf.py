@@ -63,26 +63,20 @@ class CHAPSim_joint_PDF_base():
     def plot_joint_PDF(self, xy_list,contour_kw=None,fig=None, ax=None,**kwargs):
         
         if fig is None:
-            if 'figsize' not in kwargs:
-                kwargs['figsize'] = [8,4*len(xy_list)]
-            else:
-                warnings.warn("figure size algorithm overrided: may result in poor quality graphs", stacklevel=2)
-            kwargs['squeeze'] = False
+            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False,figsize=[8,4*len(xy_list)])
             fig,ax = cplt.subplots(len(xy_list),**kwargs)
         elif ax is None:
-            ax=fig.subplots(len(xy_list),squeeze=False)      
+            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False)
+            ax=fig.subplots(len(xy_list),**kwargs)      
         ax = ax.flatten()
 
-        if contour_kw is not None:
-            if not isinstance(contour_kw,dict):
-                raise TypeError("pdf_kwargs must be of type dict")
-        else:
-            contour_kw={}
+        contour_kw = cplt.update_contour_kw(contour_kw)
         i=0
-        y_unit = "y/\delta" if self._y_mode=='half_channel' \
-                else "\delta_u" if self._y_mode=='disp_thickness' \
-                else "\theta" if self._y_mode=='mom_thickness' else "y^+" \
-                if self._y_mode=='wall' and any(self._x_loc_norm!=0) else "y^{+0}"
+        y_unit = r"y/\delta" if self._y_mode=='half_channel' \
+                else r"\delta_u" if self._y_mode=='disp_thickness' \
+                else r"\theta" if self._y_mode=='mom_thickness' else r"y^+" \
+                if self._y_mode=='wall' and any(self._x_loc_norm!=0) else r"y^{+0}"
+        
         for xy in xy_list:
             u_array = self.u_arrayDF[xy]
             v_array = self.v_arrayDF[xy]

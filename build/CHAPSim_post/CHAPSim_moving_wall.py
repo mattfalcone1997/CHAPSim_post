@@ -28,28 +28,26 @@ _instant_class = CHAPSim_Inst
 
 class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
     _module = sys.modules[__name__]
-    def _extract_avg(self,time,meta_data='',path_to_folder='',time0='',abs_path=True):
-        if not meta_data:
-            meta_data = CHAPSim_meta(path_to_folder,abs_path,False)
+    # def _extract_avg(self,time,meta_data='',path_to_folder='',time0='',abs_path=True):
+    #     if not meta_data:
+    #         meta_data = CHAPSim_meta(path_to_folder,abs_path,False)
 
-        return super()._extract_avg(time,meta_data=meta_data,path_to_folder=path_to_folder,
-                                    time0=time0,abs_path=abs_path)
+    #     return super()._extract_avg(time,meta_data=meta_data,path_to_folder=path_to_folder,
+    #                                 time0=time0,abs_path=abs_path)
 
-    def _hdf_extract(self,file_name,group_name=''):
-        if not group_name:
-            group_name = 'CHAPSim_AVG_io'
-        return_list = list(super()._hdf_extract(file_name,group_name))
-        return_list[0] = CHAPSim_meta.from_hdf(file_name,group_name+'/meta_data')
+    # def _hdf_extract(self,file_name,group_name=''):
+    #     if not group_name:
+    #         group_name = 'CHAPSim_AVG_io'
+    #     return_list = list(super()._hdf_extract(file_name,group_name))
+    #     return_list[0] = CHAPSim_meta.from_hdf(file_name,group_name+'/meta_data')
         
-        return itertools.chain(return_list)
+    #     return itertools.chain(return_list)
 
     # def _copy_extract(self, avg_data):
     #      return_list = list(super()._copy_extract(avg_data))
     #      return_list[0] = CHAPSim_meta.copy(avg_data._meta_data)
     #      return itertools.chain(return_list)
     def _tau_calc(self,PhyTime):
-        if not isinstance(PhyTime,str) and not np.isnan(PhyTime):
-            PhyTime = "{:.9g}".format(PhyTime)
 
         u_velo = self.flow_AVGDF[PhyTime,'u']
         ycoords = self.CoordDF['y']
@@ -64,9 +62,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         return tau_star
 
     def _bulk_velo_calc(self,PhyTime):
-        if not isinstance(PhyTime,str) and not np.isnan(PhyTime):
-            PhyTime = "{:.9g}".format(PhyTime)
-            
+
         u_velo = self.flow_AVGDF[PhyTime,'u'].copy()
         ycoords = self.CoordDF['y']
         wall_velo = self._meta_data.moving_wall_calc()
@@ -79,18 +75,9 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
             
         return bulk_velo
 
-    def accel_param_calc(self,PhyTime=''):
-        if type(PhyTime) == float:
-            PhyTime = "{:.9g}".format(PhyTime)
+    def accel_param_calc(self,PhyTime=None):
 
-        if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
-            avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
-            if PhyTime and PhyTime != avg_time:
-                warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
-            PhyTime = avg_time
-        else:
-            assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
-
+        PhyTime = self.check_PhyTime(PhyTime)
 
         U_mean = self.flow_AVGDF[PhyTime,'u']
         U0_index = int(np.floor(self.NCL[1]*0.5))

@@ -82,17 +82,16 @@ class CHAPSim_Quad_Anl_base():
 
         return fluct_uv, quadrant_array 
 
-    def line_plot(self,h_list,coord_list,prop_dir,x_vals=0,y_mode='half_channel',norm=False,fig='',ax='',**kwargs):
+    def line_plot(self,h_list,coord_list,prop_dir,x_vals=0,y_mode='half_channel',norm=False,fig=None,ax=None,line_kw=None,**kwargs):
         assert x_vals is None or not hasattr(x_vals,'__iter__')
-        kwargs['squeeze'] = False
-        if not fig:
-            if 'figsize' not in kwargs.keys():
-                kwargs['figsize'] = [12,5*len(coord_list)]
-            else:
-                warnings.warn('Figure size algorithm overidden', stacklevel=2)
+
+        if fig is None:
+            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False,figsize=[12,5*len(coord_list)])
             fig, ax = cplt.subplots(4,len(coord_list),**kwargs)
-        elif not ax:
+        elif ax is None:
+            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False)
             ax = fig.subplots(4,len(coord_list),**kwargs)
+
         if prop_dir =='y':
             index = [self._avg_data._return_index(x) for x in coord_list]
 
@@ -113,7 +112,8 @@ class CHAPSim_Quad_Anl_base():
                 else r"\delta_u" if y_mode=='disp_thickness' \
                 else r"\theta" if y_mode=='mom_thickness' else r"y^+" \
                 if x_vals is None or x_vals!=0 else r"y^{+0}"
-
+        
+        line_kw=cplt.update_line_kw(line_kw)
         for i in range(1,5):
             for h in h_list:
                 quad_anal = self.QuadAnalDF[h,i]
@@ -126,7 +126,7 @@ class CHAPSim_Quad_Anl_base():
                             quad_anal_index[k]=quad_anal[index[k][j],k]
                     else:
                         quad_anal_index=quad_anal[index[j],:] if prop_dir == 'x' else quad_anal[:,index[j]].T
-                    ax[i-1,j].cplot(coords,quad_anal_index,label=r"$h=%.5g$"%h)
+                    ax[i-1,j].cplot(coords,quad_anal_index,label=r"$h=%.5g$"%h,**line_kw)
                     ax[i-1,j].set_xlabel(r"$%s/\delta$"%prop_dir)# ,fontsize=20)
                     ax[i-1,j].set_ylabel(r"$Q%d$"%i)# ,fontsize=20)
                     ax[i-1,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')# ,fontsize=16)
