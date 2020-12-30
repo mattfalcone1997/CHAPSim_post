@@ -444,17 +444,62 @@ def update_contour_kw(contour_kw,**kwargs):
 
     return contour_kw
 
-def update_subplots_kw(subplots_kw,squeeze=True,**kwargs):
+
+def update_subplots_kw(subplots_kw,**kwargs):
     if subplots_kw is None:
         subplots_kw = {}
-
-    subplots_kw['squeeze'] = squeeze 
 
     for key, val in kwargs.items():
         if key not in subplots_kw.keys():
             subplots_kw[key] = val    
 
     return subplots_kw
+
+def create_fig_ax_with_squeeze(fig=None,ax=None,**kwargs):
+    
+    if fig is None:
+        fig, ax = subplots(**kwargs)
+    elif ax is None:
+        ax=fig.add_subplot(1,1,1)
+    else:
+        if not isinstance(fig, CHAPSimFigure):
+            msg = f"fig needs to be an instance of {CHAPSimFigure.__name__}"
+            raise TypeError(msg)
+        if not isinstance(ax,AxesCHAPSim):
+            msg = f"ax needs to be an instance of {AxesCHAPSim.__name__}"
+            raise TypeError(msg)
+    
+    return fig, ax
+
+def create_fig_ax_without_squeeze(*args,fig=None,ax=None,**kwargs):
+    if fig is None:
+        kwargs['squeeze'] = False
+        fig, ax = subplots(*args,**kwargs)
+    elif ax is None:
+        if 'subplot_kw' in kwargs:
+            kwargs['subplot_kw'].update({'squeeze':False})
+        else:
+            kwargs['subplot_kw'] = {'squeeze':False}
+
+        kwargs.pop('figsize',None)
+        ax=fig.subplots(*args,**kwargs)
+
+    if isinstance(ax,mpl.axes.Axes):
+        ax = np.array([ax])
+    elif all([isinstance(a,mpl.axes.Axes) for a in ax.flatten()]):
+        ax = np.array(ax)
+    else:   
+        msg = ("Axes provided to method must be of type "
+                f"{mpl.axes.Axes.__name__}  or an iterable"
+                f" of it not {type(ax)}")
+        raise TypeError(msg)
+
+    ax = ax.flatten()
+
+    return fig, ax
+
+def get_legend_ncols(line_no):
+    return 4 if line_no >3 else line_no
 
 def close(*args,**kwargs):
     plt.close(*args,**kwargs)
@@ -750,7 +795,7 @@ if 'pyvistaqt' in sys.modules:
             self.set_background('white')
             self.show_bounds(color='black')
 
-        def plot_isosurface(self,X,Y,Z,V,isovalue,color='',*args):
+        def plot_isosurface(self,X,Y,Z,V,isovalue,color=None,*args):
 
             self.grid = pv.StructuredGrid(X,Y,Z)
             if self.grid is not None:
@@ -760,7 +805,7 @@ if 'pyvistaqt' in sys.modules:
             self.grid.cell_arrays['iso_%d'%num] = V.flatten()
             pgrid = self.grid.cell_data_to_point_data()
             color_list = ['Greens_r','Blues_r','Reds_r' ]
-            if color:
+            if color is not None:
                 color = color.title() + "s_r"
             else:
                 color = color_list[num%len(color_list)]

@@ -15,6 +15,7 @@ import warnings
 import gc
 import itertools
 import copy
+from abc import ABC, abstractmethod
 
 import CHAPSim_post as cp
 from .. import CHAPSim_plot as cplt
@@ -25,7 +26,7 @@ from .. import CHAPSim_dtypes as cd
 from ._meta import CHAPSim_meta
 _meta_class = CHAPSim_meta
 
-class CHAPSim_AVG_base():
+class CHAPSim_AVG_base(ABC):
     _module = sys.modules[__name__]
     def __init__(self,*args,**kwargs):
         fromfile= kwargs.pop('fromfile',False)
@@ -40,63 +41,44 @@ class CHAPSim_AVG_base():
     def copy(self):
         return copy.deepcopy(self)
 
-    # def _copy_extract(self, avg_data):
-    #     try:
-    #         meta_data = self._module._meta_class.copy(avg_data._meta_data)
-    #     except AttributeError:
-    #         meta_data = avg_data._meta_data
-    #     CoordDF = avg_data.CoordDF
-    #     metaDF = avg_data._metaDF
-    #     NCL = avg_data.NCL
-    #     shape = avg_data.shape
-    #     times = avg_data._times
-    #     flow_AVGDF = avg_data.flow_AVGDF
-    #     PU_vectorDF = avg_data.PU_vectorDF
-    #     UU_tensorDF = avg_data.UU_tensorDF
-    #     UUU_tensorDF = avg_data.UUU_tensorDF
-    #     Velo_grad_tensorDF = avg_data.Velo_grad_tensorDF
-    #     PR_Velo_grad_tensorDF = avg_data.PR_Velo_grad_tensorDF
-    #     DUDX2_tensorDF = avg_data.DUDX2_tensorDF
-
-    #     return_list = [meta_data, CoordDF, metaDF, NCL,shape,times,flow_AVGDF,PU_vectorDF,\
-    #                     UU_tensorDF,UUU_tensorDF, Velo_grad_tensorDF, PR_Velo_grad_tensorDF,\
-    #                     DUDX2_tensorDF]
-    #     return itertools.chain(return_list)
     @classmethod
     def from_hdf(cls,*args,**kwargs):
         return cls(fromfile=True,*args,**kwargs)
         
-    def save_hdf(self,file_name,write_mode,group_name=''):
-        base_name=group_name if group_name else 'CHAPSim_AVG'
+    def save_hdf(self,file_name,write_mode,key=None):
+        if key is None:
+            key = 'CHAPSim_AVG'
+
         hdf_file = h5py.File(file_name,write_mode)
-        group = hdf_file.create_group(base_name)
+        group = hdf_file.create_group(key)
         group.create_dataset("NCL",data=self.NCL)
         hdf_file.close()
-        self._meta_data.save_hdf(file_name,'a',group_name=base_name+'/meta_data')
-        self.flow_AVGDF.to_hdf(file_name,key=base_name+'/flow_AVGDF',mode='a')#,format='fixed',data_columns=True)
-        self.PU_vectorDF.to_hdf(file_name,key=base_name+'/PU_vectorDF',mode='a')#,format='fixed',data_columns=True)
-        self.UU_tensorDF.to_hdf(file_name,key=base_name+'/UU_tensorDF',mode='a')#,format='fixed',data_columns=True)
-        self.UUU_tensorDF.to_hdf(file_name,key=base_name+'/UUU_tensorDF',mode='a')#,format='fixed',data_columns=True)
-        self.Velo_grad_tensorDF.to_hdf(file_name,key=base_name+'/Velo_grad_tensorDF',mode='a')#,format='fixed',data_columns=True)
-        self.PR_Velo_grad_tensorDF.to_hdf(file_name,key=base_name+'/PR_Velo_grad_tensorDF',mode='a')#,format='fixed',data_columns=True)
-        self.DUDX2_tensorDF.to_hdf(file_name,key=base_name+'/DUDX2_tensorDF',mode='a')#,format='fixed',data_columns=True)
+        self._meta_data.save_hdf(file_name,'a',key=key+'/meta_data')
+        self.flow_AVGDF.to_hdf(file_name,key=key+'/flow_AVGDF',mode='a')#,format='fixed',data_columns=True)
+        self.PU_vectorDF.to_hdf(file_name,key=key+'/PU_vectorDF',mode='a')#,format='fixed',data_columns=True)
+        self.UU_tensorDF.to_hdf(file_name,key=key+'/UU_tensorDF',mode='a')#,format='fixed',data_columns=True)
+        self.UUU_tensorDF.to_hdf(file_name,key=key+'/UUU_tensorDF',mode='a')#,format='fixed',data_columns=True)
+        self.Velo_grad_tensorDF.to_hdf(file_name,key=key+'/Velo_grad_tensorDF',mode='a')#,format='fixed',data_columns=True)
+        self.PR_Velo_grad_tensorDF.to_hdf(file_name,key=key+'/PR_Velo_grad_tensorDF',mode='a')#,format='fixed',data_columns=True)
+        self.DUDX2_tensorDF.to_hdf(file_name,key=key+'/DUDX2_tensorDF',mode='a')#,format='fixed',data_columns=True)
 
-    def _hdf_extract(self,file_name,shape=None,group_name=None):
-        base_name=group_name if group_name is not None else 'CHAPSim_AVG'
+    def _hdf_extract(self,file_name,shape=None,key=None):
+        if key is None:
+            key = 'CHAPSim_AVG'
 
-        self._meta_data = self._module._meta_class.from_hdf(file_name,group_name+'/meta_data')
+        self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
         self.CoordDF = self._meta_data.CoordDF
         self._metaDF = self._meta_data.metaDF
         self.NCL=self._meta_data.NCL
         if shape == None:
             shape = (self.NCL[1],self.NCL[0])
-        self.flow_AVGDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/flow_AVGDF')#pd.read_hdf(file_name,key=base_name+'/flow_AVGDF')
-        self.PU_vectorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/PU_vectorDF')
-        self.UU_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/UU_tensorDF')
-        self.UUU_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/UUU_tensorDF')
-        self.Velo_grad_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/Velo_grad_tensorDF')
-        self.PR_Velo_grad_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/PR_Velo_grad_tensorDF')
-        self.DUDX2_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/DUDX2_tensorDF')
+        self.flow_AVGDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/flow_AVGDF')#pd.read_hdf(file_name,key=base_name+'/flow_AVGDF')
+        self.PU_vectorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/PU_vectorDF')
+        self.UU_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/UU_tensorDF')
+        self.UUU_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/UUU_tensorDF')
+        self.Velo_grad_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/Velo_grad_tensorDF')
+        self.PR_Velo_grad_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/PR_Velo_grad_tensorDF')
+        self.DUDX2_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/DUDX2_tensorDF')
 
     def _Reverse_decomp(self,flow_AVGDF,PU_vectorDF,UU_tensorDF,
                         UUU_tensorDF,Velo_grad_tensorDF,
@@ -145,12 +127,18 @@ class CHAPSim_AVG_base():
                         UUU_tensorDF,Velo_grad_tensorDF,\
                         PR_Velo_grad_tensorDF,DUDX2_tensorDF
 
+    @abstractmethod
     def _AVG_extract(self, *args,**kwargs):
         raise NotImplementedError
-
+    
+    @abstractmethod
     def _return_index(self,*args,**kwargs):
         raise NotImplementedError
     
+    @abstractmethod
+    def _return_xaxis(self,*args,**kwargs):
+        raise NotImplementedError
+
     def get_times(self):
         return self._times
 
@@ -170,7 +158,7 @@ class CHAPSim_AVG_base():
 
     def _y_plus_calc(self,PhyTime):
 
-        u_tau_star, delta_v_star = self._wall_unit_calc(PhyTime)
+        _, delta_v_star = self._wall_unit_calc(PhyTime)
         y_plus_shape=(self.shape[1],int(self.NCL[1]*0.5))
         y_plus = np.zeros(y_plus_shape)
         y_coord = self.CoordDF['y'][:int(self.NCL[1]*0.5)]
@@ -189,103 +177,83 @@ class CHAPSim_AVG_base():
         delta_integrand = np.zeros((U0_index,self.shape[1]))
         mom_thickness = np.zeros(self.shape[1])
         disp_thickness = np.zeros(self.shape[1])
+
         for i in range(U0_index):
-            theta_integrand[i] = (np.divide(U_mean[i],U0))*(1 - np.divide(U_mean[i],U0))
-            delta_integrand[i] = (1 - np.divide(U_mean[i],U0))
+            theta_integrand[i] = (U_mean[i]/U0)*(1 - U_mean[i]/U0)
+            delta_integrand[i] = 1 - U_mean[i]/U0
         for j in range(self.shape[1]):
             mom_thickness[j] = integrate.simps(theta_integrand[:,j],y_coords[:U0_index])
             disp_thickness[j] = integrate.simps(delta_integrand[:,j],y_coords[:U0_index])
-        shape_factor = np.divide(disp_thickness,mom_thickness)
+        shape_factor = disp_thickness/mom_thickness
         
         return disp_thickness, mom_thickness, shape_factor
+
     def _plot_shape_factor(self,*arg,fig=None,ax=None,line_kw=None,**kwargs):
         _, _, shape_factor = self._int_thickness_calc(*arg)
-        # x_coords = self.CoordDF['x'].dropna().values
         
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
-            fig, ax = cplt.subplots(**kwargs)
-        elif ax is None:
-            ax = fig.add_subplot(1,1,1)
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         xaxis = self._return_xaxis()
         line_kw = cplt.update_line_kw(line_kw,label = r"$H$")
         ax.cplot(xaxis,shape_factor,**line_kw)
-        # ax.set_xlabel(r"$x/\delta$ ")# ,fontsize=18)
-        ax.set_ylabel(r"$H$")# ,fontsize=18)
-        #ax.grid()
+        ax.set_ylabel(r"$H$")
         fig.tight_layout()
+
         return fig, ax
 
     def plot_mom_thickness(self,*arg,fig=None,ax=None,line_kw=None,**kwargs):
         _, theta, _ = self._int_thickness_calc(*arg)
-        # x_coords = self.CoordDF['x'].dropna().values
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
-            fig, ax = cplt.subplots(**kwargs)
-        elif ax is None:
-            ax = fig.add_subplot(1,1,1)
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
         
         xaxis = self._return_xaxis()
 
         line_kw = cplt.update_line_kw(line_kw,label=r"$\theta$")
         ax.cplot(xaxis,theta,**line_kw)
-        # ax.set_xlabel(r"$x/\delta$ ")# ,fontsize=18)
-        ax.set_ylabel(r"$\theta$")# ,fontsize=18)
-        #ax.grid()
+        ax.set_ylabel(r"$\theta$")
         fig.tight_layout()
+
         return fig, ax
 
     def plot_disp_thickness(self,*arg,fig=None,ax=None,line_kw=None,**kwargs):
         
         delta, _, _ = self._int_thickness_calc(*arg)
-        # x_coords = self.CoordDF['x'].dropna().values
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
-            fig, ax = cplt.subplots(**kwargs)
-        elif ax is None:
-            ax = fig.add_subplot(1,1,1)
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         xaxis = self._return_xaxis()
-        
         line_kw = cplt.update_line_kw(line_kw,label=r"$\delta$")
         ax.cplot(xaxis,delta,**line_kw)
-        # ax.set_xlabel(r"$x/\delta$ ")# ,fontsize=18)
-        ax.set_ylabel(r"$\delta^*$")# ,fontsize=18)
-        #ax.grid()
+        ax.set_ylabel(r"$\delta^*$")
         fig.tight_layout()
+
         return fig, ax
 
     def _avg_line_plot(self,x_vals, PhyTime,comp,fig=None,ax=None,line_kw=None,**kwargs):
-        # if not isinstance(PhyTime,str) and not np.isnan(PhyTime):
-        #     PhyTime = "{:.9g}".format(PhyTime)
 
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
-            fig, ax = cplt.subplots(**kwargs)
-        elif ax is None:
-            ax = fig.subplots(**kwargs)
-        # y_size = int(self.shape[0]*0.5)
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
+
         line_kw = cplt.update_line_kw(line_kw)
         for x in x_vals:
-            try:
-                index = self._return_index(x)
-            except ValueError:
-                warnings.warn("Wrong time input", stacklevel=2)
-                continue
-            else:
-                velo_mean=self.flow_AVGDF[PhyTime,comp][:,index]
-                ax.cplot(velo_mean,**line_kw)
+            index = self._return_index(x)
+            velo_mean=self.flow_AVGDF[PhyTime,comp][:,index]
+            ax.cplot(velo_mean,**line_kw)
 
         return fig, ax        
 
     def avg_line_plot(self,x_vals, *args,**kwargs):
 
         fig, ax = self._avg_line_plot(x_vals,*args,**kwargs)
+
         lines = ax.get_lines()[-len(x_vals):]
         y_coords = self.CoordDF['y']
         for line in lines:
             line.set_xdata(y_coords)
+
         ax.set_xlabel(r"$y^*$")
         ax.set_ylabel(r"$\bar{u}$")
         ax.relim()
@@ -296,10 +264,11 @@ class CHAPSim_AVG_base():
     def plot_near_wall(self,x_vals,PhyTime,fig=None,ax=None,line_kw=None,**kwargs):
         
         fig, ax = self._avg_line_plot(x_vals,PhyTime,'u',fig=fig,ax=ax,line_kw=line_kw,**kwargs)
+        
         lines = ax.get_lines()[-len(x_vals):]
         u_tau_star, _ = self._wall_unit_calc(PhyTime)
         y_plus = self._y_plus_calc(PhyTime)
-        Y_extent = int(self.shape[0]/2)
+        Y_extent = int(self.shape[0]*0.5)
 
         for line,x_val in zip(lines,x_vals):
             x_loc = self._return_index(x_val)
@@ -310,13 +279,15 @@ class CHAPSim_AVG_base():
             ylim = ax.get_ylim()[1]
             ax.set_ylim(top=1.1*max(ylim,np.amax(y_data)))
         
-        ax.cplot(y_plus[x_loc],y_plus[x_loc],color='red',linestyle='--',
-                            label=r"$\bar{u}^+=y^+$")
+        line_kw = cplt.update_line_kw(line_kw,color='red',linestyle='--',
+                                      label=r"$\bar{u}^+=y^+$")
+        ax.cplot(y_plus[0],y_plus[0],**line_kw)
         ax.set_xlabel(r"$y^+$")
         ax.set_ylabel(r"$\bar{u}^+$")
         ax.set_xscale('log')
         ax.relim()
         ax.autoscale_view()
+
         return fig, ax
 
     def plot_Reynolds(self,comp1,comp2,x_val,PhyTime,norm=None,Y_plus=True,fig=None,ax=None,line_kw=None,**kwargs):
@@ -327,15 +298,20 @@ class CHAPSim_AVG_base():
         elif comp1 == 'v' and comp2 =='u':
             comp_uu = comp_uu[::-1]     
         
+        if isinstance(x_val, (float,int)):
+            x_val =[x_val]
+        elif not isinstance(x_val,(list,tuple)):
+            msg = f"The locations provided must be of type float, int, list or tuple not {type(x_val)}"
+            raise TypeError(msg)
+
         x_loc = [self._return_index(x) for x in x_val]
-        uu = self.UU_tensorDF[PhyTime,comp_uu].copy()
+        uu = self.UU_tensorDF[PhyTime,comp_uu][:int(self.NCL[1]/2)].copy()
         
         if comp_uu == 'uv':
             uu *= -1.0
 
-        uu = uu[:int(self.NCL[1]/2)]
         y_coord = self.CoordDF['y'][:int(self.NCL[1]/2)]
-        #Reynolds_wall_units = np.zeros_like(uu)
+
         u_tau_star, delta_v_star = self._wall_unit_calc(PhyTime)
         if norm=='wall':
             for i in range(self.shape[1]):
@@ -346,36 +322,20 @@ class CHAPSim_AVG_base():
             for i in range(self.shape[1]):
                 uu[:,i] = uu[:,i]/(velo_bulk[i]*velo_bulk[i])
 
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,6])
-            fig,ax = cplt.subplots(**kwargs)
-        elif ax is None:
-            ax = fig.add_subplot(1,1,1)
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         line_kw = cplt.update_line_kw(line_kw)
 
-        if isinstance(x_loc,int):
+        for x in x_loc:
             if Y_plus:
-                y_coord_local = (1-np.abs(y_coord))/delta_v_star[x_loc]
+                y_coord_local = (1-np.abs(y_coord))/delta_v_star[x]
             else:
                 y_coord_local = y_coord
-            ax.cplot(y_coord_local,uu[:,x_loc],**line_kw)
 
-        elif isinstance(x_loc,list):
-            for j,x in enumerate(x_loc):
-                if Y_plus:
-                    y_coord_local = (1-np.abs(y_coord))/delta_v_star[x]
-                else:
-                    y_coord_local = y_coord
+            label=r"$x/\delta =%.3g$" % self.CoordDF['x'][x]
+            ax.cplot(y_coord_local,uu[:,x],label=label,**line_kw)
 
-                label=r"$x/\delta =%.3g$" % self.CoordDF['x'][x]
-                ax.cplot(y_coord_local,uu[:,x],label=label,**line_kw)
-
-            # axes_items_num = len(ax.get_lines())
-            # ncol = 4 if axes_items_num>3 else axes_items_num
-            # ax.clegend(vertical=False,ncol=ncol)
-        else:
-            raise TypeError("\033[1;32 x_loc must be of type list or int")
 
         y_label = comp_uu[0] +'\'' + comp_uu[1] +'\''
         if norm=='wall':
@@ -395,27 +355,16 @@ class CHAPSim_AVG_base():
                 ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"% y_label)# ,fontsize=20)
         
         if Y_plus:
-            ax.set_xlabel(r"$y^+$")# ,fontsize=20)
+            ax.set_xlabel(r"$y^+$")
         else:
-            ax.set_xlabel(r"$y/\delta$")# ,fontsize=20)
-        #ax.grid()
+            ax.set_xlabel(r"$y/\delta$")
         
         fig.tight_layout()
         
         return fig, ax
 
     def plot_Reynolds_x(self,comp1,comp2,y_vals_list,Y_plus=True,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
-        
-        # PUT IN IO CLASS
-        # if len(set([x[0] for x in self.UU_tensorDF.index])) == 1:
-        #     avg_time = list(set([x[0] for x in self.UU_tensorDF.index]))[0]
-        #     if PhyTime and PhyTime != avg_time:
-        #         warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time))
-        #     PhyTime = avg_time
-        # else:
-        #     assert PhyTime in set([x[0] for x in self.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
-        
-        
+
         comp_uu =comp1 + comp2
         if comp1 == 'w' and (comp2=='v' or comp2 =='u'):
             comp_uu = comp_uu[::-1]
@@ -428,60 +377,41 @@ class CHAPSim_AVG_base():
             else:
                 y_index = CT.coord_index_calc(self.CoordDF,'y',y_vals_list)
             rms_vals = self.UU_tensorDF[PhyTime,comp_uu].copy()[y_index]
-            # U1_mean = self.flow_AVGDF.loc[PhyTime,comp1].copy().values.reshape(self.shape)[y_index]
-            # U2_mean = self.flow_AVGDF.loc[PhyTime,comp2].copy().values.reshape(self.shape)[y_index]
-            # rms_vals = UU-U1_mean*U2_mean
-            
         else:
             y_index = [None]
             rms_vals = self.UU_tensorDF[PhyTime,comp_uu].copy()
-            # U1_mean = self.flow_AVGDF.loc[PhyTime,comp1].copy().values.reshape(self.shape)
-            # U2_mean = self.flow_AVGDF.loc[PhyTime,comp2].copy().values.reshape(self.shape)
-            # rms_vals = UU-U1_mean*U2_mean
             rms_vals = np.amax(rms_vals,axis=0)
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
-            fig,ax = cplt.subplots(**kwargs)
-        elif ax is None:
-            ax=fig.add_subplot(1,1,1)
 
         xaxis = self._return_xaxis()
-        y_label = comp_uu[0] +'\'' + comp_uu[1] +'\''
 
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
+
+        y_label = comp_uu[0] +'\'' + comp_uu[1] +'\''
         line_kw = cplt.update_line_kw(line_kw)
         if y_vals_list != 'max':
-        
             for i in range(len(y_index)):
                 ax.cplot(xaxis,rms_vals[i],label=r"$y^+=%.3g$"% y_vals_list[i],**line_kw)
-            axes_items_num = len(ax.get_lines())
-            ncol = 4 if axes_items_num>3 else axes_items_num
+
+            ncol = cplt.get_legend_ncols(len(lines))
             ax.clegend(vertical=False,ncol=ncol, fontsize=16)
-            # ax.set_xlabel(r"$x/\delta$")# ,fontsize=20)
-            ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)$"%y_label)# ,fontsize=20)#)# ,fontsize=22)
+            ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)$"%y_label)
             
         else:
             ax.cplot(xaxis,rms_vals,label=r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%y_label,**line_kw)
-            # ax.set_xlabel(r"$x/\delta$")# ,fontsize=20)
-            ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%y_label)# ,fontsize=20)#)# ,fontsize=22)
+            ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%y_label)
         
-        # ax.set_xlabel(r"$x/\delta$",text_kwargs)
-        # ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%comp_uu,text_kwargs)#)# ,fontsize=22)
-        #ax.grid()
         fig.tight_layout()
         return fig, ax
-
-        # def _avg_line_plot(self,x_vals,PhyTime,comp,)
 
     def _bulk_velo_calc(self,PhyTime):
             
         u_velo = self.flow_AVGDF[PhyTime,'u']
         ycoords = self.CoordDF['y']
-        # wall_velo = self._meta_data.moving_wall_calc()
         
         bulk_velo=np.zeros(self.shape[1])
-        # if relative:
-        #     for i in range(self.NCL[1]):
-        #         u_velo[i,:]=u_velo[i,:] - wall_velo
+
         for i in range(self.shape[1]):
             bulk_velo[i] = 0.5*integrate.simps(u_velo[:,i],ycoords)
             
@@ -490,63 +420,48 @@ class CHAPSim_AVG_base():
     def plot_bulk_velocity(self,PhyTime,fig=None,ax=None,line_kw=None,**kwargs):
     
         bulk_velo = self._bulk_velo_calc(PhyTime)
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
-            fig, ax=cplt.subplots(**kwargs)
-        elif ax is None:
-            ax =fig.add_subplot(1,1,1)
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         xaxis = self._return_xaxis()
 
         line_kw = cplt.update_line_kw(line_kw,label=r"$U_{b0}$")
 
         ax.cplot(xaxis,bulk_velo,**line_kw)
-        ax.set_ylabel(r"$U_b^*$")# ,fontsize=20)
-        # ax.set_xlabel(r"$x/\delta$")# ,fontsize=20)
-        #ax.grid()
+        ax.set_ylabel(r"$U_b^*$")
         return fig, ax
 
     def _tau_calc(self,PhyTime):
-
+        
         u_velo = self.flow_AVGDF[PhyTime,'u']
         ycoords = self.CoordDF['y']
         
-        # wall_velo = self._meta_data.moving_wall_calc()
-        
         tau_star = np.zeros_like(u_velo[1])
         mu_star = 1.0
-        #time0=time.time()
-        #sol, h_list = CT.Stencil_calc([0,1,2,3], 1)
-        #print(time.time()-time0)
-        #a,b,c,d = CT.Stencil_coeffs_eval(sol,h_list,[ycoords[0]--1.0,ycoords[1]-ycoords[0],ycoords[2]-ycoords[1]])
         for i in range(self.shape[1]):
-            #tau_star[i] = mu_star*(a*wall_velo[i] + b*u_velo[0,i] + c*u_velo[1,i] + d*u_velo[2,i])
-            tau_star[i] = mu_star*(u_velo[0,i]-0.0)/(ycoords[0]--1.0)#*(-1*u_velo[1,i] + 4*u_velo[0,i] - 3*wall_velo[i])/(0.5*ycoords[1]-1.5*(-1.0)+y_coords[0])
+            tau_star[i] = mu_star*(u_velo[0,i]-0.0)/(ycoords[0]--1.0)
     
         return tau_star
 
     def plot_skin_friction(self,PhyTime,fig=None,ax=None,line_kw=None,**kwargs):
+        
         rho_star = 1.0
         REN = self._metaDF['REN']
         tau_star = self._tau_calc(PhyTime)
         bulk_velo = self._bulk_velo_calc(PhyTime)
         
         skin_friction = (2.0/(rho_star*bulk_velo*bulk_velo))*(1/REN)*tau_star
-        # xcoords = self.CoordDF['x'].dropna().values
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
-            fig,ax = cplt.subplots(**kwargs)
-        elif ax is None:
-            ax = fig.add_subplot(1,1,1)
+        xaxis = self._return_xaxis()
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
         
         line_kw = cplt.update_line_kw(line_kw,label=r"$C_f$")
-
-        xaxis = self._return_xaxis()
         ax.cplot(xaxis,skin_friction,**line_kw)
-        # ax.set_xlabel(r"$x/\delta$")# ,fontsize=20)
-        ax.set_ylabel(r"$C_f$")# ,fontsize=20)
+        ax.set_ylabel(r"$C_f$")
+        
         fig.tight_layout()
-        #ax.grid()
         return fig, ax
 
     def plot_eddy_visc(self,x_val,PhyTime,Y_plus=True,Y_plus_max=100,fig=None,ax=None,line_kw=None,**kwargs):
@@ -559,63 +474,49 @@ class CHAPSim_AVG_base():
         
         x_loc = [self._return_index(x) for x in x_val]
     
-
         uv = self.UU_tensorDF[PhyTime,'uv']
-
         dUdy = self.Velo_grad_tensorDF[PhyTime,'uy']
         dVdx = self.Velo_grad_tensorDF[PhyTime,'vx']
         REN = self._metaDF['REN']
+
         mu_t = -uv*REN/(dUdy + dVdx)
-        mu_t = mu_t[:,x_loc]
         y_coord = self._meta_data.CoordDF['y']
         
-        
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
-            fig, ax = cplt.subplots(**kwargs)
-        elif ax is None:
-            ax = fig.add_subplot(1,1,1)
-        linestyle_list=['-','--','-.']
-        # x_coord = self._meta_data.CoordDF['x'].dropna().values
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
         
         line_kw = cplt.update_line_kw(line_kw)
 
-        for i in range(len(x_loc)):
+        for x in x_loc:
             if Y_plus:
-                avg_time = self.flow_AVGDF.index[0][0]
-                #wall_params = self._meta_data.metaDF.loc['moving_wallflg':'VeloWall']
-                # u_tau_star, delta_v_star = self._wall_unit_calc(avg_time)
-                y_coord_local = self._y_plus_calc(PhyTime)[i]
-                #y_coord_local = y_coord_local[y_coord_local<Y_plus_max]
-                
-                mu_t_local = mu_t[:int(y_coord.size/2),i]
-                
+                y_coord_local = self._y_plus_calc(PhyTime)[x]                
+                mu_t_local = mu_t[:int(y_coord.size*0.5),x]
             else:
                 y_coord_local = y_coord
-                mu_t_local = mu_t[:,i]
-            
-            # label = r"$x/\delta = %.3g$" %x_coord[x_loc_local[i]]
-            
-            ax.cplot(y_coord_local,mu_t_local,**line_kw)#label=label)
+                mu_t_local = mu_t[:,x]
+
+            ax.cplot(y_coord_local,mu_t_local,**line_kw)
             if Y_plus:
-                ax.set_xlabel(r"$y^+$")# ,fontsize=18)
+                ax.set_xlabel(r"$y^+$")
                 ax.set_xlim([0,Y_plus_max])
-                ax.set_ylim([-0.5,max(mu_t_local)*1.2])
             else:
-                ax.set_xlabel(r"$y/\delta$")# ,fontsize=18)
+                ax.set_xlabel(r"$y/\delta$")
                 ax.set_xlim([-1,-0.1])
-                ax.set_ylim([-0.5,max(mu_t_local)*1.2])
-            ax.set_ylabel(r"$\mu_t/\mu$")# ,fontsize=16)
+
+            ax.set_ylim([-0.5,max(mu_t_local)*1.2])
+            ax.set_ylabel(r"$\mu_t/\mu_0$")
 
         return fig, ax
+
     def __iadd__(self,other_avg):
         pass
 
 class CHAPSim_AVG_io(CHAPSim_AVG_base):
     tgpost = False
-    def _extract_avg(self,time,meta_data='',path_to_folder='',time0='',abs_path=True):
+    def _extract_avg(self,time,meta_data=None,path_to_folder=".",time0=None,abs_path=True):
         
-        if not meta_data:
+        
+        if meta_data is None:
             meta_data = self._module._meta_class(path_to_folder,abs_path,False)
         self._meta_data = meta_data
         self.CoordDF = meta_data.CoordDF
@@ -633,7 +534,6 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
                     local_DF_list = self._AVG_extract(PhyTime,time0,path_to_folder,abs_path)
                     for i, local_DF in enumerate(DF_list):
                         DF_list[i].concat(local_DF_list[i])
-                    # DF_list=DF_temp
                     
         else:
             raise TypeError("\033[1;32 `time' can only be a float or a list")
@@ -649,29 +549,19 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         self._times = list(set([x[0] for x in self.flow_AVGDF.index]))
         self.shape = (self.NCL[1],self.NCL[0])
     
-    def _hdf_extract(self,file_name,group_name=None):
-        if group_name is None:
-            group_name = 'CHAPSim_AVG_io'
+    def _hdf_extract(self,file_name,key=None):
+        if key is None:
+            key = 'CHAPSim_AVG_io'
         
-    
-        super()._hdf_extract(file_name,group_name=group_name)
-        # for DF in parent_list:
-        #     DF.data(shape)
-        
+        super()._hdf_extract(file_name,key=key)
         self.shape = (self.NCL[1],self.NCL[0])
-        # hdf_file = h5py.File(file_name,'r')
         self.times = list(set([x[0] for x in self.flow_AVGDF.index]))
-    
-        # hdf_file.close()
-
-        # return_list = [meta_data,CoordDF,metaDF,NCL,shape,times]
-        
-    # @profile(stream=open("mem_check_avg.txt",'w'))    
+     
     def _AVG_extract(self,Time_input,time0,path_to_folder,abs_path):
 
         AVG_info, NSTATIS1, PhyTime, NCL = self._extract_file(Time_input,path_to_folder,abs_path)
 
-        if time0:
+        if time0 is not None:
             AVG_info0, NSTATIS0,_,_ = self._extract_file(time0,path_to_folder,abs_path)
             AVG_info = (AVG_info*NSTATIS1 - AVG_info0*NSTATIS0)/(NSTATIS1-NSTATIS0)
             del AVG_info0
@@ -698,17 +588,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         UUU_tensor = AVG_info[5,:10,:,:].copy()
 
         del AVG_info; gc.collect()
-        #======================================================================
-        # flow_AVG = flow_AVG.reshape((4,NCL2*NCL1))
-        
-        # PU_vector = PU_vector.reshape((3,NCL1*NCL2))
-        # UU_tensor = UU_tensor.reshape((6,NCL1*NCL2))
-        # UUU_tensor = UUU_tensor.reshape((10,NCL1*NCL2))
-        # Velo_grad_tensor = Velo_grad_tensor.reshape((9,NCL1*NCL2))
-        # Pr_Velo_grad_tensor = Pr_Velo_grad_tensor.reshape((9,NCL1*NCL2))
-        # DUDX2_tensor = DUDX2_tensor.reshape((81,NCL1*NCL2))
-        #======================================================================
-        #Set up of pandas dataframes
+
         Phy_string = '%.9g' % PhyTime
         flow_index = [[Phy_string]*4,['u','v','w','P']]
         vector_index = [[Phy_string]*3,['u','v','w']]
@@ -724,14 +604,6 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         dudx_list = ["".join(dudx) for dudx in dudx_list]
         comp_string_list = list(itertools.product(dudx_list,dudx_list))
         comp_string_list = ["".join(comp_string) for comp_string in comp_string_list]
-
-        # OR:
-        # comp_string_list =[]
-        # for du1 in du_list:
-        #     for dx1 in dx_list: 
-        #         for du2 in du_list:
-        #             for dx2 in dx_list:
-        #                 comp_string_list.append(du1+dx1+du2+dx2)
 
         shape = [NCL2,NCL1]
         tensor_4_index = [[Phy_string]*81,comp_string_list]
@@ -772,10 +644,8 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         
         dummy_size = NCL1*NCL2*50*21
         r_info = np.fromfile(file,dtype='float64',count=3)
-        
         PhyTime = r_info[0]
-        #REN = r_info[1]
-        #DT = r_info[2]
+
         AVG_info = np.zeros(dummy_size)
         AVG_info = np.fromfile(file,dtype='float64',count=dummy_size)
 
@@ -783,10 +653,10 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         return AVG_info, NSTATIS, PhyTime, [NCL1,NCL2]
 
 
-    def save_hdf(self,file_name,write_mode,group_name=''):
-        if not group_name:
-            group_name = 'CHAPSim_AVG_io'
-        super().save_hdf(file_name,write_mode,group_name)
+    def save_hdf(self,file_name,write_mode,key=None):
+        if key is None:
+            key = 'CHAPSim_AVG_io'
+        super().save_hdf(file_name,write_mode,key)
 
     def _return_index(self,x_val):
         return CT.coord_index_calc(self.CoordDF,'x',x_val)
@@ -823,8 +693,8 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         return fig, ax
 
     def plot_mom_thickness(self, PhyTime=None,fig=None,ax=None,**kwargs):
+        
         PhyTime = self.check_PhyTime(PhyTime)
-
         fig, ax = super().plot_mom_thickness(PhyTime,fig=fig,ax=ax,**kwargs)
 
         ax.set_xlabel(r"$x^*$")
@@ -847,12 +717,12 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         fig, ax = super().plot_Reynolds(comp1,comp2,x_vals,PhyTime,
                                         norm=norm,Y_plus=Y_plus,
                                         fig=fig,ax=ax,**kwargs)
+
         lines = ax.get_lines()[-len(x_vals):]
         for line,x in zip(lines,x_vals):
             line.set_label(r"$x^*=%.3g$"%float(x))
 
-        axes_items_num = len(lines)
-        ncol = 4 if axes_items_num>3 else axes_items_num
+        ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
         ax.relim()
         ax.autoscale_view()
@@ -870,6 +740,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         ax.autoscale_view()
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
+
     def bulk_velo_calc(self,PhyTime=None):
 
         PhyTime = self.check_PhyTime(PhyTime)
@@ -892,7 +763,6 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
     def plot_skin_friction(self,PhyTime=None,fig=None,ax=None,**kwargs):
 
         PhyTime = self.check_PhyTime(PhyTime)        
-
         fig, ax = super().plot_skin_friction(PhyTime,fig,ax,**kwargs)
 
         ax.set_xlabel(r"$x^*$")
@@ -905,14 +775,15 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         PhyTime = self.check_PhyTime(PhyTime)
 
         fig, ax = super().plot_eddy_visc(x_vals,PhyTime,Y_plus,Y_plus_max,fig,ax,**kwargs)
+        
         lines = ax.get_lines()[-len(x_vals):]
         for line, x in zip(lines,x_vals):
             line.set_label(r"$x^*=%.3g$" % float(x))
 
-        axes_items_num = len(x_vals)
-        ncol = 4 if axes_items_num>3 else axes_items_num
+        ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
         ax.get_gridspec().tight_layout(fig)
+
         return fig, ax
 
     def avg_line_plot(self,x_vals,comp,PhyTime=None,fig=None,ax=None,*args,**kwargs):
@@ -920,13 +791,12 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         PhyTime = self.check_PhyTime(PhyTime)
 
         fig, ax = super().avg_line_plot(x_vals,PhyTime,comp,fig=None,ax=None,**kwargs)
-        line_no=len(x_vals)
-        lines = ax.get_lines()[-line_no:]
+        
+        lines = ax.get_lines()[-len(x_vals):]
         for line, x in zip(lines,x_vals):
-            line.set_label(r"$x^*=%.3g$"% x)
+            line.set_label(r"$x^*=%.3g$"% float(x))
 
-        axes_items_num = len(x_vals)
-        ncol = 4 if axes_items_num>3 else axes_items_num
+        ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
@@ -934,13 +804,12 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
     def plot_near_wall(self,x_vals,PhyTime=None,fig=None,ax=None,**kwargs):
         PhyTime = self.check_PhyTime(PhyTime)
         fig, ax = super().plot_near_wall(x_vals,PhyTime,fig=fig,ax=ax,**kwargs)
-        line_no=len(x_vals)
-        lines = ax.get_lines()[-line_no-1:-1]
+
+        lines = ax.get_lines()[-len(x_vals)-1:-1]
         for line, x in zip(lines,x_vals):
             line.set_label(r"$x^*=%.3g$"% x)
 
-        axes_items_num = len(x_vals)
-        ncol = 4 if axes_items_num>3 else axes_items_num
+        ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
@@ -967,7 +836,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         for (i,path),val in zip(enumerate(path_to_folder),shift_vals):
             if i ==0:
                 PhyTimes = [x-val for x in CT.time_extract(path,abs_path)]
-                if time0:
+                if time0 is not None:
                     PhyTimes = list(filter(lambda x: x > (time0-val), PhyTimes))
             else:
                 times = [x-val for x in CT.time_extract(path,abs_path)]
@@ -991,23 +860,23 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         
         return avg_data_tg_base
 
-    def _extract_avg(self,PhyTimes,*,meta_data='',path_to_folder='',time0='',abs_path=True):
+    def _extract_avg(self,PhyTimes,*,meta_data=None,path_to_folder='.',time0=None,abs_path=True):
 
         if cp.Params['TEST']:
             PhyTimes=PhyTimes[-3:]
         PhyTimes.sort()
 
-        if not meta_data:
+        if meta_data is None:
             meta_data = self._module._meta_class(path_to_folder,abs_path,tgpost=True)
         self._meta_data = meta_data
         self.CoordDF = meta_data.CoordDF
         self._metaDF = meta_data.metaDF
         self.NCL = meta_data.NCL
 
-        if isinstance(PhyTimes,float):
+        if isinstance(PhyTimes,(float,int)):
             times = ['%.9g' % PhyTimes]
             DF_list = self._AVG_extract(PhyTimes,path_to_folder,abs_path,self._metaDF,time0)
-        elif hasattr(PhyTimes,'__iter__'):
+        elif isinstance(PhyTimes,(tuple,list)):
             times = ['%.9g' % time for time in PhyTimes]
             for PhyTime in PhyTimes:
                 if 'DF_list' not in locals():
@@ -1015,12 +884,11 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
                 else:
                     local_DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,self._metaDF,time0)
                     for i, _ in enumerate(DF_list):
-                        DF_list[i].append(local_DF_list[i],axis=0)
-                    # DF_list=DF_temp
-            
+                        DF_list[i].append(local_DF_list[i],axis=0)            
 
         else:
-            raise TypeError("\033[1;32 `PhyTimes' can only be a float or a list") 
+            raise TypeError("PhyTimes can only be a float, int, tuple list") 
+       
         self._times=times
         self.shape =[self.NCL[1],len(PhyTimes)]
 
@@ -1148,13 +1016,15 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         return AVG_info, NSTATIS
     def _AVG_extract(self,PhyTime,path_to_folder,abs_path,metaDF,time0):
 
-        factor = metaDF['NCL1_tg_io'][0]*metaDF['NCL3'] if cp.Params["dissipation_correction"] else 1.0
         AVG_info, NSTATIS1 = self._extract_file(PhyTime,path_to_folder,abs_path)
+        
+        factor = metaDF['NCL1_tg_io'][0]*metaDF['NCL3'] if cp.Params["dissipation_correction"] else 1.0
         ioflowflg = True if metaDF['NCL1_tg_io'][1]>2 else False
+
         if ioflowflg and time0:
             AVG_info0, NSTATIS0 = self._extract_file(time0,path_to_folder,abs_path)
             AVG_info = (AVG_info*NSTATIS1 - AVG_info0*NSTATIS0)/(NSTATIS1-NSTATIS0)
-        # print(AVG_info[51])
+
         flow_AVG = AVG_info[:4]
         PU_vector = AVG_info[4:7]
         UU_tensor = AVG_info[7:13]
@@ -1191,35 +1061,25 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
                     Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
     
-    def _hdf_extract(self,file_name,group_name=None):
-        if group_name is None:
-            group_name = 'CHAPSim_AVG_tg'
-        base_name = group_name
+    def _hdf_extract(self,file_name,key=None):
+        if key is None:
+            key = 'CHAPSim_AVG_tg'
         
         hdf_file = h5py.File(file_name,'r')
-        self.shape = tuple(hdf_file[base_name].attrs["shape"][:])
-        self._times = list(np.char.decode(hdf_file[base_name].attrs["times"][:]))
+        self.shape = tuple(hdf_file[key].attrs["shape"][:])
+        self._times = list(np.char.decode(hdf_file[key].attrs["times"][:]))
         hdf_file.close()
 
-        super()._hdf_extract(file_name,shape=self.shape,group_name=base_name)
-        # meta_data = self._module._meta_class.from_hdf(file_name,base_name+'/meta_data')
-        # CoordDF = meta_data.CoordDF
-        # metaDF = meta_data.metaDF
-        # NCL=meta_data.NCL
-        # for DF in parent_list:
-        #     DF.data(shape)
+        super()._hdf_extract(file_name,shape=self.shape,key=key)
 
-        # return_list = [meta_data,CoordDF,metaDF,NCL,shape,times]
+    def save_hdf(self,file_name,write_mode,key=None):
+        if key is None:
+            key =  'CHAPSim_AVG_tg'
 
-
-    def save_hdf(self,file_name,write_mode,group_name=''):
-        if not group_name:
-            group_name = 'CHAPSim_AVG_tg'
-        super().save_hdf(file_name,write_mode,group_name)
-        base_name=group_name if group_name else 'CHAPSim_AVG'
+        super().save_hdf(file_name,write_mode,key)
 
         hdf_file = h5py.File(file_name,'a')
-        group = hdf_file[base_name]
+        group = hdf_file[key]
         group.attrs['shape'] = np.array(self.shape)
         group.attrs['times'] = np.array([np.string_(x) for x in self.get_times()])
         hdf_file.close()
@@ -1259,11 +1119,12 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         fig, ax = super().plot_Reynolds(comp1,comp2,PhyTime,None,
                                         norm=norm,Y_plus=Y_plus,
                                         fig=fig,ax=ax,**kwargs)
+
         lines = ax.get_lines()[-len(PhyTime):]
         for line,time in zip(lines,PhyTime):
             line.set_label(r"$t^*=%.3g$"%float(time))
-        axes_items_num = len(lines)
-        ncol = 4 if axes_items_num>3 else axes_items_num
+
+        ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
         ax.relim()
         ax.autoscale_view()
@@ -1306,14 +1167,12 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
     def plot_eddy_visc(self,times,Y_plus=True,Y_plus_max=100,fig=None,ax=None,**kwargs):
         fig, ax = super().plot_eddy_visc(times,None,Y_plus,Y_plus_max,fig,ax,**kwargs)
         lines = ax.get_lines()[-len(times):]
-        try:
-            for line, time in zip(lines,times):
-                line.set_label(r"$t^*=%.3g$" % float(time))
-        except TypeError:
-            lines.set_label(r"$t^*=%.3g$" % float(times))
 
-        axes_items_num = len(times)
-        ncol = 4 if axes_items_num>3 else axes_items_num
+        for line, time in zip(lines,times):
+            line.set_label(r"$t^*=%.3g$" % float(time))
+
+
+        ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
         ax.get_gridspec().tight_layout(fig)
 
@@ -1325,12 +1184,9 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
 
         lines = ax.get_lines()[-len(times):]
         for line, time in zip(lines,times):
-            if not isinstance(time,float):
-                time = float(time)
-            line.set_label(r"$t^*=%g$"% time)
+            line.set_label(r"$t^*=%g$"% float(time))
             
-        axes_items_num = len(times)
-        ncol = 4 if axes_items_num>3 else axes_items_num
+        ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
         ax.get_gridspec().tight_layout(fig)
         
@@ -1343,19 +1199,18 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         for line, time in zip(lines,times):
             line.set_label(r"$t^*=%.3g$"% time)
 
-        axes_items_num = len(times)
-        ncol = 4 if axes_items_num>3 else axes_items_num
+        ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
         
 class CHAPSim_AVG_tg(CHAPSim_AVG_tg_base):
-    def _extract_avg(self,path_to_folder='',time0='',abs_path=True,*args,**kwargs):
+    def _extract_avg(self,path_to_folder='.',time0=None,abs_path=True,*args,**kwargs):
         if isinstance(path_to_folder,list):
             times = CT.time_extract(path_to_folder[0],abs_path)
         else:
             times = CT.time_extract(path_to_folder,abs_path)
-        if time0:
+        if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
         return super()._extract_avg(times,path_to_folder=path_to_folder,time0=time0,abs_path=abs_path,*args,**kwargs)
 

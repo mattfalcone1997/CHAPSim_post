@@ -1,7 +1,6 @@
 #setup for module CHAPSim_post
 __name__="CHAPSim_post"
 
-
 from ._instant import CHAPSim_Inst
 from ._instant import CHAPSim_Inst_tg
 from ._instant import CHAPSim_Inst_io
@@ -26,7 +25,6 @@ from ._quadrant_a import CHAPSim_Quad_Anl_io
 from ._quadrant_a import CHAPSim_Quad_Anl_tg
 
 from ._joint_pdf import CHAPSim_joint_PDF_io
-
 
 _avg_io_class = CHAPSim_AVG_io
 _avg_tg_class = CHAPSim_AVG_tg

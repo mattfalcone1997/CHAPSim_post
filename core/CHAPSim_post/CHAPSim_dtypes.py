@@ -21,22 +21,22 @@ import os
 from . import CHAPSim_Tools as CT
 
 class datastruct:
-    def __init__(self,*args,array=False,dict=False,hdf=False,**kwargs):
-        if not array and not dict and not hdf:
+    def __init__(self,*args,from_array=False,from_dict=False,from_hdf=False,**kwargs):
+        if not from_array and not from_dict and not from_hdf:
             if isinstance(args[0],np.ndarray):
-                array=True
+                from_array=True
             elif isinstance(args[0],dict):
-                dict=True
+                from_dict=True
             else:
                 msg = "No extract type selected"
                 raise ValueError(msg)
         
         self.__rmul__=self.__mul__
-        if array:
+        if from_array:
             self._array_ini(*args,**kwargs)
-        elif dict:
+        elif from_dict:
             self._dict_ini(*args,*kwargs)
-        elif hdf:
+        elif from_hdf:
             self._file_extract(*args,**kwargs)
         else:
             msg = f"This is not a valid initialisation method for the {datastruct.__name__} type"
@@ -44,7 +44,7 @@ class datastruct:
         
     @classmethod
     def from_hdf(cls,*args,**kwargs):
-        return cls(*args,hdf=True,**kwargs)
+        return cls(*args,from_hdf=True,**kwargs)
 
     def _file_extract(self,filename,*args,key=None,**kwargs):
         hdf_file = h5py.File(filename,mode='r')
@@ -187,10 +187,12 @@ class datastruct:
             self._data = {key : val.copy() for key, val in dict_data.items()}
         else:
             self._data = dict_data
-        self._index = dict_data.keys()
+
+        self._index = list(dict_data.keys())
+
         if self._is_multidim():
             self._outer_index = list(set([i[0] for i in self._index]))
-            if all(self._outer_index == None):
+            if None in self._outer_index and len(self._outer_index) == 1:
                 self._outer_index=None
         else:
             self._outer_index = None
@@ -475,6 +477,13 @@ class datastruct:
     
     def __ne__(self,other_datastruct):
         return not self.equals(other_datastruct)
+
+    def copy(self):
+        cls = self.__class__
+        return cls(self._data,copy=True)
+
+    def __deepcopy__(self,memo):
+        return self.copy()
     
 
 class metastruct():
@@ -579,6 +588,15 @@ class metastruct():
 
     def __getitem__(self,key):
         return self._meta[key]
+
+    def copy(self):
+        cls = self.__class__
+        index = list(self._meta.keys()).copy()
+        values = list(self._meta.values()).copy()
+        return cls(values,index=index)
+
+    def __deepcopy__(self,memo):
+        return self.copy()
 
 warnings.filterwarnings('ignore',category=UserWarning)
 @pd.api.extensions.register_dataframe_accessor("data")

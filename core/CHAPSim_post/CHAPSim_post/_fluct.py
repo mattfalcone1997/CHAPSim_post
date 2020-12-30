@@ -16,12 +16,15 @@ import os
 import warnings
 import gc
 import itertools
+from abc import ABC, abstractmethod
 
 from .. import CHAPSim_plot as cplt
 from .. import CHAPSim_Tools as CT
 from .. import CHAPSim_dtypes as cd
 
+
 import CHAPSim_post as cp
+import CHAPSim_post.CHAPSim_post._utils as utils
 
 from ._meta import CHAPSim_meta
 _meta_class=CHAPSim_meta
@@ -34,16 +37,17 @@ _avg_tg_base_class = CHAPSim_AVG_tg_base
 from ._instant import CHAPSim_Inst
 _instant_class = CHAPSim_Inst
 
-class CHAPSim_fluct_base():
+class CHAPSim_fluct_base(ABC):
     _module = sys.modules[__name__]
-    def save_hdf(self,file_name,write_mode,group_name=''):
-        base_name=group_name if group_name else 'CHAPSim_fluct'
+    def save_hdf(self,file_name,write_mode,key=None):
+        if key is None:
+            key= 'CHAPSim_fluct'
         hdf_file = h5py.File(file_name,write_mode)
-        group = hdf_file.create_group(base_name)
+        group = hdf_file.create_group(key)
         group.create_dataset("NCL",data=np.array(self.shape))
         hdf_file.close()
-        self.meta_data.save_hdf(file_name,'a',base_name+'/meta_data')
-        self.fluctDF.to_hdf(file_name,key=base_name+'/fluctDF',mode='a')#,format='fixed',data_columns=True)
+        self.meta_data.save_hdf(file_name,'a',key+'/meta_data')
+        self.fluctDF.to_hdf(file_name,key=key+'/fluctDF',mode='a')#,format='fixed',data_columns=True)
 
     def check_PhyTime(self,PhyTime):
         warn_msg = f"PhyTime invalid ({PhyTime}), varaible being set to only PhyTime present in datastruct"
@@ -56,17 +60,11 @@ class CHAPSim_fluct_base():
                 warnings.warn(a.message)
         return key[0]
     
-    def plot_contour(self,comp,axis_vals,plane='xz',PhyTime=None,x_split_list='',y_mode='wall',fig='',ax='',pcolor_kw=None,**kwargs):
+    def plot_contour(self,comp,axis_vals,plane='xz',PhyTime=None,x_split_list=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
                 
         PhyTime = self.check_PhyTime(PhyTime)        
         
-        
-        if isinstance(axis_vals,(int,float)):
-            axis_vals = [axis_vals]        
-        elif not isinstance(axis_vals,(list,tuple)):
-            msg = "axis_vals must be an interable or a float or an int not a %s"%type(axis_vals)
-            raise TypeError(msg)
-
+        axis_vals = utils.check_list_vals(axis_vals)
             
         plane , coord, axis_index = CT.contour_plane(plane,axis_vals,self.avg_data,y_mode,PhyTime)
 
@@ -76,75 +74,50 @@ class CHAPSim_fluct_base():
         X,Z = np.meshgrid(x_coords,z_coords)
         fluct = self.fluctDF[PhyTime,comp]
                 
-        if not x_split_list:
+        if x_split_list is None:
             x_split_list=[np.amin(x_coords),np.amax(x_coords)]
         
-        single_input=False
-        if not fig:
-            figsize=[10*len(axis_vals),3*(len(x_split_list)-1)]
-            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False,figsize=figsize)
-            fig, ax = cplt.subplots(len(x_split_list)-1,len(axis_vals),**kwargs)
-        elif not ax:
-            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False)
-            ax=fig.subplots(len(x_split_list)-1,len(axis_vals),**kwargs)      
-        else:
-            if isinstance(ax,mpl.axes.Axes):
-                single_input=True
-                ax = np.array([ax]).reshape((1,1))
-            elif not isinstance(ax,np.ndarray):
-                msg = "Input axes must be an instance %s or %s"%(mpl.axes,np.ndarray)
-                raise TypeError(msg)
+        ax_layout = (len(x_split_list)-1,len(axis_vals))
+        figsize=[10*len(axis_vals),3*(len(x_split_list)-1)]
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
+        fig, ax = cplt.create_fig_ax_without_squeeze(*ax_layout,fig=fig,ax=ax,**kwargs)
+
         ax=ax.flatten()
 
         x_coords_split=CT.coord_index_calc(self.CoordDF,'x',x_split_list)
 
         title_symbol = CT.get_title_symbol(coord,y_mode,False)
         
-
         pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
         X, Z = np.meshgrid(x_coords, z_coords)
+
+        ax=ax.flatten()
         max_val = np.amax(fluct); min_val=np.amin(fluct)
-        if len(x_split_list)==2:
-            for i in range(len(axis_vals)):
-                # print(X.shape,Z.shape,fluct.shape)
+        for j,_ in enumerate(x_split_list[:-1]):
+            for i,_ in enumerate(axis_vals):
                 fluct_slice = CT.contour_indexer(fluct,axis_index[i],coord)
-                ax1 = ax[i].pcolormesh(X,Z,fluct_slice,**pcolor_kw)
-                ax2 = ax1.axes
+
+                ax1 = ax[j*len(axis_vals)+i].pcolormesh(X,Z,fluct_slice,**pcolor_kw)
                 ax1.set_clim(min_val,max_val)
-                cbar=fig.colorbar(ax1,ax=ax[i])
-                cbar.set_label(r"$%s^\prime$"%comp)# ,fontsize=12)
-                ax2.set_xlim([x_split_list[0],x_split_list[1]])
-                ax2.set_xlabel(r"$%s/\delta$" % plane[0])# ,fontsize=20)
-                ax2.set_ylabel(r"$%s/\delta$" % plane[1])# ,fontsize=20)
-                ax2.set_title(r"$%s=%.3g$"%(title_symbol,axis_vals[i]),loc='right')
-                ax2.set_title(r"$t^*=%s$"%PhyTime,loc='left')
-                ax[i]=ax1
-        else:
-            ax=ax.flatten()
-            max_val = np.amax(fluct); min_val=np.amin(fluct)
-            for j in range(len(x_split_list)-1):
-                for i in range(len(axis_vals)):
-                    fluct_slice = CT.contour_indexer(fluct,axis_index[i],coord)
-                    # print(X.shape,Z.shape,fluct.shape)
-                    ax1 = ax[j*len(axis_vals)+i].pcolormesh(X,Z,fluct_slice,**pcolor_kw)
-                    ax2 = ax1.axes
-                    ax1.set_clim(min_val,max_val)
-                    cbar=fig.colorbar(ax1,ax=ax[j*len(axis_vals)+i])
-                    cbar.set_label(r"$%s^\prime$"%comp)# ,fontsize=12)
-                    ax2.set_xlabel(r"$%s/\delta$" % 'x')# ,fontsize=20)
-                    ax2.set_ylabel(r"$%s/\delta$" % 'z')# ,fontsize=20)
-                    ax2.set_xlim([x_split_list[j],x_split_list[j+1]])
-                    ax2.set_title(r"$%s=%.3g$"%(title_symbol,axis_vals[i]),loc='right')
-                    ax2.set_title(r"$t^*=%s$"%PhyTime,loc='left')
-                    ax[j*len(axis_vals)+i]=ax1
-                    ax[j*len(axis_vals)+i].axes.set_aspect('equal')
+
+                ax1.axes.set_xlabel(r"$%s/\delta$" % 'x')
+                ax1.axes.set_ylabel(r"$%s/\delta$" % 'z')
+                ax1.axes.set_xlim([x_split_list[j],x_split_list[j+1]])
+                ax1.axes.set_title(r"$%s=%.3g$"%(title_symbol,axis_vals[i]),loc='right')
+                ax1.axes.set_title(r"$t^*=%s$"%PhyTime,loc='left')
+                
+                cbar=fig.colorbar(ax1,ax=ax[j*len(axis_vals)+i])
+                cbar.set_label(r"$%s^\prime$"%comp)
+
+                ax[j*len(axis_vals)+i]=ax1
+                ax[j*len(axis_vals)+i].axes.set_aspect('equal')
         fig.tight_layout()
-        if single_input:
+        if ax.size == 1:
             return fig, ax[0]
         else:
             return fig, ax
 
-    def plot_streaks(self,comp,vals_list,x_split_list='',PhyTime=None,ylim='',Y_plus=True,*args,colors='',fig=None,ax=None,**kwargs):
+    def plot_streaks(self,comp,vals_list,x_split_list=None,PhyTime=None,ylim='',Y_plus=True,*args,colors='',fig=None,ax=None,**kwargs):
 
         PhyTime = self.check_PhyTime(PhyTime)
         fluct = self.fluctDF[PhyTime,comp]
@@ -197,54 +170,55 @@ class CHAPSim_fluct_base():
                 # patch.set_color(colors[i%len(colors)])
 
         return fig, ax
-    def plot_fluct3D_xz(self,comp,y_vals,PhyTime=None,x_split_list='',fig=None,ax=None,**kwargs):
-                
-        PhyTime = self.check_PhyTime(PhyTime)        
-        if isinstance(y_vals,(int,float)):
-            y_vals = [y_vals]        
-        elif not isinstance(y_vals,(list,tuple)):
-            msg = "y_vals must be type int or list but is type %s"%type(y_vals)
-            raise TypeError(msg)
+    def plot_fluct3D_xz(self,comp,y_vals,PhyTime=None,x_split_list=None,fig=None,ax=None,**kwargs):
 
+        PhyTime = self.check_PhyTime(PhyTime)    
+
+        y_vals = utils.check_list_vals(y_vals)    
                 
         x_coords = self.CoordDF['x']
         z_coords = self.CoordDF['z']
         X,Z = np.meshgrid(x_coords,z_coords)
         fluct = self.fluctDF[PhyTime,comp][:,y_vals,:]
         
-        if not x_split_list:
+        if x_split_list is None:
             x_split_list=[np.min(x_coords),np.max(x_coords)]
             
         x_coords_split=CT.coord_index_calc(self.CoordDF,'x',x_split_list)
           
-        kwargs = cplt.update_subplots_kw(kwargs,squeeze=False,subplot_kw={'projection':'3d'})
+        kwargs = cplt.update_subplots_kw(kwargs,subplot_kw={'projection':'3d'})
+        
         if fig is None:
+            kwargs = cplt.update_subplots_kw(kwargs,override=True,squeeze=False)
             kwargs = cplt.update_subplots_kw(kwargs,figsize=[10*len(y_vals),5*(len(x_split_list)-1)])
             fig, ax = plt.subplots((len(x_split_list)-1),len(y_vals),**kwargs)
         elif ax is None:
+            kwargs = cplt.update_subplots_kw(kwargs,override=True,subplot_kw={"squeeze":False})
             ax = fig.subplots((len(x_split_list)-1),len(y_vals),**kwargs)
 
         ax=ax.flatten()
         max_val = -np.float('inf'); min_val = np.float('inf')
-        for j in range(len(x_split_list)-1):
-            for i in range(len(y_vals)):
+        for j,_ in enumerate(x_split_list[:-1]):
+            for i,_ in enumerate(y_vals):
                 max_val = np.amax(fluct[:,i,:]); min_val=np.amin(fluct[:,i,:])
                 
-                #ax[j*len(y_vals)+i] = fig.add_subplot(j+1,i+1,j*len(y_vals)+i+1,projection='3d')
-                #axisEqual3D(ax)
-                surf=ax[j*len(y_vals)+i].plot_surface(Z[:,x_coords_split[j]:x_coords_split[j+1]],
-                                     X[:,x_coords_split[j]:x_coords_split[j+1]],
-                                     fluct[:,i,x_coords_split[j]:x_coords_split[j+1]],
-                                     rstride=1, cstride=1, cmap='jet',
+                surf=ax[j*len(y_vals)+i].plot_surface(Z, X, fluct, rstride=1, cstride=1, cmap='jet',
                                             linewidth=0, antialiased=False)
-                ax[j*len(y_vals)+i].set_ylabel(r'$x/\delta$')# ,fontsize=20)
-                ax[j*len(y_vals)+i].set_xlabel(r'$z/\delta$')# ,fontsize=20)
-                ax[j*len(y_vals)+i].set_zlabel(r'$%s^\prime$'%comp)# ,fontsize=20)
-                ax[j*len(y_vals)+i].set_zlim(min_val,max_val)
+
+                ax[j*len(y_vals)+i].set_ylabel(r'$x/\delta$')
+                ax[j*len(y_vals)+i].set_xlabel(r'$z/\delta$')
+                ax[j*len(y_vals)+i].set_zlabel(r'$%s^\prime$'%comp)
+                
+                ax[j*len(y_vals)+i].set_xlim(x_split_list[j],x_split_list[j+1])
+
                 surf.set_clim(min_val,max_val)
                 cbar=fig.colorbar(surf,ax=ax[j*len(y_vals)+i])
-                cbar.set_label(r"$%s^\prime$"%comp)# ,fontsize=12)
+                cbar.set_label(r"$%s^\prime$"%comp)
+
                 ax[j*len(y_vals)+i]=surf
+
+        for a in ax:
+            a.axes.set_zlim(min_val,max_val)
         fig.tight_layout()
         return fig, ax
 
@@ -252,29 +226,13 @@ class CHAPSim_fluct_base():
         
         PhyTime = self.check_PhyTime(PhyTime)
         
-        if isinstance(ax_val,(int,float)):
-            ax_val = [ax_val]        
-        elif not isinstance(ax_val,(list,tuple)):
-            msg = "ax_val must be an interable or a float or an int not a %s"%type(ax_val)
-            raise TypeError(msg)
-
-        # if not x_split_list:
-        #     x_split_list=[np.amin(x_coords),np.amax(x_coords)]
+        ax_val = utils.check_list_vals(ax_val)
 
         slice, coord, axis_index = CT.contour_plane(slice,ax_val,self.avg_data,y_mode,PhyTime)
 
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False,figsize=[8,4*len(ax_val)])
-            fig,ax = cplt.subplots(len(ax_val),**kwargs)
-        elif ax is None:
-            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False)
-            ax=fig.subplots(len(ax_val),**kwargs)   
-        else:
-            if isinstance(ax,mpl.axes.Axes):
-                ax = np.array([ax]).reshape((1,1))
-            elif not isinstance(ax,np.ndarray):
-                msg = "Input axes must be an instance %s or %s"%(mpl.axes,np.ndarray)
-                raise TypeError(msg)
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[8,4*len(ax_val)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(ax_val),fig=fig,ax=ax,**kwargs)
+
         ax = ax.flatten()
 
 
@@ -284,8 +242,6 @@ class CHAPSim_fluct_base():
         U = self.fluctDF[PhyTime,UV_slice[0]]
         V = self.fluctDF[PhyTime,UV_slice[1]]
 
-
-  
         U_space, V_space = CT.vector_indexer(U,V,axis_index,coord,spacing[0],spacing[1])
         coord_1_mesh, coord_2_mesh = np.meshgrid(coord_1,coord_2)
         ax_out=[]
@@ -307,9 +263,9 @@ class CHAPSim_fluct_base():
 
 
     @classmethod
-    def create_video(cls,axis_vals,comp,avg_data=None,contour=True,plane='xz',meta_data='',path_to_folder='',time_range=None,
-                            abs_path=True,tgpost=False,x_split_list='',plot_kw={},lim_min=None,lim_max=None,
-                            ax_func=None,fluct_func=None,fluct_args=(),fluct_kw={}, fig='',ax='',**kwargs):
+    def create_video(cls,axis_vals,comp,avg_data=None,contour=True,plane='xz',meta_data=None,path_to_folder='.',time_range=None,
+                            abs_path=True,tgpost=False,x_split_list=None,plot_kw=None,lim_min=None,lim_max=None,
+                            ax_func=None,fluct_func=None,fluct_args=(),fluct_kw={}, fig=None,ax=None,**kwargs):
 
         times= CT.time_extract(path_to_folder,abs_path)
         max_time = np.amax(times) if time_range is None else time_range[1]
@@ -319,20 +275,15 @@ class CHAPSim_fluct_base():
             avg_data=cls._module._avg_class(max_time,meta_data,path_to_folder,time0,abs_path,tgpost=cls.tgpost)
         
 
-        if isinstance(axis_vals,(int,float)):
-            axis_vals = [axis_vals]        
-        elif not isinstance(axis_vals,(list,tuple)):
-            msg = "axis_vals must be type int or list but is type %s"%type(axis_vals)
-            raise TypeError(msg)
-
+        axis_vals = utils.check_list_vals(axis_vals)        
         
-        
-        if not x_split_list:
-            if not meta_data:
+        if x_split_list is None:
+            if meta_data is None:
                 meta_data = cls._module._meta_class(path_to_folder,abs_path,tgpost=tgpost)
             x_coords = meta_data.CoordDF['x']
             x_split_list=[np.min(x_coords),np.max(x_coords)]
-        if not fig:
+
+        if fig is None:
             if 'figsize' not in kwargs.keys():
                 kwargs['figsize'] = [7*len(axis_vals),3*(len(x_split_list)-1)]
             fig = cplt.figure(**kwargs)
@@ -344,6 +295,7 @@ class CHAPSim_fluct_base():
 
             fluct_data = cls(time,avg_data,path_to_folder=path_to_folder,abs_path=abs_path)
             if contour:
+                plot_kw = cplt.update_pcolor_kw(plot_kw)
                 fig, ax = fluct_data.plot_contour(comp,axis_vals,plane=plane,PhyTime=time,x_split_list=x_split_list,fig=fig,**plot_kw)
             else:
                 fig,ax = fluct_data.plot_fluct3D_xz(axis_vals,comp,time,x_split_list,fig,**plot_kw)
@@ -367,7 +319,8 @@ class CHAPSim_fluct_base():
 
 class CHAPSim_fluct_io(CHAPSim_fluct_base):
     tgpost = False
-    def __init__(self,time_inst_data_list,avg_data=None,path_to_folder='',abs_path=True,*args,**kwargs):
+    def __init__(self,time_inst_data_list,avg_data=None,path_to_folder='.',abs_path=True,*args,**kwargs):
+        
         if avg_data is None:
             time = CT.max_time_calc(path_to_folder,abs_path)
             avg_data = self._module._avg_io_class(time,path_to_folder=path_to_folder,abs_path=abs_path,*args,**kwargs)
@@ -410,14 +363,12 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
             for i in range(inst_data.shape[0]):
                 fluct[j,i] = inst_values[i] -avg_values
             del inst_values
-        
-        # fluct = fluct.reshape((len(inst_data.InstDF.index),np.prod(inst_data.shape)))
-        # print(inst_times,u_comp)
+
         return cd.datastruct(fluct,index=inst_data.InstDF.index.copy())
     
 class CHAPSim_fluct_tg(CHAPSim_fluct_base):
     tgpost = True
-    def __init__(self,time_inst_data_list,avg_data=None,path_to_folder='',abs_path=True,*args,**kwargs):
+    def __init__(self,time_inst_data_list,avg_data=None,path_to_folder='.',abs_path=True,*args,**kwargs):
         if not hasattr(time_inst_data_list,'__iter__'):
             time_inst_data_list = [time_inst_data_list]
         for time_inst_data in time_inst_data_list:

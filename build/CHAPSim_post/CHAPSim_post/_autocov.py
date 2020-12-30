@@ -15,8 +15,11 @@ import sys
 import warnings
 import gc
 import time
+from abc import ABC, abstractmethod
 
 import CHAPSim_post as cp
+import CHAPSim_post.CHAPSim_post._utils as utils
+
 from .. import CHAPSim_plot as cplt
 from .. import CHAPSim_Tools as CT
 from .. import CHAPSim_dtypes as cd
@@ -34,44 +37,59 @@ _fluct_tg_class = CHAPSim_fluct_tg
 from ._meta import CHAPSim_meta
 _meta_class = CHAPSim_meta
 
-class CHAPSim_autocov_base():
+class CHAPSim_autocov_base(ABC):
     _module = sys.modules[__name__]
-    def __init__(self,*args,**kwargs):#self,comp1,comp2,max_x_sep=None,max_z_sep=None,path_to_folder='',time0='',abs_path=True):
+    def __init__(self,*args,**kwargs):
         fromfile=kwargs.pop('fromfile',False)
         if not fromfile:
             self._autocov_extract(*args,**kwargs)
         else:
             self._hdf_extract(*args,**kwargs)
 
+    @abstractmethod
+    def _autocov_extract(self,*args,**kwargs):
+        raise NotImplementedError
+
     @classmethod
     def from_hdf(cls,*args,**kwargs):
         return cls(fromfile=True,*args,**kwargs)
 
-    def save_hdf(self,file_name,write_mode,group_name=''):
-        base_name=group_name if group_name else 'CHAPSim_autocov'
+    def save_hdf(self,file_name,write_mode,key=None):
+        if key is None:
+            key =  'CHAPSim_autocov'
         hdf_file = h5py.File(file_name,write_mode)
-        group = hdf_file.create_group(base_name)
+        group = hdf_file.create_group(key)
         group.attrs['shape_x'] = np.array(self.shape_x)
         group.attrs['shape_z'] = np.array(self.shape_z)
         group.attrs['comp'] = np.array([np.string_(x) for x in self.comp])
         hdf_file.close()
 
-        self._meta_data.save_hdf(file_name,'a',base_name+'/meta_data')
-        self._avg_data.save_hdf(file_name,'a',base_name+'/avg_data')
-        self.autocorrDF.to_hdf(file_name,key=base_name+'/autocorrDF',mode='a')#,format='fixed',data_columns=True)
+        self._meta_data.save_hdf(file_name,'a',key+'/meta_data')
+        self._avg_data.save_hdf(file_name,'a',key+'/avg_data')
+        self.autocorrDF.to_hdf(file_name,key=key+'/autocorrDF',mode='a')#,format='fixed',data_columns=True)
 
+    @abstractmethod
     def plot_autocorr_line(self,comp,axis_vals,y_vals,y_mode='half_channel',norm_xval=None,norm=True,fig=None,ax=None,**kwargs):
-        if comp == 'x':
-            shape=self.shape_x
-        elif comp=='z':
-            shape=self.shape_z
-        else:
-            raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
         
-        if not hasattr(axis_vals,'__iter__'):
-            axis_vals = [axis_vals]
+        if not comp in ('x','z'):
+            msg = f"comp must be the string 'x' or 'z' not {comp} "
+
+        axis_vals = utils.check_list_vals(axis_vals)
+        y_vals = utils.check_list_vals(y_vals)
+
         axis_index = [self._avg_data._return_index(x) for x in axis_vals]#CT.coord_index_calc(self._meta_data.CoordDF,'x',axis_vals)
 
+
+        Ruu = self.autocorrDF[comp]
+        shape = Ruu.shape
+
+        if norm:
+            Ruu_0=Ruu[0].copy()
+            for i in range(shape[0]):
+                Ruu[i]/=Ruu_0
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5*len(y_vals)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(y_vals),fig=fig,ax=ax,**kwargs)
 
         if norm_xval is not None:
             if norm_xval ==0:
@@ -80,30 +98,14 @@ class CHAPSim_autocov_base():
         else:
             x_axis_vals=axis_vals
 
-        coord = self._meta_data.CoordDF[comp][:shape[0]]
-        if not hasattr(y_vals,'__iter__'):
-            y_vals = [y_vals]
         y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
                                                     y_vals,x_axis_vals,y_mode)
-        Ruu = self.autocorrDF[comp]
-        if norm:
-            Ruu_0=Ruu[0].copy()
-            for i in range(shape[0]):
-                Ruu[i]/=Ruu_0
 
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5*len(y_vals)],
-                                                    squeeze=False)
-            fig,ax = cplt.subplots(len(y_vals),**kwargs)
-        elif ax is None:
-            kwargs = cplt.update_subplots_kw(kwargs,subplot_kw ={'squeeze':False})
-            ax = fig.subplots(len(y_vals),**kwargs)
-
-        ax=ax.flatten()
         coord = self._meta_data.CoordDF[comp][:shape[0]]
-        for j in range(len(y_vals)):
-            for i in range(len(axis_index)):
+        for j,_ in enumerate(y_vals):
+            for i,_ in enumerate(axis_index):
                 ax[j].cplot(coord,Ruu[:,y_index_axis_vals[i][j],axis_index[i]])
+                
                 #creating title label
                 y_unit=r"y" if y_mode=='half_channel' \
                         else r"\delta_u" if y_mode=='disp_thickness' \
@@ -112,25 +114,28 @@ class CHAPSim_autocov_base():
  
 
                 ax[j].set_title(r"$%s=%.3g$"%(y_unit,y_vals[j]),loc='left')
-            ax[j].set_ylabel(r"$R_{%s%s}$"%self.comp)# ,fontsize=20)
-            ax[j].set_xlabel(r"$%s/\delta$"%comp)# ,fontsize=20)
+            ax[j].set_ylabel(r"$R_{%s%s}$"%self.comp)
+            ax[j].set_xlabel(r"$%s/\delta$"%comp)
             
         
 
         return fig, ax
+
+    @abstractmethod
     def plot_spectra(self,comp,axis_vals,y_vals,y_mode='half_channel',norm_xval=None,fig=None,ax=None,**kwargs):
-        if comp == 'x':
-            shape=self.shape_x
-        elif comp=='z':
-            shape=self.shape_z
-        else:
+        if not comp in ('x','z'):
             raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
         
-        if not hasattr(axis_vals,'__iter__'):
-            axis_vals = [axis_vals]
+        axis_vals = utils.check_list_vals(axis_vals)
+        y_vals = utils.check_list_vals(y_vals)
+
         axis_index = [self._avg_data._return_index(x) for x in axis_vals]#CT.coord_index_calc(self._meta_data.CoordDF,'x',axis_vals)
         
-            #raise TypeError("Variable `axis_vals' must be an int or iterable\n")
+        Ruu = self.autocorrDF[comp]
+        shape = Ruu.shape
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5*len(y_vals)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(y_vals),fig=fig,ax=ax,**kwargs)
+
 
         if norm_xval is not None:
             if norm_xval ==0:
@@ -141,43 +146,36 @@ class CHAPSim_autocov_base():
             x_axis_vals=axis_vals
 
         coord = self._meta_data.CoordDF[comp][:shape[0]]
-        if not hasattr(y_vals,'__iter__'):
-            y_vals = [y_vals]
+
         y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
                                                     y_vals,x_axis_vals,y_mode)
-        Ruu = self.autocorrDF[comp]#[:,axis_vals,:]
+        
 
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5*len(y_vals)],
-                                                    squeeze=False)
-            fig,ax = cplt.subplots(len(y_vals),**kwargs)
-        elif ax is None:
-            kwargs = cplt.update_subplots_kw(kwargs,subplot_kw ={'squeeze':False})
-            ax = fig.subplots(len(y_vals),**kwargs)
-
-        ax=ax.flatten()
-
-        for j in range(len(y_vals)):
-            for i in range(len(axis_index)):
+        for j,_ in enumerate(y_vals):
+            for i,_ in enumerate(axis_index):
                 wavenumber_spectra = fft.rfft(Ruu[:,y_index_axis_vals[i][j],axis_index[i]])
                 delta_comp = coord[1]-coord[0]
-                Fs = (2.0*np.pi)/delta_comp
+
                 comp_size= Ruu[:,y_index_axis_vals[i][j],axis_index[i]].size
-                wavenumber_comp = 2*np.pi*fft.rfftfreq(comp_size,coord[1]-coord[0])
+                wavenumber_comp = 2*np.pi*fft.rfftfreq(comp_size,delta_comp)
+                
                 y_unit=r"y" if y_mode=='half_channel' \
                         else r"\delta_u" if y_mode=='disp_thickness' \
                         else r"\theta" if y_mode=='mom_thickness' \
                         else r"y^+" if norm_xval !=0 else r"y^{+0}"
+
                 ax[j].cplot(wavenumber_comp,2*np.abs(wavenumber_spectra))
                 ax[j].set_title(r"$%s=%.3g$"%(y_unit,y_vals[j]),loc='left')
+
             string= (ord(self.comp[0])-ord('u')+1,ord(self.comp[1])-ord('u')+1,comp)
-            ax[j].set_ylabel(r"$E_{%d%d}(\kappa_%s)$"%string)# ,fontsize=20)
-            ax[j].set_xlabel(r"$\kappa_%s$"%comp)# ,fontsize=20)
+            ax[j].set_ylabel(r"$E_{%d%d}(\kappa_%s)$"%string)
+            ax[j].set_xlabel(r"$\kappa_%s$"%comp)
         
         return fig, ax
 
+    @abstractmethod
     def autocorr_contour_y(self,comp,axis_vals,Y_plus=False,Y_plus_0=False,
-                                Y_plus_max ='',norm=True,
+                                Y_plus_max =None,norm=True,
                                 show_positive=True,fig=None,ax=None,pcolor_kw=None,**kwargs):
         if comp not in ('x','z'):
             raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
@@ -188,34 +186,24 @@ class CHAPSim_autocov_base():
 
         shape = self.autocorrDF[comp].shape 
         Ruu = self.autocorrDF[comp][:,:,axis_index]
-        print(shape,self.autocorrDF[comp].shape)
-
 
         if norm:
             Ruu_0=Ruu[0].copy()
             for i in range(shape[0]):
                 Ruu[i]/=Ruu_0
 
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,4*len(axis_vals)],squeeze=False)
-            fig, ax = plt.subplots(len(axis_vals),**kwargs)
-        elif ax is None:
-            kwargs = cplt.update_subplots_kw(kwargs,subplot_kw = {'squeeze':'False'})
-            ax = fig.subplots(len(axis_vals),**kwargs)
-        ax=ax.flatten()
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,4*len(axis_vals)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
 
-        # x_coord = self._meta_data.CoordDF['x'].copy().dropna()\
-        #             .values
 
         pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
         max_val = -np.float('inf'); min_val = np.float('inf')
 
-        for i, axis_val in enumerate(axis_vals):
+        for i, _ in enumerate(axis_vals):
             y_coord = self._meta_data.CoordDF['y'].copy()
             coord = self._meta_data.CoordDF[comp].copy()[:shape[0]]
             if Y_plus:
                 avg_time = self._avg_data.flow_AVGDF.index[0][0]
-                #wall_params = self._meta_data.metaDF.loc['moving_wallflg':'VeloWall']
                 _, delta_v_star = self._avg_data.wall_unit_calc(avg_time)
                 y_coord = y_coord[:int(y_coord.size/2)]
                 if i==0:
@@ -224,11 +212,13 @@ class CHAPSim_autocov_base():
                     y_coord = (1-np.abs(y_coord))/delta_v_star[0]
                 else:   
                     y_coord = (1-np.abs(y_coord))/delta_v_star[axis_index[i]]
+            
             min_val = min(min_val,np.amin(np.squeeze(Ruu[:,:,i])))
             max_val = max(max_val,np.amax(np.squeeze(Ruu[:,:,i])))
 
             X,Y = np.meshgrid(coord,y_coord)
             ax[i] = ax[i].pcolormesh(X,Y,np.squeeze(Ruu[:,:,i]).T,**pcolor_kw)
+            
             ax[i].axes.set_xlabel(r"$\Delta %s/\delta$" %comp)
             if Y_plus and Y_plus_0:
                 ax[i].axes.set_ylabel(r"$Y^{+0}$")
@@ -236,8 +226,10 @@ class CHAPSim_autocov_base():
                 ax[i].axes.set_ylabel(r"$Y^{+}$")
             else:
                 ax[i].axes.set_ylabel(r"$y/\delta$")
-            if Y_plus_max:
+
+            if Y_plus_max is not None:
                 ax[i].axes.set_ylim(top=Y_plus_max)
+
             fig.colorbar(ax[i],ax=ax[i].axes)
             fig.tight_layout()
 
@@ -252,22 +244,22 @@ class CHAPSim_autocov_base():
                 new_color[-1] = np.array([1,1,1,1])
                 a.set_cmap(mpl.colors.ListedColormap(new_color))
                 a.set_clim(min_val,0)
+
         return fig, ax
 
+    @abstractmethod
     def autocorr_contour_x(self,comp,axis_vals,axis_mode='half_channel',norm=True,fig=None,ax=None,pcolor_kw=None,**kwargs):
-        if comp == 'x':
-            shape=self.shape_x
-        elif comp=='z':
-            shape=self.shape_z
-        else:
+        if not comp in ('x','z'):
             raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
         
-        if not hasattr(axis_vals,'__iter__'):
-            axis_vals=[axis_vals]
+        axis_vals = utils.check_list_vals(axis_vals)
+
         y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
                                                     axis_vals,None,axis_mode)
         
         Ruu_all = self.autocorrDF[comp]
+        shape = Ruu_all.shape
+
         Ruu=np.zeros((shape[0],len(axis_vals),shape[2]))
         for i,vals in zip(range(shape[2]),y_index_axis_vals):
             Ruu[:,:,i] = Ruu_all[:,vals,i]
@@ -277,127 +269,117 @@ class CHAPSim_autocov_base():
             for i in range(shape[0]):
                 Ruu[i]/=Ruu_0
 
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,4*len(axis_vals)],squeeze=False)
-            fig, ax = plt.subplots(len(axis_vals),**kwargs)
-        elif ax is None:
-            kwargs = cplt.update_subplots_kw(kwargs,subplot_kw = {'squeeze':'False'})
-            ax = fig.subplots(len(axis_vals),**kwargs)
-        ax=ax.flatten()
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,4*len(axis_vals)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
         
         x_axis =self._avg_data._return_xaxis()
-        # y_coord = self._meta_data.CoordDF['y'].copy().dropna().values
         coord = self._meta_data.CoordDF[comp].copy()[:shape[0]]
         pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
         ax_out=[]
         for i in range(len(axis_vals)):
 
             X,Y = np.meshgrid(x_axis,coord)
-            ax1 = ax[i].pcolormesh(X,Y,Ruu[:,i],**pcolor_kw)            
-            ax1.axes.set_ylabel(r"$\Delta %s/\delta$" %comp)
+            ax[i] = ax[i].pcolormesh(X,Y,Ruu[:,i],**pcolor_kw)            
+            ax[i].axes.set_ylabel(r"$\Delta %s/\delta$" %comp)
             title = r"$%s=%.3g$"%("y" if axis_mode=='half_channel' \
                         else r"\delta_u" if axis_mode=='disp_thickness' \
                         else r"\theta" if axis_mode=='mom_thickness' else r"y^+", axis_vals[i] )
-            ax1.axes.set_title(title,loc='left')# ,fontsize=15,loc='left')
-            fig.colorbar(ax1,ax=ax1.axes)
-            ax_out.append(ax1)
+            ax[i].axes.set_title(title,loc='left')
+            fig.colorbar(ax[i],ax=ax[i].axes)
+
         fig.tight_layout()
         
-        return fig, np.array(ax_out)
+        return fig, ax
 
+    @abstractmethod
     def spectrum_contour(self,comp,axis_vals,axis_mode='half_channel',fig=None,ax=None,pcolor_kw=None,**kwargs):
-        if comp == 'x':
-            shape=self.shape_x
-        elif comp=='z':
-            shape=self.shape_z
-        else:
+        if not comp in ('x','z'):
             raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
 
-        if not hasattr(axis_vals,'__iter__'):
-            axis_vals=[axis_vals]
+        axis_vals = utils.check_list_vals(axis_vals)
         y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
                                                     axis_vals,None,axis_mode)
         Ruu_all = self.autocorrDF[comp]#[:,axis_vals,:]
+        shape = Ruu_all.shape
         Ruu=np.zeros((shape[0],len(axis_vals),shape[2]))
         for i,vals in zip(range(shape[2]),y_index_axis_vals):
             Ruu[:,:,i] = Ruu_all[:,vals,i]
 
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,4*len(axis_vals)],squeeze=False)
-            fig, ax = plt.subplots(len(axis_vals),**kwargs)
-        elif ax is None:
-            kwargs = cplt.update_subplots_kw(kwargs,subplot_kw = {'squeeze':'False'})
-            ax = fig.subplots(len(axis_vals),**kwargs)
-        ax=ax.flatten()
-        # x_coord = self._meta_data.CoordDF['x'].copy().dropna()\
-        #         .values[:shape[2]]
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,4*len(axis_vals)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
+
         coord = self._meta_data.CoordDF[comp].copy()[:shape[0]]
         x_axis =self._avg_data._return_xaxis()
 
         pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
-        ax_out=[]
+
         for i in range(len(axis_vals)):
             wavenumber_spectra = np.zeros((int(0.5*shape[0])+1,shape[2]))
             for j in range(shape[2]):
                 wavenumber_spectra[:,j]=fft.rfft(Ruu[:,i,j])
-            delta_comp = coord[1]-coord[0]
-            Fs = (2.0*np.pi)/delta_comp
             comp_size= shape[0]
             wavenumber_comp = 2*np.pi*fft.rfftfreq(comp_size,coord[1]-coord[0])
+            
             X, Y = np.meshgrid(x_axis,wavenumber_comp)
-            ax1 = ax[i].pcolormesh(X,Y,np.abs(wavenumber_spectra),**pcolor_kw)
-            ax1.axes.set_ylabel(r"$\kappa_%s$"%comp)
+            ax[i] = ax[i].pcolormesh(X,Y,np.abs(wavenumber_spectra),**pcolor_kw)
+            
+            ax[i].axes.set_ylabel(r"$\kappa_%s$"%comp)
+            
             title = r"$%s=%.3g$"%("y" if axis_mode=='half_channel' \
                         else r"\delta_u" if axis_mode=='disp_thickness' \
                         else r"\theta" if axis_mode=='mom_thickness' else "y^+", axis_vals[i] )
-            ax1.axes.set_ylim([np.amin(wavenumber_comp[1:]),np.amax(wavenumber_comp)])
-            ax1.axes.set_title(title)# ,fontsize=15,loc='left')
-            fig.colorbar(ax1,ax=ax1.axes)
-            ax_out.append(ax1)
-        fig.tight_layout()
-        return fig, np.array(ax_out)
+            
+            ax[i].axes.set_ylim([np.amin(wavenumber_comp[1:]),np.amax(wavenumber_comp)])
+            ax[i].axes.set_title(title)# ,fontsize=15,loc='left')
+            
+            fig.colorbar(ax[i],ax=ax[i].axes)
+
+        return fig, ax
 
     def __str__(self):
         return self.autocorrDF.__str__()
 
 class CHAPSim_autocov_io(CHAPSim_autocov_base):
     _module = sys.modules[__name__]
-    def _autocov_extract(self,comp1,comp2,path_to_folder='',time0=None,abs_path=True,max_x_sep=None,max_z_sep=None):
-        mem_debug = CT.debug_memory()
+    def _autocov_extract(self,comp1,comp2,path_to_folder=".",time0=None,abs_path=True,max_x_sep=None,max_z_sep=None):
+
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
+
         if cp.Params['TEST']:
             times.sort(); times= times[-5:]
             
         self._meta_data = self._module._meta_class(path_to_folder)
         self.comp=(comp1,comp2)
         self.NCL = self._meta_data.NCL
+
         try:
             self._avg_data = self._module._avg_io_class(max(times),self._meta_data,path_to_folder,time0,abs_path)
         except Exception:
             times.remove(max(times))
             self._avg_data = self._module._avg_io_class(max(times),self._meta_data,path_to_folder,time0)
-        i=1
 
         if max_z_sep is None:
-            max_z_sep=int(self.NCL[2]/2)
+            max_z_sep=int(self.NCL[2]*0.5)
         elif max_z_sep>self.NCL[2]:
-            raise ValueError("\033[1;32 Variable max_z_sep must be less than half NCL3 in readdata file\n")
+            raise ValueError("Variable max_z_sep must be less than half NCL3 in readdata file\n")
+        
         if max_x_sep is None:
-            max_x_sep=int(self.NCL[0]/2)
+            max_x_sep=int(self.NCL[0]*0.5)
         elif max_x_sep>self.NCL[0]:
-            raise ValueError("\033[1;32 Variable max_x_sep must be less than half NCL3 in readdata file\n")
+            raise ValueError("Variable max_x_sep must be less than half NCL3 in readdata file\n")
         
         self.shape_x = (max_x_sep,self.NCL[1],self.NCL[0]-max_x_sep)
         self.shape_z = (max_z_sep,self.NCL[1],self.NCL[0])
         
-        for timing in times:
+        for i,timing in enumerate(times):
             
             fluct_data = self._module._fluct_io_class(timing,self._avg_data,time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
-            coe3 = (i-1)/i
-            coe2 = 1/i
-            if i==1:
+            coe3 = i/(i+1)
+            coe2 = 1/(i+1)
+
+            if i==0:
                 R_x, R_z = self._autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
             else:
                 local_R_x, local_R_z = self._autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
@@ -406,28 +388,28 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
                     raise ValueError(msg)
                 R_x = R_x*coe3 + local_R_x*coe2
                 R_z = R_z*coe3 + local_R_z*coe2
-            # gc.collect()
-            i += 1
+
         self.autocorrDF = cd.datastruct.from_dict({'x':R_x,'z':R_z})#.data([shape_x,shape_z])
    
-    def _hdf_extract(self,file_name, group_name=None):
-        base_name=group_name if group_name is not None else 'CHAPSim_autocov_io'
+    def _hdf_extract(self,file_name, key=None):
+        if key is None:
+            key =  'CHAPSim_autocov_io'
         
         hdf_file = h5py.File(file_name,'r')
-        self.shape_x = tuple(hdf_file[base_name].attrs["shape_x"][:])
-        self.shape_z = tuple(hdf_file[base_name].attrs["shape_z"][:])
-        self.comp = tuple(np.char.decode(hdf_file[base_name].attrs["comp"][:]))
+        self.shape_x = tuple(hdf_file[key].attrs["shape_x"][:])
+        self.shape_z = tuple(hdf_file[key].attrs["shape_z"][:])
+        self.comp = tuple(np.char.decode(hdf_file[key].attrs["comp"][:]))
         hdf_file.close()       
 
-        self.autocorrDF = cd.datastruct.from_hdf(file_name,shapes=(self.shape_x,self.shape_z),key=base_name+'/autocorrDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
-        self._meta_data = self._module._meta_class.from_hdf(file_name,base_name+'/meta_data')
+        self.autocorrDF = cd.datastruct.from_hdf(file_name,shapes=(self.shape_x,self.shape_z),key=key+'/autocorrDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
+        self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
         self.NCL=self._meta_data.NCL
-        self._avg_data = self._module._avg_io_class.from_hdf(file_name,base_name+'/avg_data')
+        self._avg_data = self._module._avg_io_class.from_hdf(file_name,key+'/avg_data')
     
-    def save_hdf(self, file_name, write_mode, group_name=''):
-        if not group_name:
-            group_name = 'CHAPSim_autocov_io'
-        super().save_hdf(file_name, write_mode, group_name=group_name)
+    def save_hdf(self, file_name, write_mode, key=None):
+        if not key:
+            key = 'CHAPSim_autocov_io'
+        super().save_hdf(file_name, write_mode, key=key)
     
     def _autocov_calc(self,fluct_data,comp1,comp2,PhyTime,max_x_sep,max_z_sep):
         if type(PhyTime) == float:
@@ -436,21 +418,13 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
 
         fluct_vals1=fluct_data.fluctDF[PhyTime,comp1]
         fluct_vals2=fluct_data.fluctDF[PhyTime,comp2]
+
         time1=time.time()
         R_x = self._autocov_calc_x(fluct_vals1,fluct_vals2,*NCL,max_x_sep)#.mean(axis=1)
         R_z = self._autocov_calc_z(fluct_vals1,fluct_vals2,*NCL,max_z_sep)
-        # R_z = R_z/(NCL[2]-max_z_sep)
         print(time.time()-time1,flush=True)
         
-        # R_x = R_x/(NCL[2])
-
-        # R_z = R_z.reshape((max_z_sep*NCL[1]*NCL[0]))
-        # Rz_DF = pd.DataFrame(R_z)
-        # R_x = R_x.reshape((max_x_sep*NCL[1]*(NCL[0]-max_x_sep)))
-        # Rx_DF = pd.DataFrame(R_x)
-        # R_array=np.stack([R_x,R_z],axis=0)
-        
-        return R_x.copy(),R_z.copy()
+        return R_x, R_z
 
     def _autocov_calc_z(self,fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
         
@@ -464,7 +438,7 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
 
             if max_z_step >0:
                 try:
-                    autocov_calc_z(fluct1,fluct2,R_z,max_z_step)#,NCL1,NCL2,NCL3,max_z_step)
+                    autocov_calc_z(fluct1,fluct2,R_z,max_z_step)
                 except Exception as e:
                     msg = f"Exception raised by accelerator routine of type {type(e).__name__}: {e.__str__()}: "
                     if cp.Params['ForceMode']:    
@@ -509,7 +483,7 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
 
             if max_x_step >0:
                 try:
-                    autocov_calc_x(fluct1,fluct2,R_x,max_x_step)#,NCL3,NCL2,NCL1,max_x_step)
+                    autocov_calc_x(fluct1,fluct2,R_x,max_x_step)
                 except Exception as e:
                     msg = f"Exception raised by accelerator routine of type {type(e).__name__}: {e.__str__()}: "
                     if cp.Params['ForceMode']:    
@@ -532,7 +506,6 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
             return self._autocov_numba_x(fluct1,fluct2,NCL1,NCL2,NCL3,max_x_step)
 
     @staticmethod
-    # @numba.jit()
     def _autocov_numba_x(fluct1,fluct2,NCL1,NCL2,NCL3,max_x_step):
         R_x = np.zeros((max_x_step,NCL2,NCL1-max_x_step))
         for ix0 in range(max_x_step):
@@ -550,22 +523,21 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
             for line,val in zip(lines,axis_vals):
                 line.set_label(r"$x^*=%.3g$"%val)
 
-        axes_items_num = len(ax[0].get_lines())
-        ncol = 4 if axes_items_num>3 else axes_items_num
-        ax[0].clegend(vertical=False,ncol=ncol)# ,fontsize=15)
+        ncol = cplt.get_legend_ncols(len(ax[0].get_lines()))
+        ax[0].clegend(vertical=False,ncol=ncol)
         ax[0].get_gridspec().tight_layout(fig)
         return fig, ax
 
     def plot_spectra(self, comp, axis_vals,*args,**kwargs):
+        
         fig, ax =  super().plot_spectra(comp, axis_vals, *args, **kwargs)
         for a in ax:
             lines = a.get_lines()[-len(axis_vals):]
             for line,val in zip(lines,axis_vals):
                 line.set_label(r"$x^*=%.3g$"%val)
 
-        axes_items_num = len(ax[0].get_lines())
-        ncol = 4 if axes_items_num>3 else axes_items_num
-        ax[0].clegend(vertical=False,ncol=ncol)# ,fontsize=15)
+        ncol = cplt.get_legend_ncols(len(ax[0].get_lines()))
+        ax[0].clegend(vertical=False,ncol=ncol)
         ax[0].get_gridspec().tight_layout(fig)
         return fig, ax
         
@@ -589,7 +561,7 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
 
 class CHAPSim_autocov_tg(CHAPSim_autocov_base):
     _module = sys.modules[__name__]
-    def _autocov_extract(self,comp1,comp2,path_to_folder='',time0=None,abs_path=True,max_x_sep=None,max_z_sep=None):
+    def _autocov_extract(self,comp1,comp2,path_to_folder='.',time0=None,abs_path=True,max_x_sep=None,max_z_sep=None):
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
@@ -627,24 +599,25 @@ class CHAPSim_autocov_tg(CHAPSim_autocov_base):
         
         self.autocorrDF = cd.datastruct({'x':R_x,'z':R_z})
     
-    def _hdf_extract(self,file_name, group_name=None):
-        base_name=group_name if group_name is not None else 'CHAPSim_autocov_tg'
+    def _hdf_extract(self,file_name, key=None):
+        if key is None:
+            key =  'CHAPSim_autocov_tg'
         
         hdf_file = h5py.File(file_name,'r')
-        self.shape_x = tuple(hdf_file[base_name].attrs["shape_x"][:])
-        self.shape_z = tuple(hdf_file[base_name].attrs["shape_z"][:])
-        self.comp = tuple(np.char.decode(hdf_file[base_name].attrs["comp"][:]))
+        self.shape_x = tuple(hdf_file[key].attrs["shape_x"][:])
+        self.shape_z = tuple(hdf_file[key].attrs["shape_z"][:])
+        self.comp = tuple(np.char.decode(hdf_file[key].attrs["comp"][:]))
         hdf_file.close()        
 
         self.autocorrDF = cd.datastruct.from_hdf(file_name,shapes=(self.shape_x,self.shape_z),key=base_name+'/autocorrDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
-        self._meta_data = self._module._meta_class.from_hdf(file_name,base_name+'/meta_data')
+        self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
         self.NCL=self._meta_data.NCL
-        self._avg_data = self._module._avg_tg_base_class.from_hdf(file_name,base_name+'/avg_data')
+        self._avg_data = self._module._avg_tg_base_class.from_hdf(file_name,key+'/avg_data')
     
-    def save_hdf(self, file_name, write_mode, group_name=''):
-        if not group_name:
-            group_name = 'CHAPSim_autocov_tg'
-        super().save_hdf(file_name, write_mode, group_name=group_name)
+    def save_hdf(self, file_name, write_mode, key=None):
+        if key is None:
+            key = 'CHAPSim_autocov_tg'
+        super().save_hdf(file_name, write_mode, key=key)
     
     @staticmethod
     def _autocov_calc(fluct_data,comp1,comp2,PhyTime,max_x_sep,max_z_sep):

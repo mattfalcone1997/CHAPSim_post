@@ -74,12 +74,8 @@ class CHAPSim_AVG_custom_t(cp.CHAPSim_AVG_tg_base):
         else:
             xaxis = self._return_xaxis()
 
-        if fig is None:
-            if 'figsize' not in kwargs.keys():
-                kwargs['figsize'] = [7,5]
-            fig,ax=cplt.subplots(**kwargs)
-        elif ax is None:
-            ax = fig.add_subplot(1,1,1)
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         ax.cplot(xaxis,accel_param,label=r"$K$")
 
@@ -98,28 +94,28 @@ _avg_tg_base_class = CHAPSim_AVG_custom_t
 
 class CHAPSim_AVG_tg(CHAPSim_AVG_custom_t):
     _module = sys.modules[__name__]
-    def _extract_avg(self,path_to_folder='',time0='',abs_path=True,*args,**kwargs):
+    def _extract_avg(self,path_to_folder=".",time0=None,abs_path=True,*args,**kwargs):
 
         if isinstance(path_to_folder,list):
             times = CT.time_extract(path_to_folder[0],abs_path)
         else:
             times = CT.time_extract(path_to_folder,abs_path)
-        if time0:
+        if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
         return super()._extract_avg(times,path_to_folder=path_to_folder,time0=time0,abs_path=abs_path,*args,**kwargs)
         
 _avg_tg_class = CHAPSim_AVG_tg
 
 class CHAPSim_perturb():
-    def __init__(self,avg_data='', meta_data='',path_to_folder='',time0='',abs_path=True):
-        if avg_data:
+    def __init__(self,avg_data=None, meta_data=None,path_to_folder='.',time0=None,abs_path=True):
+        if avg_data is not None:
             if not isinstance(avg_data,cp.CHAPSim_AVG_tg_base):
                 msg = f"avg_data must be a subclass of {cp.CHAPSim_AVG_tg_base}"
                 raise TypeError(msg)
             self.__avg_data = avg_data
         else:
             self.__avg_data = CHAPSim_AVG_tg(path_to_folder,time0,abs_path,meta_data=meta_data)
-        if not meta_data:
+        if meta_data is None:
             meta_data = self.__avg_data._meta_data
         self._meta_data = meta_data
         self.start  = self._meta_data.metaDF['accel_start_end'][0]
@@ -145,14 +141,12 @@ class CHAPSim_perturb():
         for i in range(time_0_index,self.__avg_data.shape[1]):
             mean_velo_peturb[:,i-time_0_index] = (U_velo_mean[:,i]-U_velo_mean[:,0])/(U_velo_mean[centre_index,i]-U_c0)
         return mean_velo_peturb
-    def plot_perturb_velo(self,times,comp='u',Y_plus=False,Y_plus_max=100,fig='',ax ='',**kwargs):
+    def plot_perturb_velo(self,times,comp='u',Y_plus=False,Y_plus_max=100,fig=None,ax =None,**kwargs):
         velo_peturb = self.mean_velo_peturb_calc(comp)
-        if not fig:
-            if 'figsize' not in kwargs.keys():
-                kwargs['figsize'] = [10,5]
-            fig, ax = cplt.subplots(**kwargs)
-        elif not ax:
-            ax = fig.add_subplot(1,1,1)
+        
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])   
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)     
+
         y_coord = self._meta_data.CoordDF['y']
         
         # print(self.__avg_data.shape)
@@ -185,7 +179,7 @@ class CHAPSim_perturb():
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
-    def plot_peturb_cf(self,wall_units=False,fig='',ax='',**kwargs):
+    def plot_peturb_cf(self,wall_units=False,fig=None,ax=None,**kwargs):
 
         tau_du = self.tau_du_calc()
         bulkvelo = self.__avg_data._bulk_velo_calc(None)
@@ -200,13 +194,9 @@ class CHAPSim_perturb():
         
         times = self.__avg_data._return_xaxis()[x_loc:] - self.start
         
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
         # print(bulkvelo[x_loc:]-bulkvelo[0])
-        if not fig:
-            if 'figsize' not in kwargs.keys():
-                kwargs['figsize'] = [10,5]
-            fig, ax = cplt.subplots(**kwargs)
-        elif not ax:
-            ax = fig.add_subplot(1,1,1)
             
         ax.cplot(times, Cf_du)
         ax.set_xlabel(r"$t^*$")
@@ -216,24 +206,14 @@ class CHAPSim_perturb():
 
     def int_thickness_calc(self):
 
-        # if len(set([x[0] for x in self.__avg_data.UU_tensorDF.index])) == 1:
-        #     avg_time = list(set([x[0] for x in self.__avg_data.UU_tensorDF.index]))[0]
-        #     if PhyTime and PhyTime != avg_time:
-        #         warnings.warn("\033[1;33PhyTime being set to variable present (%g) in CHAPSim_AVG class" %float(avg_time), stacklevel=2)
-        #     PhyTime = avg_time
-        # else:
-        #     assert PhyTime in set([x[0] for x in self.__avg_data.UU_tensorDF.index]), "PhyTime must be present in CHAPSim_AVG class"
         mean_velo = self.mean_velo_peturb_calc('u')
 
-        # start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
         print(self.start)
         x_loc = self.__avg_data._return_index(self.start)+1
         print(x_loc)
         y_coords = self.__avg_data.CoordDF['y']
 
         U0_index = int(self.__avg_data.shape[0]*0.5)
-        # theta_integrand = np.zeros((U0_index,self.__avg_data.shape[1]))
-        # delta_integrand = np.zeros((U0_index,self.__avg_data.shape[1]))
         mom_thickness = np.zeros(self.__avg_data.shape[1]-x_loc)
         disp_thickness = np.zeros(self.__avg_data.shape[1]-x_loc)
         theta_integrand = mean_velo[:U0_index]*(1-mean_velo[:U0_index])
@@ -248,15 +228,11 @@ class CHAPSim_perturb():
 
         return disp_thickness, mom_thickness, shape_factor
 
-    def plot_shape_factor(self,fig='',ax='',**kwargs):
-        if not fig:
-            if 'figsize' not in kwargs.keys():
-                kwargs['figsize'] = [10,5]
-            fig, ax = cplt.subplots(**kwargs)
-        elif not ax:
-            ax = fig.add_subplot(1,1,1)
+    def plot_shape_factor(self,fig=None,ax=None,**kwargs):
 
-        # start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
+
         x_loc = self.__avg_data._return_index(self.start)+1
 
         times = self.__avg_data._return_xaxis()[x_loc:] 
@@ -270,15 +246,11 @@ class CHAPSim_perturb():
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
-    def plot_mom_thickness(self,fig='',ax='',**kwargs):
+    def plot_mom_thickness(self,fig=None,ax=None,**kwargs):
 
         
-        if not fig:
-            if 'figsize' not in kwargs.keys():
-                kwargs['figsize'] = [10,5]
-            fig, ax = cplt.subplots(**kwargs)
-        elif not ax:
-            ax = fig.add_subplot(1,1,1)
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         # start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
         # x_loc = CT.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
@@ -295,22 +267,16 @@ class CHAPSim_perturb():
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
-    def plot_disp_thickness(self,fig='',ax='',**kwargs):
-        if not fig:
-            if 'figsize' not in kwargs.keys():
-                kwargs['figsize'] = [10,5]
-            fig, ax = cplt.subplots(**kwargs)
-        elif not ax:
-            ax = fig.add_subplot(1,1,1)
+    def plot_disp_thickness(self,fig=None,ax=None,**kwargs):
 
-        # start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
-        # x_loc = CT.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         x_loc = self.__avg_data._return_index(self.start)+1
 
         times = self.__avg_data._return_xaxis()[x_loc:] 
         times -= self.start
-        # _, theta, _ = self.int_thickness_calc()
+
         delta, _, _ = self.int_thickness_calc()
 
         ax.cplot(times, delta,label=r"$\delta^*$")

@@ -10,6 +10,7 @@ import sys
 import warnings
 import gc
 import itertools
+from abc import ABC, abstractmethod
 
 import CHAPSim_post as cp
 from .. import CHAPSim_plot as cplt
@@ -27,7 +28,7 @@ _fluct_tg_class = CHAPSim_fluct_tg
 from ._meta import CHAPSim_meta
 _meta_class = CHAPSim_meta
 
-class CHAPSim_Quad_Anl_base():
+class CHAPSim_Quad_Anl_base(ABC):
     _module = sys.modules[__name__]
     def __init__(self,*args,**kwargs):
         fromfile=kwargs.pop('fromfile',False)
@@ -37,12 +38,22 @@ class CHAPSim_Quad_Anl_base():
         else:
             self._meta_data, self.NCL, self._avg_data,\
             self.QuadAnalDF,self.shape = self._hdf_extract(*args,**kwargs)
-    def save_hdf(self,file_name,write_mode,group_name=''):
-        base_name=group_name if group_name else 'CHAPSim_Quad_Anal'
+    def save_hdf(self,file_name,write_mode,key=None):
+        if key is None:
+            key = 'CHAPSim_Quad_Anal'
 
-        self._meta_data.save_hdf(file_name,write_mode,base_name+'/meta_data')
-        self._avg_data.save_hdf(file_name,'a',base_name+'/avg_data')
-        self.QuadAnalDF.to_hdf(file_name,key=base_name+'/QuadAnalDF',mode='a')
+        self._meta_data.save_hdf(file_name,write_mode,key+'/meta_data')
+        self._avg_data.save_hdf(file_name,'a',key+'/avg_data')
+        self.QuadAnalDF.to_hdf(file_name,key=key+'/QuadAnalDF',mode='a')
+
+
+    @abstractmethod
+    def _quad_extract(self,*args,**kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _hdf_extract(self,*args,**kwargs):
+        raise NotImplementedError
 
     @classmethod
     def from_hdf(cls,*args,**kwargs):
@@ -85,12 +96,9 @@ class CHAPSim_Quad_Anl_base():
     def line_plot(self,h_list,coord_list,prop_dir,x_vals=0,y_mode='half_channel',norm=False,fig=None,ax=None,line_kw=None,**kwargs):
         assert x_vals is None or not hasattr(x_vals,'__iter__')
 
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False,figsize=[12,5*len(coord_list)])
-            fig, ax = cplt.subplots(4,len(coord_list),**kwargs)
-        elif ax is None:
-            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False)
-            ax = fig.subplots(4,len(coord_list),**kwargs)
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[12,5*len(coord_list)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(4,len(coord_list),fig=fig,ax=ax,**kwargs)
+        ax = ax.reshape((4,len(coord_list)))
 
         if prop_dir =='y':
             index = [self._avg_data._return_index(x) for x in coord_list]
@@ -140,7 +148,7 @@ class CHAPSim_Quad_Anl_base():
         return fig, ax
 
 class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
-    def _quad_extract(self,h_list,path_to_folder='',time0=None,abs_path=True):
+    def _quad_extract(self,h_list,path_to_folder='.',time0=None,abs_path=True):
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
@@ -178,14 +186,15 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
 
         return meta_data, NCL, avg_data, QuadAnalDF, shape
 
-    def _hdf_extract(self,file_name,group_name=''):
-        base_name=group_name if group_name else 'CHAPSim_Quad_Anal'
-        meta_data = self._module.CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
+    def _hdf_extract(self,file_name,key=None):
+        if key is None:
+            key = 'CHAPSim_Quad_Anal'
+        meta_data = self._module.CHAPSim_meta.from_hdf(file_name,key+'/meta_data')
         NCL= meta_data.NCL
-        avg_data = self._module._avg_io_class.from_hdf(file_name,base_name+'/avg_data')
+        avg_data = self._module._avg_io_class.from_hdf(file_name,key+'/avg_data')
         shape = (NCL[1],NCL[0])
         
-        QuadAnalDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=base_name+'/QuadAnalDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
+        QuadAnalDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/QuadAnalDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
                 
         return meta_data, NCL, avg_data, QuadAnalDF, shape
 
@@ -214,7 +223,7 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
 
 class CHAPSim_Quad_Anl_tg(CHAPSim_Quad_Anl_base):
     _module = sys.modules[__name__]
-    def _quad_extract(self,h_list,path_to_folder='',time0=None,abs_path=True):
+    def _quad_extract(self,h_list,path_to_folder='.',time0=None,abs_path=True):
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))

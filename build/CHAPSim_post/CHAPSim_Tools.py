@@ -300,8 +300,8 @@ def Gen_Grad_calc(x_vals, array):
                                     #(x_vals[array.size-1]-x_vals[array.size-3])
     return d_array_d_x_vals
 
-def Y_plus_index_calc(AVG_DF,CoordDF,coord_list,x_vals=''):
-    if x_vals:
+def Y_plus_index_calc(AVG_DF,CoordDF,coord_list,x_vals=None):
+    if x_vals is not None:
         index_list = coord_index_calc(CoordDF,'x',x_vals)
         
     y_coords = CoordDF['y']

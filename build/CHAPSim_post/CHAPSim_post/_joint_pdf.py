@@ -15,6 +15,7 @@ import sys
 import warnings
 import gc
 import time
+from abc import ABC, abstractmethod
 
 import CHAPSim_post as cp
 from .. import CHAPSim_plot as cplt
@@ -33,15 +34,22 @@ from ._meta import CHAPSim_meta
 _meta_class = CHAPSim_meta
 
 
-class CHAPSim_joint_PDF_base():
+class CHAPSim_joint_PDF_base(ABC):
     _module = sys.modules[__name__]
     def __init__(self,*args,fromfile=False,**kwargs):
         if fromfile:
-            self.pdf_arrayDF, self.u_arrayDF, self.v_arrayDF, self.avg_data,\
-            self.meta_data, self.NCL, self._y_mode, self._x_loc_norm = self._hdf_extract(*args,**kwargs)
+            self._hdf_extract(*args,**kwargs)
         else:
-            self.pdf_arrayDF, self.u_arrayDF, self.v_arrayDF, self.avg_data,\
-            self.meta_data, self.NCL, self._y_mode,self._x_loc_norm = self._extract_fluct(*args,**kwargs)
+            self._extract_fluct(*args,**kwargs)
+
+    @abstractmethod
+    def _hdf_extract(self,*args,**kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _extract_fluct(self,*args,**kwargs):
+        raise NotImplementedError
+
 
     def save_hdf(self,file_name,mode='a',base_name='CHAPSim_joint_PDF_base'):
         hdf_file = h5py.File(file_name,mode)
@@ -62,12 +70,8 @@ class CHAPSim_joint_PDF_base():
 
     def plot_joint_PDF(self, xy_list,contour_kw=None,fig=None, ax=None,**kwargs):
         
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False,figsize=[8,4*len(xy_list)])
-            fig,ax = cplt.subplots(len(xy_list),**kwargs)
-        elif ax is None:
-            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False)
-            ax=fig.subplots(len(xy_list),**kwargs)      
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[8,4*len(xy_list)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(xy_list),fig=fig,ax=ax,**kwargs)   
         ax = ax.flatten()
 
         contour_kw = cplt.update_contour_kw(contour_kw)
@@ -101,14 +105,14 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
             times = list(filter(lambda x: x > time0, times))
         if cp.Params['TEST']:
             times.sort(); times= times[-5:]
-        meta_data = self._module._meta_class(path_to_folder,abs_path)
-        NCL = meta_data.NCL
+        self.meta_data = self._module._meta_class(path_to_folder,abs_path)
+        self.NCL = self.meta_data.NCL
 
         try:
-            avg_data = self._module._avg_io_class(max(times),meta_data,path_to_folder,time0,abs_path)
+            self.avg_data = self._module._avg_io_class(max(times),self.meta_data,path_to_folder,time0,abs_path)
         except Exception:
             times.remove(max(times))
-            avg_data = self._module._avg_io_class(max(times),meta_data,path_to_folder,time0)
+            self.avg_data = self._module._avg_io_class(max(times),self.meta_data,path_to_folder,time0)
 
         
         if xy_inner:
@@ -126,17 +130,17 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
                     x_coord_list.append(x_val)
                     y_coord_list.append(y_val)
 
-        x_index = CT.coord_index_calc(avg_data.CoordDF,'x',x_coord_list)
+        x_index = CT.coord_index_calc(self.avg_data.CoordDF,'x',x_coord_list)
 
-        x_loc_norm = x_coord_list if not use_ini else [0]*len(y_coord_list)
-        y_index = CT.y_coord_index_norm(avg_data,avg_data.CoordDF,y_coord_list,x_loc_norm,y_mode)
+        self._x_loc_norm = x_coord_list if not use_ini else [0]*len(y_coord_list)
+        y_index = CT.y_coord_index_norm(self.avg_data,self.avg_data.CoordDF,y_coord_list,self._x_loc_norm,y_mode)
         
         y_index = np.diag(np.array(y_index))
         u_prime_array = [ [] for _ in range(len(y_index)) ]
         v_prime_array = [ [] for _ in range(len(y_index)) ]
 
         for time in times:
-            fluct_data = self._module._fluct_io_class(time,avg_data,path_to_folder,abs_path)
+            fluct_data = self._module._fluct_io_class(time,self.avg_data,path_to_folder,abs_path)
             u_prime_data = fluct_data.fluctDF[time,'u']
             v_prime_data = fluct_data.fluctDF[time,'v']
             for i in range(len(y_index)):
@@ -164,10 +168,10 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
         u_array = np.array(u_array)
         v_array = np.array(v_array)
 
-        pdf_arrayDF = cd.datastruct(pdf_array,index= index)
-        u_arrayDF = cd.datastruct(u_array,index= index)
-        v_arrayDF = cd.datastruct(v_array,index= index)
-        return pdf_arrayDF, u_arrayDF, v_arrayDF, avg_data,meta_data,NCL,y_mode,x_loc_norm
+        self._y_mode=y_mode
+        self.pdf_arrayDF = cd.datastruct(pdf_array,index= index)
+        self.u_arrayDF = cd.datastruct(u_array,index= index)
+        self.v_arrayDF = cd.datastruct(v_array,index= index)
 
     def save_hdf(self,file_name,mode='a',base_name='CHAPSim_joint_PDF_io'):
         super().save_hdf(file_name,mode,base_name)
@@ -177,15 +181,13 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
             base_name = 'CHAPSim_joint_PDF_io' 
 
         hdf_file = h5py.File(file_name,'r')
-        y_mode = hdf_file[base_name].attrs['y_mode'].decode('utf-8')
-        x_loc_norm = hdf_file[base_name+'/x_loc_norm'][:]
+        self._y_mode = hdf_file[base_name].attrs['y_mode'].decode('utf-8')
+        self._x_loc_norm = hdf_file[base_name+'/x_loc_norm'][:]
         hdf_file.close()
-        meta_data = self._module.CHAPSim_meta.from_hdf(file_name,base_name+'/meta_data')
-        NCL=meta_data.NCL
-        avg_data = self._module.CHAPSim_AVG_io.from_hdf(file_name,base_name+'/avg_data')
+        self.meta_data = self._module._meta_class.from_hdf(file_name,base_name+'/meta_data')
+        self.NCL=self.meta_data.NCL
+        self.avg_data = self._module.CHAPSim_AVG_io.from_hdf(file_name,base_name+'/avg_data')
         # uv_primeDF = pd.read_hdf(file_name,key=base_name+'/uv_primeDF')
-        pdf_arrayDF = cd.datastruct.from_hdf(file_name,key=base_name+'/pdf_arrayDF')
-        u_arrayDF = cd.datastruct.from_hdf(file_name,key=base_name+'/u_arrayDF')
-        v_arrayDF = cd.datastruct.from_hdf(file_name,key=base_name+'/v_arrayDF')
-
-        return pdf_arrayDF,u_arrayDF,v_arrayDF,avg_data, meta_data, NCL, y_mode,x_loc_norm
+        self.pdf_arrayDF = cd.datastruct.from_hdf(file_name,key=base_name+'/pdf_arrayDF')
+        self.u_arrayDF = cd.datastruct.from_hdf(file_name,key=base_name+'/u_arrayDF')
+        self.v_arrayDF = cd.datastruct.from_hdf(file_name,key=base_name+'/v_arrayDF')

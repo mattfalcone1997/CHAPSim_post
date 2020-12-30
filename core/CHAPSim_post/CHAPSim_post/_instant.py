@@ -15,6 +15,8 @@ from .. import CHAPSim_Tools as CT
 from .. import CHAPSim_dtypes as cd
 from .. import CHAPSim_plot as cplt
 
+import CHAPSim_post.CHAPSim_post._utils as utils
+
 from ._meta import CHAPSim_meta
 _meta_class=CHAPSim_meta
 
@@ -31,8 +33,8 @@ class CHAPSim_Inst():
         else:
             self._hdf_extract(*args,**kwargs)
 
-    def _inst_extract(self,time,meta_data='',path_to_folder='',abs_path = True,tgpost=False):
-        if not meta_data:
+    def _inst_extract(self,time,meta_data=None,path_to_folder='.',abs_path = True,tgpost=False):
+        if meta_data is None:
             meta_data = self._module._meta_class(path_to_folder,abs_path,tgpost)
         self._meta_data = meta_data
         self.CoordDF = meta_data.CoordDF
@@ -57,21 +59,22 @@ class CHAPSim_Inst():
     def from_hdf(cls,*args,**kwargs):
         return cls(fromfile=True,*args,**kwargs)
     
-    def _hdf_extract(self,file_name,group_name=''):
-        base_name=group_name if group_name else 'CHAPSim_Inst'
-        self._meta_data = self._module._meta_class.from_hdf(file_name,base_name+'/meta_data')
+    def _hdf_extract(self,file_name,key=None):
+        if key is None:
+            key = 'CHAPSim_Inst'
+        self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
         self.CoordDF=self._meta_data.CoordDF
         self.NCL=self._meta_data.NCL
 
         self.shape = (self.NCL[2],self.NCL[1],self.NCL[0])
-        
-        self.InstDF = cd.datastruct.from_hdf(file_name,shapes=self.shape,key=base_name+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
+        self.InstDF = cd.datastruct.from_hdf(file_name,shapes=self.shape,key=key+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
 
-    def save_hdf(self,file_name,write_mode,group_name=''):
-        base_name=group_name if group_name else 'CHAPSim_Inst'
-        self._meta_data.save_hdf(file_name,write_mode,group_name=base_name+'/meta_data')
-        self.InstDF.to_hdf(file_name,key=base_name+'/InstDF',mode='a')
-    # @profile(stream=open("mem_check.txt",'w'))
+    def save_hdf(self,file_name,write_mode,key=None):
+        if key is None:
+            key = 'CHAPSim_Inst'
+        self._meta_data.save_hdf(file_name,write_mode,key=key+'/meta_data')
+        self.InstDF.to_hdf(file_name,key=key+'/InstDF',mode='a')
+
     def _flow_extract(self,Time_input,path_to_folder,abs_path,tgpost):
         """ Extract velocity and pressure from the instantanous files """
         instant = "%0.9E" % Time_input
@@ -124,18 +127,15 @@ class CHAPSim_Inst():
             i+=1
         #Reshaping and interpolating flow data so that it is centred
         flow_info=flow_info.reshape((4,NCL3,NCL2,NCL1))
-        # if tgpost:
-        #     flow_info1=flow_info
-        #     flow_info1 = flow_info1.reshape((4,dummy_size))
-        # else:
         flow_info = self.__velo_interp(flow_info,NCL3,NCL2,NCL1)
         gc.collect()
-        # flow_info1 = flow_info1.reshape((4,dummy_size-NCL3*NCL2))
+
         Phy_string = '%.9g' % PhyTime
-        # creating dataframe index
+
+        # creating datastruct index
         index = [[Phy_string]*4,['u','v','w','P']]
-        # index=pd.MultiIndex.from_arrays([[Phy_string]*4,['u','v','w','P']])
-        # creating dataframe so that data can be easily accessible elsewhere
+
+        # creating datastruct so that data can be easily accessible elsewhere
         Instant_DF = cd.datastruct(flow_info,index=index,copy=False)# pd.DataFrame(flow_info1,index=index)
 
         for file in open_list:
@@ -144,8 +144,10 @@ class CHAPSim_Inst():
         return Instant_DF
     def __velo_interp(self,flow_info,NCL3, NCL2, NCL1):
         """ Convert the velocity info so that it is defined at the cell centre """
+       
         #This doesn't interpolate pressure as it is already located at the cell centre
         #interpolation reduces u extent, therefore to maintain size, V, W reduced by 1
+        
         flow_interp = np.zeros((4,NCL3,NCL2,NCL1-1))
         for i in range(NCL1-1): #U velocity
             flow_interp[0,:,:,i] = 0.5*(flow_info[0,:,:,i] + flow_info[0,:,:,i+1])
@@ -159,6 +161,7 @@ class CHAPSim_Inst():
                 flow_interp[2,i,:,:] = 0.5*(flow_info[2,i,:,:-1] + flow_info[2,i+1,:,:-1])
             else: #interpolation with first cell due to z periodicity BC
                 flow_interp[2,i,:,:] = 0.5*(flow_info[2,i,:,:-1] + flow_info[2,0,:,:-1])
+        
         flow_interp[3,:,:,:] = flow_info[3,:,:,:-1] #Removing final pressure value 
         return flow_interp
 
@@ -173,87 +176,99 @@ class CHAPSim_Inst():
                 warnings.warn(a.message)
         return key[0]
 
-    def inst_contour(self,axis1,axis2,axis3_value,flow_field,PhyTime,fig='',ax='',**kwargs):
-        """Function to output velocity contour plot on a particular plane"""
-        #======================================================================
-        # axis1 and axis2 represents the axes that will be shown in the plot
-        # axis3_value is the cell value which will be shown
-        # velo field represents the u,v,w or magnitude that will be ploted
-        #======================================================================
-       
-        if axis1 == axis2:
-            raise ValueError("\033[1;32 Axes cannot be the same")
-  
+    def plot_contour(self,comp,axis_vals,plane='xz',PhyTime=None,x_split_list=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
+                
+        PhyTime = self.check_PhyTime(PhyTime)        
+        
+        axis_vals = utils.check_list_vals(axis_vals)
             
-            
-        axes = ['x','y','z']
-        if axis1 not in axes or axis2 not in axes:
-            raise ValueError("\033[1;32 axis values must be x,y or z")
-        if axis1 != 'x' and axis1 != 'z':
-            axis_temp = axis2
-            axis2 = axis1
-            axis1 = axis_temp
-        elif axis1 == 'z' and axis2 == 'x':
-            axis_temp = axis2
-            axis2 = axis1
-            axis1 = axis_temp
-        
-        axis1_coords = self.CoordDF[axis1]
-        axis2_coords = self.CoordDF[axis2]
-        if flow_field == 'u' or flow_field =='v' or flow_field =='w' or flow_field =='P':
-            local_velo = self.InstDF[PhyTime,flow_field]
-        elif flow_field == 'mag':
-            local_velo = np.sqrt(np.square(self.InstDF.values[:3]).sum(axis=0))
-        else:
-            raise ValueError("\033[1;32 Not a valid argument")
-        
-        axis1_mesh, axis2_mesh = np.meshgrid(axis1_coords,axis2_coords)
-        
-        if axis1 =='x' and axis2 == 'y':
-            velo_post = local_velo[axis3_value,:,:]
-        elif axis1 =='x' and axis2 == 'z':
-            velo_post = local_velo[:,axis3_value,:]
-        elif axis1 =='z' and axis2 == 'y':
-            velo_post = local_velo[:,:,axis3_value]
-            velo_post = velo_post.T
-        else:
-            raise Exception
-        
-        if not fig:
-            if 'figsize' not in kwargs.keys:
-                kwargs['figsize']=figsize=[10,5]
-            fig,ax = cplt.subplots(**kwargs)
-        elif not ax:
-            ax = fig.add_subplot(1,1,1)
-            
-        ax1 = ax.pcolormesh(axis1_mesh,axis2_mesh,velo_post,cmap='jet')
-        ax = ax1.axes
-        ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
-        ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator('auto'))
-        cbar=fig.colorbar(ax1,ax=ax)
-        if flow_field=='mag':
-            cbar_label=r"$\vert U\vert$"
-        else:
-            cbar_label=r"$%s$"%flow_field.upper()
-        cbar.set_label(cbar_label)# ,fontsize=12)
-        ax.set_xlabel(r"$%s/\delta$" % axis1)# ,fontsize=18)
-        ax.set_ylabel(r"$%s/\delta$" % axis2)# ,fontsize=16)
-        #ax.axes().set_aspect('equal')
-        #plt.colorbar(orientation='horizontal',shrink=0.5,pad=0.2)
-        
-        return fig, ax1
-    def velo_vector(self,axis1,axis2,axis3_value,PhyTime,axis1_spacing,\
-                    axis2_spacing, fig='', ax=''):
+        plane , coord, axis_index = CT.contour_plane(plane,axis_vals,self.avg_data,y_mode,PhyTime)
 
-        if not fig:
-            fig = cplt.figure()
-        if not ax:
-            ax = fig.add_subplot(1,1,1)
-        fig, ax = _vector_plot(self.CoordDF,self.InstDF[PhyTime],self.NCL,\
-                               fig,ax,axis1_spacing,axis2_spacing,axis1,axis2,axis3_value)
+
+        x_coords = self.CoordDF[plane[0]]
+        z_coords = self.CoordDF[plane[1]]
+        X,Z = np.meshgrid(x_coords,z_coords)
+        fluct = self.InstDF[PhyTime,comp]
+                
+        if x_split_list is None:
+            x_split_list=[np.amin(x_coords),np.amax(x_coords)]
         
-        ax.set_title("Instantaneous velocity vector plot")
-        return fig, ax
+        ax_layout = (len(x_split_list)-1,len(axis_vals))
+        figsize=[10*len(axis_vals),3*(len(x_split_list)-1)]
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
+        fig, ax = cplt.create_fig_ax_without_squeeze(*ax_layout,fig=fig,ax=ax,**kwargs)
+
+        ax=ax.flatten()
+
+        title_symbol = CT.get_title_symbol(coord,y_mode,False)
+        
+        pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
+        X, Z = np.meshgrid(x_coords, z_coords)
+
+        ax=ax.flatten()
+        max_val = np.amax(fluct); min_val=np.amin(fluct)
+        for j,_ in enumerate(x_split_list[:-1]):
+            for i,_ in enumerate(axis_vals):
+                fluct_slice = CT.contour_indexer(fluct,axis_index[i],coord)
+
+                ax1 = ax[j*len(axis_vals)+i].pcolormesh(X,Z,fluct_slice,**pcolor_kw)
+                ax1.set_clim(min_val,max_val)
+
+                ax1.axes.set_xlabel(r"$%s/\delta$" % 'x')
+                ax1.axes.set_ylabel(r"$%s/\delta$" % 'z')
+                ax1.axes.set_xlim([x_split_list[j],x_split_list[j+1]])
+                ax1.axes.set_title(r"$%s=%.3g$"%(title_symbol,axis_vals[i]),loc='right')
+                ax1.axes.set_title(r"$t^*=%s$"%PhyTime,loc='left')
+                
+                cbar=fig.colorbar(ax1,ax=ax[j*len(axis_vals)+i])
+                cbar.set_label(r"$%s^\prime$"%comp)
+
+                ax[j*len(axis_vals)+i]=ax1
+                ax[j*len(axis_vals)+i].axes.set_aspect('equal')
+        fig.tight_layout()
+
+        if ax.size == 1:
+            return fig, ax[0]
+        else:
+            return fig, ax
+
+    def plot_vector(self,slice,ax_val,PhyTime=None,y_mode='half_channel',spacing=(1,1),scaling=1,x_split_list=None,fig=None,ax=None,quiver_kw=None,**kwargs):
+        
+        PhyTime = self.check_PhyTime(PhyTime)
+        
+        ax_val = utils.check_list_vals(ax_val)
+
+        slice, coord, axis_index = CT.contour_plane(slice,ax_val,self.avg_data,y_mode,PhyTime)
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[8,4*len(ax_val)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(ax_val),fig=fig,ax=ax,**kwargs)
+        ax = ax.flatten()
+
+
+        coord_1 = self.CoordDF[slice[0]][::spacing[0]]
+        coord_2 = self.CoordDF[slice[1]][::spacing[1]]
+        UV_slice = [chr(ord(x)-ord('x')+ord('u')) for x in slice]
+        U = self.InstDF[PhyTime,UV_slice[0]]
+        V = self.InstDF[PhyTime,UV_slice[1]]
+
+        U_space, V_space = CT.vector_indexer(U,V,axis_index,coord,spacing[0],spacing[1])
+        coord_1_mesh, coord_2_mesh = np.meshgrid(coord_1,coord_2)
+        ax_out=[]
+        quiver_kw = cplt.update_quiver_kw(quiver_kw)
+        for i in range(len(ax_val)):
+            scale = np.amax(U_space[:,:,i])*coord_1.size/np.amax(coord_1)/scaling
+            extent_array = (np.amin(coord_1),np.amax(coord_1),np.amin(coord_2),np.amax(coord_1))
+
+            Q = ax[i].quiver(coord_1_mesh, coord_2_mesh,U_space[:,:,i].T,V_space[:,:,i].T,angles='uv',scale_units='xy', scale=scale,**quiver_kw)
+            ax[i].set_xlabel(r"$%s^*$"%slice[0])
+            ax[i].set_ylabel(r"$%s$"%slice[1])
+            ax[i].set_title(r"$%s = %.3g$"%(coord,ax_val[i]),loc='right')
+            ax[i].set_title(r"$t^*=%s$"%PhyTime,loc='left')
+            ax_out.append(Q)
+        if len(ax_out) ==1:
+            return fig, ax_out[0]
+        else:
+            return fig, np.array(ax_out)
     
     def lambda2_calc(self,PhyTime,x_start_index=None,x_end_index=None,y_index=None):
         #Calculating strain rate tensor
@@ -285,21 +300,14 @@ class CHAPSim_Inst():
         del velo_field1 ; del velo_field2
         S2_Omega2 = strain_rate**2 + rot_rate**2
         del strain_rate ; del rot_rate
-        #eigs = np.vectorize(np.linalg.eig,otypes=[float],signature='(m,n,o,p,q)->(o,p,q)')
+
         S2_Omega2_eigvals, e_vecs = np.linalg.eigh(S2_Omega2)
         del e_vecs; del S2_Omega2
-        #lambda2 = np.zeros_like(velo_field1)
-        # eigs = np.zeros(3)
         
         lambda2 = np.sort(S2_Omega2_eigvals,axis=3)[:,:,:,1]
         
-        # for i in range(inst_data.NCL[2]):
-        #     for j in range(inst_data.NCL[1]):
-        #         for k in range(inst_data.NCL[0]):
-        #             eigs = np.sort(S2_Omega2_eigvals[i,j,k,:])
-        #             lambda2[i,j,k] = eigs[1]
         return lambda2
-    def plot_lambda2(self,vals_list,x_split_list='',PhyTime=None,ylim='',Y_plus=True,avg_data='',colors='',fig=None,ax=None,**kwargs):
+    def plot_lambda2(self,vals_list,x_split_list=None,PhyTime=None,ylim=None,Y_plus=True,avg_data=None,colors=None,fig=None,ax=None,**kwargs):
                 
         PhyTime = self.check_PhyTime(PhyTime)            
         
@@ -309,14 +317,18 @@ class CHAPSim_Inst():
         X = self._meta_data.CoordDF['x']
         Y = self._meta_data.CoordDF['y']
         Z = self._meta_data.CoordDF['z']
-        if ylim:
+
+        if ylim is not None:
             if Y_plus:
+                if avg_data is None:
+                    msg = "If Y_plus is selected, the avg_data keyword argument needs to be given"
+                    raise ValueError(msg)
                 y_index= CT.Y_plus_index_calc(avg_data,self.CoordDF,ylim)
             else:
                 y_index=CT.coord_index_calc(self.CoordDF,'y',ylim)
             Y=Y[:y_index]
             # lambda2=lambda2[:,:y_index,:]
-        if not x_split_list:
+        if x_split_list is None:
             x_split_list = [np.amin(X),np.amax(X)]
         
         if fig is None:
@@ -341,13 +353,15 @@ class CHAPSim_Inst():
                 lambda2=lambda2[:,:y_index,:]
             for val,i in zip(vals_list,range(len(vals_list))):
                 
-                color = colors[i%len(colors)] if colors else ''
+                color = colors[i%len(colors)] if colors is not None else ''
                 patch = ax[j].plot_isosurface(Y,Z,X[x_start:x_end],lambda2,val,color)
         
         
         return fig, ax
 
-    def vorticity_calc(self,PhyTime=''):
+    def vorticity_calc(self,PhyTime=None):
+
+        self.check_PhyTime(PhyTime)
 
         vorticity = np.zeros((3,*self.shape),dtype='f8')
         u_velo = self.InstDF[PhyTime,'u']
@@ -358,7 +372,6 @@ class CHAPSim_Inst():
         vorticity[1] = CT.Grad_calc(self.CoordDF,u_velo,'z',False) - CT.Grad_calc(self.CoordDF,w_velo,'x',False)      
         vorticity[2] = CT.Grad_calc(self.CoordDF,v_velo,'x',False) - CT.Grad_calc(self.CoordDF,u_velo,'y',False)     
 
-        # vorticity = vorticity.reshape(3,np.prod(self.shape))
         return cd.datastruct(vorticity,index=['x','y','z'])
 
     def plot_vorticity_contour(self,comp,slice,ax_val,PhyTime=None,avg_data=None,y_mode='half_channel',pcolor_kw=None,fig=None,ax=None,**kwargs):
@@ -373,12 +386,8 @@ class CHAPSim_Inst():
 
         slice, coord,axis_index = CT.contour_plane(slice,ax_val,avg_data,y_mode,PhyTime)
 
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False,figsize=[8,4*len(ax_val)])
-            fig,ax = cplt.subplots(len(ax_val),**kwargs)
-        elif ax is None:
-            kwargs = cplt.update_subplots_kw(kwargs,squeeze=False)
-            ax=fig.subplots(len(ax_val),**kwargs)      
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[8,4*len(ax_val)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(ax_val),fig=fig,ax=ax,**kwargs)   
         ax = ax.flatten()
 
         VorticityDF = self.vorticity_calc(PhyTime=PhyTime)
@@ -397,7 +406,7 @@ class CHAPSim_Inst():
             ax[i].set_ylabel(r"$%s$"%slice[1])
             ax[i].set_title(r"$%s = %.3g$"%(coord,ax_val[i]))
             cbar=fig.colorbar(mesh,ax=ax[i])
-            cbar.set_label(r"$\omega_%s$"%comp)# ,fontsize=12)
+            cbar.set_label(r"$\omega_%s$"%comp)
             ax_out.append(mesh)
 
         return fig, np.array(ax_out)

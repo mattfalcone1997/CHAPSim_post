@@ -14,23 +14,26 @@ import os
 import warnings
 import gc
 import itertools
+from abc import ABC, abstractmethod
 
 import CHAPSim_post as cp
+import CHAPSim_post.CHAPSim_post._utils as utils
+
 from .. import CHAPSim_plot as cplt
 from .. import CHAPSim_Tools as CT
 from .. import CHAPSim_dtypes as cd
 
+
 from ._average import CHAPSim_AVG
 _avg_class = CHAPSim_AVG
-
-class CHAPSim_budget_base():
+class CHAPSim_budget_base(ABC):
     _module = sys.modules[__name__]
 
-    def __init__(self,comp1,comp2,avg_data='',PhyTime=None,*args,**kwargs):
+    def __init__(self,comp1,comp2,avg_data=None,PhyTime=None,*args,**kwargs):
 
-        if avg_data:
+        if avg_data is not None:
             self.avg_data = avg_data
-        elif PhyTime:
+        elif PhyTime is not None:
             self.avg_data = self._module._avg_class(PhyTime,*args,**kwargs)
         else:
             raise Exception
@@ -41,8 +44,6 @@ class CHAPSim_budget_base():
         self.shape = self.avg_data.shape
 
     def _budget_extract(self,PhyTime,comp1,comp2):
-        if type(PhyTime) == float and PhyTime is not None:
-            PhyTime = "{:.9g}".format(PhyTime)
             
         production = self._production_extract(PhyTime,comp1,comp2)
         advection = self._advection_extract(PhyTime,comp1,comp2)
@@ -65,7 +66,54 @@ class CHAPSim_budget_base():
         
         return budgetDF
 
-    def _budget_plot(self,PhyTime, x_list,wall_units=True, fig=None, ax =None,line_kw=None,**kwargs):
+    @abstractmethod
+    def _production_extract(self,*args,**kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _advection_extract(self,*args,**kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _turb_transport(self,*args,**kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _pressure_diffusion(self,*args,**kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _pressure_strain(self,*args,**kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _viscous_diff(self,*args,**kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _dissipation_extract(self,*args,**kwargs):
+        raise NotImplementedError
+    
+    def _check_terms(self,comp):
+        
+        budget_terms = tuple([x[1] for x in self.budgetDF.index])
+
+        if comp is None:
+            comp_list = budget_terms
+        elif isinstance(comp,(tuple,list)):
+            comp_list = comp
+        elif isinstance(comp,str):
+            comp_list = [comp]
+        else:
+            raise TypeError("incorrect time")
+        
+        # print(budget_terms)
+        if not all([comp in budget_terms for comp in comp_list]):
+            raise KeyError("Invalid budget term provided")
+
+        return comp_list
+
+    def _budget_plot(self,PhyTime, x_list,budget_terms=None,wall_units=True, fig=None, ax =None,line_kw=None,**kwargs):
 
         u_tau_star, delta_v_star = self.avg_data._wall_unit_calc(PhyTime)
         budget_scale = u_tau_star**3/delta_v_star
@@ -90,30 +138,23 @@ class CHAPSim_budget_base():
         gridspec_kw = {'bottom': lower_extent}
         figsize= [7*ax_size[1],5*ax_size[0]+1]
 
-        kwargs = cplt.update_subplots_kw(kwargs,squeeze=False,
-                                        gridspec_kw=gridspec_kw)
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
-            fig, ax = cplt.subplots(*ax_size,**kwargs)
-        elif ax is None:
-            ax=fig.subplots(*ax_size,**kwargs)
-        else:
-            ax =np.array([ax])
+        kwargs = cplt.update_subplots_kw(kwargs,gridspec_kw=gridspec_kw,figsize=figsize)
+        fig, ax = cplt.create_fig_ax_without_squeeze(*ax_size,fig=fig,ax=ax,**kwargs)
         ax=ax.flatten()
-        comp_list = tuple([x[1] for x in self.budgetDF.index])
-        #print(comp_list)
-        i=0
 
-        def ax_convert(j):
-            return (int(j/2),j%2)
+        budget_terms = self._check_terms(budget_terms)
+
+
+        x_list = utils.check_list_vals(x_list)
         
-        
-        if not hasattr(x_list,'__iter__'):
-            x_list=[x_list]
+        # if isinstance(x_list,(float,int)):
+        #     x_list=[x_list]
+        # elif not isinstance(x_list,(tuple,list)):
+        #     msg =  "x_list must be of type float, int, tuple or list"
 
         line_kw= cplt.update_line_kw(line_kw)
         for i,x_loc in enumerate(x_list):
-            for comp in comp_list:
+            for comp in budget_terms:
                 budget_values = self.budgetDF[PhyTime,comp].copy()
                 x = self.avg_data._return_index(x_loc)
                 if wall_units:
@@ -130,65 +171,32 @@ class CHAPSim_budget_base():
                 if wall_units:
                     ax[i].set_xscale('log')
                     ax[i].set_xlim(left=1.0)
-                    ax[i].set_xlabel(r"$y^+$")# ,fontsize=18)
+                    ax[i].set_xlabel(r"$y^+$")
                 else:
-                    ax[i].set_xlabel(r"$y/\delta$")# ,fontsize=18)
-                
-                # ax[i].set_title(r"$x/\delta=%.3g$" %x_coords[x],loc='right',pad=-20)
-                # if i == 0:
+                    ax[i].set_xlabel(r"$y/\delta$")
+
                 if mpl.rcParams['text.usetex'] == True:
-                    ax[i].set_ylabel(r"Loss\ \ \ \ \ \ \ \ Gain")# ,fontsize=18)
+                    ax[i].set_ylabel(r"Loss\ \ \ \ \ \ \ \ Gain")
                 else:
-                    ax[i].set_ylabel(r"Loss        Gain")# ,fontsize=18)
-                
-                #ax[i].grid()
-
-                # handles, labels = ax[0,0].get_legend_handles_labels()
-                # handles = cplt.flip_leg_col(handles,4)
-                # labels = cplt.flip_leg_col(labels,4)
-
-                # fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.1),ncol=4)# ,fontsize=17)
-                # #ax[0,0].clegend(vertical=False,loc = 'lower left',ncol=4, bbox_to_anchor=(0,1.02))# ,fontsize=13)
-                
-            
-        # if type(ax_size)==tuple:
-        #     while k <ax_size[0]*ax_size[1]:
-        #         i=ax_convert(k)
-        #         ax[i].remove()exit
-        #         k+=1   
-        # gs = ax[0,0].get_gridspec()
-        # gs.ax[0,0].get_gridspec()tight_layout(fig,rect=(0,0.1,1,1))
+                    ax[i].set_ylabel(r"Loss        Gain")
         return fig, ax
-    def _plot_integral_budget(self,comp=None,PhyTime='',wall_units=True,fig=None,ax=None,line_kw=None,**kwargs):
 
-        budget_terms = tuple([x[1] for x in self.budgetDF.index])
+    def _plot_integral_budget(self,budget_terms=None,PhyTime=None,wall_units=True,fig=None,ax=None,line_kw=None,**kwargs):
+
         y_coords = self.avg_data.CoordDF['y']
 
-        if comp is None:
-            comp_list = tuple([x[1] for x in self.budgetDF.index])
-        elif hasattr(comp,"__iter__") and not isinstance(comp,str) :
-            comp_list = comp
-        elif isinstance(comp,str):
-            comp_list = [comp]
-        else:
-            raise TypeError("incorrect time")
-        # print(budget_terms)
-        if not all([comp in budget_terms for comp in comp_list]):
-            raise KeyError("Invalid budget term provided")
+        budget_terms = self._check_terms(budget_terms)
 
         
         u_tau_star, delta_v_star = self.avg_data._wall_unit_calc(PhyTime)
         
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
-            fig,ax = cplt.subplots(**kwargs)
-        elif ax is None:
-            ax = fig.add_subplots(1,1,1)
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
+        fig, ax  = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         line_kw= cplt.update_line_kw(line_kw)
         xaxis_vals = self.avg_data._return_xaxis()
 
-        for comp in comp_list:
+        for comp in budget_terms:
             integral_budget = np.zeros(self.avg_data.shape[1])
             budget_term = self.budgetDF[PhyTime,comp].copy()
             for i in range(self.avg_data.shape[1]):
@@ -198,55 +206,41 @@ class CHAPSim_budget_base():
                     integral_budget[i] /=(delta_star*u_tau_star[i]**3/delta_v_star[i])
             label = r"$\int^{\delta}_{-\delta}$ %s $dy$"%comp.title()
             ax.cplot(xaxis_vals,integral_budget,label=label,**line_kw)
-        budget_symbol = {}
-
-        # if wall_units:
-        #     ax.set_ylabel(r"$\int_{-\delta}^{\delta} %s$ budget $dy\times u_{\tau}^4\delta/\nu $" %self.comp)# ,fontsize=16)
-        # else:
-        #     ax.set_ylabel(r"$\int_{-\delta}^{\delta} %s$ budget $dy\times 1/U_{b0}^3 $"%self.comp)# ,fontsize=16)
-        ax.set_xlabel(r"$x/\delta$")# ,fontsize=18)
-        ax.clegend(ncol=4,vertical=False)
+        
+        ncol = cplt.get_legend_ncols(len(budget_terms))
+        ax.clegend(ncol=ncol,vertical=False)
         #ax.grid()
         return fig, ax
-    def _plot_budget_x(self,comp,y_vals_list,Y_plus=True,PhyTime=None,fig=None,ax=None,**kwargs):
+
+    def _plot_budget_x(self,budget_terms,y_vals_list,Y_plus=True,PhyTime=None,fig=None,ax=None,**kwargs):
         
-        comp_index = [x[1] for x in self.budgetDF.index]
-        if not comp.lower() in comp_index:
-            msg = "comp must be a component of the"+\
-                        " Reynolds stress budget: %s" %comp_index
-            raise KeyError(msg) 
+        budget_terms = self._check_terms(budget_terms)
 
-        if y_vals_list != 'max':
-            if Y_plus:
-                y_index = CT.Y_plus_index_calc(self, self.CoordDF, y_vals_list)
-            else:
-                y_index = CT.coord_index_calc(self.CoordDF,'y',y_vals_list)
-            budget_term = self.budgetDF[PhyTime,comp]
-            
-        else:
-            y_index = [None]
-            budget_term = self.budgetDF[PhyTime,comp]
-            budget_term = np.amax(budget_term,axis=0)
-
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
-            fig,ax = cplt.subplots(**kwargs)
-        elif ax is None:
-            ax=fig.add_subplot(1,1,1)
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
+        fig,ax = cplt.create_fig_ax_with_squeeze(fig,ax **kwargs)
 
         xaxis_vals = self.avg_data._return_xaxis()
-        if y_vals_list != 'max':
-            for i in range(len(y_index)):
-                ax.cplot(budget_term[i],label=r"$y^+=%.3g$"% y_vals_list[i])
-            axes_items_num = len(ax.get_lines())
-            ncol = 4 if axes_items_num>3 else axes_items_num
-            ax.clegend(vertical=False,ncol=ncol, fontsize=16)
-            # ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)$"%y_label)# ,fontsize=20)#)# ,fontsize=22)
-            
-        else:
-            ax.cplot(xaxis_vals,budget_term,label=r"maximum %s"%comp)
-            # ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%y_label)# ,fontsize=20)#)# ,fontsize=22)
+        for comp in budget_terms:
+            if y_vals_list != 'max':
+                if Y_plus:
+                    y_index = CT.Y_plus_index_calc(self, self.CoordDF, y_vals_list)
+                else:
+                    y_index = CT.coord_index_calc(self.CoordDF,'y',y_vals_list)
+                budget_term = self.budgetDF[PhyTime,comp]
 
+                for i in range(len(y_index)):
+                    ax.cplot(budget_term[i],label=r"%s $y^+=%.3g$"% (comp,y_vals_list[i]))
+                
+                ncol = cplt.get_legend_ncols(len(budget_terms)*len(y_vals_list))
+                ax.clegend(vertical=False,ncol=ncol, fontsize=16)
+                
+            else:
+                budget_term = self.budgetDF[PhyTime,comp]
+                budget_term = np.amax(budget_term,axis=0)
+                ax.cplot(xaxis_vals,budget_term,label=r"maximum %s"%comp)
+                
+                ncol = cplt.get_legend_ncols(len(budget_terms))
+                ax.clegend(vertical=False,ncol=ncol, fontsize=16)
         fig.tight_layout()
         return fig, ax
 
@@ -384,11 +378,11 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         dissipation = -(2/REN)*(du1dxdu2dx + du1dydu2dy)
         return dissipation
 
-    def budget_plot(self, x_list,PhyTime=None,wall_units=True, fig=None, ax =None,**kwargs):
+    def budget_plot(self, x_list,budget_terms=None,PhyTime=None,wall_units=True, fig=None, ax =None,**kwargs):
         
         PhyTime = self.avg_data.check_PhyTime(PhyTime)
 
-        fig, ax = super()._budget_plot(PhyTime, x_list,wall_units=wall_units, fig=fig, ax =ax,**kwargs)
+        fig, ax = super()._budget_plot(PhyTime, x_list,budget_terms,wall_units=wall_units, fig=fig, ax =ax,**kwargs)
         for a,x in zip(ax,x_list):
             a.set_title(r"$x^*=%.2f$"%x,loc='right')
             a.relim()
@@ -407,27 +401,16 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         self.avg_data.check_PhyTime(PhyTime)
 
         fig, ax = super()._plot_integral_budget(comp,PhyTime, wall_units=wall_units, fig=fig, ax=ax, **kwargs)
-
+        ax.set_xlabel(r"$x/\delta$")
         return fig, ax
-    def plot_budget_x(self,comp=None,y_vals_list='max',Y_plus=True,PhyTime=None,fig=None,ax=None,**kwargs):
+    def plot_budget_x(self,budget_terms=None,y_vals_list='max',Y_plus=True,PhyTime=None,fig=None,ax=None,**kwargs):
         
-        self.avg_data.check_PhyTime(PhyTime)
+        PhyTime = self.avg_data.check_PhyTime(PhyTime)
 
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
-            fig,ax = cplt.subplots(**kwargs)
-        elif ax is None:
-            ax=fig.add_subplot(1,1,1)
 
-        
-        if comp ==None:
-            comp_list = [x[1] for x in self.budgetDF.index]
-            comp_len = len(comp_list)
-            for comp in comp_list:
-                fig, ax = super()._plot_budget_x(comp,y_vals_list,Y_plus,PhyTime,fig=fig, ax=ax)
-        else:
-            comp_len = 1
-            fig, ax = super()._plot_budget_x(comp,y_vals_list,Y_plus,PhyTime,fig=fig, ax=ax)
+        fig, ax = super()._plot_budget_x(budget_terms,y_vals_list,Y_plus,PhyTime,fig=fig, ax=ax)
+
+        ax.set_xlabel(r"$x/\delta$")
         
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
@@ -576,28 +559,18 @@ class CHAPSim_budget_tg(CHAPSim_budget_base):
         
         return fig, ax
 
-    def plot_integral_budget(self,comp=None, wall_units=True, fig=None, ax=None, **kwargs):
+    def plot_integral_budget(self,budget_terms=None, wall_units=True, fig=None, ax=None, **kwargs):
         PhyTime = None
-        fig, ax = super()._plot_integral_budget(comp=comp,PhyTime=PhyTime, wall_units=wall_units, fig=fig, ax=ax, **kwargs)
+        fig, ax = super()._plot_integral_budget(budget_terms=budget_terms,PhyTime=PhyTime, wall_units=wall_units, fig=fig, ax=ax, **kwargs)
         ax.set_xlabel(r"$t^*$")
+
+        ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
-    def plot_budget_x(self,comp=None,y_vals_list='max',Y_plus=True,fig=None,ax=None,**kwargs):
+    def plot_budget_x(self,budget_terms=None,y_vals_list='max',Y_plus=True,fig=None,ax=None,**kwargs):
         PhyTime = None
-        if not fig:
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
-            fig,ax = cplt.subplots(**kwargs)
-        elif not ax:
-            ax=fig.add_subplot(1,1,1)
 
-        if comp ==None:
-            comp_list = [x[1] for x in self.budgetDF.index]
-            comp_len = len(comp_list)
-            for comp in comp_list:
-                fig, ax = super()._plot_budget_x(comp,y_vals_list,Y_plus,PhyTime,fig=fig, ax=ax)
-        else:
-            comp_len = 1
-            fig, ax = super()._plot_budget_x(comp,y_vals_list,Y_plus,PhyTime,fig=fig, ax=ax)
+        fig, ax = super()._plot_budget_x(budget_terms,y_vals_list,Y_plus,PhyTime,fig=fig, ax=ax)
         
         ax.set_xlabel(r"$t^*$")
         ax.get_gridspec().tight_layout(fig)
