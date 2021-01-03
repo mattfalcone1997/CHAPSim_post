@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import h5py
-import numba
 from scipy import fft
 
 import sys
@@ -459,16 +458,20 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
             return self._autocov_numba_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step)
     
     @staticmethod
-    @numba.njit(parallel=True,fastmath=True)
+    
     def _autocov_numba_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
-        R_z = np.zeros((max_z_step,NCL2,NCL1))
+        from numba import njit
+        @njit(parallel=True,fastmath=True)
+        def numba_method(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
+            R_z = np.zeros((max_z_step,NCL2,NCL1))
 
-        if max_z_step >0:
-            for iz0 in numba.prange(max_z_step):
-                for iz in numba.prange(NCL3-max_z_step):
-                    R_z[iz0,:,:] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
-        R_z /= (NCL3-max_z_step)
-        return R_z
+            if max_z_step >0:
+                for iz0 in numba.prange(max_z_step):
+                    for iz in numba.prange(NCL3-max_z_step):
+                        R_z[iz0,:,:] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
+            R_z /= (NCL3-max_z_step)
+            return R_z
+        return numba_method(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step)
 
 
 
@@ -636,26 +639,26 @@ class CHAPSim_autocov_tg(CHAPSim_autocov_base):
         
         return R_z.flatten(), R_x.flatten()
 
-    @staticmethod
-    @numba.njit(parallel=True,fastmath=True)
-    def _autocov_calc_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
-        R_z = np.zeros((max_z_step,NCL2,NCL1))
-        if max_z_step >0:
-            for iz0 in numba.prange(max_z_step):
-                for iz in numba.prange(NCL3-max_z_step):
-                    R_z[iz0] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
-        return R_z
-    @staticmethod
-    @numba.njit(parallel=True,fastmath=True)
-    def _autocov_calc_x(fluct1,fluct2,NCL1,NCL2,NCL3,max_x_step):
+    # @staticmethod
+    # @numba.njit(parallel=True,fastmath=True)
+    # def _autocov_calc_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
+    #     R_z = np.zeros((max_z_step,NCL2,NCL1))
+    #     if max_z_step >0:
+    #         for iz0 in numba.prange(max_z_step):
+    #             for iz in numba.prange(NCL3-max_z_step):
+    #                 R_z[iz0] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
+    #     return R_z
+    # @staticmethod
+    # @numba.njit(parallel=True,fastmath=True)
+    # def _autocov_calc_x(fluct1,fluct2,NCL1,NCL2,NCL3,max_x_step):
         
-        R_x = np.zeros((max_x_step,NCL2,NCL1-max_x_step))
-        if max_x_step >0:
-            for ix0 in numba.prange(max_x_step):
-                for ix in numba.prange(NCL1-max_x_step):
-                    for iz in numba.prange(NCL3):
-                        R_x[ix0,:,ix] += fluct1[iz,:,ix]*fluct2[iz,:,ix0+ix]
-        return R_x
+    #     R_x = np.zeros((max_x_step,NCL2,NCL1-max_x_step))
+    #     if max_x_step >0:
+    #         for ix0 in numba.prange(max_x_step):
+    #             for ix in numba.prange(NCL1-max_x_step):
+    #                 for iz in numba.prange(NCL3):
+    #                     R_x[ix0,:,ix] += fluct1[iz,:,ix]*fluct2[iz,:,ix0+ix]
+    #     return R_x
 
     def plot_autocorr_line(self, comp, axis_vals,*args,**kwargs):
         fig, ax =  super().plot_autocorr_line(comp, axis_vals, *args, **kwargs)
