@@ -12,7 +12,9 @@ class Params:
                         "ForceMode":False,
                         "Spacing":int(1),
                         "dtype": np.dtype('f8'),
-                        "dissipation_correction": False}
+                        "dissipation_correction": False,
+                        "gradient_method":"numpy",
+                        "gradient_order": 2}
 
     def __getitem__(self,key):
         if key not in self.__params.keys():
