@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import h5py
-import numba
 import seaborn
 
 import sys
