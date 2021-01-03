@@ -460,14 +460,14 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
     @staticmethod
     
     def _autocov_numba_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
-        from numba import njit
+        from numba import njit, prange
         @njit(parallel=True,fastmath=True)
         def numba_method(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
             R_z = np.zeros((max_z_step,NCL2,NCL1))
 
             if max_z_step >0:
-                for iz0 in numba.prange(max_z_step):
-                    for iz in numba.prange(NCL3-max_z_step):
+                for iz0 in prange(max_z_step):
+                    for iz in prange(NCL3-max_z_step):
                         R_z[iz0,:,:] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
             R_z /= (NCL3-max_z_step)
             return R_z
