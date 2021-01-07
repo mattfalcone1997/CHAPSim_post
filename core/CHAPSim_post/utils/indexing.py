@@ -1,9 +1,16 @@
 """
 ## indexing.py
-This is a module to provide indexing routines for CHAPSim_post
+This is a submodule of utils to provide indexing routines
+and some utilities for contour and vector plots.
 """
+import numpy as np
 
 import warnings
+import itertools
+
+from CHAPSim_post.utils import misc_utils
+__all__ = ["Y_plus_index_calc","y_coord_index_norm",
+            "coord_index_calc"]
 
 def Y_plus_index_calc(AVG_DF,CoordDF,coord_list,x_vals=None):
     if x_vals is not None:
@@ -68,55 +75,34 @@ def Y_plus_index_calc(AVG_DF,CoordDF,coord_list,x_vals=None):
     else:
         return Y_plus_index_list
 
-def y_coord_index_norm(AVG_DF,CoordDF,coord_list,x_vals='',mode='half_channel'):
+def y_coord_index_norm(avg_data,coord_list,x_vals=None,mode='half_channel'):
     if mode=='half_channel':
-        norm_distance=np.ones((AVG_DF.NCL[0]))
+        norm_distance=np.ones((avg_data.NCL[0]))
     elif mode == 'disp_thickness':
-        norm_distance, *other_thickness = AVG_DF._int_thickness_calc(AVG_DF.flow_AVGDF.index[0][0])
+        norm_distance, _,_ = avg_data._int_thickness_calc(avg_data.flow_AVGDF.index[0][0])
     elif mode == 'mom_thickness':
-        disp_thickness, norm_distance, shape_factor = AVG_DF._int_thickness_calc(AVG_DF.flow_AVGDF.index[0][0])
+        _, norm_distance, _ = avg_data._int_thickness_calc(avg_data.flow_AVGDF.index[0][0])
     elif mode == 'wall':
-        u_tau_star, norm_distance = AVG_DF._wall_unit_calc(AVG_DF.flow_AVGDF.index[0][0])
+        _, norm_distance = avg_data._wall_unit_calc(avg_data.flow_AVGDF.index[0][0])
     else:
         raise ValueError("The mode of normalisation must be 'half_channel', 'disp_thickness','mom_thickness',"+\
                                 " or 'wall. Value used was %s\n"%mode)
-    #print(norm_distance)
-    y_coords=CoordDF['y']
-    if x_vals:
-        # print(x_vals)
-        x_index =[AVG_DF._return_index(x) for x in x_vals]
-        if not hasattr(x_index,'__iter__'):
-            x_index=[x_index]
-    elif x_vals is None:
-        x_index=list(range(AVG_DF.shape[-1]))
+    
+    
+    if x_vals is None:
+        x_index=list(range(avg_data.shape[-1]))
     else:
-        x_index=[0]
-    if not hasattr(coord_list,'__iter__'):
-        coord_list=[coord_list]#raise TypeError("coord_list mist be an integer or iterable")
-    #y_coords_thick=np.zeros((int(0.5*y_coords.size),len(x_index)))
-    y_thick_index=[]
-    for x in x_index:
-        y_coords_thick=(1-abs(y_coords[:int(0.5*y_coords.size)]))/norm_distance[x]
-        y_thick=[]
-        for coord in coord_list:
-            try:
-                for i in range(y_coords_thick.size):
-                    if y_coords_thick[i+1]> coord:
-                        if abs(y_coords_thick[i+1]-coord)>abs(y_coords_thick[i]-coord):
-                            y_thick.append(i)
-                            break
-                        else:
-                            y_thick.append(i+1)
-                            break 
-            except IndexError:
-                warnings.warn("\033[1;33Value in coord_list out of bounds: "\
-                                 + "Y_plus given: %g, max Y_plus: %g. Ignoring values beyond this" % (coord,max(y_coords_thick)))
-                break
-        y_thick_index.append(y_thick)
-    # print(y_thick_index)
-    # if len(coord_list)==1:
-    #     y_thick_index= list(itertools.chain(*y_thick_index))
-    return y_thick_index
+        x_vals = misc_utils.check_list_vals(x_vals)
+        x_index =[avg_data._return_index(x) for x in x_vals]
+
+    y_indices = []
+    for i,x in enumerate(x_index):
+        norm_coordDF = (1-abs(avg_data.CoordDF))/norm_distance[x]
+        y_index = coord_index_calc(norm_coordDF,'y', coord_list)
+        y_indices.append(y_index)
+
+    return y_indices
+    
 def coord_index_calc(CoordDF,comp,coord_list):
     coords = CoordDF[comp]
     if isinstance(coord_list,float) or isinstance(coord_list,int):
@@ -143,7 +129,71 @@ def coord_index_calc(CoordDF,comp,coord_list):
                              + "%s coordinate given: %g, max %s coordinate:" % (comp,coord,comp)\
                              + " %g. Ignoring values beyond this" % max(coords))
                 return index_list
-    if len(coord_list)==1:
-        return index_list[0]
+
+    return index_list
+
+
+def contour_plane(plane,axis_vals,avg_data,y_mode,PhyTime):
+    if plane not in ['xy','zy','xz']:
+        plane = plane[::-1]
+        if plane not in ['xy','zy','xz']:
+            msg = "The contour slice must be either %s"%['xy','yz','xz']
+            raise KeyError(msg)
+    slice_set = set(plane)
+    coord_set = set(list('xyz'))
+    coord = "".join(coord_set.difference(slice_set))
+
+    
+
+    if coord == 'y':
+        tg_post = True if all([x == 'None' for x in avg_data.flow_AVGDF.times]) else False
+        if not tg_post:
+            norm_val = 0
+        elif tg_post:
+            norm_val = PhyTime
+        else:
+            raise ValueError("problems")
+        norm_vals = [norm_val]*len(axis_vals)
+        if avg_data is None:
+            msg = f'For contour slice {slice}, avg_data must be provided'
+            raise ValueError(msg)
+        axis_index = y_coord_index_norm(avg_data,axis_vals,norm_vals,y_mode)
     else:
-        return index_list
+        axis_index = coord_index_calc(avg_data.CoordDF,coord,axis_vals)
+        if not hasattr(axis_index,'__iter__'):
+            axis_index = [axis_index]
+    # print(axis_index)
+    return plane, coord, axis_index
+
+def contour_indexer(array,axis_index,coord):
+    if coord == 'x':
+        indexed_array = array[:,:,axis_index].squeeze().T
+    elif coord == 'y':
+        indexed_array = array[:,axis_index].squeeze()
+    else:
+        indexed_array = array[axis_index].squeeze()
+    return indexed_array
+
+def vector_indexer(U,V,axis_index,coord,spacing_1,spacing_2):
+    if isinstance(axis_index[0],list):
+        ax_index = list(itertools.chain(*axis_index))
+    else:
+        ax_index = axis_index[:]
+    if coord == 'x':
+        U_space = U[::spacing_1,::spacing_2,ax_index]
+        V_space = V[::spacing_1,::spacing_2,ax_index]
+    elif coord == 'y':
+        U_space = U[::spacing_2,ax_index,::spacing_1]
+        V_space = V[::spacing_2,ax_index,::spacing_1]
+        U_space = np.swapaxes(U_space,1,2)
+        U_space = np.swapaxes(U_space,1,0)
+        V_space = np.swapaxes(V_space,1,2)
+        V_space = np.swapaxes(V_space,1,0)
+
+    else:
+        U_space = U[ax_index,::spacing_2,::spacing_1]
+        V_space = V[ax_index,::spacing_2,::spacing_1]
+        U_space = np.swapaxes(U_space,2,0)
+        V_space = np.swapaxes(V_space,0,2)
+        
+    return U_space, V_space

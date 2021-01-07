@@ -612,7 +612,7 @@ def contour_plane(plane,axis_vals,avg_data,y_mode,PhyTime):
         if avg_data is None:
             msg = f'For contour slice {slice}, avg_data must be provided'
             raise ValueError(msg)
-        axis_index = y_coord_index_norm(avg_data,avg_data.CoordDF,axis_vals,norm_vals,y_mode)
+        axis_index = y_coord_index_norm(avg_data,axis_vals,norm_vals,y_mode)
     else:
         axis_index = coord_index_calc(avg_data.CoordDF,coord,axis_vals)
         if not hasattr(axis_index,'__iter__'):

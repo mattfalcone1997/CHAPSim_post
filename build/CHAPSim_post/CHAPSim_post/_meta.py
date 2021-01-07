@@ -12,8 +12,8 @@ import warnings
 import gc
 import copy
 
-from .. import CHAPSim_Tools as CT
-from .. import CHAPSim_dtypes as cd
+import CHAPSim_post.CHAPSim_Tools as CT
+import CHAPSim_post.CHAPSim_dtypes as cd
 
 class CHAPSim_meta():
     def __init__(self,*args,**kwargs):

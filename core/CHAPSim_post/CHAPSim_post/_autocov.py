@@ -17,11 +17,11 @@ import time
 from abc import ABC, abstractmethod
 
 import CHAPSim_post as cp
-import CHAPSim_post.CHAPSim_post._utils as utils
+from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
 
-from .. import CHAPSim_plot as cplt
-from .. import CHAPSim_Tools as CT
-from .. import CHAPSim_dtypes as cd
+import CHAPSim_post.CHAPSim_plot as cplt
+import CHAPSim_post.CHAPSim_Tools as CT
+import CHAPSim_post.CHAPSim_dtypes as cd
 
 # from ._f90_ext_base import autocov_calc_z, autocov_calc_x
 
@@ -73,8 +73,8 @@ class CHAPSim_autocov_base(ABC):
         if not comp in ('x','z'):
             msg = f"comp must be the string 'x' or 'z' not {comp} "
 
-        axis_vals = utils.check_list_vals(axis_vals)
-        y_vals = utils.check_list_vals(y_vals)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
+        y_vals = misc_utils.check_list_vals(y_vals)
 
         axis_index = [self._avg_data._return_index(x) for x in axis_vals]#CT.coord_index_calc(self._meta_data.CoordDF,'x',axis_vals)
 
@@ -97,8 +97,7 @@ class CHAPSim_autocov_base(ABC):
         else:
             x_axis_vals=axis_vals
 
-        y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
-                                                    y_vals,x_axis_vals,y_mode)
+        y_index_axis_vals = indexing.y_coord_index_norm(self._avg_data,y_vals,x_axis_vals,y_mode)
 
         coord = self._meta_data.CoordDF[comp][:shape[0]]
         for j,_ in enumerate(y_vals):
@@ -109,7 +108,7 @@ class CHAPSim_autocov_base(ABC):
                 y_unit=r"y" if y_mode=='half_channel' \
                         else r"\delta_u" if y_mode=='disp_thickness' \
                         else r"\theta" if y_mode=='mom_thickness' \
-                        else r"y^+" if norm_xval !=0 else r"y^{+0}"
+                        else r"y^+" if norm_xval is None else r"y^{+0}"
  
 
                 ax[j].set_title(r"$%s=%.3g$"%(y_unit,y_vals[j]),loc='left')
@@ -125,8 +124,8 @@ class CHAPSim_autocov_base(ABC):
         if not comp in ('x','z'):
             raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
         
-        axis_vals = utils.check_list_vals(axis_vals)
-        y_vals = utils.check_list_vals(y_vals)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
+        y_vals = misc_utils.check_list_vals(y_vals)
 
         axis_index = [self._avg_data._return_index(x) for x in axis_vals]#CT.coord_index_calc(self._meta_data.CoordDF,'x',axis_vals)
         
@@ -146,8 +145,7 @@ class CHAPSim_autocov_base(ABC):
 
         coord = self._meta_data.CoordDF[comp][:shape[0]]
 
-        y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
-                                                    y_vals,x_axis_vals,y_mode)
+        y_index_axis_vals = indexing.y_coord_index_norm(self._avg_data,y_vals,x_axis_vals,y_mode)
         
 
         for j,_ in enumerate(y_vals):
@@ -251,10 +249,9 @@ class CHAPSim_autocov_base(ABC):
         if not comp in ('x','z'):
             raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
         
-        axis_vals = utils.check_list_vals(axis_vals)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
 
-        y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
-                                                    axis_vals,None,axis_mode)
+        y_index_axis_vals = indexing.y_coord_index_norm(self._avg_data,axis_vals,None,axis_mode)
         
         Ruu_all = self.autocorrDF[comp]
         shape = Ruu_all.shape
@@ -295,9 +292,8 @@ class CHAPSim_autocov_base(ABC):
         if not comp in ('x','z'):
             raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
 
-        axis_vals = utils.check_list_vals(axis_vals)
-        y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
-                                                    axis_vals,None,axis_mode)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
+        y_index_axis_vals = indexing.y_coord_index_norm(self._avg_data,axis_vals,None,axis_mode)
         Ruu_all = self.autocorrDF[comp]#[:,axis_vals,:]
         shape = Ruu_all.shape
         Ruu=np.zeros((shape[0],len(axis_vals),shape[2]))

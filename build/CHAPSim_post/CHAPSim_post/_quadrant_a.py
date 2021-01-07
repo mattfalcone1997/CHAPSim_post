@@ -13,9 +13,11 @@ import itertools
 from abc import ABC, abstractmethod
 
 import CHAPSim_post as cp
-from .. import CHAPSim_plot as cplt
-from .. import CHAPSim_Tools as CT
-from .. import CHAPSim_dtypes as cd
+from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
+
+import CHAPSim_post.CHAPSim_plot as cplt
+import CHAPSim_post.CHAPSim_Tools as CT
+import CHAPSim_post.CHAPSim_dtypes as cd
 
 from ._average import CHAPSim_AVG_io, CHAPSim_AVG_tg_base
 _avg_io_class = CHAPSim_AVG_io
@@ -104,8 +106,7 @@ class CHAPSim_Quad_Anl_base(ABC):
             index = [self._avg_data._return_index(x) for x in coord_list]
 
         elif prop_dir == 'x':
-            index = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
-                                                        coord_list,x_vals,y_mode)
+            index = indexing.y_coord_index_norm(self._avg_data,coord_list,x_vals,y_mode)
             if x_vals is not None:
                 index=list(itertools.chain(*index))
         else:

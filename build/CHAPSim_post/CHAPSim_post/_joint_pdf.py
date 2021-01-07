@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import h5py
-import numba
 import seaborn
 
 import sys
@@ -18,9 +17,11 @@ import time
 from abc import ABC, abstractmethod
 
 import CHAPSim_post as cp
-from .. import CHAPSim_plot as cplt
-from .. import CHAPSim_Tools as CT
-from .. import CHAPSim_dtypes as cd
+from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
+
+import CHAPSim_post.CHAPSim_plot as cplt
+import CHAPSim_post.CHAPSim_Tools as CT
+import CHAPSim_post.CHAPSim_dtypes as cd
 
 from ._average import CHAPSim_AVG_io, CHAPSim_AVG_tg_base
 _avg_io_class = CHAPSim_AVG_io
@@ -133,7 +134,7 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
         x_index = CT.coord_index_calc(self.avg_data.CoordDF,'x',x_coord_list)
 
         self._x_loc_norm = x_coord_list if not use_ini else [0]*len(y_coord_list)
-        y_index = CT.y_coord_index_norm(self.avg_data,self.avg_data.CoordDF,y_coord_list,self._x_loc_norm,y_mode)
+        y_index = indexing.y_coord_index_norm(self.avg_data,y_coord_list,self._x_loc_norm,y_mode)
         
         y_index = np.diag(np.array(y_index))
         u_prime_array = [ [] for _ in range(len(y_index)) ]

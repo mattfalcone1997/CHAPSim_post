@@ -1,17 +1,18 @@
-from .gradient import Gradient
+"""
+# utils
+This is a module for additional utilities for CHAPSim_post. 
+This will contains three submodules:
 
-def check_list_vals(x_list):
+* gradient
+* indexing
+* misc_utils
 
-    if isinstance(x_list,(float,int)):
-        x_list=[x_list]
-    elif not isinstance(x_list,(tuple,list)):
-        msg =  f"x_list must be of type float, int, tuple or list"
-        raise TypeError(msg)
-    else: # x_list is a tuple or list
-        if not all([isinstance(x,(float,int)) for x in x_list]):
-            msg = "If tuple or list provided, all items must be of instance float or int"
-            raise TypeError(msg)
-    
-    return x_list
+This module also contains the `public' members of these modules
+(imported below). The CHAPSim_post package itself will access 
+the members of these submodules directly e.g. gradient.Grad_calc 
+"""
+from .gradient import *
 
-Gradient_method = Gradient()
+from .indexing import *
+
+from .misc_utils import *

@@ -11,11 +11,13 @@ import os
 import warnings
 import gc
 
-from .. import CHAPSim_Tools as CT
-from .. import CHAPSim_dtypes as cd
-from .. import CHAPSim_plot as cplt
+from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
 
-import CHAPSim_post.CHAPSim_post._utils as utils
+import CHAPSim_post.CHAPSim_plot as cplt
+import CHAPSim_post.CHAPSim_Tools as CT
+import CHAPSim_post.CHAPSim_dtypes as cd
+
+# import CHAPSim_post.utils as utils
 
 from ._meta import CHAPSim_meta
 _meta_class=CHAPSim_meta
@@ -180,9 +182,9 @@ class CHAPSim_Inst():
                 
         PhyTime = self.check_PhyTime(PhyTime)        
         
-        axis_vals = utils.check_list_vals(axis_vals)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
             
-        plane , coord, axis_index = CT.contour_plane(plane,axis_vals,self.avg_data,y_mode,PhyTime)
+        plane , coord, axis_index = indexing.contour_plane(plane,axis_vals,self.avg_data,y_mode,PhyTime)
 
 
         x_coords = self.CoordDF[plane[0]]
@@ -236,9 +238,9 @@ class CHAPSim_Inst():
         
         PhyTime = self.check_PhyTime(PhyTime)
         
-        ax_val = utils.check_list_vals(ax_val)
+        ax_val = misc_utils.check_list_vals(ax_val)
 
-        slice, coord, axis_index = CT.contour_plane(slice,ax_val,self.avg_data,y_mode,PhyTime)
+        slice, coord, axis_index = indexing.contour_plane(slice,ax_val,self.avg_data,y_mode,PhyTime)
 
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[8,4*len(ax_val)])
         fig, ax = cplt.create_fig_ax_without_squeeze(len(ax_val),fig=fig,ax=ax,**kwargs)
@@ -291,10 +293,10 @@ class CHAPSim_Inst():
             for velo2,coord2 in zip(velo_list,coord_list):
                 velo_field1 = self.InstDF[PhyTime,velo1][:,:arr_len_y,x_start_index:x_end_index]
                 velo_field2 = self.InstDF[PhyTime,velo2][:,:arr_len_y,x_start_index:x_end_index]
-                strain_rate[:,:,:,i,j] = 0.5*(CT.Grad_calc(self.CoordDF,velo_field1,coord2,False) \
-                                        + CT.Grad_calc(self.CoordDF,velo_field2,coord1,False))
-                rot_rate[:,:,:,i,j] = 0.5*(CT.Grad_calc(self.CoordDF,velo_field1,coord2,False) \
-                                        - CT.Grad_calc(self.CoordDF,velo_field2,coord1,False))
+                strain_rate[:,:,:,i,j] = 0.5*(gradient.Grad_calc(self.CoordDF,velo_field1,coord2,False) \
+                                        + gradient.Grad_calc(self.CoordDF,velo_field2,coord1,False))
+                rot_rate[:,:,:,i,j] = 0.5*(gradient.Grad_calc(self.CoordDF,velo_field1,coord2,False) \
+                                        - gradient.Grad_calc(self.CoordDF,velo_field2,coord1,False))
                 j+=1
             i+=1
         del velo_field1 ; del velo_field2
@@ -384,7 +386,7 @@ class CHAPSim_Inst():
         
         PhyTime = self.check_PhyTime(PhyTime)
 
-        slice, coord,axis_index = CT.contour_plane(slice,ax_val,avg_data,y_mode,PhyTime)
+        slice, coord,axis_index = indexing.contour_plane(slice,ax_val,avg_data,y_mode,PhyTime)
 
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[8,4*len(ax_val)])
         fig, ax = cplt.create_fig_ax_without_squeeze(len(ax_val),fig=fig,ax=ax,**kwargs)   

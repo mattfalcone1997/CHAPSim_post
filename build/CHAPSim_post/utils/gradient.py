@@ -1,7 +1,8 @@
 """
 ## gradient.py
-Module for calculating gradient in CHAPSim_post. 
-Will contain a variety of methodologies
+Module for calculating gradient in CHAPSim_post.
+Currently uses numpy.gradient as its core. It may contain a
+ variety of methodologies in the future.
 """
 import warnings
 
@@ -9,18 +10,20 @@ import numpy as np
 import sympy
 
 import CHAPSim_post as cp
-import CHAPSim_post.utils as utils
+
+__all__ = ["Grad_calc",'Scalar_grad_io',"Vector_div_io",
+            "Scalar_laplacian_io","Scalar_laplacian_tg"]
 
 class Gradient():
     def __init__(self):
         self.__type = None
     
     def setup(self,coordDF):
-        if self.__type is None:
+        if self.__type is None or self.__type != cp.Params['gradient_method']:
             self.__type = cp.Params['gradient_method']
-        elif self.__type != cp.Params['gradient_method']:
+            attr_name = "setup_" + cp.Params['gradient_method'] + "_method"
             try:
-                attr_name = "setup_" + cp.Params['gradient_method'] + "_method"
+                func = getattr(self,attr_name)
             except AttributeError:
                 msg = "The stated gradient calculation method is invalid"
                 raise ValueError(msg) from None
@@ -31,7 +34,7 @@ class Gradient():
         if cp.Params['gradient_order'] != 2:
             msg = f"For this method only gradient order 2 can be used not {cp.Params['gradient_order']}"
             warnings.warn(msg)
-        setattr(self,"grad_calc_method",self.grad_calc_numpy)
+        self.grad_calc_method = self.grad_calc_numpy
 
     def setup_symbolic_stored_method(self,coordDF):
         msg = "This methods have not been implemented yet"
@@ -50,7 +53,14 @@ class Gradient():
         raise NotImplementedError(msg)
 
     def grad_calc_numpy(self,CoordDF,flow_array,comp):
-        dim = ord('z') - ord(comp)
+        if flow_array.ndim == 3:
+            dim = ord('z') - ord(comp)
+        elif flow_array.ndim == 2:
+            dim = ord('y') - ord(comp)
+        else:
+            msg = "This method can only be used on two and three dimensional arrays"
+            raise TypeError(msg)
+
         coord_array = CoordDF[comp]
         if coord_array.size != flow_array.shape[dim]:
             msg = (f"The coordinate array size ({coord_array.size})"
@@ -59,9 +69,13 @@ class Gradient():
             raise ValueError(msg)
         return np.gradient(flow_array,coord_array,edge_order=2,axis=dim)
 
-    def Grad_calc(self,coordDF,flow_array):
+    def Grad_calc(self,coordDF,flow_array,comp):
         self.setup(coordDF)
-        return self.grad_calc_method(coordDF,flow_array)
+        return self.grad_calc_method(coordDF,flow_array,comp)
+
+Gradient_method = Gradient()
+
+Grad_calc = Gradient_method.Grad_calc
 
 def Scalar_grad_io(coordDF,flow_array):
 
@@ -74,12 +88,12 @@ def Scalar_grad_io(coordDF,flow_array):
         msg = "This function can only be used on 2 or 3 dimensional arrays"
         raise ValueError(msg)
 
-    grad_vector[0] = utils.Gradient_method.Grad_calc(coordDF,flow_array,'x')
-    grad_vector[1] = utils.Gradient_method.Grad_calc(coordDF,flow_array,'y')
+    grad_vector[0] = Grad_calc(coordDF,flow_array,'x')
+    grad_vector[1] = Grad_calc(coordDF,flow_array,'y')
     
     
     if flow_array.ndim == 3:
-        grad_vector[2] = utils.Gradient_method.Grad_calc(coordDF,flow_array,'z')
+        grad_vector[2] = Gradient_method.Grad_calc(coordDF,flow_array,'z')
         
     return grad_vector
 
@@ -90,12 +104,12 @@ def Vector_div_io(coordDF,vector_array):
         raise ValueError(msg)
 
     grad_vector = np.zeros_like(vector_array)
-    grad_vector[0] = utils.Gradient_method.Grad_calc(coordDF,vector_array[0],'x')
-    grad_vector[1] = utils.Gradient_method.Grad_calc(coordDF,vector_array[1],'y')
+    grad_vector[0] = Grad_calc(coordDF,vector_array[0],'x')
+    grad_vector[1] = Grad_calc(coordDF,vector_array[1],'y')
     
     
     if vector_array.ndim == 4:
-        grad_vector[2] = utils.Gradient_method.Grad_calc(coordDF,vector_array[2],'z')
+        grad_vector[2] = Grad_calc(coordDF,vector_array[2],'z')
         
     
     div_scalar = np.sum(grad_vector,axis=0)
@@ -108,8 +122,8 @@ def Scalar_laplacian_io(coordDF,flow_array):
     return lap_scalar
 
 def Scalar_laplacian_tg(coordDF,flow_array):
-    dflow_dy = utils.Gradient_method.Grad_calc(coordDF,flow_array,'y')
-    return utils.Gradient_method.Grad_calc(coordDF,dflow_dy,'y')
+    dflow_dy = Grad_calc(coordDF,flow_array,'y')
+    return Grad_calc(coordDF,dflow_dy,'y')
 
 
 

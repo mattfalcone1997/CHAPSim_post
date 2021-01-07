@@ -1,6 +1,7 @@
 """
 ## docstring.py
-A module to provide docstring utilities to CHAPSim_post
+A module to provide docstring utilities to CHAPSim_post 
+to avoid duplication
 """
 import inspect
 import functools

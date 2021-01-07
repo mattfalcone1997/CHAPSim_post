@@ -18,13 +18,15 @@ import gc
 import itertools
 from abc import ABC, abstractmethod
 
-from .. import CHAPSim_plot as cplt
-from .. import CHAPSim_Tools as CT
-from .. import CHAPSim_dtypes as cd
+from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
+
+import CHAPSim_post.CHAPSim_plot as cplt
+import CHAPSim_post.CHAPSim_Tools as CT
+import CHAPSim_post.CHAPSim_dtypes as cd
 
 
 import CHAPSim_post as cp
-import CHAPSim_post.CHAPSim_post._utils as utils
+# import CHAPSim_post.CHAPSim_post._utils as utils
 
 from ._meta import CHAPSim_meta
 _meta_class=CHAPSim_meta
@@ -64,9 +66,9 @@ class CHAPSim_fluct_base(ABC):
                 
         PhyTime = self.check_PhyTime(PhyTime)        
         
-        axis_vals = utils.check_list_vals(axis_vals)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
             
-        plane , coord, axis_index = CT.contour_plane(plane,axis_vals,self.avg_data,y_mode,PhyTime)
+        plane , coord, axis_index = indexing.contour_plane(plane,axis_vals,self.avg_data,y_mode,PhyTime)
 
 
         x_coords = self.CoordDF[plane[0]]
@@ -112,10 +114,8 @@ class CHAPSim_fluct_base(ABC):
                 ax[j*len(axis_vals)+i]=ax1
                 ax[j*len(axis_vals)+i].axes.set_aspect('equal')
         fig.tight_layout()
-        if ax.size == 1:
-            return fig, ax[0]
-        else:
-            return fig, ax
+
+        return fig, ax
 
     def plot_streaks(self,comp,vals_list,x_split_list=None,PhyTime=None,ylim='',Y_plus=True,*args,colors='',fig=None,ax=None,**kwargs):
 
@@ -174,7 +174,7 @@ class CHAPSim_fluct_base(ABC):
 
         PhyTime = self.check_PhyTime(PhyTime)    
 
-        y_vals = utils.check_list_vals(y_vals)    
+        y_vals = misc_utils.check_list_vals(y_vals)    
                 
         x_coords = self.CoordDF['x']
         z_coords = self.CoordDF['z']
@@ -226,9 +226,9 @@ class CHAPSim_fluct_base(ABC):
         
         PhyTime = self.check_PhyTime(PhyTime)
         
-        ax_val = utils.check_list_vals(ax_val)
+        ax_val = misc_utils.check_list_vals(ax_val)
 
-        slice, coord, axis_index = CT.contour_plane(slice,ax_val,self.avg_data,y_mode,PhyTime)
+        slice, coord, axis_index = indexing.contour_plane(slice,ax_val,self.avg_data,y_mode,PhyTime)
 
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[8,4*len(ax_val)])
         fig, ax = cplt.create_fig_ax_without_squeeze(len(ax_val),fig=fig,ax=ax,**kwargs)
@@ -271,11 +271,11 @@ class CHAPSim_fluct_base(ABC):
         max_time = np.amax(times) if time_range is None else time_range[1]
 
         if avg_data is None and not tgpost:
-            time0 = time_range[0] if time_range is not None else ""
+            time0 = time_range[0] if time_range is not None else None
             avg_data=cls._module._avg_class(max_time,meta_data,path_to_folder,time0,abs_path,tgpost=cls.tgpost)
         
 
-        axis_vals = utils.check_list_vals(axis_vals)        
+        axis_vals = misc_utils.check_list_vals(axis_vals)        
         
         if x_split_list is None:
             if meta_data is None:
@@ -287,16 +287,17 @@ class CHAPSim_fluct_base(ABC):
             if 'figsize' not in kwargs.keys():
                 kwargs['figsize'] = [7*len(axis_vals),3*(len(x_split_list)-1)]
             fig = cplt.figure(**kwargs)
-
+        if contour:
+            plot_kw = cplt.update_pcolor_kw(plot_kw)
         def func(fig,time):
             axes = fig.axes
             for ax in axes:
                 ax.remove()
 
             fluct_data = cls(time,avg_data,path_to_folder=path_to_folder,abs_path=abs_path)
+            
             if contour:
-                plot_kw = cplt.update_pcolor_kw(plot_kw)
-                fig, ax = fluct_data.plot_contour(comp,axis_vals,plane=plane,PhyTime=time,x_split_list=x_split_list,fig=fig,**plot_kw)
+                fig, ax = fluct_data.plot_contour(comp,axis_vals,plane=plane,PhyTime=time,x_split_list=x_split_list,fig=fig,pcolor_kw=plot_kw)
             else:
                 fig,ax = fluct_data.plot_fluct3D_xz(axis_vals,comp,time,x_split_list,fig,**plot_kw)
             ax[0].axes.set_title(r"$t^*=%.3g$"%time,loc='left')

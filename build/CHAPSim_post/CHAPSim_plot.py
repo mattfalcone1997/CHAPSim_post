@@ -71,23 +71,25 @@ mpl.rcParams['ytick.right'] = True
 
 
 class CHAPSimFigure(mpl.figure.Figure):
-    def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs)
-        self.__clegend = None
+
     def clegend(self,*args, **kwargs):
-        self.__clegend = super().legend(*args, **kwargs)
-        return self.__clegend
+        return super().legend(*args, **kwargs)
     def add_subplot(self,*args, **kwargs):
         kwargs['projection']='AxesCHAPSim'
         return super().add_subplot(*args,**kwargs)
+
     def c_add_subplot(self,*args, **kwargs):
         kwargs['projection']='AxesCHAPSim'
         return super().add_subplot(*args,**kwargs)
     def get_legend(self):
-        return self.__clegend
+        if len(self.legends) == 1:
+            return self.legends[0]
+        else:
+            return self.legends
     def update_legend_fontsize(self, fontsize,tight_layout=True,**kwargs):
-        if self.__clegend is not None:
-            texts=self.__clegend.get_texts()
+        if self.legends:
+            texts=[legend.get_texts() for legend in self.legends]
+            texts = itertools.chain(*texts)
             for text in texts:
                 text.set_fontsize(fontsize)
         if tight_layout:
@@ -98,10 +100,13 @@ class CHAPSimFigure(mpl.figure.Figure):
         for ax in axes:
             ax.set_title_fontsize(fontsize)
 
+    # def tight_layout(self,*args,**kwargs):
+    #     for gs in self._gridspecs:
+    #         gs.tight_layout(self,*args,**kwargs)
+
 class AxesCHAPSim(mpl.axes.Axes):
     name='AxesCHAPSim'
-    def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs)
+
     def cplot(self,*args, **kwargs):
 
         counter = self.count_lines()
@@ -114,12 +119,19 @@ class AxesCHAPSim(mpl.axes.Axes):
         if 'markevery' not in plot_kw:
             plot_kw['markevery'] = 10
         return super().plot(*args,**plot_kw)
+
+    def get_shared_lines(self):
+        twinned_ax = self._twinned_axes.get_siblings(self)
+        shared_lines=[]
+        for ax in twinned_ax:
+            shared_lines.extend(ax.get_lines())
+        return shared_lines
+
     def count_lines(self):
         no_lines = 0
-        twinned_ax = self._twinned_axes.get_siblings(self)
-        for ax in twinned_ax:
-            no_lines += len(ax.get_lines())
-        return no_lines
+        lines = self.get_shared_lines()
+
+        return len(lines)
 
     def clegend(self,*args, **kwargs):
         # if 'fontsize' not in kwargs.keys():
@@ -263,25 +275,14 @@ class AxesCHAPSim(mpl.axes.Axes):
             self.clegend(*args,**kwargs)
 
     def shift_xaxis(self,val):
-        lines = self.get_lines()
-        lines = self.get_lines()
+        lines = self.get_shared_lines()
+
         if lines:
             for line in lines:
                 x_data = line.get_xdata().copy()
                 x_data += val
                 line.set_xdata(x_data)
-        # if lines:
-        #     for line in lines:
-        #         x_data = line.get_xdata().copy()
-        #         x_data += val
-        #         line.set_xdata(x_data)
-        #     if (x_data>self.get_xlim()[0]).any() and (x_data<self.get_xlim()[1]).any(): 
-        #         xlim = [x+val for x in self.get_xlim()]
-        #         self.set_xlim(*xlim)
-        #     else:
-        #         self.relim()
-        #         self.autoscale_view(True,True,True)
-        # else:
+
         quadmesh_list = [x for x in self.get_children()\
                             if isinstance(x,mpl.collections.QuadMesh)]
         quiver_list = [x for x in self.get_children()\
@@ -300,12 +301,13 @@ class AxesCHAPSim(mpl.axes.Axes):
                 quiver_list[i]._offsets = offsets
                 quiver_list[i]._transOffset = quiver_list[i].transform
         if quadmesh_list or quiver_list or lines:
+
             xlim = [x+val for x in self.get_xlim()]
             self.set_xlim(xlim)
         
 
     def shift_yaxis(self,val):
-        lines = self.get_lines()
+        lines = self.get_shared_lines()
         if lines:
             for line in lines:
                 y_data = line.get_ydata().copy()
@@ -421,10 +423,13 @@ def update_quiver_kw(quiver_kw):
     return quiver_kw
 
 def update_line_kw(line_kw,**kwargs):
+    
     if line_kw is None:
         line_kw = {}
     elif not isinstance(line_kw,dict):
         raise TypeError("line_kw needs to be a dictionary")
+
+    line_kw = line_kw.copy()
 
     for key, val in kwargs.items():
         if key not in line_kw.keys():
@@ -472,15 +477,10 @@ def create_fig_ax_with_squeeze(fig=None,ax=None,**kwargs):
     return fig, ax
 
 def create_fig_ax_without_squeeze(*args,fig=None,ax=None,**kwargs):
+    kwargs['squeeze'] = False
     if fig is None:
-        kwargs['squeeze'] = False
         fig, ax = subplots(*args,**kwargs)
     elif ax is None:
-        if 'subplot_kw' in kwargs:
-            kwargs['subplot_kw'].update({'squeeze':False})
-        else:
-            kwargs['subplot_kw'] = {'squeeze':False}
-
         kwargs.pop('figsize',None)
         ax=fig.subplots(*args,**kwargs)
 

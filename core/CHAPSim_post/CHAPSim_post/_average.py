@@ -18,12 +18,12 @@ import copy
 from abc import ABC, abstractmethod
 
 import CHAPSim_post as cp
-from CHAPSim_post import utils
-from CHAPSim_post.utils import docstring
 
-from .. import CHAPSim_plot as cplt
-from .. import CHAPSim_Tools as CT
-from .. import CHAPSim_dtypes as cd
+from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
+
+import CHAPSim_post.CHAPSim_plot as cplt
+import CHAPSim_post.CHAPSim_Tools as CT
+import CHAPSim_post.CHAPSim_dtypes as cd
 
 
 from ._meta import CHAPSim_meta

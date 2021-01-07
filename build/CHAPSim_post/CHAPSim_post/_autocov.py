@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import h5py
-import numba
 from scipy import fft
 
 import sys
@@ -18,11 +17,11 @@ import time
 from abc import ABC, abstractmethod
 
 import CHAPSim_post as cp
-import CHAPSim_post.CHAPSim_post._utils as utils
+from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
 
-from .. import CHAPSim_plot as cplt
-from .. import CHAPSim_Tools as CT
-from .. import CHAPSim_dtypes as cd
+import CHAPSim_post.CHAPSim_plot as cplt
+import CHAPSim_post.CHAPSim_Tools as CT
+import CHAPSim_post.CHAPSim_dtypes as cd
 
 # from ._f90_ext_base import autocov_calc_z, autocov_calc_x
 
@@ -74,8 +73,8 @@ class CHAPSim_autocov_base(ABC):
         if not comp in ('x','z'):
             msg = f"comp must be the string 'x' or 'z' not {comp} "
 
-        axis_vals = utils.check_list_vals(axis_vals)
-        y_vals = utils.check_list_vals(y_vals)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
+        y_vals = misc_utils.check_list_vals(y_vals)
 
         axis_index = [self._avg_data._return_index(x) for x in axis_vals]#CT.coord_index_calc(self._meta_data.CoordDF,'x',axis_vals)
 
@@ -98,8 +97,7 @@ class CHAPSim_autocov_base(ABC):
         else:
             x_axis_vals=axis_vals
 
-        y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
-                                                    y_vals,x_axis_vals,y_mode)
+        y_index_axis_vals = indexing.y_coord_index_norm(self._avg_data,y_vals,x_axis_vals,y_mode)
 
         coord = self._meta_data.CoordDF[comp][:shape[0]]
         for j,_ in enumerate(y_vals):
@@ -110,7 +108,7 @@ class CHAPSim_autocov_base(ABC):
                 y_unit=r"y" if y_mode=='half_channel' \
                         else r"\delta_u" if y_mode=='disp_thickness' \
                         else r"\theta" if y_mode=='mom_thickness' \
-                        else r"y^+" if norm_xval !=0 else r"y^{+0}"
+                        else r"y^+" if norm_xval is None else r"y^{+0}"
  
 
                 ax[j].set_title(r"$%s=%.3g$"%(y_unit,y_vals[j]),loc='left')
@@ -126,8 +124,8 @@ class CHAPSim_autocov_base(ABC):
         if not comp in ('x','z'):
             raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
         
-        axis_vals = utils.check_list_vals(axis_vals)
-        y_vals = utils.check_list_vals(y_vals)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
+        y_vals = misc_utils.check_list_vals(y_vals)
 
         axis_index = [self._avg_data._return_index(x) for x in axis_vals]#CT.coord_index_calc(self._meta_data.CoordDF,'x',axis_vals)
         
@@ -147,8 +145,7 @@ class CHAPSim_autocov_base(ABC):
 
         coord = self._meta_data.CoordDF[comp][:shape[0]]
 
-        y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
-                                                    y_vals,x_axis_vals,y_mode)
+        y_index_axis_vals = indexing.y_coord_index_norm(self._avg_data,y_vals,x_axis_vals,y_mode)
         
 
         for j,_ in enumerate(y_vals):
@@ -252,10 +249,9 @@ class CHAPSim_autocov_base(ABC):
         if not comp in ('x','z'):
             raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
         
-        axis_vals = utils.check_list_vals(axis_vals)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
 
-        y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
-                                                    axis_vals,None,axis_mode)
+        y_index_axis_vals = indexing.y_coord_index_norm(self._avg_data,axis_vals,None,axis_mode)
         
         Ruu_all = self.autocorrDF[comp]
         shape = Ruu_all.shape
@@ -296,9 +292,8 @@ class CHAPSim_autocov_base(ABC):
         if not comp in ('x','z'):
             raise ValueError(" Variable `comp' must eiher be 'x' or 'z'\n")
 
-        axis_vals = utils.check_list_vals(axis_vals)
-        y_index_axis_vals = CT.y_coord_index_norm(self._avg_data,self._meta_data.CoordDF,
-                                                    axis_vals,None,axis_mode)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
+        y_index_axis_vals = indexing.y_coord_index_norm(self._avg_data,axis_vals,None,axis_mode)
         Ruu_all = self.autocorrDF[comp]#[:,axis_vals,:]
         shape = Ruu_all.shape
         Ruu=np.zeros((shape[0],len(axis_vals),shape[2]))
@@ -459,16 +454,20 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
             return self._autocov_numba_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step)
     
     @staticmethod
-    @numba.njit(parallel=True,fastmath=True)
+    
     def _autocov_numba_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
-        R_z = np.zeros((max_z_step,NCL2,NCL1))
+        from numba import njit, prange
+        @njit(parallel=True,fastmath=True)
+        def numba_method(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
+            R_z = np.zeros((max_z_step,NCL2,NCL1))
 
-        if max_z_step >0:
-            for iz0 in numba.prange(max_z_step):
-                for iz in numba.prange(NCL3-max_z_step):
-                    R_z[iz0,:,:] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
-        R_z /= (NCL3-max_z_step)
-        return R_z
+            if max_z_step >0:
+                for iz0 in prange(max_z_step):
+                    for iz in prange(NCL3-max_z_step):
+                        R_z[iz0,:,:] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
+            R_z /= (NCL3-max_z_step)
+            return R_z
+        return numba_method(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step)
 
 
 
@@ -636,26 +635,26 @@ class CHAPSim_autocov_tg(CHAPSim_autocov_base):
         
         return R_z.flatten(), R_x.flatten()
 
-    @staticmethod
-    @numba.njit(parallel=True,fastmath=True)
-    def _autocov_calc_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
-        R_z = np.zeros((max_z_step,NCL2,NCL1))
-        if max_z_step >0:
-            for iz0 in numba.prange(max_z_step):
-                for iz in numba.prange(NCL3-max_z_step):
-                    R_z[iz0] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
-        return R_z
-    @staticmethod
-    @numba.njit(parallel=True,fastmath=True)
-    def _autocov_calc_x(fluct1,fluct2,NCL1,NCL2,NCL3,max_x_step):
+    # @staticmethod
+    # @numba.njit(parallel=True,fastmath=True)
+    # def _autocov_calc_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
+    #     R_z = np.zeros((max_z_step,NCL2,NCL1))
+    #     if max_z_step >0:
+    #         for iz0 in numba.prange(max_z_step):
+    #             for iz in numba.prange(NCL3-max_z_step):
+    #                 R_z[iz0] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
+    #     return R_z
+    # @staticmethod
+    # @numba.njit(parallel=True,fastmath=True)
+    # def _autocov_calc_x(fluct1,fluct2,NCL1,NCL2,NCL3,max_x_step):
         
-        R_x = np.zeros((max_x_step,NCL2,NCL1-max_x_step))
-        if max_x_step >0:
-            for ix0 in numba.prange(max_x_step):
-                for ix in numba.prange(NCL1-max_x_step):
-                    for iz in numba.prange(NCL3):
-                        R_x[ix0,:,ix] += fluct1[iz,:,ix]*fluct2[iz,:,ix0+ix]
-        return R_x
+    #     R_x = np.zeros((max_x_step,NCL2,NCL1-max_x_step))
+    #     if max_x_step >0:
+    #         for ix0 in numba.prange(max_x_step):
+    #             for ix in numba.prange(NCL1-max_x_step):
+    #                 for iz in numba.prange(NCL3):
+    #                     R_x[ix0,:,ix] += fluct1[iz,:,ix]*fluct2[iz,:,ix0+ix]
+    #     return R_x
 
     def plot_autocorr_line(self, comp, axis_vals,*args,**kwargs):
         fig, ax =  super().plot_autocorr_line(comp, axis_vals, *args, **kwargs)

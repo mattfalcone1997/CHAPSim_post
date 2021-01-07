@@ -17,11 +17,12 @@ import itertools
 from abc import ABC, abstractmethod
 
 import CHAPSim_post as cp
-import CHAPSim_post.CHAPSim_post._utils as utils
 
-from .. import CHAPSim_plot as cplt
-from .. import CHAPSim_Tools as CT
-from .. import CHAPSim_dtypes as cd
+from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
+
+import CHAPSim_post.CHAPSim_plot as cplt
+import CHAPSim_post.CHAPSim_Tools as CT
+import CHAPSim_post.CHAPSim_dtypes as cd
 
 
 from ._average import CHAPSim_AVG
@@ -145,13 +146,8 @@ class CHAPSim_budget_base(ABC):
         budget_terms = self._check_terms(budget_terms)
 
 
-        x_list = utils.check_list_vals(x_list)
+        x_list = misc_utils.check_list_vals(x_list)
         
-        # if isinstance(x_list,(float,int)):
-        #     x_list=[x_list]
-        # elif not isinstance(x_list,(tuple,list)):
-        #     msg =  "x_list must be of type float, int, tuple or list"
-
         line_kw= cplt.update_line_kw(line_kw)
         for i,x_loc in enumerate(x_list):
             for comp in budget_terms:
@@ -248,6 +244,8 @@ class CHAPSim_budget_base(ABC):
         return self.budgetDF.__str__()
 
 class CHAPSim_budget_io(CHAPSim_budget_base):
+    _grad_method = gradient.Grad_calc
+    _laplacian = gradient.Scalar_laplacian_io
     def _advection_extract(self,PhyTime,comp1,comp2):
         uu_comp = comp1 + comp2 
 
@@ -255,8 +253,8 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         U_mean = self.avg_data.flow_AVGDF[PhyTime,'u']
         V_mean = self.avg_data.flow_AVGDF[PhyTime,'v']
 
-        uu_dx = CT.Grad_calc(self.avg_data.CoordDF,uu,'x')
-        uu_dy = CT.Grad_calc(self.avg_data.CoordDF,uu,'y')
+        uu_dx = self._grad_method(self.avg_data.CoordDF,uu,'x')
+        uu_dy = self._grad_method(self.avg_data.CoordDF,uu,'y')
 
         advection = -(U_mean*uu_dx + V_mean*uu_dy)
         return advection
@@ -284,8 +282,8 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         u1u2u = self.avg_data.UUU_tensorDF[PhyTime,uu_comp1]
         u1u2v = self.avg_data.UUU_tensorDF[PhyTime,uu_comp2]
 
-        u1u2u_dx = CT.Grad_calc(self.avg_data.CoordDF,u1u2u,'x')
-        u1u2v_dy = CT.Grad_calc(self.avg_data.CoordDF,u1u2v,'y')
+        u1u2u_dx = self._grad_method(self.avg_data.CoordDF,u1u2u,'x')
+        u1u2v_dy = self._grad_method(self.avg_data.CoordDF,u1u2v,'y')
 
         turb_transport = -(u1u2u_dx + u1u2v_dy)
         return turb_transport
@@ -319,8 +317,8 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         pu2 = self.avg_data.PU_vectorDF[PhyTime,comp2]
 
         rho_star = 1.0
-        pu1_grad = CT.Grad_calc(self.avg_data.CoordDF,pu1,diff1)
-        pu2_grad = CT.Grad_calc(self.avg_data.CoordDF,pu2,diff2)
+        pu1_grad = self._grad_method(self.avg_data.CoordDF,pu1,diff1)
+        pu2_grad = self._grad_method(self.avg_data.CoordDF,pu2,diff2)
 
         pressure_diff = -(1/rho_star)*(pu1_grad + pu2_grad)
         return pressure_diff
@@ -330,7 +328,7 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         u1u2 = self.avg_data.UU_tensorDF[PhyTime,uu_comp]
 
         REN = self.avg_data._metaDF['REN']
-        viscous_diff = (1/REN)*CT.Scalar_laplacian_io(self.avg_data.CoordDF,u1u2)
+        viscous_diff = (1/REN)*self.__class__._laplacian(self.avg_data.CoordDF,u1u2)
         return viscous_diff
 
     def _production_extract(self,PhyTime,comp1,comp2):
@@ -398,7 +396,7 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
 
     def plot_integral_budget(self,comp=None, PhyTime=None, wall_units=True, fig=None, ax=None, **kwargs):
         
-        self.avg_data.check_PhyTime(PhyTime)
+        PhyTime = self.avg_data.check_PhyTime(PhyTime)
 
         fig, ax = super()._plot_integral_budget(comp,PhyTime, wall_units=wall_units, fig=fig, ax=ax, **kwargs)
         ax.set_xlabel(r"$x/\delta$")
@@ -416,6 +414,8 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         return fig, ax
 
 class CHAPSim_budget_tg(CHAPSim_budget_base):
+    _grad_method = gradient.Grad_calc
+    _laplacian = gradient.Scalar_laplacian_tg
     def __init__(self,*args,**kwargs):
         if 'PhyTime' in kwargs.keys():
             raise KeyError("PhyTime cannot be used in tg class\n")
@@ -427,8 +427,8 @@ class CHAPSim_budget_tg(CHAPSim_budget_base):
         uu = self.avg_data.UU_tensorDF[PhyTime,uu_comp]
         U_mean = self.avg_data.flow_AVGDF[PhyTime,'u']
         V_mean = self.avg_data.flow_AVGDF[PhyTime,'v']
-        # uu_dx = Grad_calc(self.avg_data.CoordDF,uu,'x')
-        uu_dy = CT.Grad_calc_tg(self.avg_data.CoordDF,uu)
+
+        uu_dy = self._grad_method(self.avg_data.CoordDF,uu,'y')
 
         advection = -V_mean*uu_dy
         return advection#.flatten()
@@ -446,7 +446,7 @@ class CHAPSim_budget_tg(CHAPSim_budget_base):
 
         u1u2v = self.avg_data.UUU_tensorDF[PhyTime,uu_comp2]
 
-        u1u2v_dy = CT.Grad_calc_tg(self.avg_data.CoordDF,u1u2v)
+        u1u2v_dy = self._grad_method(self.avg_data.CoordDF,u1u2v,'y')
 
         turb_transport = -u1u2v_dy
         return turb_transport#.flatten()
@@ -477,12 +477,12 @@ class CHAPSim_budget_tg(CHAPSim_budget_base):
 
         rho_star = 1.0
         if diff1 == 'y':
-            pu1_grad = CT.Grad_calc_tg(self.avg_data.CoordDF,pu1)
+            pu1_grad = self._grad_method(self.avg_data.CoordDF,pu1,'y')
         else:
             pu1_grad = np.zeros(self.avg_data.shape)
 
         if diff2 == 'y':
-            pu2_grad = CT.Grad_calc_tg(self.avg_data.CoordDF,pu2)
+            pu2_grad = self._grad_method(self.avg_data.CoordDF,pu2,'y')
         else:
             pu2_grad = np.zeros(self.avg_data.shape)
 
@@ -494,7 +494,7 @@ class CHAPSim_budget_tg(CHAPSim_budget_base):
         u1u2 = self.avg_data.UU_tensorDF[PhyTime,uu_comp]
 
         REN = self.avg_data._metaDF['REN']
-        viscous_diff = (1/REN)*CT.Scalar_laplacian_tg(self.avg_data.CoordDF,u1u2)
+        viscous_diff = (1/REN)*self.__class__._laplacian(self.avg_data.CoordDF,u1u2)
         return viscous_diff#.flatten()
 
     def _production_extract(self,PhyTime,comp1,comp2):

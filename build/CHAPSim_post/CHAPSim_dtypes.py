@@ -17,7 +17,7 @@ import sys
 import h5py
 import numbers
 import os
-
+import operator
 from . import CHAPSim_Tools as CT
 
 class datastruct:
@@ -31,7 +31,6 @@ class datastruct:
                 msg = "No extract type selected"
                 raise ValueError(msg)
         
-        self.__rmul__=self.__mul__
         if from_array:
             self._array_ini(*args,**kwargs)
         elif from_dict:
@@ -269,6 +268,9 @@ class datastruct:
 
     def __str__(self):
         return self._data.__str__()
+
+    def __repr__(self):
+        return self._data.__str__()
         
     def __getitem__(self,key):
         key = self._getitem_check_key(key)
@@ -296,7 +298,7 @@ class datastruct:
                 warn_msg = f"The outer index provided is incorrect ({key[0]})"+\
                     f" that is present (there is only one value present in the"+\
                     f" datastruct ({self._outer_index[0]}))"
-            warnings.warn(warn_msg,stacklevel=2)
+            warnings.warn(warn_msg,stacklevel=4)
             key = (self._outer_index[0],*key[1:])
             return key
         else:
@@ -434,43 +436,58 @@ class datastruct:
         else:
             msg = f"Type of arr must be either {np.ndarray.__name__} or {datastruct.__name__}"
             raise TypeError(msg)
-    
-    def __add__(self,other_datastruct):
-        if not self.index==other_datastruct.index:
-            msg = "This can only be used if the indices in both datastructs are the same"
-            raise ValueError(msg)
-        
-        return_array = self.values + other_datastruct.values
-        if self._is_multidim():
-            outer_indices = [x[0] for x in self.index]
-            inner_indices = [x[1] for x in self.index]
-            indices = [outer_indices,inner_indices]
-        else:
-            indices = self.index
 
-        return self.__class__(return_array,index=indices)
-
-    def __mul__(self,object_ins):
-        
-        if isinstance(object_ins,datastruct):
-            if not all(self.index==object_ins.index):
+    def _arith_binary_op(self,other_obj,func):
+        if isinstance(other_obj,datastruct):
+            if not all(self.index==other_obj.index):
                 msg = "This can only be used if the indices in both datastructs are the same"
                 raise ValueError(msg)
-            return_array = self.values*object_ins.values
+            new_data = {}
+            for key, val in self,:
+                new_data[key] = func(val,other_obj[key])
+
         else:
             try:
-                return_array = self.values*object_ins
-            except Exception:
-                msg = "Cannot multiply datastruct by this value"
-                raise ValueError(msg)
+                new_data = {key :func(val,other_obj) for key, val in self}
+            except TypeError:
+                msg = (f"Cannot use operation {func.__name__} datastruct by "
+                        f"object of type {type(other_obj)}")
+                raise TypeError(msg) from None
 
-        if self._is_multidim():
-            outer_indices = [x[0] for x in self.index]
-            inner_indices = [x[1] for x in self.index]
-            indices = [outer_indices,inner_indices]
-        else:
-            indices = self.indices
-        return self.__class__(return_array,index=indices)        
+        return self.__class__(new_data) 
+
+    def __add__(self,other_obj):
+        return self._arith_binary_op(other_obj,operator.add)
+
+    def __radd__(self,other_obj):
+        return self.__add__(other_obj)
+
+    def __sub__(self,other_obj):
+        return self._arith_binary_op(other_obj,operator.sub)
+
+    def __rsub__(self,other_obj):
+        self_neg = operator.neg(self)
+        return operator.add(self_neg,other_obj)
+
+    def __mul__(self,other_obj):
+        return self._arith_binary_op(other_obj,operator.mul)
+
+    def __rmul__(self,other_obj):
+        return self.__mul__(other_obj)
+
+    def __truediv__(self,other_obj):
+        return self._arith_binary_op(other_obj,operator.truediv)
+    
+    def _arith_unary_op(self,func):
+
+        new_data = {key :func(val) for key, val in self}
+        return self.__class__(new_data) 
+
+    def __abs__(self):
+        return self._arith_unary_op(operator.abs)
+
+    def __neg__(self):
+        return self._arith_unary_op(operator.neg)
 
     def __eq__(self,other_datastruct):
         return self.equals(other_datastruct)
