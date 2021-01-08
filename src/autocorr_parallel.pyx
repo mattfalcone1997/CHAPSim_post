@@ -15,11 +15,15 @@ def autocov_calc_z( np.ndarray[np.float64_t,ndim=3] fluct1,
 
     with nogil:
         for i in prange(max_z_sep):
-            for j in prange(NCL3-max_z_sep):
+            for j in prange(NCL3-i):
                 for k in prange(fluct1.shape[1]):
                     for l in prange(fluct2.shape[2]):
                         R_z[i,k,l] += fluct1[j,k,l]*fluct2[i+j,k,l]
-    R_z /= (NCL3-max_z_sep)
+   
+    
+    for i in range(max_z_sep):
+        R_z[i] /= NCL3-i
+
     return R_z
 
 def autocov_calc_x( np.ndarray[np.float64_t,ndim=3] fluct1,

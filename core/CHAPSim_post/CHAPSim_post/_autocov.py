@@ -79,7 +79,7 @@ class CHAPSim_autocov_base(ABC):
         axis_index = [self._avg_data._return_index(x) for x in axis_vals]#CT.coord_index_calc(self._meta_data.CoordDF,'x',axis_vals)
 
 
-        Ruu = self.autocorrDF[comp]
+        Ruu = self.autocorrDF[comp].copy()
         shape = Ruu.shape
 
         if norm:
@@ -130,6 +130,7 @@ class CHAPSim_autocov_base(ABC):
         axis_index = [self._avg_data._return_index(x) for x in axis_vals]#CT.coord_index_calc(self._meta_data.CoordDF,'x',axis_vals)
         
         Ruu = self.autocorrDF[comp]
+        
         shape = Ruu.shape
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5*len(y_vals)])
         fig, ax = cplt.create_fig_ax_without_squeeze(len(y_vals),fig=fig,ax=ax,**kwargs)
@@ -182,7 +183,7 @@ class CHAPSim_autocov_base(ABC):
         axis_index = [self._avg_data._return_index(x) for x in axis_vals]#CT.coord_index_calc(self._meta_data.CoordDF,'x',axis_vals)
 
         shape = self.autocorrDF[comp].shape 
-        Ruu = self.autocorrDF[comp][:,:,axis_index]
+        Ruu = self.autocorrDF[comp][:,:,axis_index].copy()
 
         if norm:
             Ruu_0=Ruu[0].copy()
@@ -253,7 +254,7 @@ class CHAPSim_autocov_base(ABC):
 
         y_index_axis_vals = indexing.y_coord_index_norm(self._avg_data,axis_vals,None,axis_mode)
         
-        Ruu_all = self.autocorrDF[comp]
+        Ruu_all = self.autocorrDF[comp].copy()
         shape = Ruu_all.shape
 
         Ruu=np.zeros((shape[0],len(axis_vals),shape[2]))
