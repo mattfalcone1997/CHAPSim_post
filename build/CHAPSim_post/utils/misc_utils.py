@@ -26,6 +26,7 @@ def max_time_calc(path_to_folder,abs_path):
             max_time=min(max_time,max_time_calc(path,abs_path))
     else:
         max_time=max(time_extract(path_to_folder,abs_path))
+    return max_time
 
 def check_list_vals(x_list):
 

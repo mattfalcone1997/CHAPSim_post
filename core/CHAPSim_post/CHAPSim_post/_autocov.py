@@ -525,7 +525,7 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
 
         ncol = cplt.get_legend_ncols(len(ax[0].get_lines()))
         ax[0].clegend(vertical=False,ncol=ncol)
-        ax[0].get_gridspec().tight_layout(fig)
+        fig.tight_layout()
         return fig, ax
 
     def plot_spectra(self, comp, axis_vals,*args,**kwargs):
@@ -538,7 +538,7 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
 
         ncol = cplt.get_legend_ncols(len(ax[0].get_lines()))
         ax[0].clegend(vertical=False,ncol=ncol)
-        ax[0].get_gridspec().tight_layout(fig)
+        fig.tight_layout()
         return fig, ax
         
     def autocorr_contour_y(self,comp,axis_vals,*args,**kwargs):
@@ -667,7 +667,7 @@ class CHAPSim_autocov_tg(CHAPSim_autocov_base):
         axes_items_num = len(ax[0].get_lines())
         ncol = 4 if axes_items_num>3 else axes_items_num
         ax[0].clegend(vertical=False,ncol=ncol)# ,fontsize=15)
-        ax[0].get_gridspec().tight_layout(fig)
+        fig.tight_layout()
         return fig, ax
 
     def plot_spectra(self, comp, axis_vals,*args,**kwargs):
@@ -680,7 +680,7 @@ class CHAPSim_autocov_tg(CHAPSim_autocov_base):
         axes_items_num = len(ax[0].get_lines())
         ncol = 4 if axes_items_num>3 else axes_items_num
         ax[0].clegend(vertical=False,ncol=ncol)# ,fontsize=15)
-        ax[0].get_gridspec().tight_layout(fig)
+        fig.tight_layout()
         return fig, ax
 
     def autocorr_contour_y(self,comp,axis_vals,*args,**kwargs):

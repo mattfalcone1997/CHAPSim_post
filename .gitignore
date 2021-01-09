@@ -4,3 +4,4 @@ bin/*
 tests/*.h5
 tests/*.png
 tests/*/*.png
+build/*

@@ -100,9 +100,13 @@ class CHAPSimFigure(mpl.figure.Figure):
         for ax in axes:
             ax.set_title_fontsize(fontsize)
 
-    # def tight_layout(self,*args,**kwargs):
-    #     for gs in self._gridspecs:
-    #         gs.tight_layout(self,*args,**kwargs)
+    def tight_layout(self,*args,**kwargs):
+        gridspecs = self._gridspecs
+        if gridspecs:
+            for gs in gridspecs:
+                gs.tight_layout(self,*args,**kwargs)
+        else:
+            super().tight_layout()
 
 class AxesCHAPSim(mpl.axes.Axes):
     name='AxesCHAPSim'
