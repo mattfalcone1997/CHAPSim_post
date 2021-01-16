@@ -541,8 +541,10 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         TypeError
             [description]
         """
+
         if meta_data is None:
             meta_data = self._module._meta_class(path_to_folder,abs_path,False)
+
         self._meta_data = meta_data
         self.CoordDF = meta_data.CoordDF
         self._metaDF = meta_data.metaDF
@@ -603,6 +605,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
             for j in range(3):
                 Velo_grad_tensor[i*3+j,:,:] = AVG_info[6+j,i,:,:]
                 Pr_Velo_grad_tensor[i*3+j,:,:] = AVG_info[9+j,i,:,:]
+                
         for i in range(9):
             for j in range(9):
                 DUDX2_tensor[i*9+j] = AVG_info[12+j,i,:,:] 
@@ -661,6 +664,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         
         int_info = np.zeros(4)
         r_info = np.zeros(3)
+
         int_info = np.fromfile(file,dtype='int32',count=4)    
         
         NCL1 = int_info[0]
@@ -789,7 +793,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         PhyTime = self.check_PhyTime(PhyTime)        
         fig, ax = self._plot_shape_factor(PhyTime,fig=fig,ax=ax,**kwargs)
 
-        ax.set_xlabel(r"$x^*$")
+        ax.set_xlabel(r"$x/\delta$")
         ax.relim()
         ax.autoscale_view()
         return fig, ax
@@ -816,7 +820,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         PhyTime = self.check_PhyTime(PhyTime)
         fig, ax = super().plot_mom_thickness(PhyTime,fig=fig,ax=ax,line_kw=line_kw,**kwargs)
 
-        ax.set_xlabel(r"$x^*$")
+        ax.set_xlabel(r"$x/\delta$")
         ax.relim()
         ax.autoscale_view()
         return fig, ax
@@ -845,7 +849,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         PhyTime = self.check_PhyTime(PhyTime)        
         fig, ax = super().plot_disp_thickness(PhyTime,fig=fig,ax=ax,**kwargs)
 
-        ax.set_xlabel(r"$x^*$")
+        ax.set_xlabel(r"$x/\delta$")
         ax.relim()
         ax.autoscale_view()
         return fig, ax
@@ -891,7 +895,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         lines = ax.get_lines()[-len(x_vals):]
         for line,x in zip(lines,x_vals):
-            line.set_label(r"$x^*=%.3g$"%float(x))
+            line.set_label(r"$x/\delta=%.3g$"%float(x))
 
         ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
@@ -937,7 +941,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         fig, ax = super().plot_Reynolds_x(comp1,comp2,y_vals_list,Y_plus=Y_plus,
                                             PhyTime=PhyTime,fig=fig,ax=ax,line_kw=line_kw,**kwargs)
         
-        ax.set_xlabel(r"$x^*$")
+        ax.set_xlabel(r"$x/\delta$")
         ax.relim()
         ax.autoscale_view()
         ax.get_gridspec().tight_layout(fig)
@@ -985,7 +989,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         PhyTime = self.check_PhyTime(PhyTime)        
         fig, ax = super().plot_bulk_velocity(PhyTime,fig,ax,line_kw=line_kw,**kwargs)
 
-        ax.set_xlabel(r"$x^*$")
+        ax.set_xlabel(r"$x/\delta$")
         ax.relim()
         ax.autoscale_view()
         return fig, ax
@@ -1034,7 +1038,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         PhyTime = self.check_PhyTime(PhyTime)        
         fig, ax = super().plot_skin_friction(PhyTime,fig,ax,**kwargs)
 
-        ax.set_xlabel(r"$x^*$")
+        ax.set_xlabel(r"$x/\delta$")
         ax.relim()
         ax.autoscale_view()
         return fig, ax
@@ -1047,7 +1051,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         
         lines = ax.get_lines()[-len(x_vals):]
         for line, x in zip(lines,x_vals):
-            line.set_label(r"$x^*=%.3g$" % float(x))
+            line.set_label(r"$x/\delta=%.3g$" % float(x))
 
         ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
@@ -1059,11 +1063,11 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         PhyTime = self.check_PhyTime(PhyTime)
 
-        fig, ax = super().avg_line_plot(x_vals,PhyTime,comp,fig=None,ax=None,**kwargs)
+        fig, ax = super().avg_line_plot(x_vals,PhyTime,comp,fig=fig,ax=ax,**kwargs)
         
         lines = ax.get_lines()[-len(x_vals):]
         for line, x in zip(lines,x_vals):
-            line.set_label(r"$x^*=%.3g$"% float(x))
+            line.set_label(r"$x/\delta=%.3g$"% float(x))
 
         ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
@@ -1076,7 +1080,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         lines = ax.get_lines()[-len(x_vals)-1:-1]
         for line, x in zip(lines,x_vals):
-            line.set_label(r"$x^*=%.3g$"% x)
+            line.set_label(r"$x/\delta=%.3g$"% x)
 
         ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
@@ -1131,7 +1135,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
 
     def _extract_avg(self,PhyTimes,*,meta_data=None,path_to_folder='.',time0=None,abs_path=True):
 
-        if cp.Params['TEST']:
+        if cp.rcParams['TEST']:
             PhyTimes=PhyTimes[-3:]
         PhyTimes.sort()
 
@@ -1287,7 +1291,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
 
         AVG_info, NSTATIS1 = self._extract_file(PhyTime,path_to_folder,abs_path)
         
-        factor = metaDF['NCL1_tg_io'][0]*metaDF['NCL3'] if cp.Params["dissipation_correction"] else 1.0
+        factor = metaDF['NCL1_tg_io'][0]*metaDF['NCL3'] if cp.rcParams["dissipation_correction"] else 1.0
         ioflowflg = True if metaDF['NCL1_tg_io'][1]>2 else False
 
         if ioflowflg and time0:

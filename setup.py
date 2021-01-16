@@ -28,6 +28,9 @@ if __name__ == "__main__":
     
     config.add_subpackage(subpackage_name="utils",
                         subpackage_path="core/CHAPSim_post/utils")
+    
+    config.add_subpackage(subpackage_name="CHAPSim_plot",
+                        subpackage_path="core/CHAPSim_post/CHAPSim_plot")
     # config.add_extension(name = 'CHAPSim_post._f90_ext_base',
     #                     sources = ["src/autocorr_parallel.f90"],
     #                     extra_link_args=["-lgomp"],

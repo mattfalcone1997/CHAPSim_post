@@ -27,3 +27,5 @@ dependencies:
   - memory_profiler
   - cython
   - llvmlite
+  - pyvista
+  - pyvistaqt

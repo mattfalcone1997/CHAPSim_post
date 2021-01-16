@@ -49,7 +49,6 @@ class CHAPSim_meta():
             key = 'CHAPSim_meta'
         
         self.CoordDF = cd.datastruct.from_hdf(file_name,key=key+'/CoordDF')#pd.read_hdf(file_name,key=base_name+'/CoordDF').coord()
-        self.Coord_ND_DF = cd.datastruct.from_hdf(file_name,key=key+'/Coord_ND_DF')#pd.read_hdf(file_name,key=base_name+'/Coord_ND_DF').coord()
         self.metaDF = cd.metastruct.from_hdf(file_name,key=key+'/metaDF')#pd.read_hdf(file_name,key=base_name+'/metaDF')
         
         hdf_file = h5py.File(file_name,'r')
@@ -71,7 +70,6 @@ class CHAPSim_meta():
 
         self.metaDF.to_hdf(file_name,key=key+'/metaDF',mode='a')
         self.CoordDF.to_hdf(file_name,key=key+'/CoordDF',mode='a')
-        self.Coord_ND_DF.to_hdf(file_name,key=key+'/Coord_ND_DF',mode='a')
 
     def _readdata_extract(self,path_to_folder,abs_path):
         
@@ -178,73 +176,28 @@ class CHAPSim_meta():
     
         return XCC, ZCC
 
-    def return_edge_data(self):
-        XCC = self.CoordDF['x'].dropna().values
-        YCC = self.CoordDF['y'].dropna().values
-        ZCC = self.CoordDF['z'].dropna().values
+    @property
+    def Coord_ND_DF(self):
+        XCC = self.CoordDF['x']
+        YCC = self.CoordDF['y']
+        ZCC = self.CoordDF['z']
 
         XND = np.zeros(XCC.size+1) 
         YND = np.zeros(YCC.size+1)
         ZND = np.zeros(ZCC.size+1)
 
         XND[0] = 0.0
-        YND[0] = -1.0
+        YND[0] = -1.0 if self.metaDF['icase'] == 1 else 0
         ZND[0] = 0.0
 
         for i in  range(1,XND.size):
-            XND[i] = 2*XCC[i-1]-XND[i-1]
+            XND[i] = XND[i-1] + 2*XCC[i-1]-XND[i-1]
         
         for i in  range(1,YND.size):
-            YND[i] = 2*YCC[i-1]-YND[i-1]
+            YND[i] = YND[i-1] + 2*YCC[i-1]-YND[i-1]
 
         for i in  range(1,ZND.size):
-            ZND[i] = 2*ZCC[i-1]-ZND[i-1]
+            ZND[i] = ZND[i-1] + 2*ZCC[i-1]-ZND[i-1]
 
-        return XND, YND, ZND
-        
-    def Coord_ND_extract(self,path_to_folder,NCL,abs_path,tgpost,ioflg):
-        if not abs_path:
-            x_coord_file = os.path.abspath(os.path.join(path_to_folder,'CHK_COORD_XND.dat'))
-            y_coord_file = os.path.abspath(os.path.join(path_to_folder,'CHK_COORD_YND.dat'))
-            z_coord_file = os.path.abspath(os.path.join(path_to_folder,'CHK_COORD_ZND.dat'))
-        else:
-            x_coord_file = os.path.join(path_to_folder,'CHK_COORD_XND.dat')
-            y_coord_file = os.path.join(path_to_folder,'CHK_COORD_YND.dat')
-            z_coord_file = os.path.join(path_to_folder,'CHK_COORD_ZND.dat')
-        #===================================================================
-        #Extracting XND from the .dat file
+        return cd.datastruct({'x':XND,'y':YND,'z':ZND})
     
-        file=open(x_coord_file,'rb')
-        x_coord=np.loadtxt(file,comments='#')
-        x_size=  int(x_coord[0])
-        x_coord=np.delete(x_coord,0)
-        
-        if tgpost and not ioflg:
-            XND = x_coord[:-1]
-        else:
-            for i in range(x_size):
-                if x_coord[i] == 0.0:
-                    index=i
-                    break
-            if tgpost and ioflg:
-                XND = x_coord[:index+1]
-                XND -= XND[0]
-            else:
-                XND = x_coord[index+1:]
-        file.close()
-        #===========================================================
-    
-        #Extracting YCC from the .dat file
-        file=open(y_coord_file,'rb')
-        YND=np.loadtxt(file,comments='#',usecols=1)
-        YND=YND[:NCL[1]+1]
-        
-        file.close()
-        #============================================================
-    
-        file=open(z_coord_file,'rb')
-        z_coord=np.loadtxt(file,comments='#')
-        file.close()
-        ZND=np.delete(z_coord,0)
-        CoordDF = cd.datastruct.from_dict({'x':XND,'y':YND,'z':ZND})
-        return CoordDF

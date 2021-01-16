@@ -81,6 +81,10 @@ class CHAPSim_fluct_base(ABC):
         
         ax_layout = (len(x_split_list)-1,len(axis_vals))
         figsize=[10*len(axis_vals),3*(len(x_split_list)-1)]
+
+        
+        axes_output = True if isinstance(ax,mpl.axes.Axes) else False
+
         kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
         fig, ax = cplt.create_fig_ax_without_squeeze(*ax_layout,fig=fig,ax=ax,**kwargs)
 
@@ -115,8 +119,10 @@ class CHAPSim_fluct_base(ABC):
                 ax[j*len(axis_vals)+i].axes.set_aspect('equal')
         fig.tight_layout()
 
-        return fig, ax
-
+        if axes_output:
+            return fig, ax[0]
+        else:
+            return fig, ax
     def plot_streaks(self,comp,vals_list,x_split_list=None,PhyTime=None,ylim='',Y_plus=True,*args,colors='',fig=None,ax=None,**kwargs):
 
         PhyTime = self.check_PhyTime(PhyTime)
@@ -170,16 +176,20 @@ class CHAPSim_fluct_base(ABC):
                 # patch.set_color(colors[i%len(colors)])
 
         return fig, ax
-    def plot_fluct3D_xz(self,comp,y_vals,PhyTime=None,x_split_list=None,fig=None,ax=None,**kwargs):
+    def plot_fluct3D_xz(self,comp,y_vals,y_mode='half-channel',PhyTime=None,x_split_list=None,fig=None,**kwargs):
 
         PhyTime = self.check_PhyTime(PhyTime)    
 
         y_vals = misc_utils.check_list_vals(y_vals)    
-                
-        x_coords = self.CoordDF['x']
-        z_coords = self.CoordDF['z']
-        X,Z = np.meshgrid(x_coords,z_coords)
-        fluct = self.fluctDF[PhyTime,comp][:,y_vals,:]
+        
+        axis_index = indexing.y_coord_index_norm(self.avg_data,y_vals,0,y_mode)
+        axis_index = np.diag(axis_index)
+
+        Coord_ND_DF = self.meta_data.Coord_ND_DF
+
+        x_coords, z_coords = (Coord_ND_DF['x'],Coord_ND_DF['z'])
+
+        fluct = self.fluctDF[PhyTime,comp][:,axis_index,:]
         
         if x_split_list is None:
             x_split_list=[np.min(x_coords),np.max(x_coords)]
@@ -188,39 +198,30 @@ class CHAPSim_fluct_base(ABC):
           
         kwargs = cplt.update_subplots_kw(kwargs,subplot_kw={'projection':'3d'})
         
-        if fig is None:
-            kwargs = cplt.update_subplots_kw(kwargs,override=True,squeeze=False)
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=[10*len(y_vals),5*(len(x_split_list)-1)])
-            fig, ax = plt.subplots((len(x_split_list)-1),len(y_vals),**kwargs)
-        elif ax is None:
-            kwargs = cplt.update_subplots_kw(kwargs,override=True,subplot_kw={"squeeze":False})
-            ax = fig.subplots((len(x_split_list)-1),len(y_vals),**kwargs)
+        
 
-        ax=ax.flatten()
+        if fig is None:
+            fig = cplt.Figure3D(shape=(len(x_split_list)-1,len(y_vals)))
+
         max_val = -np.float('inf'); min_val = np.float('inf')
         for j,_ in enumerate(x_split_list[:-1]):
             for i,_ in enumerate(y_vals):
                 max_val = np.amax(fluct[:,i,:]); min_val=np.amin(fluct[:,i,:])
                 
-                surf=ax[j*len(y_vals)+i].plot_surface(Z, X, fluct, rstride=1, cstride=1, cmap='jet',
-                                            linewidth=0, antialiased=False)
+                fig[j,i].plot_surface(z_coords,x_coords, fluct[:,i,:])
 
-                ax[j*len(y_vals)+i].set_ylabel(r'$x/\delta$')
-                ax[j*len(y_vals)+i].set_xlabel(r'$z/\delta$')
-                ax[j*len(y_vals)+i].set_zlabel(r'$%s^\prime$'%comp)
+                fig[j,i].set_ylabel(r'$x/\delta$')
+                fig[j,i].set_xlabel(r'$z/\delta$')
+                fig[j,i].set_zlabel(r'$%s^\prime$'%comp)
                 
-                ax[j*len(y_vals)+i].set_xlim(x_split_list[j],x_split_list[j+1])
+                fig[j,i].set_ylim(x_split_list[j],x_split_list[j+1])
 
-                surf.set_clim(min_val,max_val)
-                cbar=fig.colorbar(surf,ax=ax[j*len(y_vals)+i])
-                cbar.set_label(r"$%s^\prime$"%comp)
 
-                ax[j*len(y_vals)+i]=surf
+        for f in fig:
+            f.set_clim([min_val,max_val])
+            f.set_zlim([min_val,max_val])
 
-        for a in ax:
-            a.axes.set_zlim(min_val,max_val)
-        fig.tight_layout()
-        return fig, ax
+        return fig
 
     def plot_vector(self,slice,ax_val,PhyTime=None,y_mode='half_channel',spacing=(1,1),scaling=1,x_split_list=None,fig=None,ax=None,quiver_kw=None,**kwargs):
         
@@ -251,8 +252,8 @@ class CHAPSim_fluct_base(ABC):
             extent_array = (np.amin(coord_1),np.amax(coord_1),np.amin(coord_2),np.amax(coord_1))
 
             Q = ax[i].quiver(coord_1_mesh, coord_2_mesh,U_space[:,:,i].T,V_space[:,:,i].T,angles='uv',scale_units='xy', scale=scale,**quiver_kw)
-            ax[i].set_xlabel(r"$%s^*$"%slice[0])
-            ax[i].set_ylabel(r"$%s$"%slice[1])
+            ax[i].set_xlabel(r"$%s/\delta$"%slice[0])
+            ax[i].set_ylabel(r"$%s/\delta$"%slice[1])
             ax[i].set_title(r"$%s = %.3g$"%(coord,ax_val[i]),loc='right')
             ax[i].set_title(r"$t^*=%s$"%PhyTime,loc='left')
             ax_out.append(Q)

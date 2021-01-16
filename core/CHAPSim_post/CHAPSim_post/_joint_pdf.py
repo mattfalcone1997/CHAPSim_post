@@ -104,7 +104,7 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
-        if cp.Params['TEST']:
+        if cp.rcParams['TEST']:
             times.sort(); times= times[-5:]
         self.meta_data = self._module._meta_class(path_to_folder,abs_path)
         self.NCL = self.meta_data.NCL

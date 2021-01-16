@@ -19,9 +19,9 @@ class Gradient():
         self.__type = None
     
     def setup(self,coordDF):
-        if self.__type is None or self.__type != cp.Params['gradient_method']:
-            self.__type = cp.Params['gradient_method']
-            attr_name = "setup_" + cp.Params['gradient_method'] + "_method"
+        if self.__type is None or self.__type != cp.rcParams['gradient_method']:
+            self.__type = cp.rcParams['gradient_method']
+            attr_name = "setup_" + cp.rcParams['gradient_method'] + "_method"
             try:
                 func = getattr(self,attr_name)
             except AttributeError:
@@ -31,8 +31,8 @@ class Gradient():
             func(coordDF)
 
     def setup_numpy_method(self,coordDF):
-        if cp.Params['gradient_order'] != 2:
-            msg = f"For this method only gradient order 2 can be used not {cp.Params['gradient_order']}"
+        if cp.rcParams['gradient_order'] != 2:
+            msg = f"For this method only gradient order 2 can be used not {cp.rcParams['gradient_order']}"
             warnings.warn(msg)
         self.grad_calc_method = self.grad_calc_numpy
 

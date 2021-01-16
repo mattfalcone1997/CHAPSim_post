@@ -41,4 +41,4 @@ class Params:
         else:
             self.__params[key] = value
 
-Params = Params()
+rcParams = Params()

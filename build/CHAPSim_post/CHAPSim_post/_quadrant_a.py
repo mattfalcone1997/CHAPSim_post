@@ -139,7 +139,6 @@ class CHAPSim_Quad_Anl_base(ABC):
                     ax[i-1,j].set_xlabel(r"$%s/\delta$"%prop_dir)# ,fontsize=20)
                     ax[i-1,j].set_ylabel(r"$Q%d$"%i)# ,fontsize=20)
                     ax[i-1,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')# ,fontsize=16)
-                    ax[i-1,j].toggle_default_line_markers()
 
         ncol = 4 if len(h_list)>3 else len(h_list)
         ax[0,0].clegend(vertical=False,ncol=ncol)
@@ -153,7 +152,7 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
-        if cp.Params['TEST']:
+        if cp.rcParams['TEST']:
             times.sort(); times= times[-3:]
         meta_data = self._module._meta_class(path_to_folder,abs_path)
         NCL = meta_data.NCL
@@ -228,7 +227,7 @@ class CHAPSim_Quad_Anl_tg(CHAPSim_Quad_Anl_base):
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
-        if cp.Params['TEST']:
+        if cp.rcParams['TEST']:
             times.sort(); times= times[-3:]
         meta_data = self._module._meta_class(path_to_folder,abs_path)
         NCL = meta_data.NCL

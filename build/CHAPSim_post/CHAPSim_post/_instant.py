@@ -293,10 +293,10 @@ class CHAPSim_Inst():
             for velo2,coord2 in zip(velo_list,coord_list):
                 velo_field1 = self.InstDF[PhyTime,velo1][:,:arr_len_y,x_start_index:x_end_index]
                 velo_field2 = self.InstDF[PhyTime,velo2][:,:arr_len_y,x_start_index:x_end_index]
-                strain_rate[:,:,:,i,j] = 0.5*(gradient.Grad_calc(self.CoordDF,velo_field1,coord2,False) \
-                                        + gradient.Grad_calc(self.CoordDF,velo_field2,coord1,False))
-                rot_rate[:,:,:,i,j] = 0.5*(gradient.Grad_calc(self.CoordDF,velo_field1,coord2,False) \
-                                        - gradient.Grad_calc(self.CoordDF,velo_field2,coord1,False))
+                strain_rate[:,:,:,i,j] = 0.5*(gradient.Grad_calc(self.CoordDF,velo_field1,coord2) \
+                                        + gradient.Grad_calc(self.CoordDF,velo_field2,coord1))
+                rot_rate[:,:,:,i,j] = 0.5*(gradient.Grad_calc(self.CoordDF,velo_field1,coord2) \
+                                        - gradient.Grad_calc(self.CoordDF,velo_field2,coord1))
                 j+=1
             i+=1
         del velo_field1 ; del velo_field2
@@ -370,9 +370,9 @@ class CHAPSim_Inst():
         v_velo = self.InstDF[PhyTime,'v']
         w_velo = self.InstDF[PhyTime,'w']
 
-        vorticity[0] = CT.Grad_calc(self.CoordDF,w_velo,'y',False) - CT.Grad_calc(self.CoordDF,v_velo,'z',False)      
-        vorticity[1] = CT.Grad_calc(self.CoordDF,u_velo,'z',False) - CT.Grad_calc(self.CoordDF,w_velo,'x',False)      
-        vorticity[2] = CT.Grad_calc(self.CoordDF,v_velo,'x',False) - CT.Grad_calc(self.CoordDF,u_velo,'y',False)     
+        vorticity[0] = gradient.Grad_calc(self.CoordDF,w_velo,'y') - gradient.Grad_calc(self.CoordDF,v_velo,'z')      
+        vorticity[1] = gradient.Grad_calc(self.CoordDF,u_velo,'z') - gradient.Grad_calc(self.CoordDF,w_velo,'x')      
+        vorticity[2] = gradient.Grad_calc(self.CoordDF,v_velo,'x') - gradient.Grad_calc(self.CoordDF,u_velo,'y')     
 
         return cd.datastruct(vorticity,index=['x','y','z'])
 
@@ -406,7 +406,7 @@ class CHAPSim_Inst():
             mesh = ax[i].pcolormesh(coord_1_mesh,coord_2_mesh,contour_array,**pcolor_kw)
             ax[i].set_xlabel(r"$%s^*$"%slice[0])
             ax[i].set_ylabel(r"$%s$"%slice[1])
-            ax[i].set_title(r"$%s = %.3g$"%(coord,ax_val[i]))
+            ax[i].set_title(r"$%s = %.3g$"%(coord,ax_val[i]),loc='right')
             cbar=fig.colorbar(mesh,ax=ax[i])
             cbar.set_label(r"$\omega_%s$"%comp)
             ax_out.append(mesh)

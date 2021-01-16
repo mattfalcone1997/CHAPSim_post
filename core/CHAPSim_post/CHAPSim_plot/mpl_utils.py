@@ -1,12 +1,88 @@
+"""
+## mpl_utils
+This is a submodule of CHAPSim_plot extending matplotlib functionality
+for simpler high-level use in this application
+"""
 
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-
-import CHAPSim_post as cp
+from cycler import cycler
 
 import itertools
 import warnings
+from shutil import which
+
+import CHAPSim_post as cp
+from CHAPSim_post.utils import misc_utils
+
+
+
+
+
+
+if which('lualatex') is not None:
+    mpl.rcParams['text.usetex'] = True
+    mpl.rcParams['pgf.texsystem'] = 'lualatex'
+    mpl.rcParams['text.latex.preamble'] =r'\usepackage{amsmath}'
+
+def update_prop_cycle(**kwargs):
+    avail_keys = [x[4:] for x in mpl.lines.Line2D.__dict__.keys() if x[0:3]=='get']
+
+    if not all([key in avail_keys for key in kwargs.keys()]):
+        msg = "The key is invalid for the matplotlib property cycler"
+        raise ValueError(msg)
+
+    alias_dict = {'aa':'antialiased',
+                  'c' : 'color',
+                  'ds':'drawstyle',
+                  'ls':'linestyle',
+                  'lw':'linewidth',
+                  'mec' : 'markeredgecolor',
+                  'mew' : 'markeredgewidth',
+                  'mfc' : 'markerfacecolor',
+                  'mfcalt' : 'markerfacecoloralt',
+                  'ms' : 'markersize'}
+    
+    cycler_dict = mpl.rcParams['axes.prop_cycle'].by_key()
+    for key, item in kwargs.items():
+        if not hasattr(item,"__iter__"):
+            item = [item]
+        elif isinstance(item,str):
+            if item == "" :
+                item = [item]
+        if key in alias_dict.keys():
+            key = alias_dict[key]
+        cycler_dict[key] = item
+
+    item_length = [ len(item) for _,item in cycler_dict.items()]
+    cycle_length = np.lcm.reduce(item_length)
+
+    for key, val in cycler_dict.items():
+        cycler_dict[key] = list(val)*int(cycle_length/len(val))
+    mpl.rcParams['axes.prop_cycle'] = cycler(**cycler_dict)
+
+def reset_prop_cycler():
+    update_prop_cycle(linestyle=['-','--','-.',':'],
+                marker=['x','.','v','^','+'],
+                color = 'bgrcmyk')
+
+reset_prop_cycler()
+
+mpl.rcParams['lines.markerfacecolor'] = 'white'
+# mpl.rcParams['figure.autolayout'] = True
+mpl.rcParams['mathtext.fontset'] = 'stix'
+mpl.rcParams['legend.edgecolor'] = 'inherit'
+mpl.rcParams['font.size'] = 17
+mpl.rcParams['axes.labelsize'] = 'large'
+mpl.rcParams['axes.labelpad'] = 6.0
+mpl.rcParams['legend.fontsize'] = 'small'
+mpl.rcParams['axes.grid'] = True
+mpl.rcParams['ytick.direction'] = "in"
+mpl.rcParams['xtick.direction'] = "in"
+mpl.rcParams['xtick.top'] = True
+mpl.rcParams['ytick.right'] = True
+
 
 class CHAPSimFigure(mpl.figure.Figure):
 
@@ -15,6 +91,7 @@ class CHAPSimFigure(mpl.figure.Figure):
     def add_subplot(self,*args, **kwargs):
         kwargs['projection']='AxesCHAPSim'
         return super().add_subplot(*args,**kwargs)
+
     def c_add_subplot(self,*args, **kwargs):
         kwargs['projection']='AxesCHAPSim'
         return super().add_subplot(*args,**kwargs)
@@ -24,8 +101,9 @@ class CHAPSimFigure(mpl.figure.Figure):
         else:
             return self.legends
     def update_legend_fontsize(self, fontsize,tight_layout=True,**kwargs):
-        if self.__clegend is not None:
-            texts=self.__clegend.get_texts()
+        if self.legends:
+            texts=[legend.get_texts() for legend in self.legends]
+            texts = itertools.chain(*texts)
             for text in texts:
                 text.set_fontsize(fontsize)
         if tight_layout:
@@ -35,6 +113,14 @@ class CHAPSimFigure(mpl.figure.Figure):
         axes = self.get_axes()
         for ax in axes:
             ax.set_title_fontsize(fontsize)
+
+    def tighter_layout(self,*args,**kwargs):
+        gridspecs = self._gridspecs
+        if gridspecs:
+            for gs in gridspecs:
+                gs.tight_layout(self,*args,**kwargs)
+        else:
+            super().tight_layout()
 
 class AxesCHAPSim(mpl.axes.Axes):
     name='AxesCHAPSim'
@@ -51,12 +137,27 @@ class AxesCHAPSim(mpl.axes.Axes):
         if 'markevery' not in plot_kw:
             plot_kw['markevery'] = 10
         return super().plot(*args,**plot_kw)
+
+    def get_shared_lines(self):
+
+        attr_list = ['_shared_x_axes', '_shared_y_axes', '_twinned_axes']
+        state = self.__getstate__()
+        all_axes = { k: v for k,v in state.items() \
+                    if k in attr_list and v is not None}.values()
+
+        axes = set(itertools.chain(*all_axes))
+        if axes == set():
+            axes = set([self])
+
+        shared_lines=[]
+        for ax in axes:
+            shared_lines.extend(ax.get_lines())
+        return shared_lines
+
     def count_lines(self):
-        no_lines = 0
-        twinned_ax = self._twinned_axes.get_siblings(self)
-        for ax in twinned_ax:
-            no_lines += len(ax.get_lines())
-        return no_lines
+
+        lines = self.get_shared_lines()
+        return len(lines)
 
     def clegend(self,*args, **kwargs):
         # if 'fontsize' not in kwargs.keys():
@@ -88,7 +189,7 @@ class AxesCHAPSim(mpl.axes.Axes):
         self.set_xlabel(xlabel_str ,fontsize=fontsize)
         self.set_ylabel(ylabel_str ,fontsize=fontsize)
         if tight_layout:
-            self.get_gridspec().tight_layout(self.get_figure(),**kwargs)
+            self.get_figure().tight_layout(**kwargs)
 
     def set_title_fontsize(self ,fontsize,loc='center',tight_layout=True,**kwargs):
         title_str=self.get_title(loc=loc)
@@ -199,9 +300,12 @@ class AxesCHAPSim(mpl.axes.Axes):
         if self.get_legend() is not None:
             self.clegend(*args,**kwargs)
 
-    def shift_xaxis(self,val):
-        lines = self.get_lines()
-        lines = self.get_lines()
+    def shift_xaxis(self,val,shared=True):
+        if shared:
+            lines = self.get_shared_lines()
+        else:
+            lines = self.get_lines()
+
         if lines:
             for line in lines:
                 x_data = line.get_xdata().copy()
@@ -225,24 +329,23 @@ class AxesCHAPSim(mpl.axes.Axes):
                     offsets = offsets[None,:]
                 quiver_list[i]._offsets = offsets
                 quiver_list[i]._transOffset = quiver_list[i].transform
+                
         if quadmesh_list or quiver_list or lines:
             xlim = [x+val for x in self.get_xlim()]
             self.set_xlim(xlim)
         
 
-    def shift_yaxis(self,val):
-        lines = self.get_lines()
+    def shift_yaxis(self,val,shared=True):
+        if shared:
+            lines = self.get_shared_lines()
+        else:
+            lines = self.get_lines()
+
         if lines:
             for line in lines:
                 y_data = line.get_ydata().copy()
                 y_data += val
                 line.set_ydata(y_data)
-            # if (y_data>self.get_ylim()[0]).all() and (y_data<self.get_ylim()[1]).all(): 
-            #     ylim = [x+val for x in self.get_ylim()]
-            #     self.set_ylim(ylim)
-            # else:
-            #     self.relim()
-            #     self.autoscale_view(True,True,True)
 
             
         quadmesh_list = [x for x in self.get_children()\
@@ -254,6 +357,7 @@ class AxesCHAPSim(mpl.axes.Axes):
         if quadmesh_list:
             for quadmesh in quadmesh_list:
                 quadmesh._coordinates[:,:,1] += val
+
         if quiver_list:
             for i,_ in enumerate(quiver_list):
                 quiver_list[i].Y += val
@@ -269,16 +373,17 @@ class AxesCHAPSim(mpl.axes.Axes):
             self.set_ylim(ylim)
 
 
-    def shift_legend_val(self,val):
+    def shift_legend_val(self,val,comp=None):
         leg = self.get_legend()
         leg_text = leg.texts
         for text in leg_text:
-            string = self._shift_text(text.get_text(),val)
+            string = self._shift_text(text.get_text(),val,comp)
             text.set_text(string)
-    def shift_title_val(self,val,loc='center'):
-        title = self._shift_text(self.get_title(loc=loc),val)
+    def shift_title_val(self,val,loc='center',comp=None):
+        title = self._shift_text(self.get_title(loc=loc),val,comp)
         self.set_title(title,loc=loc)
-    def _shift_text(self, string,val):
+
+    def _shift_text(self, string,val,comp):
         list_string = string.split("=")
         for i in range(1,len(list_string)):
             try:
@@ -287,8 +392,16 @@ class AxesCHAPSim(mpl.axes.Axes):
                 for j in range(1,len(list_string[i])):
                     try:
                         old_val = float(list_string[i][:-j])
-                        list_string[i]=list_string[i].replace(list_string[i][:-j],
+                        if comp is None:
+                            list_string[i]=list_string[i].replace(list_string[i][:-j],
                                             "=%.3g"%(old_val+val))
+                        elif comp in list_string[i-1]:
+                            list_string[i]=list_string[i].replace(list_string[i][:-j],
+                                            "=%.3g"%(old_val+val))
+                        else:
+                            list_string[i]=list_string[i].replace(list_string[i][:-j],
+                                            "=%.3g"%old_val)
+
                         break
                     except ValueError:
                         if j == len(list_string[i])-1:
@@ -319,3 +432,134 @@ def subplots(nrows=1, ncols=1, sharex=False, sharey=False, squeeze=True, subplot
     ax=fig.subplots(nrows, ncols, sharex=sharex, sharey=sharey, squeeze=squeeze, 
                     subplot_kw=subplot_kw, gridspec_kw=gridspec_kw)
     return fig, ax
+
+def update_pcolor_kw(pcolor_kw):
+    if pcolor_kw is None:
+        pcolor_kw = {'cmap':'jet','shading':'gouraud'}
+    else:
+        if not isinstance(pcolor_kw,dict):
+            msg = f"pcolor_kw must be None or a dict not a {type(pcolor_kw)}"
+            raise TypeError(msg)
+        if 'cmap' not in pcolor_kw.keys():
+            pcolor_kw['cmap'] = 'jet'
+        if 'shading' not in pcolor_kw.keys():
+            pcolor_kw['shading'] = 'gouraud'
+    return pcolor_kw
+
+def update_quiver_kw(quiver_kw):
+    if quiver_kw is not None:
+        if 'angles' in quiver_kw.keys():
+            del quiver_kw['angles']
+        if 'scale_units' in quiver_kw.keys():
+            del quiver_kw['scale_units']
+        if 'scale' in quiver_kw.keys():
+            del quiver_kw['scale']
+    else:
+        quiver_kw = {}
+
+    return quiver_kw
+
+def update_line_kw(line_kw,**kwargs):
+    
+    if line_kw is None:
+        line_kw = {}
+    elif not isinstance(line_kw,dict):
+        raise TypeError("line_kw needs to be a dictionary")
+
+    line_kw = line_kw.copy()
+
+    for key, val in kwargs.items():
+        if key not in line_kw.keys():
+            line_kw[key] = val    
+
+    return line_kw
+
+def update_contour_kw(contour_kw,**kwargs):
+    if contour_kw is None:
+        contour_kw = {}
+    elif not isinstance(contour_kw,dict):
+        raise TypeError("line_kw needs to be a dictionary")
+
+    for key, val in kwargs.items():
+        if key not in contour_kw.keys():
+            contour_kw[key] = val    
+
+    return contour_kw
+
+
+def update_subplots_kw(subplots_kw,**kwargs):
+    if subplots_kw is None:
+        subplots_kw = {}
+
+    for key, val in kwargs.items():
+        if key not in subplots_kw.keys():
+            subplots_kw[key] = val    
+
+    return subplots_kw
+
+def create_fig_ax_with_squeeze(fig=None,ax=None,**kwargs):
+    
+    if fig is None:
+        fig, ax = subplots(**kwargs)
+    elif ax is None:
+        ax=fig.add_subplot(1,1,1)
+    else:
+        if not isinstance(fig, CHAPSimFigure):
+            msg = f"fig needs to be an instance of {CHAPSimFigure.__name__}"
+            raise TypeError(msg)
+        if not isinstance(ax,AxesCHAPSim):
+            msg = f"ax needs to be an instance of {AxesCHAPSim.__name__}"
+            raise TypeError(msg)
+    
+    return fig, ax
+
+def create_fig_ax_without_squeeze(*args,fig=None,ax=None,**kwargs):
+    kwargs['squeeze'] = False
+    if fig is None:
+        fig, ax = subplots(*args,**kwargs)
+    elif ax is None:
+        kwargs.pop('figsize',None)
+        ax=fig.subplots(*args,**kwargs)
+
+    if isinstance(ax,mpl.axes.Axes):
+        ax = np.array([ax])
+    elif all([isinstance(a,mpl.axes.Axes) for a in ax.flatten()]):
+        ax = np.array(ax)
+    else:   
+        msg = ("Axes provided to method must be of type "
+                f"{mpl.axes.Axes.__name__}  or an iterable"
+                f" of it not {type(ax)}")
+        raise TypeError(msg)
+
+    ax = ax.flatten()
+
+    return fig, ax
+
+def get_legend_ncols(line_no):
+    return 4 if line_no >3 else line_no
+
+def close(*args,**kwargs):
+    plt.close(*args,**kwargs)
+
+def create_general_video(fig,path_to_folder,abs_path,func,func_args=None,func_kw=None,time_range=None):
+
+    times= misc_utils.time_extract(path_to_folder,abs_path)
+    if time_range is not None:
+        times = list(filter(lambda x: x>time_range[0],times))
+        times = list(filter(lambda x: x<time_range[1],times))
+    times.sort()
+    if cp.rcParams["TEST"]:
+        times = times[-10:]
+
+    if func_args is None:
+        func_args=()
+
+    if func_kw is None:
+        func_kw={}
+
+
+    def animate(time):
+        return func(fig,time,*func_args,**func_kw)
+
+    return mpl.animation.FuncAnimation(fig,animate,frames=times)
+

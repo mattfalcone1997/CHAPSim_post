@@ -11,23 +11,11 @@ from .mpl_class import CHAPSimFigure, AxesCHAPSim, subplots
 import CHAPSim_post as cp
 from CHAPSim_post.utils import misc_utils
 
+
 if which('lualatex') is not None:
     mpl.rcParams['text.usetex'] = True
     mpl.rcParams['pgf.texsystem'] = 'lualatex'
     mpl.rcParams['text.latex.preamble'] =r'\usepackage{amsmath}'
-
-mpl.rcParams['lines.markerfacecolor'] = 'white'
-mpl.rcParams['mathtext.fontset'] = 'stix'
-mpl.rcParams['legend.edgecolor'] = 'inherit'
-mpl.rcParams['font.size'] = 17
-mpl.rcParams['axes.labelsize'] = 'large'
-mpl.rcParams['axes.labelpad'] = 6.0
-mpl.rcParams['legend.fontsize'] = 'small'
-mpl.rcParams['axes.grid'] = True
-mpl.rcParams['ytick.direction'] = "in"
-mpl.rcParams['xtick.direction'] = "in"
-mpl.rcParams['xtick.top'] = True
-mpl.rcParams['ytick.right'] = True
 
 def update_prop_cycle(**kwargs):
     avail_keys = [x[4:] for x in mpl.lines.Line2D.__dict__.keys() if x[0:3]=='get']
@@ -35,11 +23,27 @@ def update_prop_cycle(**kwargs):
     if not all([key in avail_keys for key in kwargs.keys()]):
         msg = "The key is invalid for the matplotlib property cycler"
         raise ValueError(msg)
+
+    alias_dict = {'aa':'antialiased',
+                  'c' : 'color',
+                  'ds':'drawstyle',
+                  'ls':'linestyle',
+                  'lw':'linewidth',
+                  'mec' : 'markeredgecolor',
+                  'mew' : 'markeredgewidth',
+                  'mfc' : 'markerfacecolor',
+                  'mfcalt' : 'markerfacecoloralt',
+                  'ms' : 'markersize'}
     
     cycler_dict = mpl.rcParams['axes.prop_cycle'].by_key()
     for key, item in kwargs.items():
         if not hasattr(item,"__iter__"):
             item = [item]
+        elif isinstance(item,str):
+            if item == "" :
+                item = [item]
+        if key in alias_dict.keys():
+            key = alias_dict[key]
         cycler_dict[key] = item
 
     item_length = [ len(item) for _,item in cycler_dict.items()]
@@ -56,6 +60,19 @@ def reset_prop_cycler():
 
 reset_prop_cycler()
 
+mpl.rcParams['lines.markerfacecolor'] = 'white'
+# mpl.rcParams['figure.autolayout'] = True
+mpl.rcParams['mathtext.fontset'] = 'stix'
+mpl.rcParams['legend.edgecolor'] = 'inherit'
+mpl.rcParams['font.size'] = 17
+mpl.rcParams['axes.labelsize'] = 'large'
+mpl.rcParams['axes.labelpad'] = 6.0
+mpl.rcParams['legend.fontsize'] = 'small'
+mpl.rcParams['axes.grid'] = True
+mpl.rcParams['ytick.direction'] = "in"
+mpl.rcParams['xtick.direction'] = "in"
+mpl.rcParams['xtick.top'] = True
+mpl.rcParams['ytick.right'] = True
 
 
 
@@ -86,10 +103,13 @@ def update_quiver_kw(quiver_kw):
     return quiver_kw
 
 def update_line_kw(line_kw,**kwargs):
+    
     if line_kw is None:
         line_kw = {}
     elif not isinstance(line_kw,dict):
         raise TypeError("line_kw needs to be a dictionary")
+
+    line_kw = line_kw.copy()
 
     for key, val in kwargs.items():
         if key not in line_kw.keys():
@@ -137,15 +157,10 @@ def create_fig_ax_with_squeeze(fig=None,ax=None,**kwargs):
     return fig, ax
 
 def create_fig_ax_without_squeeze(*args,fig=None,ax=None,**kwargs):
+    kwargs['squeeze'] = False
     if fig is None:
-        kwargs['squeeze'] = False
         fig, ax = subplots(*args,**kwargs)
     elif ax is None:
-        if 'subplot_kw' in kwargs:
-            kwargs['subplot_kw'].update({'squeeze':False})
-        else:
-            kwargs['subplot_kw'] = {'squeeze':False}
-
         kwargs.pop('figsize',None)
         ax=fig.subplots(*args,**kwargs)
 
@@ -176,7 +191,7 @@ def create_general_video(fig,path_to_folder,abs_path,func,func_args=None,func_kw
         times = list(filter(lambda x: x>time_range[0],times))
         times = list(filter(lambda x: x<time_range[1],times))
     times.sort()
-    if cp.Params["TEST"]:
+    if cp.rcParams["TEST"]:
         times = times[-10:]
 
     if func_args is None:

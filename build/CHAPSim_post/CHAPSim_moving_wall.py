@@ -84,7 +84,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         
         return accel_param
 
-    def plot_accel_param(self,PhyTime=None,fig=None,ax=None,**kwargs):
+    def plot_accel_param(self,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
         
         accel_param = self.accel_param_calc(PhyTime)
         x_coords = self.CoordDF['x']
@@ -92,7 +92,9 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
         
-        ax.cplot(x_coords,accel_param,label=r"$K$")
+        line_kw = cplt.update_line_kw(line_kw,label = r"$K$")
+        
+        ax.cplot(x_coords,accel_param,**line_kw)
         ax.set_xlabel(r"$x/\delta$")
         ax.set_ylabel(r"$K$")
         ax.ticklabel_format(style='sci',axis='y',scilimits=(-5,5))

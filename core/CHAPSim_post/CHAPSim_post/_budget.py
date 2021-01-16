@@ -382,7 +382,7 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
 
         fig, ax = super()._budget_plot(PhyTime, x_list,budget_terms,wall_units=wall_units, fig=fig, ax =ax,**kwargs)
         for a,x in zip(ax,x_list):
-            a.set_title(r"$x^*=%.2f$"%x,loc='right')
+            a.set_title(r"$x/\delta=%.2f$"%x,loc='right')
             a.relim()
             a.autoscale_view()
         handles, labels = ax[0].get_legend_handles_labels()

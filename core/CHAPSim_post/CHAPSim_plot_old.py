@@ -2,6 +2,7 @@
 # CHAPSim_plot
 This is a postprocessing module for CHAPSim_post library
 '''
+
 import matplotlib as mpl 
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import pcolor
@@ -23,6 +24,9 @@ except ImportError:
 
 import CHAPSim_post as cp
 import CHAPSim_post.CHAPSim_Tools as CT
+
+warnings.warn("This module file has been replaced by the CHAPSim_plot submodule",DeprecationWarning)
+
 if which('lualatex') is not None:
     mpl.rcParams['text.usetex'] = True
     mpl.rcParams['pgf.texsystem'] = 'lualatex'
@@ -34,11 +38,27 @@ def update_prop_cycle(**kwargs):
     if not all([key in avail_keys for key in kwargs.keys()]):
         msg = "The key is invalid for the matplotlib property cycler"
         raise ValueError(msg)
+
+    alias_dict = {'aa':'antialiased',
+                  'c' : 'color',
+                  'ds':'drawstyle',
+                  'ls':'linestyle',
+                  'lw':'linewidth',
+                  'mec' : 'markeredgecolor',
+                  'mew' : 'markeredgewidth',
+                  'mfc' : 'markerfacecolor',
+                  'mfcalt' : 'markerfacecoloralt',
+                  'ms' : 'markersize'}
     
     cycler_dict = mpl.rcParams['axes.prop_cycle'].by_key()
     for key, item in kwargs.items():
         if not hasattr(item,"__iter__"):
             item = [item]
+        elif isinstance(item,str):
+            if item == "" :
+                item = [item]
+        if key in alias_dict.keys():
+            key = alias_dict[key]
         cycler_dict[key] = item
 
     item_length = [ len(item) for _,item in cycler_dict.items()]
@@ -100,7 +120,7 @@ class CHAPSimFigure(mpl.figure.Figure):
         for ax in axes:
             ax.set_title_fontsize(fontsize)
 
-    def tight_layout(self,*args,**kwargs):
+    def tighter_layout(self,*args,**kwargs):
         gridspecs = self._gridspecs
         if gridspecs:
             for gs in gridspecs:
@@ -125,16 +145,24 @@ class AxesCHAPSim(mpl.axes.Axes):
         return super().plot(*args,**plot_kw)
 
     def get_shared_lines(self):
-        twinned_ax = self._twinned_axes.get_siblings(self)
+
+        attr_list = ['_shared_x_axes', '_shared_y_axes', '_twinned_axes']
+        state = self.__getstate__()
+        all_axes = { k: v for k,v in state.items() \
+                    if k in attr_list and v is not None}.values()
+
+        axes = set(itertools.chain(*all_axes))
+        if axes == set():
+            axes = set([self])
+
         shared_lines=[]
-        for ax in twinned_ax:
+        for ax in axes:
             shared_lines.extend(ax.get_lines())
         return shared_lines
 
     def count_lines(self):
-        no_lines = 0
-        lines = self.get_shared_lines()
 
+        lines = self.get_shared_lines()
         return len(lines)
 
     def clegend(self,*args, **kwargs):
@@ -167,7 +195,7 @@ class AxesCHAPSim(mpl.axes.Axes):
         self.set_xlabel(xlabel_str ,fontsize=fontsize)
         self.set_ylabel(ylabel_str ,fontsize=fontsize)
         if tight_layout:
-            self.get_gridspec().tight_layout(self.get_figure(),**kwargs)
+            self.get_figure().tight_layout(**kwargs)
 
     def set_title_fontsize(self ,fontsize,loc='center',tight_layout=True,**kwargs):
         title_str=self.get_title(loc=loc)
@@ -278,8 +306,11 @@ class AxesCHAPSim(mpl.axes.Axes):
         if self.get_legend() is not None:
             self.clegend(*args,**kwargs)
 
-    def shift_xaxis(self,val):
-        lines = self.get_shared_lines()
+    def shift_xaxis(self,val,shared=True):
+        if shared:
+            lines = self.get_shared_lines()
+        else:
+            lines = self.get_lines()
 
         if lines:
             for line in lines:
@@ -304,25 +335,23 @@ class AxesCHAPSim(mpl.axes.Axes):
                     offsets = offsets[None,:]
                 quiver_list[i]._offsets = offsets
                 quiver_list[i]._transOffset = quiver_list[i].transform
+                
         if quadmesh_list or quiver_list or lines:
-
             xlim = [x+val for x in self.get_xlim()]
             self.set_xlim(xlim)
         
 
-    def shift_yaxis(self,val):
-        lines = self.get_shared_lines()
+    def shift_yaxis(self,val,shared=True):
+        if shared:
+            lines = self.get_shared_lines()
+        else:
+            lines = self.get_lines()
+
         if lines:
             for line in lines:
                 y_data = line.get_ydata().copy()
                 y_data += val
                 line.set_ydata(y_data)
-            # if (y_data>self.get_ylim()[0]).all() and (y_data<self.get_ylim()[1]).all(): 
-            #     ylim = [x+val for x in self.get_ylim()]
-            #     self.set_ylim(ylim)
-            # else:
-            #     self.relim()
-            #     self.autoscale_view(True,True,True)
 
             
         quadmesh_list = [x for x in self.get_children()\
@@ -334,6 +363,7 @@ class AxesCHAPSim(mpl.axes.Axes):
         if quadmesh_list:
             for quadmesh in quadmesh_list:
                 quadmesh._coordinates[:,:,1] += val
+
         if quiver_list:
             for i,_ in enumerate(quiver_list):
                 quiver_list[i].Y += val
@@ -349,16 +379,17 @@ class AxesCHAPSim(mpl.axes.Axes):
             self.set_ylim(ylim)
 
 
-    def shift_legend_val(self,val):
+    def shift_legend_val(self,val,comp=None):
         leg = self.get_legend()
         leg_text = leg.texts
         for text in leg_text:
-            string = self._shift_text(text.get_text(),val)
+            string = self._shift_text(text.get_text(),val,comp)
             text.set_text(string)
-    def shift_title_val(self,val,loc='center'):
-        title = self._shift_text(self.get_title(loc=loc),val)
+    def shift_title_val(self,val,loc='center',comp=None):
+        title = self._shift_text(self.get_title(loc=loc),val,comp)
         self.set_title(title,loc=loc)
-    def _shift_text(self, string,val):
+
+    def _shift_text(self, string,val,comp):
         list_string = string.split("=")
         for i in range(1,len(list_string)):
             try:
@@ -367,8 +398,16 @@ class AxesCHAPSim(mpl.axes.Axes):
                 for j in range(1,len(list_string[i])):
                     try:
                         old_val = float(list_string[i][:-j])
-                        list_string[i]=list_string[i].replace(list_string[i][:-j],
+                        if comp is None:
+                            list_string[i]=list_string[i].replace(list_string[i][:-j],
                                             "=%.3g"%(old_val+val))
+                        elif comp in list_string[i-1]:
+                            list_string[i]=list_string[i].replace(list_string[i][:-j],
+                                            "=%.3g"%(old_val+val))
+                        else:
+                            list_string[i]=list_string[i].replace(list_string[i][:-j],
+                                            "=%.3g"%old_val)
+
                         break
                     except ValueError:
                         if j == len(list_string[i])-1:
@@ -515,7 +554,7 @@ def create_general_video(fig,path_to_folder,abs_path,func,func_args=None,func_kw
         times = list(filter(lambda x: x>time_range[0],times))
         times = list(filter(lambda x: x<time_range[1],times))
     times.sort()
-    if cp.Params["TEST"]:
+    if cp.rcParams["TEST"]:
         times = times[-10:]
 
     if func_args is None:

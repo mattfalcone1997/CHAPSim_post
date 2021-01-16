@@ -343,7 +343,7 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
 
-        if cp.Params['TEST']:
+        if cp.rcParams['TEST']:
             times.sort(); times= times[-5:]
             
         self._meta_data = self._module._meta_class(path_to_folder)
@@ -424,8 +424,8 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
 
     def _autocov_calc_z(self,fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
         
-        if cp.Params['autocorr_mode'] in (1,2):    
-            if cp.Params['autocorr_mode'] == 1:
+        if cp.rcParams['autocorr_mode'] in (1,2):    
+            if cp.rcParams['autocorr_mode'] == 1:
                 from ._f90_ext_base import autocov_calc_z
                 R_z = np.zeros((max_z_step,NCL2,NCL1),order='F')
             else:
@@ -437,7 +437,7 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
                     autocov_calc_z(fluct1,fluct2,R_z,max_z_step)
                 except Exception as e:
                     msg = f"Exception raised by accelerator routine of type {type(e).__name__}: {e.__str__()}: "
-                    if cp.Params['ForceMode']:    
+                    if cp.rcParams['ForceMode']:    
                         raise RuntimeError(msg+"Parameter ForceMode set to true raising RuntimeError")
                     else:
                         warnings.simplefilter('once')
@@ -446,11 +446,11 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
                 else:
                     return np.ascontiguousarray(R_z)
         else:
-            if cp.Params['autocorr_mode'] != 0 and cp.Params['ForceMode']:
-                msg = f"Calculation mode {cp.Params['autocorr_mode']} doesn't exist, ForceMode is True raising RuntimeError"
+            if cp.rcParams['autocorr_mode'] != 0 and cp.rcParams['ForceMode']:
+                msg = f"Calculation mode {cp.rcParams['autocorr_mode']} doesn't exist, ForceMode is True raising RuntimeError"
                 raise RuntimeError(msg)
-            elif cp.Params['autocorr_mode'] != 0 and cp.Params['ForceMode']:
-                msg = f"Calculation mode {cp.Params['autocorr_mode']} doesn't exist, using numba backend"
+            elif cp.rcParams['autocorr_mode'] != 0 and cp.rcParams['ForceMode']:
+                msg = f"Calculation mode {cp.rcParams['autocorr_mode']} doesn't exist, using numba backend"
                 warnings.warn(msg)
             return self._autocov_numba_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step)
     
@@ -473,8 +473,8 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
 
 
     def _autocov_calc_x(self,fluct1,fluct2,NCL1,NCL2,NCL3,max_x_step):
-        if cp.Params['autocorr_mode'] in (1,2):    
-            if cp.Params['autocorr_mode'] == 1:
+        if cp.rcParams['autocorr_mode'] in (1,2):    
+            if cp.rcParams['autocorr_mode'] == 1:
                 from ._f90_ext_base import autocov_calc_x
                 R_x = np.zeros((max_x_step,NCL2,NCL1-max_x_step),order='F')
             else:
@@ -486,7 +486,7 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
                     autocov_calc_x(fluct1,fluct2,R_x,max_x_step)
                 except Exception as e:
                     msg = f"Exception raised by accelerator routine of type {type(e).__name__}: {e.__str__()}: "
-                    if cp.Params['ForceMode']:    
+                    if cp.rcParams['ForceMode']:    
                         raise RuntimeError(msg+"Parameter ForceMode set to true raising RuntimeError")
                     else:
                         warnings.simplefilter('once')
@@ -496,11 +496,11 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
                     return np.ascontiguousarray(R_x)
                                                         
         else:
-            if cp.Params['autocorr_mode'] != 0 and cp.Params['ForceMode']:
-                msg = f"Calculation mode {cp.Params['autocorr_mode']} doesn't exist, ForceMode is True raising RuntimeError"
+            if cp.rcParams['autocorr_mode'] != 0 and cp.rcParams['ForceMode']:
+                msg = f"Calculation mode {cp.rcParams['autocorr_mode']} doesn't exist, ForceMode is True raising RuntimeError"
                 raise RuntimeError(msg)
-            elif cp.Params['autocorr_mode'] != 0 and cp.Params['ForceMode']:
-                msg = f"Calculation mode {cp.Params['autocorr_mode']} doesn't exist, using numba backend"
+            elif cp.rcParams['autocorr_mode'] != 0 and cp.rcParams['ForceMode']:
+                msg = f"Calculation mode {cp.rcParams['autocorr_mode']} doesn't exist, using numba backend"
                 warnings.warn(msg)
 
             return self._autocov_numba_x(fluct1,fluct2,NCL1,NCL2,NCL3,max_x_step)
@@ -521,7 +521,7 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
         for a in ax:
             lines = a.get_lines()[-len(axis_vals):]
             for line,val in zip(lines,axis_vals):
-                line.set_label(r"$x^*=%.3g$"%val)
+                line.set_label(r"$x/\delta=%.3g$"%val)
 
         ncol = cplt.get_legend_ncols(len(ax[0].get_lines()))
         ax[0].clegend(vertical=False,ncol=ncol)
@@ -534,7 +534,7 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
         for a in ax:
             lines = a.get_lines()[-len(axis_vals):]
             for line,val in zip(lines,axis_vals):
-                line.set_label(r"$x^*=%.3g$"%val)
+                line.set_label(r"$x/\delta=%.3g$"%val)
 
         ncol = cplt.get_legend_ncols(len(ax[0].get_lines()))
         ax[0].clegend(vertical=False,ncol=ncol)
@@ -544,19 +544,19 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
     def autocorr_contour_y(self,comp,axis_vals,*args,**kwargs):
         fig, ax = super().autocorr_contour_y(comp,axis_vals,*args,**kwargs)
         for a, val in zip(ax,axis_vals):
-            a.axes.set_title(r"$x=%.3g$"%val,loc='right')
+            a.axes.set_title(r"$x/\delta=%.3g$"%val,loc='right')
         return fig, ax
 
     def autocorr_contour_x(self,comp,*args,**kwargs):
         fig, ax =super().autocorr_contour_x(comp,*args,**kwargs)
         for a in ax:
-            a.axes.set_xlabel(r"$x^*$")
+            a.axes.set_xlabel(r"$x/\delta$")
         return fig, ax
 
     def spectrum_contour(self, comp,*args,**kwargs):
         fig, ax =  super().spectrum_contour(comp,*args,**kwargs)
         for a in ax:
-            a.axes.set_xlabel(r"$x^*$")
+            a.axes.set_xlabel(r"$x/\delta$")
         return fig, ax
 
 class CHAPSim_autocov_tg(CHAPSim_autocov_base):
@@ -566,7 +566,7 @@ class CHAPSim_autocov_tg(CHAPSim_autocov_base):
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
 
-        if cp.Params['TEST']:
+        if cp.rcParams['TEST']:
             times.sort(); times= times[-3:]
             
         self._meta_data = self._module.CHAPSim_meta(path_to_folder)
