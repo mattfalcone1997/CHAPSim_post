@@ -61,9 +61,9 @@ if Has_pyvista:
 
         def _check_coords(self,scalar_array,*coords,use_cells=True):
             if use_cells:
-                shape = (x.size-1 for x in coords)
+                shape = tuple(x.size-1 for x in coords)
             else:
-                shape = (x.size for x in coords)
+                shape = tuple(x.size for x in coords)
             print(shape,len(coords))
             if shape != scalar_array.shape:
                 if not all(coord.ndim ==1 for coord in coords):
