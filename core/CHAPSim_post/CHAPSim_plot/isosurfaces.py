@@ -59,9 +59,11 @@ if Has_pyvista:
 
             return grid
 
-        def _check_coords(self,scalar_array,*coords):
-            
-            shape = (x.size-1 for x in coords)
+        def _check_coords(self,scalar_array,*coords,use_cells=True):
+            if use_cells:
+                shape = (x.size-1 for x in coords)
+            else:
+                shape = (x.size for x in coords)
 
             if shape != scalar_array.shape:
                 if not all(coord.ndim ==1 for coord in coords):
@@ -76,12 +78,12 @@ if Has_pyvista:
 
         def plot_surface(self,x,y,V,label=None,**plot_kw):
             
-            X,Y = self._check_coords(V,x,y)
+            X,Y = self._check_coords(V,x,y,use_cells=False)
             grid = pyvista.StructuredGrid(X,Y)
             
             grid = self._check_grids(grid)
 
-            grid.cell_arrays[label] = V.flatten()
+            grid.point_arrays[label] = V.flatten()
             # pgrid = grid.cell_data_to_point_data()
 
             surf = grid.warp_by_scalar(scalars=label)
