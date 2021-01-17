@@ -8,7 +8,6 @@ import warnings
 Has_pyvista = True
 try:
     import pyvista
-    from pyvistaqt import BackgroundPlotter
     import vtk.util.numpy_support as nps
 except ImportError:
     msg = "pyvista is not available, 3D plots cannot be created"
@@ -22,7 +21,7 @@ if Has_pyvista:
     pyvista.set_plot_theme('report')
     pyvista.rcParams['font']['family'] = 'times'
 
-    class vtkFigure(BackgroundPlotter):
+    class vtkFigure(pyvista.Plotter):
 
         def __init__(self,nrow=1,ncol=1,**kwargs):
             if 'notebook' not in kwargs.keys():
