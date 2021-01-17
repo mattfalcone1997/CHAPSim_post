@@ -83,8 +83,8 @@ if Has_pyvista:
         def plot_surface(self,x,y,V,label=None,**plot_kw):
             
             X,Y,Z = self._check_coords(V,x,y,use_cells=False)
-            print(X,Y)
-            grid = pyvista.StructuredGrid(X,Y)
+            print(X,Y,Z)
+            grid = pyvista.StructuredGrid(X,Y,Z)
             print(grid.points)
             grid = self._check_grids(grid)
             print(grid.points)
