@@ -45,16 +45,15 @@ if Has_pyvista:
                     yield self[i,j]
             
         def _check_grids(self,grid):
-            # existing_point_arr = [arr for arr in self._grids]
+            existing_point_arr = [arr for arr in self._grids]
 
-            # if any([np.array_equal(grid.points,arr.points) for arr in existing_point_arr]):
-            #     for i, arr in enumerate(existing_point_arr):
-            #         if np.array_equal(grid.points,arr.points):
-            #             grid = arr; break
-            # else:
-            #     self._grids.append(grid)
+            if any([np.array_equal(grid.points,arr.points) for arr in existing_point_arr]):
+                for i, arr in enumerate(existing_point_arr):
+                    if np.array_equal(grid.points,arr.points):
+                        grid = arr; break
+            else:
+                self._grids.append(grid)
 
-            self._grids.append(grid)
 
             return grid
 
@@ -79,22 +78,22 @@ if Has_pyvista:
             return np.meshgrid(*coords) 
 
 
-        def plot_surface(self,x,y,V,label=None,**plot_kw):
+        def plot_surface(self,x,y,V,label=None,**mesh_kw):
             
             X,Y,Z = self._check_coords(V,x,y,use_cells=False)
             print(X,Y,Z)
             grid = pyvista.StructuredGrid(X,Y,Z)
-            print(grid.points)
+            print(grid.points.shape)
             grid = self._check_grids(grid)
-            print(grid.points)
+            print(grid.points.shape)
             grid.point_arrays[label] = V.flatten()
             # pgrid = grid.cell_data_to_point_data()
 
             surf = grid.warp_by_scalar(scalars=label)
             
-            plot_kw = update_mesh_kw(plot_kw,interpolate_before_map=True)
+            mesh_kw = update_mesh_kw(mesh_kw,interpolate_before_map=True)
+            self.add_mesh(surf,**mesh_kw)
 
-            surf.plot(**plot_kw)
 
 
         def plot_isosurface(self,x,y,z,V,isovalue,label=None,**mesh_kw):
