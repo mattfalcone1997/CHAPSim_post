@@ -27,7 +27,7 @@ if Has_pyvista:
             if 'notebook' not in kwargs.keys():
                 kwargs['notebook'] = False
             
-            self.shape = (ncol,nrow)
+            self.shape = (nrow,ncol)
             
             super().__init__(shape=self.shape, **kwargs)
             self._grids = []
