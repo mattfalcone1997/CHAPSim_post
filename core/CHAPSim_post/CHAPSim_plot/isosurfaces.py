@@ -73,12 +73,16 @@ if Has_pyvista:
                             " than the corresponding scalar array shape")
                 raise ValueError(msg)   
 
+            if len(coords) ==2:
+                z = np.array([0.])
+                coords = (*coords,z)
+
             return np.meshgrid(*coords) 
 
 
         def plot_surface(self,x,y,V,label=None,**plot_kw):
             
-            X,Y = self._check_coords(V,x,y,use_cells=False)
+            X,Y,Z = self._check_coords(V,x,y,use_cells=False)
             print(X,Y)
             grid = pyvista.StructuredGrid(X,Y)
             print(grid.points)
