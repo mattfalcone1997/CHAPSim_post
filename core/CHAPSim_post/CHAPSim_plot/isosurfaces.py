@@ -53,7 +53,7 @@ if Has_pyvista:
                     if np.array_equal(grid.points,arr.points):
                         grid = arr; break
             else:
-                self._grids.append(grid)#
+                self._grids.append(grid)
 
             return grid
 
@@ -80,7 +80,7 @@ if Has_pyvista:
             grid = pyvista.StructuredGrid(X,Y)
             
             grid = self._check_grids(grid)
-
+            print(grid.points)
             grid.point_arrays[label] = V.flatten()
             # pgrid = grid.cell_data_to_point_data()
 
