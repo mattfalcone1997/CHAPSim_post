@@ -64,7 +64,7 @@ if Has_pyvista:
                 shape = tuple(x.size-1 for x in coords)
             else:
                 shape = tuple(x.size for x in coords)
-            print(shape,len(coords))
+            print(coords,scalar_array.shape)
             if shape != scalar_array.shape:
                 if not all(coord.ndim ==1 for coord in coords):
                     msg = "Each coordinate array must have dimension one"
