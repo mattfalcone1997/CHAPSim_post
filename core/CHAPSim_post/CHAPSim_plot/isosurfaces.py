@@ -82,9 +82,9 @@ if Has_pyvista:
             grid = self._check_grids(grid)
 
             grid.cell_arrays[label] = V.flatten()
-            pgrid = self.grid.cell_data_to_point_data()
+            # pgrid = grid.cell_data_to_point_data()
 
-            surf = pgrid.warp_by_scalar(scalars=label)
+            surf = grid.warp_by_scalar(scalars=label)
             
             plot_kw = update_mesh_kw(plot_kw,interpolate_before_map=True)
 
@@ -93,7 +93,7 @@ if Has_pyvista:
 
         def plot_isosurface(self,x,y,z,V,isovalue,label=None,**mesh_kw):
             
-            X,Y = self._check_coords(V,x,y,z)
+            X,Y,Z = self._check_coords(V,x,y,z)
 
             grid = pyvista.StructuredGrid(X,Y,Z)
             
@@ -104,10 +104,10 @@ if Has_pyvista:
                 label = 'iso_%d'% self._no_iso_plots
             
             grid.cell_arrays[label] = V.flatten()
-            pgrid = grid.cell_data_to_point_data()
+            # pgrid = grid.cell_data_to_point_data()
 
 
-            contour = pgrid.contour(isosurfaces=1,scalars=label,
+            contour = grid.contour(isosurfaces=1,scalars=label,
                                     preference='point',rng=(isovalue,isovalue))
 
             mesh_kw = update_mesh_kw(mesh_kw,interpolate_before_map=True)
