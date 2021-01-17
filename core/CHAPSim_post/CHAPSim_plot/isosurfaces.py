@@ -35,6 +35,23 @@ if Has_pyvista:
             self.show_bounds()
 
         def __getitem__(self,key):
+
+            if isinstance(key,int):
+                if self.shape[1] == 1 and self.shape[0] > 1:
+                    key = (self,self.shape[0],1)
+                else:
+                    msg = "integers can beprovided to this method only if there is a single column"
+                    raise IndexError(msg)
+            elif isinstance(key,tuple):
+                check_index = all(ind < size for ind, size in zip(key,self.shape))
+                if len(key) >2:
+                    msg = "Less than two values must be provided to this indexing function"
+                    raise IndexError(msg)
+                
+                if not check_index:
+                    msg = f"The indices provided {key} must be less than the number of subplots {self.shape}"
+                    raise IndexError(msg)
+
             self.subplot(*key)
             return self
 
