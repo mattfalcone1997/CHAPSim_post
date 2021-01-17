@@ -78,7 +78,7 @@ if Has_pyvista:
             
             X,Y = self._check_coords(V,x,y,use_cells=False)
             grid = pyvista.StructuredGrid(X,Y)
-            
+            print(grid.points)
             grid = self._check_grids(grid)
             print(grid.points)
             grid.point_arrays[label] = V.flatten()
