@@ -29,7 +29,7 @@ if Has_pyvista:
             
             self.shape = (nrow,ncol)
             
-            super().__init__(self.shape, **kwargs)
+            super().__init__(shape=self.shape, **kwargs)
             self._grids = []
             self._no_iso_plots = 0 
             self.show_bounds()
