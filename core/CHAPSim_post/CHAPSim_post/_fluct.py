@@ -185,9 +185,9 @@ class CHAPSim_fluct_base(ABC):
         axis_index = indexing.y_coord_index_norm(self.avg_data,y_vals,0,y_mode)
         axis_index = np.diag(axis_index)
 
-        Coord_ND_DF = self.meta_data.Coord_ND_DF
+        CoordDF = self.meta_data.CoordDF
 
-        x_coords, z_coords = (Coord_ND_DF['x'],Coord_ND_DF['z'])
+        x_coords, z_coords = (CoordDF['x'],CoordDF['z'])
 
         fluct = self.fluctDF[PhyTime,comp][:,axis_index,:]
         

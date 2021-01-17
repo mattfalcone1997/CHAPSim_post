@@ -34,6 +34,13 @@ if Has_pyvista:
             self._no_iso_plots = 0 
             self.show_bounds()
 
+            self[0,0].show_bounds(show_xaxis=False,
+                                    show_yaxis=False,
+                                    show_zaxis=False,
+                                    show_xlabels=False,
+                                    show_ylabels=False,
+                                    show_zlabels=False)
+
         def __getitem__(self,key):
 
             if isinstance(key,int):
