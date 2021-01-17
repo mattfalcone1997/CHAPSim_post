@@ -46,14 +46,16 @@ if Has_pyvista:
                     yield self[i,j]
             
         def _check_grids(self,grid):
-            existing_point_arr = [arr for arr in self._grids]
+            # existing_point_arr = [arr for arr in self._grids]
 
-            if any([np.array_equal(grid.points,arr.points) for arr in existing_point_arr]):
-                for i, arr in enumerate(existing_point_arr):
-                    if np.array_equal(grid.points,arr.points):
-                        grid = arr; break
-            else:
-                self._grids.append(grid)
+            # if any([np.array_equal(grid.points,arr.points) for arr in existing_point_arr]):
+            #     for i, arr in enumerate(existing_point_arr):
+            #         if np.array_equal(grid.points,arr.points):
+            #             grid = arr; break
+            # else:
+            #     self._grids.append(grid)
+
+            self._grids.append(grid)
 
             return grid
 
