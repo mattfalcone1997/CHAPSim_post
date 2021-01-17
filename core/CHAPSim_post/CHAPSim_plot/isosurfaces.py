@@ -48,7 +48,7 @@ if Has_pyvista:
         def _check_grids(self,grid):
             point_arr = nps.vtk_to_numpy(grid.points)
 
-            existing_point_arr = [nps.vtk_to_numpy(arr.points) for arr in self._grids]
+            existing_point_arr = [arr.points for arr in self._grids]
 
             if any([np.array_equal(point_arr,arr) for arr in existing_point_arr]):
                 for i, arr in enumerate(existing_point_arr):
@@ -64,7 +64,7 @@ if Has_pyvista:
                 shape = tuple(x.size-1 for x in coords)
             else:
                 shape = tuple(x.size for x in coords)
-            print(coords,scalar_array.shape)
+
             if shape != scalar_array.shape:
                 if not all(coord.ndim ==1 for coord in coords):
                     msg = "Each coordinate array must have dimension one"
