@@ -27,7 +27,7 @@ if Has_pyvista:
             if 'notebook' not in kwargs.keys():
                 kwargs['notebook'] = False
             
-            self.shape = (nrow,ncol)
+            self.shape = (ncol,nrow)
             
             super().__init__(shape=self.shape, **kwargs)
             self._grids = []
@@ -38,7 +38,7 @@ if Has_pyvista:
 
             if isinstance(key,int):
                 if self.shape[1] == 1 and self.shape[0] > 1:
-                    key = (self.shape[0],1)
+                    key = (self.shape[0],0)
                 else:
                     msg = "integers can be provided to this method only if there is a single column"
                     raise IndexError(msg)
