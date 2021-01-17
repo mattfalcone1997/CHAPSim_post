@@ -35,7 +35,7 @@ if Has_pyvista:
             self.show_bounds()
 
         def __getitem__(self,key):
-            self.subplot(key)
+            self.subplot(*key)
             return self
 
         
@@ -81,11 +81,11 @@ if Has_pyvista:
         def plot_surface(self,x,y,V,label=None,**mesh_kw):
             
             X,Y,Z = self._check_coords(V,x,y,use_cells=False)
-            print(X,Y,Z)
+
             grid = pyvista.StructuredGrid(X,Y,Z)
-            print(grid.points.shape)
+
             grid = self._check_grids(grid)
-            print(grid.points.shape)
+
             grid.point_arrays[label] = V.flatten()
             # pgrid = grid.cell_data_to_point_data()
 
