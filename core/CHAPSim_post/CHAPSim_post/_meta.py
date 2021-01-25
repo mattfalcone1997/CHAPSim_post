@@ -32,7 +32,6 @@ class CHAPSim_meta():
         self.metaDF = self._readdata_extract(path_to_folder,abs_path)
         ioflg = self.metaDF['NCL1_tg_io'][1] > 2
         self.CoordDF, self.NCL = self._coord_extract(path_to_folder,abs_path,tgpost,ioflg)
-        self.Coord_ND_DF = self.Coord_ND_extract(path_to_folder,self.NCL,abs_path,tgpost,ioflg)
         
         self.path_to_folder = path_to_folder
         self._abs_path = abs_path

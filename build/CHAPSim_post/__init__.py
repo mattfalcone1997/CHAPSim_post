@@ -14,7 +14,8 @@ class Params:
                         "dtype": np.dtype('f8'),
                         "dissipation_correction": False,
                         "gradient_method":"numpy",
-                        "gradient_order": 2}
+                        "gradient_order": 2,
+                        "UsePyVista" : True}
 
     def __getitem__(self,key):
         if key not in self.__params.keys():

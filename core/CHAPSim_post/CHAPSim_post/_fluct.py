@@ -123,6 +123,7 @@ class CHAPSim_fluct_base(ABC):
             return fig, ax[0]
         else:
             return fig, ax
+            
     def plot_streaks(self,comp,vals_list,x_split_list=None,PhyTime=None,ylim='',Y_plus=True,*args,colors='',fig=None,ax=None,**kwargs):
 
         PhyTime = self.check_PhyTime(PhyTime)
@@ -176,7 +177,7 @@ class CHAPSim_fluct_base(ABC):
                 # patch.set_color(colors[i%len(colors)])
 
         return fig, ax
-    def plot_fluct3D_xz(self,comp,y_vals,y_mode='half-channel',PhyTime=None,x_split_list=None,fig=None,**kwargs):
+    def plot_fluct3D_xz(self,comp,y_vals,y_mode='half-channel',PhyTime=None,x_split_list=None,fig=None,ax=None,surf_kw=None,**kwargs):
 
         PhyTime = self.check_PhyTime(PhyTime)    
 
@@ -189,39 +190,49 @@ class CHAPSim_fluct_base(ABC):
 
         x_coords, z_coords = (CoordDF['x'],CoordDF['z'])
 
+        Z, X = np.meshgrid(z_coords,x_coords)
+
         fluct = self.fluctDF[PhyTime,comp][:,axis_index,:]
-        
+                              
+        surf_kw = cplt.update_mesh_kw(surf_kw,rcount=100,ccount=150)
+
+        single_input=False
+        if not isinstance(ax,np.ndarray):
+            single_input=True
+
         if x_split_list is None:
-            x_split_list=[np.min(x_coords),np.max(x_coords)]
-            
-        x_coords_split=CT.coord_index_calc(self.CoordDF,'x',x_split_list)
-          
-        kwargs = cplt.update_subplots_kw(kwargs,subplot_kw={'projection':'3d'})
-        
-        
+            x_split_list = [np.amin(x_coords),np.amax(x_coords)]
 
-        if fig is None:
-            fig = cplt.Figure3D(shape=(len(x_split_list)-1,len(y_vals)))
+        x_index_list = indexing.coord_index_calc(CoordDF,'x',x_split_list)
 
+        kwargs = cplt.update_subplots_kw(kwargs,subplot_kw={'projection':'3d'},antialiased=True)
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(x_index_list)-1,len(y_vals),fig=fig,ax=ax,**kwargs)
+        ax = ax.flatten()
+        
         max_val = -np.float('inf'); min_val = np.float('inf')
-        for j,_ in enumerate(x_split_list[:-1]):
+        for j,_ in enumerate(x_index_list[:-1]):
             for i,_ in enumerate(y_vals):
                 max_val = np.amax(fluct[:,i,:]); min_val=np.amin(fluct[:,i,:])
                 
-                fig[j,i].plot_surface(z_coords,x_coords, fluct[:,i,:])
+                z_vals = Z[x_index_list[j]:x_index_list[j+1]]
+                x_vals = X[x_index_list[j]:x_index_list[j+1]]
+                surf_vals = fluct[:,i,x_index_list[j]:x_index_list[j+1]].T
 
-                fig[j,i].set_ylabel(r'$x/\delta$')
-                fig[j,i].set_xlabel(r'$z/\delta$')
-                fig[j,i].set_zlabel(r'$%s^\prime$'%comp)
-                
-                fig[j,i].set_ylim(x_split_list[j],x_split_list[j+1])
+                ax[j*len(x_index_list[:-1])+i] = ax[j*len(x_index_list[:-1])+i].plot_surface( z_vals,x_vals,surf_vals,**surf_kw)
 
+                ax[j*len(x_index_list[:-1])+i].axes.set_ylabel(r'$x/\delta$')
+                ax[j*len(x_index_list[:-1])+i].axes.set_xlabel(r'$z/\delta$')
+                ax[j*len(x_index_list[:-1])+i].axes.set_zlabel(r'$%s^\prime$'%comp)
+                ax[j*len(x_index_list[:-1])+i].axes.invert_xaxis()
+                # ax[j*len(x_split_list[:-1])+i].axes.set_ylim([x_split_list[j],x_split_list[j+1]])
 
-        for f in fig:
-            f.set_clim([min_val,max_val])
-            f.set_zlim([min_val,max_val])
-
-        return fig
+        for a in ax.flatten():
+            a.set_clim([min_val,max_val])
+            a.axes.set_zlim([min_val,max_val])
+        if single_input:
+            return fig, ax[0]
+        else:
+            return fig, ax
 
     def plot_vector(self,slice,ax_val,PhyTime=None,y_mode='half_channel',spacing=(1,1),scaling=1,x_split_list=None,fig=None,ax=None,quiver_kw=None,**kwargs):
         

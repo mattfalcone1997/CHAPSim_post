@@ -7,6 +7,7 @@ for simpler high-level use in this application
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from cycler import cycler
 
 import itertools
@@ -15,9 +16,6 @@ from shutil import which
 
 import CHAPSim_post as cp
 from CHAPSim_post.utils import misc_utils
-
-
-
 
 
 
@@ -80,6 +78,7 @@ mpl.rcParams['legend.fontsize'] = 'small'
 mpl.rcParams['axes.grid'] = True
 mpl.rcParams['ytick.direction'] = "in"
 mpl.rcParams['xtick.direction'] = "in"
+mpl.rcParams['image.cmap'] = "jet"
 mpl.rcParams['xtick.top'] = True
 mpl.rcParams['ytick.right'] = True
 
@@ -89,12 +88,15 @@ class CHAPSimFigure(mpl.figure.Figure):
     def clegend(self,*args, **kwargs):
         return super().legend(*args, **kwargs)
     def add_subplot(self,*args, **kwargs):
-        kwargs['projection']='AxesCHAPSim'
+        if 'projection' not in kwargs.keys():
+            kwargs['projection']='AxesCHAPSim'
+        elif kwargs['projection'] == '3d':
+            kwargs['projection'] = 'Axes3DCHAPSim'
+
         return super().add_subplot(*args,**kwargs)
 
     def c_add_subplot(self,*args, **kwargs):
-        kwargs['projection']='AxesCHAPSim'
-        return super().add_subplot(*args,**kwargs)
+        return self.add_subplot(*args,**kwargs)
     def get_legend(self):
         if len(self.legends) == 1:
             return self.legends[0]
@@ -412,10 +414,34 @@ class AxesCHAPSim(mpl.axes.Axes):
         string = "".join(list_string)
         return string
 
-def flip_leg_col(items, ncol):
-    return itertools.chain(*[items[i::ncol] for i in range(ncol)])
+class Axes3DCHAPSim(Axes3D):
+    name='Axes3DCHAPSim'
+    def shift_xaxis(self,val):
+        for collection in self.collections:
+            collection._vec[0] +=val
+
+        lims = [lim+val for lim in self.get_xlim()]
+        self.set_xlim(lims)
+
+    def shift_yaxis(self,val):
+        for collection in self.collections:
+            collection._vec[1] +=val
+
+        lims = [lim+val for lim in self.get_ylim()]
+        self.set_ylim(lims)
+
+    def shift_zaxis(self,val):
+        for collection in self.collections:
+            collection._vec[2] +=val
+
+        lims = [lim+val for lim in self.get_zlim()]
+        self.set_zlim(lims)
 
 mpl.projections.register_projection(AxesCHAPSim)
+mpl.projections.register_projection(Axes3DCHAPSim)
+
+def flip_leg_col(items, ncol):
+    return itertools.chain(*[items[i::ncol] for i in range(ncol)])
 
 def figure(*args,**kwargs):
     if 'FigureClass' in kwargs.keys():
@@ -427,8 +453,7 @@ def subplots(nrows=1, ncols=1, sharex=False, sharey=False, squeeze=True, subplot
     fig = plt.figure(FigureClass=CHAPSimFigure,*args,**fig_kw)
     if subplot_kw is None:
         subplot_kw = {'projection':'AxesCHAPSim'}
-    else:
-        subplot_kw['projection'] = 'AxesCHAPSim'
+
     ax=fig.subplots(nrows, ncols, sharex=sharex, sharey=sharey, squeeze=squeeze, 
                     subplot_kw=subplot_kw, gridspec_kw=gridspec_kw)
     return fig, ax
