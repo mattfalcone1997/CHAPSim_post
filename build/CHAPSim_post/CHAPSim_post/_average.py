@@ -48,17 +48,31 @@ class CHAPSim_AVG_base(ABC):
         return copy.deepcopy(self)
 
     @classmethod
+    @docstring.copy_fromattr("_hdf_extract")
     def from_hdf(cls,*args,**kwargs):
         return cls(fromfile=True,*args,**kwargs)
         
     def save_hdf(self,file_name,write_mode,key=None):
+        """
+        Saving the CHAPSim_AVG classes to a file in hdf5 file format
+
+        Parameters
+        ----------
+        file_name : str, path-like
+            File path of the resulting hdf5 file
+        write_mode : str
+            Mode of file opening the file must be able to modify the file. Passed to the h5py.File method
+        key : str (path-like), optional
+            Location in the hdf file, by default it is the name of the class
+        """
         if key is None:
-            key = 'CHAPSim_AVG'
+            key = self.__class__.__name__
 
         hdf_file = h5py.File(file_name,write_mode)
         group = hdf_file.create_group(key)
         group.create_dataset("NCL",data=self.NCL)
         hdf_file.close()
+
         self._meta_data.save_hdf(file_name,'a',key=key+'/meta_data')
         self.flow_AVGDF.to_hdf(file_name,key=key+'/flow_AVGDF',mode='a')#,format='fixed',data_columns=True)
         self.PU_vectorDF.to_hdf(file_name,key=key+'/PU_vectorDF',mode='a')#,format='fixed',data_columns=True)
@@ -69,8 +83,20 @@ class CHAPSim_AVG_base(ABC):
         self.DUDX2_tensorDF.to_hdf(file_name,key=key+'/DUDX2_tensorDF',mode='a')#,format='fixed',data_columns=True)
 
     def _hdf_extract(self,file_name,shape=None,key=None):
+        """
+        Creates class by extracting data from the hdf5 file
+
+        Parameters
+        ----------
+        file_name : str, path-like
+            File path of the resulting hdf5 file
+        write_mode : str
+            Mode of file opening the file must be able to modify the file. Passed to the h5py.File method
+        key : str (path-like), optional
+            Location in the hdf file, by default it is the name of the class
+        """
         if key is None:
-            key = 'CHAPSim_AVG'
+            key = self.__class__.__name__
 
         self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
         self.CoordDF = self._meta_data.CoordDF
@@ -193,8 +219,9 @@ class CHAPSim_AVG_base(ABC):
         shape_factor = disp_thickness/mom_thickness
         
         return disp_thickness, mom_thickness, shape_factor
-
+    
     def _plot_shape_factor(self,*arg,fig=None,ax=None,line_kw=None,**kwargs):
+        
         _, _, shape_factor = self._int_thickness_calc(*arg)
         
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
@@ -209,6 +236,8 @@ class CHAPSim_AVG_base(ABC):
         return fig, ax
 
     def plot_mom_thickness(self,*arg,fig=None,ax=None,line_kw=None,**kwargs):
+
+
         _, theta, _ = self._int_thickness_calc(*arg)
 
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
@@ -223,8 +252,9 @@ class CHAPSim_AVG_base(ABC):
 
         return fig, ax
 
+    @docstring.sub
     def plot_disp_thickness(self,*arg,fig=None,ax=None,line_kw=None,**kwargs):
-        
+
         delta, _, _ = self._int_thickness_calc(*arg)
 
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
@@ -240,25 +270,23 @@ class CHAPSim_AVG_base(ABC):
 
     def _avg_line_plot(self,x_vals, PhyTime,comp,fig=None,ax=None,line_kw=None,**kwargs):
 
+        x_vals = misc_utils.check_list_vals(x_vals)
+
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         line_kw = cplt.update_line_kw(line_kw)
+        y_coords = self.CoordDF['y']
         for x in x_vals:
             index = self._return_index(x)
             velo_mean=self.flow_AVGDF[PhyTime,comp][:,index]
-            ax.cplot(velo_mean,**line_kw)
+            ax.cplot(y_coords,velo_mean,**line_kw)
 
         return fig, ax        
 
-    def avg_line_plot(self,x_vals, *args,**kwargs):
+    def plot_mean_flow(self,x_vals,comp,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
 
-        fig, ax = self._avg_line_plot(x_vals,*args,**kwargs)
-
-        lines = ax.get_lines()[-len(x_vals):]
-        y_coords = self.CoordDF['y']
-        for line in lines:
-            line.set_xdata(y_coords)
+        fig, ax = self._avg_line_plot(x_vals, PhyTime,comp,fig=fig,ax=ax,line_kw=line_kw,**kwargs)
 
         ax.set_xlabel(r"$y^*$")
         ax.set_ylabel(r"$\bar{u}$")
@@ -267,8 +295,8 @@ class CHAPSim_AVG_base(ABC):
 
         return fig, ax
     
-    def plot_near_wall(self,x_vals,PhyTime,fig=None,ax=None,line_kw=None,**kwargs):
-        
+    def plot_near_wall(self,x_vals,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
+
         fig, ax = self._avg_line_plot(x_vals,PhyTime,'u',fig=fig,ax=ax,line_kw=line_kw,**kwargs)
         
         lines = ax.get_lines()[-len(x_vals):]
@@ -296,19 +324,14 @@ class CHAPSim_AVG_base(ABC):
 
         return fig, ax
 
-    def plot_Reynolds(self,comp1,comp2,x_val,PhyTime,norm=None,Y_plus=True,fig=None,ax=None,line_kw=None,**kwargs):
+    def plot_Reynolds(self,comp_uu,x_val,PhyTime,norm=None,Y_plus=True,fig=None,ax=None,line_kw=None,**kwargs):
 
-        comp_uu =comp1 + comp2
-        if comp1 == 'w' and (comp2=='v' or comp2 =='u'):
+        if comp_uu[0] == 'w' and (comp_uu[1]=='v' or comp_uu[1] =='u'):
             comp_uu = comp_uu[::-1]
-        elif comp1 == 'v' and comp2 =='u':
+        elif comp_uu[0] == 'v' and comp_uu[1] =='u':
             comp_uu = comp_uu[::-1]     
         
-        if isinstance(x_val, (float,int)):
-            x_val =[x_val]
-        elif not isinstance(x_val,(list,tuple)):
-            msg = f"The locations provided must be of type float, int, list or tuple not {type(x_val)}"
-            raise TypeError(msg)
+        x_val = misc_utils.check_list_vals(x_val)
 
         x_loc = [self._return_index(x) for x in x_val]
         uu = self.UU_tensorDF[PhyTime,comp_uu][:int(self.NCL[1]/2)].copy()
@@ -369,13 +392,12 @@ class CHAPSim_AVG_base(ABC):
         
         return fig, ax
 
-    def plot_Reynolds_x(self,comp1,comp2,y_vals_list,Y_plus=True,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
+    def plot_Reynolds_x(self,comp_uu,y_vals_list,Y_plus=True,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
 
-        comp_uu =comp1 + comp2
-        if comp1 == 'w' and (comp2=='v' or comp2 =='u'):
+        if comp_uu[0] == 'w' and (comp_uu[1]=='v' or comp_uu[1] =='u'):
             comp_uu = comp_uu[::-1]
-        elif comp1 == 'v' and comp2 =='u':
-            comp_uu = comp_uu[::-1]  
+        elif comp_uu[0] == 'v' and comp_uu[1] =='u':
+            comp_uu = comp_uu[::-1]   
         
         if y_vals_list != 'max':
             if Y_plus:
@@ -424,7 +446,7 @@ class CHAPSim_AVG_base(ABC):
         return bulk_velo
 
     def plot_bulk_velocity(self,PhyTime,fig=None,ax=None,line_kw=None,**kwargs):
-    
+
         bulk_velo = self._bulk_velo_calc(PhyTime)
 
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
@@ -451,7 +473,7 @@ class CHAPSim_AVG_base(ABC):
         return tau_star
 
     def plot_skin_friction(self,PhyTime,fig=None,ax=None,line_kw=None,**kwargs):
-        
+
         rho_star = 1.0
         REN = self._metaDF['REN']
         tau_star = self._tau_calc(PhyTime)
@@ -472,11 +494,7 @@ class CHAPSim_AVG_base(ABC):
 
     def plot_eddy_visc(self,x_val,PhyTime,Y_plus=True,Y_plus_max=100,fig=None,ax=None,line_kw=None,**kwargs):
         
-        if isinstance(x_val,(int,float)):
-            x_val = [x_val]
-        elif not isinstance(x_val,(list,tuple)):
-            msg = f"x_val must be a list or real number not {type(x_val)}"
-            raise TypeError(msg)
+        x_val = misc_utils.check_list_vals(x_val)
         
         x_loc = [self._return_index(x) for x in x_val]
     
@@ -521,25 +539,20 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
     tgpost = False
     def _extract_avg(self,time,meta_data=None,path_to_folder=".",time0=None,abs_path=True):
         """
-        Extracts and processes the datafrom the averaged results files 
+        Instantiates an instance of the CHPSim_AVG_io class from the result data
 
         Parameters
         ----------
-        time : int or float
-            Physical time to be extracted
+        time : float or list or floats
+            Physcial time to be extracted
         meta_data : CHAPSim_meta, optional
-            Pre-existing meta_data instance, by default None
+            metadata class provided to the class, by default None
         path_to_folder : str, optional
-            path like string, by default "."
-        time0 : int or float, optional
-            initila time, by default None
+            path to the results folder, by default "."
+        time0 : float, optional
+            A previous time to average between, by default None
         abs_path : bool, optional
-            [description], by default True
-
-        Raises
-        ------
-        TypeError
-            [description]
+            Whether the path provided is absolute or relative, by default True
         """
 
         if meta_data is None:
@@ -549,22 +562,20 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         self.CoordDF = meta_data.CoordDF
         self._metaDF = meta_data.metaDF
         self.NCL = meta_data.NCL
-       
-        if isinstance(time,float):
-            DF_list = self._AVG_extract(time,time0,path_to_folder,abs_path)
-        elif hasattr(time,'__iter__'):
-            for PhyTime in time:
-                if 'DF_list' not in locals():
-                    DF_list = self._AVG_extract(PhyTime,time0,path_to_folder,abs_path)
-                else:
-                    DF_temp=[]
-                    local_DF_list = self._AVG_extract(PhyTime,time0,path_to_folder,abs_path)
-                    for i, local_DF in enumerate(DF_list):
-                        DF_list[i].concat(local_DF_list[i])
+
+        time = misc_utils.check_list_vals(time)
+
+
+        for PhyTime in time:
+            if 'DF_list' not in locals():
+                DF_list = self._AVG_extract(PhyTime,time0,path_to_folder,abs_path)
+            else:
+                DF_temp=[]
+                local_DF_list = self._AVG_extract(PhyTime,time0,path_to_folder,abs_path)
+                for i, local_DF in enumerate(DF_list):
+                    DF_list[i].concat(local_DF_list[i])
                     
-        else:
-            raise TypeError("\033[1;32 `time' can only be a float or a list")
-        
+            
         DF_list=self._Reverse_decomp(*DF_list)
 
 
@@ -576,9 +587,8 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         self._times = list(set([x[0] for x in self.flow_AVGDF.index]))
         self.shape = (self.NCL[1],self.NCL[0])
     
+    @docstring.inherit
     def _hdf_extract(self,file_name,key=None):
-        if key is None:
-            key = 'CHAPSim_AVG_io'
         
         super()._hdf_extract(file_name,key=key)
         self.shape = (self.NCL[1],self.NCL[0])
@@ -682,23 +692,23 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         return AVG_info, NSTATIS, PhyTime, [NCL1,NCL2]
 
 
-    def save_hdf(self,file_name,write_mode,key=None):
-        """
-        Method to save this class to file in the HDF5 file format 
+    # def save_hdf(self,file_name,write_mode,key=None):
+    #     """
+    #     Method to save this class to file in the HDF5 file format 
 
-        Parameters
-        ----------
-        file_name : str
-            HDF5 file path 
-        write_mode : str
-            Either 'w' (write) or 'a' (append)
-        key : str, optional
-            Posix path like string for the root HDF file key, by default None
-        """
+    #     Parameters
+    #     ----------
+    #     file_name : str
+    #         HDF5 file path 
+    #     write_mode : str
+    #         Either 'w' (write) or 'a' (append)
+    #     key : str, optional
+    #         Posix path like string for the root HDF file key, by default None
+    #     """
         
-        if key is None:
-            key = 'CHAPSim_AVG_io'
-        super().save_hdf(file_name,write_mode,key)
+    #     if key is None:
+    #         key = 'CHAPSim_AVG_io'
+    #     super().save_hdf(file_name,write_mode,key)
 
     def _return_index(self,x_val):
         return CT.coord_index_calc(self.CoordDF,'x',x_val)
@@ -721,6 +731,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         float or int
             Correct or corrected physical time
         """
+
         warn_msg = f"PhyTime invalid ({PhyTime}), varaible being set to only PhyTime present in datastruct"
         err_msg = "PhyTime provided is not in the CHAPSim_AVG datastruct, recovery impossible"
         with warnings.catch_warnings(record=True) as w:
@@ -731,8 +742,9 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
                 warnings.warn(warn.message)
         return key[0]
 
+    @docstring.sub
     def int_thickness_calc(self, PhyTime=None):
-        f"""
+        """
         Calculates the integral thicknesses and shape factor 
 
         Parameters
@@ -742,18 +754,20 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         Returns
         -------
-        {np.ndarray.__name__}:
+        %(ndarray)s:
             Displacement thickness
-        {np.ndarray.__name__}:
+        %(ndarray)s:
             Momentum thickness
-        {np.ndarray.__name__}:
+        %(ndarray)s:
             Shape factor
         """
+
         PhyTime = self.check_PhyTime(PhyTime)
         return super()._int_thickness_calc(PhyTime)
 
+    @docstring.sub
     def wall_unit_calc(self,PhyTime=None):
-        f"""
+        """
         returns arrays for the friction velocity and viscous lengthscale
 
         Parameters
@@ -763,31 +777,34 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         Returns
         -------
-        {np.ndarray.__name__}:
+        %(ndarray)s:
             Friction velocity array
-        {np.ndarray.__name__}:
+        %(ndarray)s:
             Viscous lengthscale array
             
         """
         PhyTime = self.check_PhyTime(PhyTime)
         return self._wall_unit_calc(PhyTime)
 
+    @docstring.sub
     def plot_shape_factor(self, PhyTime=None,fig=None,ax=None,**kwargs):
-        f"""
+        """
         Plots the shape factor from the class against the streamwise coordinate
 
-        Args:
-            PhyTime ((int,float), optional): Physical time. Defaults to None.
-        fig : {cplt.CHAPSimFigure.__name__}, optional
+        Parameters
+        ----------
+        PhyTime : float, optional
+            Physical time, by default None
+        fig : %(fig)s, optional
             Pre-existing figure, by default None
-        ax : {cplt.AxesCHAPSim.__name__}, optional
+        ax : %(ax)s, optional
             Pre-existing axes, by default None
         line_kw : dict, optional
             keyword arguments to be passed to the plot method, by default None
 
         Returns
         -------
-        {cplt.CHAPSimFigure.__name__}, {cplt.AxesCHAPSim.__name__}
+        %(fig)s, %(ax)s
             output figure and axes objects
         """
         PhyTime = self.check_PhyTime(PhyTime)        
@@ -798,22 +815,25 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         ax.autoscale_view()
         return fig, ax
 
+    @docstring.sub
     def plot_mom_thickness(self, PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
-        f"""
+        """
         Plots the momentum thickness from the class against the streamwise coordinate
 
-        Args:
-            PhyTime ((int,float), optional): Physical time. Defaults to None.
-        fig : {cplt.CHAPSimFigure.__name__}, optional
+        Parameters
+        ----------
+        PhyTime : float, optional
+            Physical time, by default None
+        fig : %(fig)s, optional
             Pre-existing figure, by default None
-        ax : {cplt.AxesCHAPSim.__name__}, optional
+        ax : %(ax)s, optional
             Pre-existing axes, by default None
         line_kw : dict, optional
             keyword arguments to be passed to the plot method, by default None
 
         Returns
         -------
-        {cplt.CHAPSimFigure.__name__}, {cplt.AxesCHAPSim.__name__}
+        %(fig)s, %(ax)s
             output figure and axes objects
         """
 
@@ -825,27 +845,28 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         ax.autoscale_view()
         return fig, ax
 
+    @docstring.sub
     def plot_disp_thickness(self, PhyTime=None,fig=None,ax=None,**kwargs):
-        f"""
+        """
         Plots the displacement thickness from the class against the streamwise coordinate
 
         Parameters
         ----------
-        PhyTime : int or float, optional
+        PhyTime : float, optional
             Physical time, by default None
-        fig : {cplt.CHAPSimFigure.__name__}, optional
+        fig : %(fig)s, optional
             Pre-existing figure, by default None
-        ax : {cplt.AxesCHAPSim.__name__}, optional
+        ax : %(ax)s, optional
             Pre-existing axes, by default None
         line_kw : dict, optional
             keyword arguments to be passed to the plot method, by default None
 
         Returns
         -------
-        {cplt.CHAPSimFigure.__name__}, {cplt.AxesCHAPSim.__name__}
+        %(fig)s, %(ax)s
             output figure and axes objects
         """
-        
+
         PhyTime = self.check_PhyTime(PhyTime)        
         fig, ax = super().plot_disp_thickness(PhyTime,fig=fig,ax=ax,**kwargs)
 
@@ -854,17 +875,16 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         ax.autoscale_view()
         return fig, ax
 
-    def plot_Reynolds(self,comp1,comp2,x_vals,PhyTime=None,norm=None,Y_plus=True,fig=None,ax=None,line_kw=None,**kwargs):
-        f"""
+    @docstring.sub
+    def plot_Reynolds(self,comp,x_vals,PhyTime=None,norm=None,Y_plus=True,fig=None,ax=None,line_kw=None,**kwargs):
+        """
         Plots the wall-normal distribution of the Reynolds stresses
 
         Parameters
         ----------
-         comp1 : str
-            with comp2 forms the component of the Reynolds stress 
+        comp : str
+            Component of the Reynolds stress 
             tensor to be process
-        comp2 : str
-            see comp1
         x_vals : list or int/float
             streamwise locations to be plotted
         PhyTime : int or float, optional
@@ -875,21 +895,21 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
             None then default normalisation , by default None
         Y_plus : bool, optional
             Whether y coordinate is local wall normalised or not, by default True
-        fig : {cplt.CHAPSimFigure.__name__}, optional
+        fig : %(fig)s, optional
             Pre-existing figure, by default None
-        ax : {cplt.AxesCHAPSim.__name__}, optional
+        ax : %(ax)s, optional
             Pre-existing axes, by default None
         line_kw : dict, optional
             keyword arguments to be passed to the plot method, by default None
 
         Returns
         -------
-        {cplt.CHAPSimFigure.__name__}, {cplt.AxesCHAPSim.__name__}
+        %(fig)s, %(ax)s
             output figure and axes objects
-        """
-
+        """ 
+        
         PhyTime = self.check_PhyTime(PhyTime)
-        fig, ax = super().plot_Reynolds(comp1,comp2,x_vals,PhyTime,
+        fig, ax = super().plot_Reynolds(comp,x_vals,PhyTime,
                                         norm=norm,Y_plus=Y_plus,
                                         fig=fig,ax=ax,line_kw=line_kw,**kwargs)
 
@@ -903,18 +923,18 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         ax.autoscale_view()
         ax.get_gridspec().tight_layout(fig)
         return fig, ax        
-
-    def plot_Reynolds_x(self,comp1,comp2,y_vals_list,Y_plus=True,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
-        f"""
-        Plots a Reynolds stress component against the streamwise coordinate
+    
+    @docstring.sub
+    def plot_Reynolds_x(self,comp,y_vals_list,Y_plus=True,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
+        """
+        Plots a Reynolds stress component against the streamwise coordinate or time
 
         Parameters
         ----------
-        comp1 : str
-            with comp2 forms the component of the Reynolds stress 
+        comp : str
+            Component of the Reynolds stress 
             tensor to be process
-        comp2 : str
-            see comp1
+
         y_vals_list : list or "max"
             contains y coordinates to be processed or max if the wall
             normal maximum is desired
@@ -923,22 +943,22 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
             not relevant if y_vals_list is `max'. by default True
         PhyTime : (int or float), optional
             Physical time, by default None
-        fig : {cplt.CHAPSimFigure.__name__}, optional
+        fig : %(fig)s, optional
             Pre-existing figure, by default None
-        ax : {cplt.AxesCHAPSim.__name__}, optional
+        ax : %(ax)s, optional
             Pre-existing axes, by default None
         line_kw : dict, optional
             keyword arguments to be passed to the plot method, by default None
 
         Returns
         -------
-        {cplt.CHAPSimFigure.__name__}, {cplt.AxesCHAPSim.__name__}
+        %(fig)s, %(ax)s
             output figure and axes objects
         """
 
         
         PhyTime = self.check_PhyTime(PhyTime)        
-        fig, ax = super().plot_Reynolds_x(comp1,comp2,y_vals_list,Y_plus=Y_plus,
+        fig, ax = super().plot_Reynolds_x(comp,y_vals_list,Y_plus=Y_plus,
                                             PhyTime=PhyTime,fig=fig,ax=ax,line_kw=line_kw,**kwargs)
         
         ax.set_xlabel(r"$x/\delta$")
@@ -947,8 +967,9 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
+    @docstring.sub
     def bulk_velo_calc(self,PhyTime=None):
-        f"""
+        """
         Method to calculate the bulk velocity against the streamwise coordinate
 
         Parameters
@@ -958,23 +979,26 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         Returns
         -------
-        {np.ndarray.__name__}
+        %(ndarray)s
             array containing the bulk velocity
         """
+
         PhyTime = self.check_PhyTime(PhyTime)
         return self._bulk_velo_calc(PhyTime)
 
+    @docstring.sub
     def plot_bulk_velocity(self,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
-        f"""
-        Method to plot the bulk velocity variation in the streamwise direction
+        """
+        Method to plot the bulk velocity variation in the streamwise 
+        direction
 
         Parameters
         ----------
         PhyTime : (float,int), optional
             Physcial time, by default None
-        fig : {cplt.CHAPSimFigure.__name__}, optional
+        fig : %(fig)s, optional
             Pre-existing figure instance, by default None
-        ax : {cplt.AxesCHAPSim.__name__}, optional
+        ax : %(ax)s, optional
             Pre-existing axes instance, by default None
         line_kw : dict, optional
             keyword arguments to be passed to the plot function, by default None
@@ -983,9 +1007,10 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
             keyword arguments to be passed to the figure/subplot creation function
         Returns
         -------
-        {cplt.CHAPSimFigure.__name__},{cplt.AxesCHAPSim.__name__}
+        %(fig)s, %(ax)s
             returns the figure and axes instances associated with the bulk velocity
         """
+
         PhyTime = self.check_PhyTime(PhyTime)        
         fig, ax = super().plot_bulk_velocity(PhyTime,fig,ax,line_kw=line_kw,**kwargs)
 
@@ -994,8 +1019,9 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         ax.autoscale_view()
         return fig, ax
 
+    @docstring.sub
     def tau_calc(self,PhyTime=None):
-        f"""
+        """
         method to return the wall shear stress array
 
         Parameters
@@ -1006,23 +1032,24 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         Returns
         -------
-        {np.ndarray.__name__}
+        %(ndarray)s
             Wall shear stress array 
         """
         PhyTime = self.check_PhyTime(PhyTime)            
         return self._tau_calc(PhyTime)
 
+    @docstring.sub
     def plot_skin_friction(self,PhyTime=None,fig=None,ax=None,**kwargs):
-        f"""
+        """
         Plots the skin friction coefficient
 
         Parameters
         ----------
         PhyTime : [type], optional
             [description], by default None
-        fig : {cplt.CHAPSimFigure.__name__}, optional
+        fig : %(fig)s, optional
             Pre-existing figure instance, by default None
-        ax : {cplt.AxesCHAPSim.__name__}, optional
+        ax : %(ax)s, optional
             Pre-existing axes instance, by default None
         line_kw : dict, optional
             keyword arguments to be passed to the plot function, by default None
@@ -1031,7 +1058,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
             keyword arguments to be passed to the figure/subplot creation function
         Returns
         -------
-        {cplt.CHAPSimFigure.__name__},{cplt.AxesCHAPSim.__name__}
+        %(fig)s, %(ax)s
             returns the figure and axes instances associated with the bulk velocity
         """
         
@@ -1043,8 +1070,36 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         ax.autoscale_view()
         return fig, ax
 
+    @docstring.sub
     def plot_eddy_visc(self,x_vals,PhyTime=None,Y_plus=True,Y_plus_max=100,fig=None,ax=None,**kwargs):
-        
+        """
+        Plot the eddy viscosity against the wall-normal coordinate
+
+        Parameters
+        ----------
+        x_vals : list or int/float
+            streamwise locations to be plotted
+        PhyTime : int or float, optional
+            Physical time, by default None
+        norm : str, optional
+            how the Reynolds stresses are normalised. if 'wall' they are 
+            local inner scaled; 'local-bulk' by the local bulk velocity
+            None then default normalisation , by default None
+        Y_plus : bool, optional
+            Whether y coordinate is local wall normalised or not, by default True
+        fig : %(fig)s, optional
+            Pre-existing figure, by default None
+        ax : %(ax)s, optional
+            Pre-existing axes, by default None
+        line_kw : dict, optional
+            keyword arguments to be passed to the plot method, by default None
+
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            output figure and axes objects
+        """
+
         PhyTime = self.check_PhyTime(PhyTime)
 
         fig, ax = super().plot_eddy_visc(x_vals,PhyTime,Y_plus,Y_plus_max,fig,ax,**kwargs)
@@ -1059,11 +1114,33 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         return fig, ax
 
-    def avg_line_plot(self,x_vals,comp,PhyTime=None,fig=None,ax=None,*args,**kwargs):
+    @docstring.sub
+    def plot_mean_flow(self,x_vals,comp='u',PhyTime=None,fig=None,ax=None,*args,**kwargs):
+        """
+        Plot the mean flow field against the wall-normal coordinate
+
+        Parameters
+        ----------
+        x_vals : float ot list of floats
+            Streamwise locations for plotting
+        comp : str
+            mean flow component to be plotted
+        PhyTime : float, optional
+            Physical time, by default None
+        fig : %(fig)s, optional
+            pre-existing figure, by default None
+        ax : %(ax)s, optional
+            pre-existing axes, by default None
+
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            output figure and axes objects
+        """
 
         PhyTime = self.check_PhyTime(PhyTime)
 
-        fig, ax = super().avg_line_plot(x_vals,PhyTime,comp,fig=fig,ax=ax,**kwargs)
+        fig, ax = super().plot_mean_flow(x_vals,comp,PhyTime,fig=fig,ax=ax,**kwargs)
         
         lines = ax.get_lines()[-len(x_vals):]
         for line, x in zip(lines,x_vals):
@@ -1075,6 +1152,26 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         return fig, ax
 
     def plot_near_wall(self,x_vals,PhyTime=None,fig=None,ax=None,**kwargs):
+        """
+        Plots $\bar{u}^+$ vs $y^+$
+
+        Parameters
+        ----------
+        x_vals : float ot list of floats
+            Streamwise locations for plotting
+        PhyTime : float, optional
+            Physical time, by default None
+        fig : %(fig)s, optional
+            pre-existing figure, by default None
+        ax : %(ax), optional
+            pre-existing axes, by default None
+
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            output figure and axes objects
+        """
+        
         PhyTime = self.check_PhyTime(PhyTime)
         fig, ax = super().plot_near_wall(x_vals,PhyTime,fig=fig,ax=ax,**kwargs)
 
@@ -1134,6 +1231,24 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         return avg_data_tg_base
 
     def _extract_avg(self,PhyTimes,*,meta_data=None,path_to_folder='.',time0=None,abs_path=True):
+        """
+        Instantiates an instance of the CHPSim_AVG_tg class from the result data
+       
+        Parameters
+        ----------
+        time : float or list or floats
+            Physcial time to be extracted
+        meta_data : CHAPSim_meta, optional
+            metadata class provided to the class, by default None
+        path_to_folder : str, optional
+            path to the results folder, by default "."
+        time0 : float, optional
+            A previous time to average between, by default None
+        abs_path : bool, optional
+            Whether the path provided is absolute or relative, by default True
+        """
+
+        PhyTimes = misc_utils.check_list_vals(PhyTimes)
 
         if cp.rcParams['TEST']:
             PhyTimes=PhyTimes[-3:]
@@ -1146,21 +1261,14 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         self._metaDF = meta_data.metaDF
         self.NCL = meta_data.NCL
 
-        if isinstance(PhyTimes,(float,int)):
-            times = ['%.9g' % PhyTimes]
-            DF_list = self._AVG_extract(PhyTimes,path_to_folder,abs_path,self._metaDF,time0)
-        elif isinstance(PhyTimes,(tuple,list)):
-            times = ['%.9g' % time for time in PhyTimes]
-            for PhyTime in PhyTimes:
-                if 'DF_list' not in locals():
-                    DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,self._metaDF,time0)
-                else:
-                    local_DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,self._metaDF,time0)
-                    for i, _ in enumerate(DF_list):
-                        DF_list[i].append(local_DF_list[i],axis=0)            
-
-        else:
-            raise TypeError("PhyTimes can only be a float, int, tuple list") 
+        times = ['%.9g' % time for time in PhyTimes]
+        for PhyTime in PhyTimes:
+            if 'DF_list' not in locals():
+                DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,self._metaDF,time0)
+            else:
+                local_DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,self._metaDF,time0)
+                for i, _ in enumerate(DF_list):
+                    DF_list[i].append(local_DF_list[i],axis=0)            
        
         self._times=times
         self.shape =[self.NCL[1],len(PhyTimes)]
@@ -1334,6 +1442,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
                     Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
     
+    @docstring.inherit
     def _hdf_extract(self,file_name,key=None):
         if key is None:
             key = 'CHAPSim_AVG_tg'
@@ -1345,9 +1454,10 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
 
         super()._hdf_extract(file_name,shape=self.shape,key=key)
 
+    @docstring.inherit
     def save_hdf(self,file_name,write_mode,key=None):
         if key is None:
-            key =  'CHAPSim_AVG_tg'
+            key =  self.__class__.__name__
 
         super().save_hdf(file_name,write_mode,key)
 
@@ -1371,14 +1481,59 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
     def _return_xaxis(self):
         return np.array([float(time) for time in self.get_times()])
 
+    @docstring.sub
     def wall_unit_calc(self):
+        """
+        returns arrays for the friction velocity and viscous lengthscale
+
+
+        Returns
+        -------
+        %(ndarray)s
+            friction velocity array
+        %(ndarray)s
+            viscous lengthscale array
+        """
         return self._wall_unit_calc(None)
 
+    @docstring.sub
     def int_thickness_calc(self):
+        """
+        Calculates the integral thicknesses and shape factor 
+
+        Returns
+        -------
+        %(ndarray)s:
+            Displacement thickness
+        %(ndarray)s:
+            Momentum thickness
+        %(ndarray)s:
+            Shape factor
+        """
+
         PhyTime = None
         return super()._int_thickness_calc(PhyTime)
 
+    @docstring.sub
     def plot_shape_factor(self,fig=None,ax=None,**kwargs):
+        """
+        Plots the shape factor from the class against the streamwise coordinate
+
+        Parameters
+        ----------
+        fig : %(fig)s, optional
+            Pre-existing figure, by default None
+        ax : %(ax)s, optional
+            Pre-existing axes, by default None
+        line_kw : dict, optional
+            keyword arguments to be passed to the plot method, by default None
+
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            output figure and axes objects
+        """
+
         PhyTime = None
         fig, ax = self._plot_shape_factor(PhyTime,fig=fig,ax=ax,**kwargs)
 
@@ -1387,9 +1542,39 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         ax.autoscale_view()
         return fig, ax
 
-    def plot_Reynolds(self,comp1,comp2,PhyTime,norm=None,Y_plus=True,fig=None,ax=None,**kwargs):
+    @docstring.sub
+    def plot_Reynolds(self,comp,PhyTime,norm=None,Y_plus=True,fig=None,ax=None,**kwargs):
+        """
+        Plots the wall-normal distribution of the Reynolds stresses
 
-        fig, ax = super().plot_Reynolds(comp1,comp2,PhyTime,None,
+        Parameters
+        ----------
+        comp : str
+            Component of the Reynolds stress 
+            tensor to be process
+        x_vals : list or int/float
+            streamwise locations to be plotted
+        norm : str, optional
+            how the Reynolds stresses are normalised. if 'wall' they are 
+            local inner scaled; 'local-bulk' by the local bulk velocity
+            None then default normalisation , by default None
+        Y_plus : bool, optional
+            Whether y coordinate is local wall normalised or not, by default True
+        fig : %(fig)s, optional
+            Pre-existing figure, by default None
+        ax : %(ax)s, optional
+            Pre-existing axes, by default None
+        line_kw : dict, optional
+            keyword arguments to be passed to the plot method, by default None
+
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            output figure and axes objects
+        """ 
+        
+
+        fig, ax = super().plot_Reynolds(comp,PhyTime,None,
                                         norm=norm,Y_plus=Y_plus,
                                         fig=fig,ax=ax,**kwargs)
 
@@ -1404,9 +1589,37 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
 
         fig.tight_layout()
         return fig, ax
+    @docstring.sub
+    def plot_Reynolds_x(self,comp,y_vals_list,Y_plus=True,fig=None,ax=None,**kwargs):
+        """
+        Plots a Reynolds stress component against the streamwise coordinate or time
 
-    def plot_Reynolds_x(self,comp1,comp2,y_vals_list,Y_plus=True,fig=None,ax=None,**kwargs):
-        fig, ax = super().plot_Reynolds_x(comp1,comp2,y_vals_list,Y_plus=True,
+        Parameters
+        ----------
+        comp : str
+            Component of the Reynolds stress 
+            tensor to be process
+
+        y_vals_list : list or "max"
+            contains y coordinates to be processed or max if the wall
+            normal maximum is desired
+        Y_plus : bool, optional
+            Whether the coordinates in y_vals list are local inner-scaled,
+            not relevant if y_vals_list is `max'. by default True
+        fig : %(fig)s, optional
+            Pre-existing figure, by default None
+        ax : %(ax)s, optional
+            Pre-existing axes, by default None
+        line_kw : dict, optional
+            keyword arguments to be passed to the plot method, by default None
+
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            output figure and axes objects
+        """
+
+        fig, ax = super().plot_Reynolds_x(comp,y_vals_list,Y_plus=True,
                                             PhyTime=None,fig=fig,ax=ax,**kwargs)
         
         ax.set_xlabel(r"$t^*$")
@@ -1415,10 +1628,42 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         ax.get_gridspec().tight_layout(fig)
         return fig, ax    
 
+    @docstring.sub
     def bulk_velo_calc(self):
+        """
+        Method to calculate the bulk velocity against the streamwise coordinate
+        
+        Returns
+        -------
+        %(ndarray)s
+            array containing the bulk velocity
+        """
+
         return super()._bulk_velo_calc(None)
 
+    @docstring.sub
     def plot_bulk_velocity(self,fig=None,ax=None,**kwargs):
+        """
+        Method to plot the bulk velocity variation in the streamwise 
+        direction
+
+        Parameters
+        ----------
+        fig : %(fig)s, optional
+            Pre-existing figure instance, by default None
+        ax : %(ax)s, optional
+            Pre-existing axes instance, by default None
+        line_kw : dict, optional
+            keyword arguments to be passed to the plot function, by default None
+        
+        **kwargs : 
+            keyword arguments to be passed to the figure/subplot creation function
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            returns the figure and axes instances associated with the bulk velocity
+        """
+
         fig, ax = super().plot_bulk_velocity(None,fig,ax,**kwargs)
 
         ax.set_xlabel(r"$t^*$")
@@ -1426,10 +1671,40 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         ax.autoscale_view()
         return fig, ax
 
+    @docstring.sub
     def tau_calc(self):
+        """
+        method to return the wall shear stress array
+
+        Returns
+        -------
+        %(ndarray)s
+            Wall shear stress array 
+        """
         return self._tau_calc(None)
 
+    @docstring.sub
     def plot_skin_friction(self,fig=None,ax=None,**kwargs):
+        """
+        Plots the skin friction coefficient
+
+        Parameters
+        ----------
+        fig : %(fig)s, optional
+            Pre-existing figure instance, by default None
+        ax : %(ax)s, optional
+            Pre-existing axes instance, by default None
+        line_kw : dict, optional
+            keyword arguments to be passed to the plot function, by default None
+        
+        **kwargs : 
+            keyword arguments to be passed to the figure/subplot creation function
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            returns the figure and axes instances associated with the bulk velocity
+        """
+
         fig, ax = super().plot_skin_friction(None,fig=fig,ax=ax,**kwargs)
 
         ax.set_xlabel(r"$t^*$")
@@ -1438,6 +1713,32 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         return fig, ax
 
     def plot_eddy_visc(self,times,Y_plus=True,Y_plus_max=100,fig=None,ax=None,**kwargs):
+        """
+        Plot the eddy viscosity against the wall-normal coordinate
+
+        Parameters
+        ----------
+        x_vals : list or int/float
+            streamwise locations to be plotted
+        norm : str, optional
+            how the Reynolds stresses are normalised. if 'wall' they are 
+            local inner scaled; 'local-bulk' by the local bulk velocity
+            None then default normalisation , by default None
+        Y_plus : bool, optional
+            Whether y coordinate is local wall normalised or not, by default True
+        fig : %(fig)s, optional
+            Pre-existing figure, by default None
+        ax : %(ax)s, optional
+            Pre-existing axes, by default None
+        line_kw : dict, optional
+            keyword arguments to be passed to the plot method, by default None
+
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            output figure and axes objects
+        """
+
         fig, ax = super().plot_eddy_visc(times,None,Y_plus,Y_plus_max,fig,ax,**kwargs)
         lines = ax.get_lines()[-len(times):]
 
@@ -1450,10 +1751,29 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         ax.get_gridspec().tight_layout(fig)
 
         return fig, ax
+    @docstring.sub
+    def plot_mean_flow(self,times,comp='u',fig=None,ax=None,**kwargs):
+        """
+        Plot the mean flow field against the wall-normal coordinate
 
-    def avg_line_plot(self,times,*args,fig=None,ax=None,**kwargs):
-        
-        fig, ax = super().avg_line_plot(times,None,*args,fig=fig,ax=ax,**kwargs)
+        Parameters
+        ----------
+        x_vals : float ot list of floats
+            Streamwise locations for plotting
+        comp : str
+            mean flow component to be plotted
+        fig : %(fig)s, optional
+            pre-existing figure, by default None
+        ax : %(ax)s, optional
+            pre-existing axes, by default None
+
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            output figure and axes objects
+        """
+
+        fig, ax = super().plot_mean_flow(times,None,comp,fig=fig,ax=ax,**kwargs)
 
         lines = ax.get_lines()[-len(times):]
         for line, time in zip(lines,times):
@@ -1465,7 +1785,26 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         
         return fig, ax
 
+    @docstring.sub
     def plot_near_wall(self,times,fig=None,ax=None,**kwargs):
+        """
+        Plots $\bar{u}^+$ vs $y^+$
+
+        Parameters
+        ----------
+        x_vals : float ot list of floats
+            Streamwise locations for plotting
+        fig : %(fig)s, optional
+            pre-existing figure, by default None
+        ax : %(ax)s, optional
+            pre-existing axes, by default None
+
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            output figure and axes objects
+        """
+
         fig, ax = super().plot_near_wall(times,None,fig=fig,ax=ax,**kwargs)
         line_no=len(times)
         lines = ax.get_lines()[-line_no:]
@@ -1479,6 +1818,19 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         
 class CHAPSim_AVG_tg(CHAPSim_AVG_tg_base):
     def _extract_avg(self,path_to_folder='.',time0=None,abs_path=True,*args,**kwargs):
+        """
+        Instantiates an instance of the CHPSim_AVG_tg class from the result data
+       
+        Parameters
+        ----------
+        path_to_folder : str, optional
+            path to the results folder, by default "."
+        time0 : float, optional
+            A previous time to average between, by default None
+        abs_path : bool, optional
+            Whether the path provided is absolute or relative, by default True
+        """
+
         if isinstance(path_to_folder,list):
             times = CT.time_extract(path_to_folder[0],abs_path)
         else:

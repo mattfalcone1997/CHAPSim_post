@@ -10,6 +10,7 @@ __getitem__ method is used
 
 import warnings
 from numpy.core.numeric import array_equal, indices, outer
+from numpy.linalg.linalg import _raise_linalgerror_eigenvalues_nonconvergence
 import pandas as pd
 import numpy as np
 import h5py
@@ -148,7 +149,10 @@ class datastruct:
     
     @staticmethod
     def _index_construct(index,array):
-        if len(index) == len(array):
+        if all(isinstance(x,tuple) for x in index):
+            if len(index) != len(array):
+                msg = "The index is not the correct size"
+                raise ValueError(msg)
             outer_index = list(set([x[0] for x in index]))
         elif len(index[0]) == len(array):
             outer_index = None

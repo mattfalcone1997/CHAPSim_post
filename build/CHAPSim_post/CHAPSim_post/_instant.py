@@ -167,110 +167,25 @@ class CHAPSim_Inst():
         flow_interp[3,:,:,:] = flow_info[3,:,:,:-1] #Removing final pressure value 
         return flow_interp
 
-    def check_PhyTime(self,PhyTime):
+    def _check_outer_index(self,ProcessDF,PhyTime):
         warn_msg = f"PhyTime invalid ({PhyTime}), varaible being set to only PhyTime present in datastruct"
         err_msg = "PhyTime provided is not in the CHAPSim_AVG datastruct, recovery impossible"
-        with warnings.catch_warnings(record=True) as w:
-            key = self.InstDF.check_index(PhyTime,err_msg=err_msg,warn_msg=warn_msg,outer=True)
-            a = w
-        if PhyTime is not None and len(a)>0:
-            for warn in a:
-                warnings.warn(a.message)
-        return key[0]
 
-    def plot_contour(self,comp,axis_vals,plane='xz',PhyTime=None,x_split_list=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
+        return super()._check_outer_index(self.InstDF,PhyTime,warn_msg,err_msg)
+
+    def plot_contour(self,comp,axis_vals,avg_data,plane='xz',PhyTime=None,x_split_list=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
                 
-        PhyTime = self.check_PhyTime(PhyTime)        
+        return super().plot_contour(self.InstDF,avg_data,
+                                    comp,axis_vals,plane=plane,PhyTime=PhyTime,
+                                    x_split_list=x_split_list,y_mode=y_mode,fig=fig,ax=ax,
+                                    pcolor_kw=pcolor_kw,**kwargs)
+
+    def plot_vector(self,slice,ax_val,avg_data,PhyTime=None,y_mode='half_channel',spacing=(1,1),scaling=1,x_split_list=None,fig=None,ax=None,quiver_kw=None,**kwargs):
         
-        axis_vals = misc_utils.check_list_vals(axis_vals)
-            
-        plane , coord, axis_index = indexing.contour_plane(plane,axis_vals,self.avg_data,y_mode,PhyTime)
-
-
-        x_coords = self.CoordDF[plane[0]]
-        z_coords = self.CoordDF[plane[1]]
-        X,Z = np.meshgrid(x_coords,z_coords)
-        fluct = self.InstDF[PhyTime,comp]
-                
-        if x_split_list is None:
-            x_split_list=[np.amin(x_coords),np.amax(x_coords)]
-        
-        ax_layout = (len(x_split_list)-1,len(axis_vals))
-        figsize=[10*len(axis_vals),3*(len(x_split_list)-1)]
-        kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
-        fig, ax = cplt.create_fig_ax_without_squeeze(*ax_layout,fig=fig,ax=ax,**kwargs)
-
-        ax=ax.flatten()
-
-        title_symbol = CT.get_title_symbol(coord,y_mode,False)
-        
-        pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
-        X, Z = np.meshgrid(x_coords, z_coords)
-
-        ax=ax.flatten()
-        max_val = np.amax(fluct); min_val=np.amin(fluct)
-        for j,_ in enumerate(x_split_list[:-1]):
-            for i,_ in enumerate(axis_vals):
-                fluct_slice = CT.contour_indexer(fluct,axis_index[i],coord)
-
-                ax1 = ax[j*len(axis_vals)+i].pcolormesh(X,Z,fluct_slice,**pcolor_kw)
-                ax1.set_clim(min_val,max_val)
-
-                ax1.axes.set_xlabel(r"$%s/\delta$" % 'x')
-                ax1.axes.set_ylabel(r"$%s/\delta$" % 'z')
-                ax1.axes.set_xlim([x_split_list[j],x_split_list[j+1]])
-                ax1.axes.set_title(r"$%s=%.3g$"%(title_symbol,axis_vals[i]),loc='right')
-                ax1.axes.set_title(r"$t^*=%s$"%PhyTime,loc='left')
-                
-                cbar=fig.colorbar(ax1,ax=ax[j*len(axis_vals)+i])
-                cbar.set_label(r"$%s^\prime$"%comp)
-
-                ax[j*len(axis_vals)+i]=ax1
-                ax[j*len(axis_vals)+i].axes.set_aspect('equal')
-        fig.tight_layout()
-
-        if ax.size == 1:
-            return fig, ax[0]
-        else:
-            return fig, ax
-
-    def plot_vector(self,slice,ax_val,PhyTime=None,y_mode='half_channel',spacing=(1,1),scaling=1,x_split_list=None,fig=None,ax=None,quiver_kw=None,**kwargs):
-        
-        PhyTime = self.check_PhyTime(PhyTime)
-        
-        ax_val = misc_utils.check_list_vals(ax_val)
-
-        slice, coord, axis_index = indexing.contour_plane(slice,ax_val,self.avg_data,y_mode,PhyTime)
-
-        kwargs = cplt.update_subplots_kw(kwargs,figsize=[8,4*len(ax_val)])
-        fig, ax = cplt.create_fig_ax_without_squeeze(len(ax_val),fig=fig,ax=ax,**kwargs)
-        ax = ax.flatten()
-
-
-        coord_1 = self.CoordDF[slice[0]][::spacing[0]]
-        coord_2 = self.CoordDF[slice[1]][::spacing[1]]
-        UV_slice = [chr(ord(x)-ord('x')+ord('u')) for x in slice]
-        U = self.InstDF[PhyTime,UV_slice[0]]
-        V = self.InstDF[PhyTime,UV_slice[1]]
-
-        U_space, V_space = CT.vector_indexer(U,V,axis_index,coord,spacing[0],spacing[1])
-        coord_1_mesh, coord_2_mesh = np.meshgrid(coord_1,coord_2)
-        ax_out=[]
-        quiver_kw = cplt.update_quiver_kw(quiver_kw)
-        for i in range(len(ax_val)):
-            scale = np.amax(U_space[:,:,i])*coord_1.size/np.amax(coord_1)/scaling
-            extent_array = (np.amin(coord_1),np.amax(coord_1),np.amin(coord_2),np.amax(coord_1))
-
-            Q = ax[i].quiver(coord_1_mesh, coord_2_mesh,U_space[:,:,i].T,V_space[:,:,i].T,angles='uv',scale_units='xy', scale=scale,**quiver_kw)
-            ax[i].set_xlabel(r"$%s^*$"%slice[0])
-            ax[i].set_ylabel(r"$%s$"%slice[1])
-            ax[i].set_title(r"$%s = %.3g$"%(coord,ax_val[i]),loc='right')
-            ax[i].set_title(r"$t^*=%s$"%PhyTime,loc='left')
-            ax_out.append(Q)
-        if len(ax_out) ==1:
-            return fig, ax_out[0]
-        else:
-            return fig, np.array(ax_out)
+        return super().plot_vector(self.InstDF,avg_data,
+                                    slice,ax_val,PhyTime=PhyTime,y_mode=y_mode,
+                                    spacing=spacing,scaling=scaling,x_split_list=x_split_list,
+                                    fig=fig,ax=ax,quiver_kw=quiver_kw,**kwargs)
     
     def lambda2_calc(self,PhyTime,x_start_index=None,x_end_index=None,y_index=None):
         #Calculating strain rate tensor
@@ -311,7 +226,7 @@ class CHAPSim_Inst():
         return lambda2
     def plot_lambda2(self,vals_list,x_split_list=None,PhyTime=None,ylim=None,Y_plus=True,avg_data=None,colors=None,fig=None,ax=None,**kwargs):
                 
-        PhyTime = self.check_PhyTime(PhyTime)            
+        PhyTime = self._check_outer_index(self.InstDF,PhyTime)            
         
         
         if not hasattr(vals_list,'__iter__'):
@@ -363,7 +278,7 @@ class CHAPSim_Inst():
 
     def vorticity_calc(self,PhyTime=None):
 
-        self.check_PhyTime(PhyTime)
+        self._check_outer_index(self.InstDF,PhyTime)
 
         vorticity = np.zeros((3,*self.shape),dtype='f8')
         u_velo = self.InstDF[PhyTime,'u']
@@ -376,42 +291,17 @@ class CHAPSim_Inst():
 
         return cd.datastruct(vorticity,index=['x','y','z'])
 
-    def plot_vorticity_contour(self,comp,slice,ax_val,PhyTime=None,avg_data=None,y_mode='half_channel',pcolor_kw=None,fig=None,ax=None,**kwargs):
+    def plot_vorticity_contour(self,comp,plane,axis_vals,PhyTime=None,avg_data=None,x_split_list=None,y_mode='half_channel',pcolor_kw=None,fig=None,ax=None,**kwargs):
         
-        if isinstance(ax_val,(int,float)):
-            ax_val = [ax_val]        
-        elif not isinstance(ax_val,(list,tuple)):
-            msg = "ax_val must be an interable or a float or an int not a %s"%type(ax_val)
-            raise TypeError(msg)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
         
-        PhyTime = self.check_PhyTime(PhyTime)
-
-        slice, coord,axis_index = indexing.contour_plane(slice,ax_val,avg_data,y_mode,PhyTime)
-
-        kwargs = cplt.update_subplots_kw(kwargs,figsize=[8,4*len(ax_val)])
-        fig, ax = cplt.create_fig_ax_without_squeeze(len(ax_val),fig=fig,ax=ax,**kwargs)   
-        ax = ax.flatten()
-
+        PhyTime = self._check_outer_index(self.InstDF,PhyTime)
         VorticityDF = self.vorticity_calc(PhyTime=PhyTime)
-        vort_array = VorticityDF[comp]
 
-        coord_1 = self.CoordDF[slice[0]]
-        coord_2 = self.CoordDF[slice[1]]
-    
-        coord_1_mesh, coord_2_mesh = np.meshgrid(coord_1,coord_2)
-        ax_out=[]
-        pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
-        for i in range(len(ax_val)):
-            contour_array = CT.contour_indexer(vort_array,axis_index[i],coord)
-            mesh = ax[i].pcolormesh(coord_1_mesh,coord_2_mesh,contour_array,**pcolor_kw)
-            ax[i].set_xlabel(r"$%s^*$"%slice[0])
-            ax[i].set_ylabel(r"$%s$"%slice[1])
-            ax[i].set_title(r"$%s = %.3g$"%(coord,ax_val[i]),loc='right')
-            cbar=fig.colorbar(mesh,ax=ax[i])
-            cbar.set_label(r"$\omega_%s$"%comp)
-            ax_out.append(mesh)
-
-        return fig, np.array(ax_out)
+        return super().plot_contour(VorticityDF,avg_data,
+                                    comp,axis_vals,plane=plane,PhyTime=PhyTime,
+                                    x_split_list=x_split_list,y_mode=y_mode,fig=fig,ax=ax,
+                                    pcolor_kw=pcolor_kw,**kwargs)
 
     def plot_entrophy(self):
         pass
