@@ -18,22 +18,25 @@ import CHAPSim_post.CHAPSim_Tools as CT
 import CHAPSim_post.CHAPSim_dtypes as cd
 
 # import CHAPSim_post.utils as utils
+from ._common import common3D
 
 from ._meta import CHAPSim_meta
 _meta_class=CHAPSim_meta
 
-class CHAPSim_Inst():
+class CHAPSim_Inst(common3D):
     """
     ## CHAPSim_Inst
     This is a module for processing and visualising instantaneous data from CHAPSim
     """
-    _module = sys.modules[__name__]
+
     def __init__(self,*args,**kwargs):
         fromfile= kwargs.pop('fromfile',False)
         if not fromfile:
             self._inst_extract(*args,**kwargs)
         else:
             self._hdf_extract(*args,**kwargs)
+
+        super().__init__(self._meta_data)
 
     def _inst_extract(self,time,meta_data=None,path_to_folder='.',abs_path = True,tgpost=False):
         if meta_data is None:
@@ -88,14 +91,16 @@ class CHAPSim_Inst():
         veloVector = ["_U","_V","_W","_P"]
         file_ext = ".D"
         
+        full_path = misc_utils.check_paths(path_to_folder,'1_instant_rawdata',
+                                                            '1_instant_D')
+
         file_list=[]
         for velo in veloVector:
             if not abs_path:
-                file_list.append(os.path.abspath(os.path.join(path_to_folder, \
-                             file_folder, file_string + velo + file_ext)))
+                file_list.append(os.path.abspath(os.path.join(full_path, file_string + velo + file_ext)))
             else:
-                file_list.append(os.path.join(path_to_folder, \
-                             file_folder, file_string + velo + file_ext))
+                file_list.append(os.path.join(full_path, file_string + velo + file_ext))
+        
         #A list of all the relevant files for this timestep                           
         open_list =[]
         #opening all the relevant files and placing them in a list
@@ -167,11 +172,11 @@ class CHAPSim_Inst():
         flow_interp[3,:,:,:] = flow_info[3,:,:,:-1] #Removing final pressure value 
         return flow_interp
 
-    def _check_outer_index(self,ProcessDF,PhyTime):
+    def _check_outer(self,ProcessDF,PhyTime):
         warn_msg = f"PhyTime invalid ({PhyTime}), varaible being set to only PhyTime present in datastruct"
         err_msg = "PhyTime provided is not in the CHAPSim_AVG datastruct, recovery impossible"
 
-        return super()._check_outer_index(self.InstDF,PhyTime,warn_msg,err_msg)
+        return super()._check_outer(self.InstDF,PhyTime,err_msg,warn_msg)
 
     def plot_contour(self,comp,axis_vals,avg_data,plane='xz',PhyTime=None,x_split_list=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
                 
@@ -326,7 +331,7 @@ class CHAPSim_Inst_tg(CHAPSim_Inst):
         kwargs['tgpost'] = self.tgpost
         super()._inst_extract(*args,**kwargs)
         
-        NCL1_io = self._meta_data.metaDF['NCL1_tg_io'][1]
+        NCL1_io = self._meta_data.metaDF['NCL1_io']
         ioflowflg = True if NCL1_io > 2 else False
         
         if ioflowflg:

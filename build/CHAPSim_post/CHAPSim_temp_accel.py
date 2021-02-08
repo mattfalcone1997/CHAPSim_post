@@ -15,11 +15,10 @@ from scipy import integrate
 
 
 class CHAPSim_Inst(cp.CHAPSim_Inst_tg):
-    _module = sys.modules[__name__]
+    pass
 _instant_class = CHAPSim_Inst
 
 class CHAPSim_AVG_custom_t(cp.CHAPSim_AVG_tg_base):
-    _module = sys.modules[__name__]
 
     @classmethod
     def with_phase_average(cls,*args,**kwargs):
@@ -93,7 +92,6 @@ class CHAPSim_AVG_custom_t(cp.CHAPSim_AVG_tg_base):
 _avg_tg_base_class = CHAPSim_AVG_custom_t
 
 class CHAPSim_AVG_tg(CHAPSim_AVG_custom_t):
-    _module = sys.modules[__name__]
     def _extract_avg(self,path_to_folder=".",time0=None,abs_path=True,*args,**kwargs):
 
         if isinstance(path_to_folder,list):
@@ -126,14 +124,9 @@ class CHAPSim_perturb():
 
     def mean_velo_peturb_calc(self,comp):
         U_velo_mean = self.__avg_data.flow_AVGDF[None,comp].copy()
-        # wall_velo = self._meta_data.moving_wall_calc()
-        # for i in range(self.__avg_data.shape[0]):
-        #     U_velo_mean[i] -= wall_velo
 
-        # start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
         self.start
         time_0_index = self.__avg_data._return_index(self.start)
-        # x_loc = CT.coord_index_calc(self.__avg_data.CoordDF,'x',start)
         
         centre_index =int(0.5*self.__avg_data.shape[0])
         U_c0 = U_velo_mean[centre_index,0]
@@ -149,7 +142,6 @@ class CHAPSim_perturb():
 
         y_coord = self._meta_data.CoordDF['y']
         
-        # print(self.__avg_data.shape)
         u_tau_star, delta_v_star = self.__avg_data.wall_unit_calc()
         if Y_plus:
             y_coord = y_coord[:int(y_coord.size/2)]
@@ -158,10 +150,9 @@ class CHAPSim_perturb():
         else:
             y_max= Y_plus_max*delta_v_star[0]-1.0
 
-        # start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
         time_0_index = self.__avg_data._return_index(self.start)
         time_loc = np.array([self.__avg_data._return_index(x) for x in times]) - time_0_index
-        # x_loc = CT.coord_index_calc(self.__avg_data.CoordDF,'x',x_vals)
+
         for x, x_val in zip(time_loc,times):
             label=r"$x/\delta = %.3g$" % x_val
             ax.cplot(velo_peturb[:,x],y_coord,label=label)
@@ -184,7 +175,6 @@ class CHAPSim_perturb():
         tau_du = self.tau_du_calc()
         bulkvelo = self.__avg_data._bulk_velo_calc(None)
 
-        # start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
         x_loc = self.__avg_data._return_index(self.start)+1
 
         REN = self._meta_data.metaDF['REN']
@@ -196,7 +186,6 @@ class CHAPSim_perturb():
         
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
-        # print(bulkvelo[x_loc:]-bulkvelo[0])
             
         ax.cplot(times, Cf_du)
         ax.set_xlabel(r"$t^*$")
@@ -252,8 +241,6 @@ class CHAPSim_perturb():
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
-        # start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
-        # x_loc = CT.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
         x_loc = self.__avg_data._return_index(self.start)+1
 
         times = self.__avg_data._return_xaxis()[x_loc:] 
@@ -287,7 +274,6 @@ class CHAPSim_perturb():
         return fig, ax
 
 class CHAPSim_meta(cp.CHAPSim_meta):
-    _module = sys.modules[__name__]
     def __init__(self,*args,**kwargs):
         if len(args) < 3:
             kwargs['tgpost'] = True
@@ -295,16 +281,14 @@ class CHAPSim_meta(cp.CHAPSim_meta):
 _meta_class = CHAPSim_meta
 
 class CHAPSim_fluct_tg(cp.CHAPSim_fluct_tg):
-    _module = sys.modules[__name__]
+    pass
 _fluct_tg_class = CHAPSim_fluct_tg
 
 class CHAPSim_budget_tg(cp.CHAPSim_budget_tg):
-    _module = sys.modules[__name__]
-
+    pass
 class CHAPSim_autocov_tg(cp.CHAPSim_autocov_tg):
-    _module = sys.modules[__name__]
+    pass
 
 class CHAPSim_Quad_Anl_tg(cp.CHAPSim_Quad_Anl_tg):
-    _module = sys.modules[__name__]
-
+    pass
 

@@ -34,9 +34,10 @@ _fluct_tg_class = CHAPSim_fluct_tg
 from ._meta import CHAPSim_meta
 _meta_class = CHAPSim_meta
 
+from ._common import Common
 
-class CHAPSim_joint_PDF_base(ABC):
-    _module = sys.modules[__name__]
+class CHAPSim_joint_PDF_base(Common,ABC):
+
     def __init__(self,*args,fromfile=False,**kwargs):
         if fromfile:
             self._hdf_extract(*args,**kwargs)

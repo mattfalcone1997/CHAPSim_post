@@ -8,26 +8,23 @@ developing flow from the acceleration.
 import h5py
 import numpy as np
 import os
-import itertools
-import time
-import warnings
-from scipy import integrate, fft
+from scipy import integrate
 import sys
 
-import pandas as pd
 from . import CHAPSim_post as cp
-from . import CHAPSim_Tools as CT
+
 from . import CHAPSim_plot as cplt
 
+from CHAPSim_post.utils import misc_utils,indexing
+from CHAPSim_post import POD
 
 
 
 class CHAPSim_Inst(cp.CHAPSim_Inst):
-    _module = sys.modules[__name__]
+    pass
 _instant_class = CHAPSim_Inst
 
 class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
-    _module = sys.modules[__name__]
 
     def _tau_calc(self,PhyTime):
 
@@ -147,7 +144,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
             return super().avg_line_plot(x_vals,*args,fig=fig,ax=ax,**kwargs)
         else:
             fig, ax = super().avg_line_plot(x_vals,*args,fig=fig,ax=ax,**kwargs)
-            x_indices = CT.coord_index_calc(self.CoordDF,'x',x_vals)
+            x_indices = indexing.coord_index_calc(self.CoordDF,'x',x_vals)
             moving_wall = self._meta_data.moving_wall_calc()[x_indices]
             for line, val in zip(ax.get_lines(),moving_wall):
                 ydata = line.get_ydata().copy()
@@ -193,8 +190,8 @@ class CHAPSim_perturb():
         for i in range(self.__avg_data.shape[0]):
             U_velo_mean[i] -= wall_velo
 
-        start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
-        x_loc = CT.coord_index_calc(self.__avg_data.CoordDF,'x',start)
+        start = self._meta_data.metaDF['location_start_end'][0]
+        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)
         
         centre_index =int(0.5*self.__avg_data.shape[0])
         U_c0 = U_velo_mean[centre_index,0]
@@ -221,9 +218,9 @@ class CHAPSim_perturb():
         else:
             y_max= Y_plus_max*delta_v_star[0]-1.0
 
-        start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
+        start = self._meta_data.metaDF['location_start_end'][0]
         x_vals = [x-start for x in x_vals]
-        x_loc = CT.coord_index_calc(self.__avg_data.CoordDF,'x',x_vals)
+        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',x_vals)
         for x, x_val in zip(x_loc,x_vals):
             label=r"$x/\delta = %.3g$" % x_val
             ax.cplot(velo_peturb[:,x],y_coord,label=label)
@@ -245,10 +242,10 @@ class CHAPSim_perturb():
         tau_du = self.tau_du_calc(PhyTime)
         bulkvelo = self.__avg_data._bulk_velo_calc(PhyTime)
 
-        start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
-        x_loc = CT.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
+        start = self._meta_data.metaDF['location_start_end'][0]
+        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
 
-        REN = self._meta_data.metaDF['REN'][0]
+        REN = self._meta_data.metaDF['REN']
         rho_star = 1.0
         Cf_du = tau_du[x_loc:]/(0.5*REN*rho_star*(bulkvelo[x_loc:]-bulkvelo[0])**2)
         
@@ -269,8 +266,8 @@ class CHAPSim_perturb():
 
         mean_velo = self.mean_velo_peturb_calc('u',PhyTime)
 
-        start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
-        x_loc = CT.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
+        start = self._meta_data.metaDF['location_start_end'][0]
+        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
 
         y_coords = self.__avg_data.CoordDF['y']
 
@@ -295,8 +292,8 @@ class CHAPSim_perturb():
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
         fig,ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
-        start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
-        x_loc = CT.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
+        start = self._meta_data.metaDF['location_start_end'][0]
+        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
 
         x_coords = self._meta_data.CoordDF['x'][x_loc:] 
         x_coords -= start
@@ -315,8 +312,8 @@ class CHAPSim_perturb():
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
-        start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
-        x_loc = CT.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
+        start = self._meta_data.metaDF['location_start_end'][0]
+        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
 
         x_coords = self._meta_data.CoordDF['x'][x_loc:] 
         x_coords -= start
@@ -334,8 +331,8 @@ class CHAPSim_perturb():
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
-        start = self._meta_data.metaDF['loc_start_end'][0]*self._meta_data.metaDF['HX_tg_io'][1]
-        x_loc = CT.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
+        start = self._meta_data.metaDF['location_start_end'][0]
+        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
 
         x_coords = self._meta_data.CoordDF['x'][x_loc:] 
         x_coords -= start
@@ -370,10 +367,12 @@ class CHAPSim_meta(cp.CHAPSim_meta):
     def __moving_wall_setup(self,NCL,path_to_folder,abs_path,metaDF,tgpost):
         wall_velo = np.zeros(NCL[0])
         if int(metaDF['moving_wallflg']) == 1 and not tgpost:
+            full_path = misc_utils.check_paths(path_to_folder,'0_log_monitors',
+                                                            '.')
             if not abs_path:
-                file_path = os.path.abspath(os.path.join(path_to_folder,'CHK_MOVING_WALL.dat'))
+                file_path = os.path.abspath(os.path.join(full_path,'CHK_MOVING_WALL.dat'))
             else:
-                file_path = os.path.join(path_to_folder,'CHK_MOVING_WALL.dat')
+                file_path = os.path.join(full_path,'CHK_MOVING_WALL.dat')
             
             mw_file = open(file_path)
             wall_velo_ND = np.loadtxt(mw_file,comments='#',usecols=1)
@@ -395,32 +394,31 @@ class CHAPSim_meta(cp.CHAPSim_meta):
 _meta_class = CHAPSim_meta
 
 class CHAPSim_fluct_io(cp.CHAPSim_fluct_io):
-    _module = sys.modules[__name__]
+    pass
 _fluct_io_class = CHAPSim_fluct_io
+_fluct_class = CHAPSim_fluct_io
 
 class CHAPSim_budget_io(cp.CHAPSim_budget_io):
-    _module = sys.modules[__name__]
-    def __init__(self,comp1,comp2,avg_data=None,PhyTime=None,*args,**kwargs):
- 
-        if avg_data is not None:
-            self.avg_data = avg_data
-        elif PhyTime is not None:
-            self.avg_data = CHAPSim_AVG_io(PhyTime,*args,**kwargs)
-        else:
-            msg = "Either the argument avg_data or PhyTime must be given"
-            raise ValueError(msg)
-
-        if PhyTime is None:
-            PhyTime = list(set([x[0] for x in self.avg_data.flow_AVGDF.index]))[0]
-        self.comp = comp1+comp2
-        self.budgetDF = self._budget_extract(PhyTime,comp1,comp2)
-
+    pass
 
 class CHAPSim_autocov_io(cp.CHAPSim_autocov_io):
-    _module = sys.modules[__name__]
+   pass
 
 class CHAPSim_Quad_Anl_io(cp.CHAPSim_Quad_Anl_io):
-    _module = sys.modules[__name__]
+   pass
 
 class CHAPSim_joint_PDF_io(cp.CHAPSim_joint_PDF_io):
-    _module = sys.modules[__name__]
+    pass
+
+class POD2D(POD.POD2D):
+    pass
+_POD2D_class = POD2D
+class POD3D(POD.POD3D):
+    pass
+_POD3D_class = POD3D
+
+class flowReconstruct2D(POD.flowReconstruct2D):
+    pass
+
+class flowReconstruct3D(POD.flowReconstruct3D):
+    pass

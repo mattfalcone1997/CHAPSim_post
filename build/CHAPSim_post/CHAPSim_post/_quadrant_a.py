@@ -30,8 +30,9 @@ _fluct_tg_class = CHAPSim_fluct_tg
 from ._meta import CHAPSim_meta
 _meta_class = CHAPSim_meta
 
-class CHAPSim_Quad_Anl_base(ABC):
-    _module = sys.modules[__name__]
+from ._common import Common
+
+class CHAPSim_Quad_Anl_base(Common,ABC):
     def __init__(self,*args,**kwargs):
         fromfile=kwargs.pop('fromfile',False)
         if not fromfile:

@@ -42,7 +42,6 @@ from ._instant import CHAPSim_Inst
 _instant_class = CHAPSim_Inst
 
 class CHAPSim_fluct_base(common3D):
-    _module = sys.modules[__name__]
     def save_hdf(self,file_name,write_mode,key=None):
         if key is None:
             key= 'CHAPSim_fluct'
@@ -53,11 +52,11 @@ class CHAPSim_fluct_base(common3D):
         self.meta_data.save_hdf(file_name,'a',key+'/meta_data')
         self.fluctDF.to_hdf(file_name,key=key+'/fluctDF',mode='a')#,format='fixed',data_columns=True)
 
-    def _check_outer_index(self,ProcessDF,PhyTime):
+    def _check_outer(self,ProcessDF,PhyTime):
         warn_msg = f"PhyTime invalid ({PhyTime}), varaible being set to only PhyTime present in datastruct"
         err_msg = "PhyTime provided is not in the CHAPSim_AVG datastruct, recovery impossible"
 
-        return super()._check_outer_index(self.fluctDF,PhyTime,warn_msg,err_msg)
+        return super()._check_outer(self.fluctDF,PhyTime,err_msg,warn_msg)
     
     def plot_contour(self,comp,axis_vals,plane='xz',PhyTime=None,x_split_list=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
         
@@ -74,6 +73,7 @@ class CHAPSim_fluct_base(common3D):
                                     **kwargs)
         
     def plot_fluct3D_xz(self,comp,y_vals,y_mode='half-channel',PhyTime=None,x_split_list=None,fig=None,ax=None,surf_kw=None,**kwargs):
+        
         return super().plot3D_xz(self.fluctDF,self.avg_data,
                                 comp,y_vals,y_mode=y_mode,
                                 PhyTime=PhyTime,x_split_list=x_split_list,
@@ -171,6 +171,8 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
         self.CoordDF = self.meta_data.CoordDF
         self.shape = inst_data.shape
 
+        super().__init__(self.meta_data)
+
         
     def _fluctDF_calc(self, inst_data, avg_data):
         
@@ -218,6 +220,8 @@ class CHAPSim_fluct_tg(CHAPSim_fluct_base):
         self.NCL = self.meta_data.NCL
         self.CoordDF = self.meta_data.CoordDF
         self.shape = inst_data.shape
+
+        super().__init__(self.meta_data)
     
     def _fluctDF_calc(self, inst_data, avg_data):
         avg_times = avg_data.get_times()

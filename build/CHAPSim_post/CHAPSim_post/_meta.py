@@ -15,6 +15,8 @@ import copy
 import CHAPSim_post.CHAPSim_Tools as CT
 import CHAPSim_post.CHAPSim_dtypes as cd
 
+from CHAPSim_post.utils import misc_utils
+
 class CHAPSim_meta():
     def __init__(self,*args,**kwargs):
         fromfile= kwargs.pop('fromfile',False)
@@ -30,7 +32,7 @@ class CHAPSim_meta():
 
     def __extract_meta(self,path_to_folder='.',abs_path=True,tgpost=False):
         self.metaDF = self._readdata_extract(path_to_folder,abs_path)
-        ioflg = self.metaDF['NCL1_tg_io'][1] > 2
+        ioflg = self.metaDF['iDomain'] in [2,3]
         self.CoordDF, self.NCL = self._coord_extract(path_to_folder,abs_path,tgpost,ioflg)
         
         self.path_to_folder = path_to_folder
@@ -76,6 +78,7 @@ class CHAPSim_meta():
             readdata_file = os.path.abspath(os.path.join(path_to_folder,'readdata.ini'))
         else:
            readdata_file = os.path.join(path_to_folder,'readdata.ini')
+
         with open(readdata_file) as file_object:
             lines = (line.rstrip() for line in file_object)
             lines = list(line for line in lines if line.count('=')>0)
@@ -83,6 +86,8 @@ class CHAPSim_meta():
         meta_list=[]
         key_list=[]
         for line in lines:
+            if line[0] in ['#',';',' ']:
+                continue
             line_split = line.split(';')[0]
             key = line_split.split('=')[0]
             vals= line_split.split('=')[1]
@@ -99,18 +104,82 @@ class CHAPSim_meta():
 
         meta_DF = cd.metastruct(meta_list,index=key_list)
         return meta_DF
-        
+
     def _coord_extract(self,path_to_folder,abs_path,tgpost,ioflg):
-        """ Function to extract the coordinates from their .dat file """
-    
-        if not abs_path:
-            x_coord_file = os.path.abspath(os.path.join(path_to_folder,'CHK_COORD_XND.dat'))
-            y_coord_file = os.path.abspath(os.path.join(path_to_folder,'CHK_COORD_YND.dat'))
-            z_coord_file = os.path.abspath(os.path.join(path_to_folder,'CHK_COORD_ZND.dat'))
+        if os.path.isdir(os.path.join(path_to_folder,'0_log_monitors')):
+            return self._coord_extract_new(path_to_folder,abs_path,tgpost,ioflg)
         else:
-            x_coord_file = os.path.join(path_to_folder,'CHK_COORD_XND.dat')
-            y_coord_file = os.path.join(path_to_folder,'CHK_COORD_YND.dat')
-            z_coord_file = os.path.join(path_to_folder,'CHK_COORD_ZND.dat')
+            return self._coord_extract_old(path_to_folder,abs_path,tgpost,ioflg)
+
+    def _coord_extract_new(self,path_to_folder,abs_path,tgpost,ioflg):
+        full_path = misc_utils.check_paths(path_to_folder,'0_log_monitors',
+                                                            '.')
+
+        if not abs_path:
+            x_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_XND.dat'))
+            y_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_YND.dat'))
+            z_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_ZND.dat'))
+        else:
+            x_coord_file = os.path.join(full_path,'CHK_COORD_XND.dat')
+            y_coord_file = os.path.join(full_path,'CHK_COORD_YND.dat')
+            z_coord_file = os.path.join(full_path,'CHK_COORD_ZND.dat')
+    #===================================================================
+        #Extracting XND from the .dat file
+    
+        file=open(x_coord_file,'rb')
+        x_coord=np.loadtxt(file,comments='#',usecols=1)
+        
+        if tgpost and not ioflg:
+            XND = x_coord[:-1]
+        else:
+            index = int(self.metaDF['NCL1_tg']) + 1 
+            if tgpost and ioflg:
+                XND = x_coord[:index]
+                XND -= XND[0]
+            else:
+                XND = x_coord[index:]
+        file.close()
+        #===========================================================
+    
+        #Extracting YCC from the .dat file
+        file=open(y_coord_file,'rb')
+        y_coord=np.loadtxt(file,usecols=1,skiprows=1)
+        index = int(self.metaDF['NCL1_tg']) + 1 
+        YCC=y_coord[index:]
+        y_size = YCC.size
+        file.close()
+        #============================================================
+    
+        file=open(z_coord_file,'rb')
+        ZND=np.loadtxt(file,comments='#',usecols=1)
+
+        #============================================================
+        XCC, ZCC = self._coord_interp(XND,ZND)
+
+        z_size = ZCC.size
+        x_size = XCC.size
+        y_size = YCC.size
+        file.close()
+
+        CoordDF = cd.datastruct.from_dict({'x':XCC,'y':YCC,'z':ZCC})
+        NCL = [x_size, y_size, z_size]
+        return CoordDF, NCL
+
+
+    def _coord_extract_old(self,path_to_folder,abs_path,tgpost,ioflg):
+        """ Function to extract the coordinates from their .dat file """
+        
+        full_path = misc_utils.check_paths(path_to_folder,'0_log_monitors',
+                                                            '.')
+
+        if not abs_path:
+            x_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_XND.dat'))
+            y_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_YND.dat'))
+            z_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_ZND.dat'))
+        else:
+            x_coord_file = os.path.join(full_path,'CHK_COORD_XND.dat')
+            y_coord_file = os.path.join(full_path,'CHK_COORD_YND.dat')
+            z_coord_file = os.path.join(full_path,'CHK_COORD_ZND.dat')
         #===================================================================
         #Extracting XND from the .dat file
     
@@ -186,7 +255,7 @@ class CHAPSim_meta():
         ZND = np.zeros(ZCC.size+1)
 
         XND[0] = 0.0
-        YND[0] = -1.0 if self.metaDF['icase'] == 1 else 0
+        YND[0] = -1.0 if self.metaDF['iCase'] == 1 else 0
         ZND[0] = 0.0
 
         for i in  range(1,XND.size):

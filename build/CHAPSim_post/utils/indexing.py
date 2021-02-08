@@ -146,7 +146,7 @@ def contour_plane(plane,axis_vals,avg_data,y_mode,PhyTime):
     
 
     if coord == 'y':
-        tg_post = True if all([x == 'None' for x in avg_data.flow_AVGDF.times]) else False
+        tg_post = True if all([x == 'None' for x in avg_data.flow_AVGDF.outer_index]) else False
         if not tg_post:
             norm_val = 0
         elif tg_post:

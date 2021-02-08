@@ -24,11 +24,11 @@ import CHAPSim_post.CHAPSim_plot as cplt
 import CHAPSim_post.CHAPSim_Tools as CT
 import CHAPSim_post.CHAPSim_dtypes as cd
 
+from ._common import Common
 
 from ._average import CHAPSim_AVG
 _avg_class = CHAPSim_AVG
-class CHAPSim_budget_base(ABC):
-    _module = sys.modules[__name__]
+class CHAPSim_budget_base(Common,ABC):
 
     def __init__(self,comp1,comp2,avg_data=None,PhyTime=None,*args,**kwargs):
 
@@ -38,11 +38,17 @@ class CHAPSim_budget_base(ABC):
             self.avg_data = self._module._avg_class(PhyTime,*args,**kwargs)
         else:
             raise Exception
+
+        super().__init__(self.avg_data._meta_data)
+
         if PhyTime is None:
             PhyTime = list(set([x[0] for x in self.avg_data.flow_AVGDF.index]))[0]
+        
         self.comp = comp1+comp2
         self.budgetDF = self._budget_extract(PhyTime,comp1,comp2)
         self.shape = self.avg_data.shape
+
+        
 
     def _budget_extract(self,PhyTime,comp1,comp2):
             
@@ -166,10 +172,11 @@ class CHAPSim_budget_base(ABC):
                 
                 if wall_units:
                     ax[i].set_xscale('log')
-                    ax[i].set_xlim(left=1.0)
+                    # ax[i].set_xlim(left=1.0)
                     ax[i].set_xlabel(r"$y^+$")
                 else:
-                    ax[i].set_xlabel(r"$y/\delta$")
+                    x_label = self.Domain.in_to_out(r"$y/\delta$")
+                    ax[i].set_xlabel(x_label)
 
                 if mpl.rcParams['text.usetex'] == True:
                     ax[i].set_ylabel(r"Loss\ \ \ \ \ \ \ \ Gain")
@@ -244,8 +251,7 @@ class CHAPSim_budget_base(ABC):
         return self.budgetDF.__str__()
 
 class CHAPSim_budget_io(CHAPSim_budget_base):
-    _grad_method = gradient.Grad_calc
-    _laplacian = gradient.Scalar_laplacian_io
+
     def _advection_extract(self,PhyTime,comp1,comp2):
         uu_comp = comp1 + comp2 
 
@@ -253,8 +259,8 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         U_mean = self.avg_data.flow_AVGDF[PhyTime,'u']
         V_mean = self.avg_data.flow_AVGDF[PhyTime,'v']
 
-        uu_dx = self._grad_method(self.avg_data.CoordDF,uu,'x')
-        uu_dy = self._grad_method(self.avg_data.CoordDF,uu,'y')
+        uu_dx = self.Domain.Grad_calc(self.avg_data.CoordDF,uu,'x')
+        uu_dy = self.Domain.Grad_calc(self.avg_data.CoordDF,uu,'y')
 
         advection = -(U_mean*uu_dx + V_mean*uu_dy)
         return advection
@@ -282,8 +288,8 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         u1u2u = self.avg_data.UUU_tensorDF[PhyTime,uu_comp1]
         u1u2v = self.avg_data.UUU_tensorDF[PhyTime,uu_comp2]
 
-        u1u2u_dx = self._grad_method(self.avg_data.CoordDF,u1u2u,'x')
-        u1u2v_dy = self._grad_method(self.avg_data.CoordDF,u1u2v,'y')
+        u1u2u_dx = self.Domain.Grad_calc(self.avg_data.CoordDF,u1u2u,'x')
+        u1u2v_dy = self.Domain.Grad_calc(self.avg_data.CoordDF,u1u2v,'y')
 
         turb_transport = -(u1u2u_dx + u1u2v_dy)
         return turb_transport
@@ -317,8 +323,8 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         pu2 = self.avg_data.PU_vectorDF[PhyTime,comp2]
 
         rho_star = 1.0
-        pu1_grad = self._grad_method(self.avg_data.CoordDF,pu1,diff1)
-        pu2_grad = self._grad_method(self.avg_data.CoordDF,pu2,diff2)
+        pu1_grad = self.Domain.Grad_calc(self.avg_data.CoordDF,pu1,diff1)
+        pu2_grad = self.Domain.Grad_calc(self.avg_data.CoordDF,pu2,diff2)
 
         pressure_diff = -(1/rho_star)*(pu1_grad + pu2_grad)
         return pressure_diff
@@ -328,7 +334,7 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         u1u2 = self.avg_data.UU_tensorDF[PhyTime,uu_comp]
 
         REN = self.avg_data._metaDF['REN']
-        viscous_diff = (1/REN)*self.__class__._laplacian(self.avg_data.CoordDF,u1u2)
+        viscous_diff = (1/REN)*self.Domain.Scalar_laplacian(self.avg_data.CoordDF,u1u2)
         return viscous_diff
 
     def _production_extract(self,PhyTime,comp1,comp2):
@@ -381,8 +387,10 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         PhyTime = self.avg_data.check_PhyTime(PhyTime)
 
         fig, ax = super()._budget_plot(PhyTime, x_list,budget_terms,wall_units=wall_units, fig=fig, ax =ax,**kwargs)
+        
         for a,x in zip(ax,x_list):
-            a.set_title(r"$x/\delta=%.2f$"%x,loc='right')
+            title = self.Domain.in_to_out(r"$x/\delta=%.2f$"%x)
+            a.set_title(title,loc='right')
             a.relim()
             a.autoscale_view()
         handles, labels = ax[0].get_legend_handles_labels()
@@ -399,7 +407,10 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         PhyTime = self.avg_data.check_PhyTime(PhyTime)
 
         fig, ax = super()._plot_integral_budget(comp,PhyTime, wall_units=wall_units, fig=fig, ax=ax, **kwargs)
-        ax.set_xlabel(r"$x/\delta$")
+        
+        x_label = self.Domain.in_to_out(r"$x/\delta$")
+        ax.set_xlabel(x_label)
+
         return fig, ax
     def plot_budget_x(self,budget_terms=None,y_vals_list='max',Y_plus=True,PhyTime=None,fig=None,ax=None,**kwargs):
         
@@ -408,14 +419,14 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
 
         fig, ax = super()._plot_budget_x(budget_terms,y_vals_list,Y_plus,PhyTime,fig=fig, ax=ax)
 
-        ax.set_xlabel(r"$x/\delta$")
+        x_label = self.Domain.in_to_out(r"$x/\delta$")
+        ax.set_xlabel(x_label)
         
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
 class CHAPSim_budget_tg(CHAPSim_budget_base):
-    _grad_method = gradient.Grad_calc
-    _laplacian = gradient.Scalar_laplacian_tg
+
     def __init__(self,*args,**kwargs):
         if 'PhyTime' in kwargs.keys():
             raise KeyError("PhyTime cannot be used in tg class\n")
@@ -428,7 +439,7 @@ class CHAPSim_budget_tg(CHAPSim_budget_base):
         U_mean = self.avg_data.flow_AVGDF[PhyTime,'u']
         V_mean = self.avg_data.flow_AVGDF[PhyTime,'v']
 
-        uu_dy = self._grad_method(self.avg_data.CoordDF,uu,'y')
+        uu_dy = self.Domain.Grad_calc(self.avg_data.CoordDF,uu,'y')
 
         advection = -V_mean*uu_dy
         return advection#.flatten()
@@ -446,7 +457,7 @@ class CHAPSim_budget_tg(CHAPSim_budget_base):
 
         u1u2v = self.avg_data.UUU_tensorDF[PhyTime,uu_comp2]
 
-        u1u2v_dy = self._grad_method(self.avg_data.CoordDF,u1u2v,'y')
+        u1u2v_dy = self.Domain.Grad_calc(self.avg_data.CoordDF,u1u2v,'y')
 
         turb_transport = -u1u2v_dy
         return turb_transport#.flatten()
@@ -477,12 +488,12 @@ class CHAPSim_budget_tg(CHAPSim_budget_base):
 
         rho_star = 1.0
         if diff1 == 'y':
-            pu1_grad = self._grad_method(self.avg_data.CoordDF,pu1,'y')
+            pu1_grad = self.Domain.Grad_calc(self.avg_data.CoordDF,pu1,'y')
         else:
             pu1_grad = np.zeros(self.avg_data.shape)
 
         if diff2 == 'y':
-            pu2_grad = self._grad_method(self.avg_data.CoordDF,pu2,'y')
+            pu2_grad = self.Domain.Grad_calc(self.avg_data.CoordDF,pu2,'y')
         else:
             pu2_grad = np.zeros(self.avg_data.shape)
 
@@ -494,7 +505,7 @@ class CHAPSim_budget_tg(CHAPSim_budget_base):
         u1u2 = self.avg_data.UU_tensorDF[PhyTime,uu_comp]
 
         REN = self.avg_data._metaDF['REN']
-        viscous_diff = (1/REN)*self.__class__._laplacian(self.avg_data.CoordDF,u1u2)
+        viscous_diff = (1/REN)*self.Domain.Scalar_laplacian(self.avg_data.CoordDF,u1u2)
         return viscous_diff#.flatten()
 
     def _production_extract(self,PhyTime,comp1,comp2):

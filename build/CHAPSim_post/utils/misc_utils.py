@@ -3,12 +3,26 @@ import numpy as np
 
 __all__ = ["max_time_calc"]
 
+def check_paths(path_to_folder,*folder_options):
+    if not os.path.isdir(path_to_folder):
+        msg = "path_to_folder provided \"%s\" does not exist"%path_to_folder
+        raise FileNotFoundError(msg)
+
+    for folder in folder_options:
+        full_path = os.path.join(path_to_folder,folder)
+        if os.path.isdir(full_path):
+            return full_path
+
+    msg = "Directory(ies) %s cannot be found in path: %s"%(folder_options,path_to_folder)
+
 def file_extract(path_to_folder,abs_path=True):
-    if abs_path:
-        mypath = os.path.join(path_to_folder,'2_averagd_D')
-    else:
-        mypath = os.path.abspath(os.path.join(path_to_folder,'2_averagd_D'))
-    file_names = [f for f in os.listdir(mypath) if f[:8]=='DNS_peri']
+    full_path = check_paths(path_to_folder,'2_averaged_rawdata',
+                                                            '2_averagd_D')
+    # if abs_path:
+    #     mypath = os.path.join(path_to_folder,'2_averagd_D')
+    # else:
+    #     mypath = os.path.abspath(os.path.join(path_to_folder,'2_averagd_D'))
+    file_names = [f for f in os.listdir(full_path) if f[:8]=='DNS_peri']
     return file_names       
 
 def time_extract(path_to_folder,abs_path=True):
@@ -16,8 +30,12 @@ def time_extract(path_to_folder,abs_path=True):
     time_list =[]
     for file in file_names:
         time_list.append(float(file[20:35]))
-    times = list(dict.fromkeys(time_list))
-    return list(set(times))
+
+    times = sorted(set(time_list))
+    if not times:
+        msg = "No averaged results to give the times list"
+        raise RuntimeError(msg)
+    return times
 
 def max_time_calc(path_to_folder,abs_path):
     if isinstance(path_to_folder,list):

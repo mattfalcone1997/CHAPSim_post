@@ -7,12 +7,12 @@ import CHAPSim_post.CHAPSim_dtypes as cd
 import CHAPSim_post.CHAPSim_plot as cplt
 from CHAPSim_post import rcParams
 from CHAPSim_post.utils import misc_utils,indexing
-from CHAPSim_post.CHAPSim_post._common import common3D
+from CHAPSim_post.CHAPSim_post._common import common3D, Common
 _avg_class = cp.CHAPSim_AVG_io
 _fluct_class = cp.CHAPSim_fluct_io
 
 class _PODbase:
-    _module = sys.modules[__name__]
+
     def __init__(self,*args,fromfile=False,**kwargs):
 
         if fromfile:
@@ -39,6 +39,8 @@ class _PODbase:
 
         self.POD_modesDF = cd.datastruct.from_hdf(file_name,key=key+'/POD_modesDF')
         self.avg_data = self._module._avg_class.from_hdf(file_name,key=key+"/avg_data")
+        self.CoordDF = self.avg_data.CoordDF
+        self.meta_data = self.avg_data._meta_data
 
     @classmethod
     def from_hdf(cls,file_name,key=None):
@@ -137,8 +139,7 @@ class _PODbase:
 
         return fig, ax
 
-class POD2D(_PODbase):
-    
+class POD2D(_PODbase,Common):
     def _POD_extract(self,comp,plane,location,path_to_folder='.',method='svd',low_memory=True,abs_path=True,time0=None,y_mode='half-channel',nsnapshots=100,nmodes=10):
         max_time = misc_utils.max_time_calc(path_to_folder,abs_path)
         self.avg_data = self._module._avg_class(max_time,path_to_folder=path_to_folder,
@@ -279,7 +280,7 @@ class POD3D(_PODbase,common3D):
         X_i = np.concatenate(X_i)
         return X_i, shape
 
-    def _check_outer_index(self,ProcessDF,PhyTime):
+    def _check_outer(self,ProcessDF,PhyTime):
         return PhyTime
 
     def plot_mode_contour(self,comp,modes,axis_vals,plane='xz',x_split_list=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):

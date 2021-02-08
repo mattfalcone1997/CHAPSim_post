@@ -5,25 +5,251 @@ providing functionality common to several classes
 """
 import numpy as np
 import matplotlib as mpl
-import warnings
+import sys
+
+import itertools
 from abc import abstractmethod, ABC
 
 import CHAPSim_post.CHAPSim_plot as cplt
-from CHAPSim_post.utils import indexing, misc_utils
+from CHAPSim_post.utils import indexing, misc_utils,gradient
 
-class common3D(ABC):
+_cart_to_cylind_str = {
+    'x' : 'z',
+    'y' : 'r',
+    'z' : r'\theta',
+    'u' : r'u_z',
+    'v' : r'u_r',
+    'w' : r'u_\theta'
+}
+
+_cylind_to_cart ={
+    'z' : 'x',
+    'r' : 'y',
+    'theta' : 'z'
+}
+
+class DomainHandler():
+
+    
+    def __init__(self,meta_data):
+        if meta_data.metaDF['iCase'] in [1,4]:
+            self.coord_sys = 'cart'
+        elif meta_data.metaDF['iCase'] in [2,3]:
+            self.coord_sys = 'cylind'
+        else:
+            msg = "CHAPSim case type invalid"
+            raise ValueError(msg)
+
+        self.Grad_calc = gradient.Grad_calc
+
+    @property
+    def is_cylind(self):
+        return self.coord_sys == 'cylind'
+
+    def __str__(self):
+        if self.coord_sys == 'cart':
+            coord = "cartesian"
+        else:
+            coord = "cylindrical"
+
+        return f"{self.__class__.__name__} with %s coordinate system"%coord
+
+    def __repr__(self):
+        return self.__str__()
+
+    def _alter_item(self,char,to_out=True):
+        convert_dict = _cart_to_cylind_str if to_out else _cylind_to_cart
+        if self.coord_sys == 'cylind' and char in convert_dict.keys():
+            return convert_dict[char]
+        else:
+            return char
+
+    def in_to_out(self,key):
+        return "".join([self._alter_item(x,True) for x in key])
+
+    def out_to_in(self,key):
+        if 'theta' in key:
+            key = key.split('theta')
+            for i, _ in enumerate(key):
+                if not key[i]:
+                    key[i] ='theta'
+
+        return "".join([self._alter_item(x,False) for x in key]) 
+
+    def Scalar_grad_io(self,coordDF,flow_array):
+
+        if flow_array.ndim == 2:
+            grad_vector = np.zeros((2,flow_array.shape[0],flow_array.shape[1]))
+        elif flow_array.ndim == 3:
+            grad_vector = np.zeros((3,flow_array.shape[0],flow_array.shape[1],
+                                flow_array.shape[2]))
+        else:
+            msg = "This function can only be used on 2 or 3 dimensional arrays"
+            raise ValueError(msg)
+
+        grad_vector[0] = self.Grad_calc(coordDF,flow_array,'x')
+        grad_vector[1] = self.Grad_calc(coordDF,flow_array,'y')
+                
+        if flow_array.ndim == 3:
+            grad_vector[2] = self.Grad_calc(coordDF,flow_array,'z')
+
+            factor_out = 1/coordDF['y'] if self.is_cylind else 1.0
+            grad_vector[2] = np.multiply(grad_vector[2],factor_out)
+
+        return grad_vector
+
+    def Vector_div_io(self,coordDF,vector_array):
+        if vector_array.ndim not in (3,4):
+            msg = "The number of dimension of the vector array must be 3 or 4"
+            raise ValueError(msg)
+
+        grad_vector = np.zeros_like(vector_array)
+        grad_vector[0] = self.Grad_calc(coordDF,vector_array[0],'x')
+        
+        factor_in = coordDF['y'] if self.is_cylind else 1.0
+        factor_out = 1/coordDF['y'] if self.is_cylind else 1.0
+
+        grad_vector[1] = self.Grad_calc(coordDF,np.multiply(vector_array[1],factor_in),'y')
+        grad_vector[1] = np.multiply(grad_vector[1],factor_out)
+        
+        if vector_array.ndim == 4:
+            grad_vector[2] = self.Grad_calc(coordDF,
+                                    np.multiply(vector_array[2],factor_in),'z')
+            grad_vector[1] = np.multiply(grad_vector[1],factor_out)
+
+        div_scalar = np.sum(grad_vector,axis=0)
+        return div_scalar
+
+    def Scalar_laplacian(self,coordDF,flow_array):
+        if flow_array.ndim == 1:
+            factor_in = coordDF['y'] if self.is_cylind else 1.0
+            factor_out = 1/coordDF['y'] if self.is_cylind else 1.0
+            dflow_dy = np.multiply(self.Grad_calc(coordDF,flow_array,'y'),
+                                    factor_in)
+            lap_scalar = np.multiply(self.Grad_calc(coordDF,dflow_dy,'y'),
+                                    factor_out)
+        else:
+            grad_vector = self.Scalar_grad_io(coordDF,flow_array)
+            lap_scalar = self.Vector_div_io(coordDF,grad_vector)
+        return lap_scalar
+
+    
+
+    
+
+class Common(ABC):
+    def __init__(self,meta_data):
+        self.Domain = DomainHandler(meta_data)
+
+    @property
+    def _module(self):
+        return sys.modules[self.__class__.__module__]
+
+    def _check_outer(self,processDF,outer,err_msg,warn_msg):
+
+        err = ValueError(err_msg)
+        warn = UserWarning(warn_msg)
+        return processDF.check_outer(outer,err,warn)
+
+    def check_comp(self,processDF,comp):
+        err = Exception()
+        try:
+            processDF.check_inner(comp,err)
+        except Exception:
+            return False
+        else:
+            return True
+                
+    def _set_title(self,ax,title,convert_title=True,**kwargs):
+        if convert_title:
+            title = self.Domain.in_to_out(title)
+        ax.set_title(title,**kwargs)
+
+    def _set_xlabel(self,ax,x_label,convert_x=True,**kwargs):
+        if convert_x:
+            x_label = self.Domain.in_to_out(x_label)
+
+        ax.set_xlabel(x_label,**kwargs)
+
+    def _set_ylabel(self,ax,y_label,convert_y=True,**kwargs):
+        if convert_y:
+            y_label = self.Domain.in_to_out(y_label)
+
+        ax.set_ylabel(y_label,**kwargs)
+
+    
+class common3D(Common):
+
     @abstractmethod
-    def _check_outer_index(self,processDF,outer,warn_msg,err_msg):
+    def _check_outer(self,processDF,outer,err_msg,warn_msg):
+        return super()._check_outer(processDF,outer,err_msg,warn_msg)
 
-        # warn_msg = f"PhyTime invalid ({PhyTime}), varaible being set to only PhyTime present in datastruct"
-        # err_msg = "PhyTime provided is not in the CHAPSim_AVG datastruct, recovery impossible"
-        with warnings.catch_warnings(record=True) as w:
-            key = processDF.check_index(outer,err_msg=err_msg,warn_msg=warn_msg,outer=True)
-            a = w
-        if outer is not None and len(a)>0:
-            for warn in a:
-                warnings.warn(a.message)
-        return key[0]
+    def contour_plane(self,plane,axis_vals,avg_data,y_mode,PhyTime):
+
+        plane = self.Domain.out_to_in(plane)
+
+        if plane not in ['xy','zy','xz']:
+            plane = plane[::-1]
+            if plane not in ['xy','zy','xz']:
+                msg = "The contour slice must be either %s"%['xy','yz','xz']
+                raise KeyError(msg)
+        slice_set = set(plane)
+        coord_set = set(list('xyz'))
+        coord = "".join(coord_set.difference(slice_set))
+
+        if coord == 'y':
+            tg_post = True if all([x == 'None' for x in avg_data.flow_AVGDF.times]) else False
+            if not tg_post:
+                norm_val = 0
+            elif tg_post:
+                norm_val = PhyTime
+            else:
+                raise ValueError("problems")
+            norm_vals = [norm_val]*len(axis_vals)
+            if avg_data is None:
+                msg = f'For contour slice {slice}, avg_data must be provided'
+                raise ValueError(msg)
+            axis_index = indexing.y_coord_index_norm(avg_data,axis_vals,norm_vals,y_mode)
+        else:
+            axis_index = indexing.coord_index_calc(avg_data.CoordDF,coord,axis_vals)
+            if not hasattr(axis_index,'__iter__'):
+                axis_index = [axis_index]
+        # print(axis_index)
+        return plane, coord, axis_index
+
+    def contour_indexer(self,array,axis_index,coord):
+
+        if coord == 'x':
+            indexed_array = array[:,:,axis_index].squeeze().T
+        elif coord == 'y':
+            indexed_array = array[:,axis_index].squeeze()
+        else:
+            indexed_array = array[axis_index].squeeze()
+        return indexed_array
+
+    def vector_indexer(self,U,V,axis_index,coord,spacing_1,spacing_2):
+        if isinstance(axis_index[0],list):
+            ax_index = list(itertools.chain(*axis_index))
+        else:
+            ax_index = axis_index[:]
+        if coord == 'x':
+            U_space = U[::spacing_1,::spacing_2,ax_index]
+            V_space = V[::spacing_1,::spacing_2,ax_index]
+        elif coord == 'y':
+            U_space = U[::spacing_2,ax_index,::spacing_1]
+            V_space = V[::spacing_2,ax_index,::spacing_1]
+            U_space = np.swapaxes(U_space,1,2)
+            U_space = np.swapaxes(U_space,1,0)
+            V_space = np.swapaxes(V_space,1,2)
+            V_space = np.swapaxes(V_space,1,0)
+
+        else:
+            U_space = U[ax_index,::spacing_2,::spacing_1]
+            V_space = V[ax_index,::spacing_2,::spacing_1]
+            U_space = np.swapaxes(U_space,2,0)
+            V_space = np.swapaxes(V_space,0,2)
+            
+        return U_space, V_space
 
     def _check_attr(self):
         attr_list = ["CoordDF","meta_data"]
@@ -37,7 +263,7 @@ class common3D(ABC):
         
         self._check_attr()
         
-        PhyTime = self._check_outer_index(ProcessDF,PhyTime)        
+        PhyTime = self._check_outer(ProcessDF,PhyTime)          
         
         axis_vals = misc_utils.check_list_vals(axis_vals)
             
@@ -52,7 +278,7 @@ class common3D(ABC):
         if x_split_list is None:
             x_split_list=[np.amin(x_coords),np.amax(x_coords)]
         
-        x_size = np.amax(x_coords) - np.amin(x_coords)
+        x_size = 1.5*(np.amax(x_coords) - np.amin(x_coords))
         z_size = 1.2*(np.amax(z_coords) - np.amin(z_coords))
 
         ax_layout = (len(x_split_list)-1,len(axis_vals))
@@ -103,7 +329,7 @@ class common3D(ABC):
     def plot_streaks(self,ProcessDF,avg_data,comp,vals_list,x_split_list=None,PhyTime=None,ylim='',Y_plus=True,*args,colors='',fig=None,ax=None,**kwargs):
 
         self._check_attr()
-        PhyTime = self._check_outer_index(ProcessDF,PhyTime)   
+        PhyTime = self._check_outer(ProcessDF,PhyTime)   
 
         fluct = ProcessDF[PhyTime,comp]
         
@@ -159,7 +385,8 @@ class common3D(ABC):
     def plot3D_xz(self,ProcessDF,avg_data,comp,y_vals,y_mode='half-channel',PhyTime=None,x_split_list=None,fig=None,ax=None,surf_kw=None,**kwargs):
 
         self._check_attr()
-        PhyTime = self._check_outer_index(ProcessDF,PhyTime)    
+        
+        PhyTime = self._check_outer(ProcessDF,PhyTime)     
 
         y_vals = misc_utils.check_list_vals(y_vals)    
 
@@ -217,7 +444,7 @@ class common3D(ABC):
     def plot_vector(self,ProcessDF,avg_data,slice,ax_val,PhyTime=None,y_mode='half_channel',spacing=(1,1),scaling=1,x_split_list=None,fig=None,ax=None,quiver_kw=None,**kwargs):
         
         self._check_attr()
-        PhyTime = self._check_outer_index(ProcessDF,PhyTime)   
+        PhyTime = self._check_outer(ProcessDF,PhyTime)    
         
         ax_val = misc_utils.check_list_vals(ax_val)
 

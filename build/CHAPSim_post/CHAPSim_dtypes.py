@@ -238,7 +238,7 @@ class datastruct:
 
     @property
     def index(self):
-        return self._index
+        return list(self._data.keys())
 
     # @index.setter
     # def index(self,index):
@@ -250,12 +250,19 @@ class datastruct:
     #     self._index = index
 
     @property
-    def times(self):
+    def outer_index(self):
         if self._is_multidim():
             return self._outer_index
         else:
             msg = "This method cannot be used on datastructs with single dimensional indices"
             raise AttributeError(msg)
+
+    @property
+    def inner_index(self):
+        if self._is_multidim():
+            return [x[1] for x in self._index]
+        else:
+            return self.index
 
     # @times.setter
     # def times(self,times):
@@ -289,7 +296,7 @@ class datastruct:
         else:
             return self._getitem_process_singlekey(key,err_msg=err_msg)
 
-    def _getitem_process_multikey(self,key,err_msg=None,warn_msg=None):
+    def _getitem_process_multikey(self,key,err=None,warn=None):
         if not self._is_multidim():
             msg = "A multidimensional index passed but a single dimensional datastruct"
             raise KeyError(msg)
@@ -297,18 +304,17 @@ class datastruct:
 
         if key in self._data.keys():
             return key
-        elif len(self._outer_index) == 1:
-            if warn_msg is None:
-                warn_msg = f"The outer index provided is incorrect ({key[0]})"+\
-                    f" that is present (there is only one value present in the"+\
-                    f" datastruct ({self._outer_index[0]}))"
-            warnings.warn(warn_msg,stacklevel=4)
-            key = (self._outer_index[0],*key[1:])
-            return key
         else:
-            if err_msg is None:
-                err_msg = f"The key provided ({key}) to the datastruct is not present and cannot be corrected internally."
-            raise KeyError(err_msg)
+            err = KeyError((f"The key provided ({key}) to the datastruct is"
+                            " not present and cannot be corrected internally."))
+            warn = UserWarning((f"The outer index provided is incorrect ({key[0]})"
+                        f" that is present (there is only one value present in the"
+                        f" datastruct ({self._outer_index[0]})"))
+            
+            inner_key = self.check_inner(key[1],err)
+            outer_key = self.check_outer(key[0],err,warn)
+
+            return (outer_key, inner_key)
 
     def _getitem_process_singlekey(self,key,err_msg=None):
 
@@ -317,40 +323,41 @@ class datastruct:
         else:
             key = str(key)
 
-        if key in self._data.keys():
-            return key
-        elif len(self._outer_index) == 1:
-            key = (self._outer_index[0],key)
+        err_msg = (f"The key provided ({key}) to ""the datastruct is "
+                    "not present and cannot be corrected internally.")
+        err = KeyError(err_msg)
+
+        if key in self.index:
             return key
         else:
-            if err_msg is None:
-                err_msg = f"The key provided ({key}) to the datastruct is not present and cannot be corrected internally."
-            raise KeyError(err_msg)
+            outer_key = self.check_outer(None,err)
+            return (outer_key,key)
 
-    def check_index(self,*key,exc_type=None,err_msg=None,warn_msg=None,inner=False,outer=False):
+    def check_outer(self,key,err,warn=None):
+        if isinstance(key, (float,int)):
+            key = "%g"%key
+        else:
+            key = str(key)
+
+        if not self._is_multidim():
+            raise err
+
+        if key not in self.outer_index: 
+            if len(self.outer_index) > 1:
+                raise err
+            else:
+                if warn is None:
+                    warnings.warm(warn,stacklevel=4)
+                key = self.outer_index[0]
+
+        return key
+
+    def check_inner(self,key,err):
+        if key not in self.inner_index:
+            raise err
         
-        if not isinstance(exc_type,(Exception,Warning)):
-            exc_type=None
-
-        if inner and outer:
-            set_key = key
-        elif inner:
-            set_key = (self._outer_index[0],*key)
-        elif outer:
-            inner_index = [x[1] for x in self.index]
-            set_key = (*key,inner_index[0])
-        else:
-            raise ValueError("Not index selected for testing")
-
-        try:
-            set_key = self._getitem_check_key(set_key,err_msg,warn_msg)
-        except KeyError as e:
-            if exc_type is None:
-                exc_type = type(e)
-            raise exc_type(e.args[0]) from None
-        else:
-            return set_key
-
+        return key
+    
     def __setitem__(self,key,value):
         if not isinstance(value,np.ndarray):
             msg = f"The input array must be an instance of {np.ndarray.__name__}"
@@ -506,18 +513,96 @@ class datastruct:
     def __deepcopy__(self,memo):
         return self.copy()
     
-
 class metastruct():
-    def __init__(self,*args,from_list=False,from_hdf=False,from_DF=False,**kwargs):
-        if not from_list and not from_hdf:
+    def __init__(self,*args,from_hdf=False,**kwargs):
+        from_list = False; from_dict=False
+        if isinstance(args[0],list):
             from_list = True
+        elif isinstance(args[0],dict):
+            from_dict = True
+        elif not from_hdf:
+            msg = (f"{self.__class__.__name__} can be instantiated by list,"
+                    " dictionary or the class method from_hdf")
+            raise TypeError(msg)
 
         if from_list:
             self._list_extract(*args,**kwargs)
+        elif from_dict:
+            self._dict_extract(*args,**kwargs)
         elif from_hdf:
             self._file_extract(*args,**kwargs)
-        
+    def _conversion(self,old_key,*replacement_keys):
+        """
+        Converts the old style metadata to the new style metadata
+        """
+        if old_key not in self._meta.keys():
+            return
 
+        if not isinstance(self._meta[old_key],list):
+            item = [self._meta[old_key]]
+        else:
+            item = self._meta[old_key]
+
+        for i, key in enumerate(replacement_keys):
+            self._meta[key] = item[i]
+
+        del self._meta[old_key]
+
+    
+    def _update_keys(self):
+        update_dict = {
+            'icase' : ['iCase'],
+            'thermlflg' : ['iThermoDynamics'],
+            'HX_tg_io' :['HX_tg','HX_io'],
+            'NCL1_tg_io': ['NCL1_tg','NCL1_io'],
+            'REINI_TIME' : ['ReIni','TLgRe'],
+            'FLDRVTP' : ['iFlowDriven'],
+            'CF' :['Cf_Given'],
+            'HEATWALLBC' : ['iThermalWallType'],
+            'WHEAT0' : ['thermalWallBC_Dim'],
+            'RSTflg_tg_io' : ['iIniField_tg','iIniField_io'],
+            'RSTtim_tg_io' : ['TimeReStart_tg','TimeReStart_io'],
+            'RST_type_flg' : ['iIniFieldType','iIniFieldTime'],
+            'CFL' : ['CFLGV'],
+            'visthemflg' : ['iVisScheme'],
+            'Weightedpressure' : ['iWeightedPre'],
+            'DTSAVE1' : ['dtSave1'],
+            'TSTAV1' : ['tRunAve1','tRunAve_Reset'],
+            'ITPIN' : ['iterMonitor'],
+            'MGRID_JINI' : ['MGRID','JINI'],
+            'pprocessonly': ['iPostProcess'],
+            'ppinst' : ['iPPInst'],
+            'ppspectra' : ['iPPSpectra'],
+            'ppdim' : ['iPPDimension'],
+            'ppinstnsz' : ['pp_instn_sz'],
+            'grad' : ['accel_grad']
+        }
+
+        if 'NCL1_tg_io' in self._meta.keys() and 'iDomain' not in self._meta.keys():
+            if self._meta['NCL1_tg_io'][1] < 2:
+                self._meta['iDomain'] = 1
+            else:
+                self._meta['iDomain'] = 3
+
+        if 'iCHT' not in self._meta.keys():
+            self._meta['iCHT'] = 0
+
+        if 'BCY12' not in self._meta.keys():
+            self._meta['BCY12'] = [1,1]
+
+        if'loc_start_end' in self._meta.keys():
+            loc_list = [self._meta['loc_start_end'][0]*self._meta['HX_tg_io'][1],
+                        self._meta['loc_start_end'][1]*self._meta['HX_tg_io'][1]]
+            self._meta['location_start_end'] = loc_list
+            del self._meta['loc_start_end']
+
+        if 'DT' in self._meta.keys():
+            if isinstance(self._meta['DT'],list):
+                update_dict['DT'] = ['DT','DtMin']
+
+        for key, val in update_dict.items():
+            self._conversion(key,*val)
+        
     def _list_extract(self,list_vals,index=None):
         if index is None:
             index = list(range(len(list_vals)))
@@ -527,6 +612,10 @@ class metastruct():
             raise ValueError(msg)
 
         self._meta = {i:val for i, val in zip(index,list_vals)}
+        self._update_keys()
+    def _dict_extract(self,dictionary):
+        self._meta = dictionary
+        self._update_keys()
 
     def to_hdf(self,filename,key=None,mode='a'):
         # hdf_key1 = 'meta_vals'
@@ -568,6 +657,8 @@ class metastruct():
         else:
             self._hdf_extract(filename,key=key) 
         hdf_file.close()
+
+        self._update_keys()
 
     def _hdf_extract(self,filename,key=None):
         try:

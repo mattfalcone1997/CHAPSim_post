@@ -27,10 +27,11 @@ import CHAPSim_post.CHAPSim_dtypes as cd
 
 
 from ._meta import CHAPSim_meta
+from ._common import Common
+
 _meta_class = CHAPSim_meta
 
-class CHAPSim_AVG_base(ABC):
-    _module = sys.modules[__name__]
+class CHAPSim_AVG_base(Common,ABC):
 
     @docstring.copy_fromattr("_extract_avg")
     def __init__(self,*args,**kwargs):
@@ -39,6 +40,7 @@ class CHAPSim_AVG_base(ABC):
             self._hdf_extract(*args,**kwargs)
         else:
             self._extract_avg(*args,**kwargs)
+        super().__init__(self._meta_data)
 
     @abstractmethod
     def _extract_avg(self,*args,**kwargs):
@@ -288,8 +290,13 @@ class CHAPSim_AVG_base(ABC):
 
         fig, ax = self._avg_line_plot(x_vals, PhyTime,comp,fig=fig,ax=ax,line_kw=line_kw,**kwargs)
 
-        ax.set_xlabel(r"$y^*$")
-        ax.set_ylabel(r"$\bar{u}$")
+        # ax.set_xlabel(r"$y^*$")
+        x_label = self.Domain.in_to_out(r"$y^*$")
+        y_label = self.Domain.in_to_out(r"$\bar{u}$")
+        
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
+
         ax.relim()
         ax.autoscale_view()
 
@@ -326,10 +333,11 @@ class CHAPSim_AVG_base(ABC):
 
     def plot_Reynolds(self,comp_uu,x_val,PhyTime,norm=None,Y_plus=True,fig=None,ax=None,line_kw=None,**kwargs):
 
-        if comp_uu[0] == 'w' and (comp_uu[1]=='v' or comp_uu[1] =='u'):
+        if not self.check_comp(self.UU_tensorDF,comp_uu):
             comp_uu = comp_uu[::-1]
-        elif comp_uu[0] == 'v' and comp_uu[1] =='u':
-            comp_uu = comp_uu[::-1]     
+            if not self.check_comp(self.UU_tensorDF,comp_uu):
+                msg = "Reynolds stress component %s not found"%comp_uu
+                raise ValueError(msg)   
         
         x_val = misc_utils.check_list_vals(x_val)
 
@@ -363,30 +371,23 @@ class CHAPSim_AVG_base(ABC):
                 y_coord_local = y_coord
 
             label=r"$x/\delta =%.3g$" % self.CoordDF['x'][x]
+            label = self.Domain.in_to_out(label)
             ax.cplot(y_coord_local,uu[:,x],label=label,**line_kw)
 
 
-        y_label = comp_uu[0] +'\'' + comp_uu[1] +'\''
-        if norm=='wall':
-            if comp_uu == 'uv':
-                ax.set_ylabel(r"$-\langle %s\rangle/u_\tau^2$"% y_label)# ,fontsize=20)
-            else:
-                ax.set_ylabel(r"$\langle %s\rangle/u_\tau^2$"% y_label)# ,fontsize=20)
-        elif norm=='local-bulk':
-            if comp_uu == 'uv':
-                ax.set_ylabel(r"$-\langle %s\rangle/U_b^2$"% y_label)# ,fontsize=20)
-            else:
-                ax.set_ylabel(r"$\langle %s\rangle/U_b^2$"% y_label)# ,fontsize=20)
-        else:
-            if comp_uu == 'uv':
-                ax.set_ylabel(r"$-\langle %s\rangle/U_{b0}^2$"% y_label)# ,fontsize=20)
-            else:
-                ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"% y_label)# ,fontsize=20)
-        
+        uu_label = self.Domain.in_to_out(r"%s'%s'"%tuple(comp_uu))
+
+        denom = r"u_\tau" if norm == 'wall' else r"U_b" if norm == 'local-bulk' else r'U_{b0}'
+        sign = "-" if comp_uu == 'uv' else ""
+        y_label = r"$%s\langle %s\rangle/%s^2$"%(sign,uu_label,denom)
+
+        ax.set_ylabel(y_label)# ,fontsize=20)
+                    
         if Y_plus:
             ax.set_xlabel(r"$y^+$")
         else:
-            ax.set_xlabel(r"$y/\delta$")
+            x_label = self.Domain.in_to_out(r"$y/\delta$")
+            ax.set_xlabel(x_label)
         
         fig.tight_layout()
         
@@ -394,10 +395,11 @@ class CHAPSim_AVG_base(ABC):
 
     def plot_Reynolds_x(self,comp_uu,y_vals_list,Y_plus=True,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
 
-        if comp_uu[0] == 'w' and (comp_uu[1]=='v' or comp_uu[1] =='u'):
+        if not self.check_comp(self.UU_tensorDF,comp_uu):
             comp_uu = comp_uu[::-1]
-        elif comp_uu[0] == 'v' and comp_uu[1] =='u':
-            comp_uu = comp_uu[::-1]   
+            if not self.check_comp(self.UU_tensorDF,comp_uu):
+                msg = "Reynolds stress component %s not found"%comp_uu
+                raise ValueError(msg)   
         
         if y_vals_list != 'max':
             if Y_plus:
@@ -416,19 +418,20 @@ class CHAPSim_AVG_base(ABC):
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
-        y_label = comp_uu[0] +'\'' + comp_uu[1] +'\''
+        uu_label = self.Domain.in_to_out(r"%s'%s'"%tuple(comp_uu))
+
         line_kw = cplt.update_line_kw(line_kw)
         if y_vals_list != 'max':
             for i in range(len(y_index)):
                 ax.cplot(xaxis,rms_vals[i],label=r"$y^+=%.3g$"% y_vals_list[i],**line_kw)
 
-            ncol = cplt.get_legend_ncols(len(lines))
-            ax.clegend(vertical=False,ncol=ncol, fontsize=16)
-            ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)$"%y_label)
+            ncol = cplt.get_legend_ncols(len(y_index))
+            ax.clegend(vertical=False,ncol=ncol)
+            ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)$"%uu_label)
             
         else:
-            ax.cplot(xaxis,rms_vals,label=r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%y_label,**line_kw)
-            ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%y_label)
+            ax.cplot(xaxis,rms_vals,label=r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%uu_label,**line_kw)
+            ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%uu_label)
         
         fig.tight_layout()
         return fig, ax
@@ -524,7 +527,8 @@ class CHAPSim_AVG_base(ABC):
                 ax.set_xlabel(r"$y^+$")
                 ax.set_xlim([0,Y_plus_max])
             else:
-                ax.set_xlabel(r"$y/\delta$")
+                x_label = self.Domain.in_to_out(r"$y/\delta$")
+                ax.set_xlabel(x_label)
                 ax.set_xlim([-1,-0.1])
 
             ax.set_ylim([-0.5,max(mu_t_local)*1.2])
@@ -659,16 +663,16 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
     
     def _extract_file(self,PhyTime,path_to_folder,abs_path):
         instant = "%0.9E" % PhyTime
-        
-        file_string = "DNS_perioz_AVERAGD_T" + instant + "_FLOW.D"
 
-        file_folder = "2_averagd_D"
+        full_path = misc_utils.check_paths(path_to_folder,'2_averaged_rawdata',
+                                                            '2_averagd_D')
+
+        file_string = "DNS_perioz_AVERAGD_T" + instant + "_FLOW.D"
+        
         if not abs_path:
-            file_path = os.path.abspath(os.path.join(path_to_folder, \
-                                     file_folder, file_string))
+            file_path = os.path.abspath(os.path.join(full_path, file_string))
         else:
-            file_path = os.path.join(path_to_folder, \
-                                     file_folder, file_string)
+            file_path = os.path.join(full_path, file_string)
                 
         file = open(file_path,'rb')
         
@@ -690,25 +694,6 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         file.close()
         return AVG_info, NSTATIS, PhyTime, [NCL1,NCL2]
-
-
-    # def save_hdf(self,file_name,write_mode,key=None):
-    #     """
-    #     Method to save this class to file in the HDF5 file format 
-
-    #     Parameters
-    #     ----------
-    #     file_name : str
-    #         HDF5 file path 
-    #     write_mode : str
-    #         Either 'w' (write) or 'a' (append)
-    #     key : str, optional
-    #         Posix path like string for the root HDF file key, by default None
-    #     """
-        
-    #     if key is None:
-    #         key = 'CHAPSim_AVG_io'
-    #     super().save_hdf(file_name,write_mode,key)
 
     def _return_index(self,x_val):
         return CT.coord_index_calc(self.CoordDF,'x',x_val)
@@ -734,13 +719,8 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         warn_msg = f"PhyTime invalid ({PhyTime}), varaible being set to only PhyTime present in datastruct"
         err_msg = "PhyTime provided is not in the CHAPSim_AVG datastruct, recovery impossible"
-        with warnings.catch_warnings(record=True) as w:
-            key = self.flow_AVGDF.check_index(PhyTime,err_msg=err_msg,warn_msg=warn_msg,outer=True)
-            warn_list = w
-        if PhyTime is not None and len(warn_list)>0:
-            for warn in warn_list:
-                warnings.warn(warn.message)
-        return key[0]
+        
+        return self._check_outer(self.flow_AVGDF,PhyTime,err_msg,warn_msg)
 
     @docstring.sub
     def int_thickness_calc(self, PhyTime=None):
@@ -810,7 +790,9 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         PhyTime = self.check_PhyTime(PhyTime)        
         fig, ax = self._plot_shape_factor(PhyTime,fig=fig,ax=ax,**kwargs)
 
-        ax.set_xlabel(r"$x/\delta$")
+        x_label = self.Domain.in_to_out(r"$x/\delta$")
+        ax.set_xlabel(x_label)
+
         ax.relim()
         ax.autoscale_view()
         return fig, ax
@@ -840,7 +822,9 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         PhyTime = self.check_PhyTime(PhyTime)
         fig, ax = super().plot_mom_thickness(PhyTime,fig=fig,ax=ax,line_kw=line_kw,**kwargs)
 
-        ax.set_xlabel(r"$x/\delta$")
+        x_label = self.Domain.in_to_out(r"$x/\delta$")
+        ax.set_xlabel(x_label)
+
         ax.relim()
         ax.autoscale_view()
         return fig, ax
@@ -870,7 +854,9 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         PhyTime = self.check_PhyTime(PhyTime)        
         fig, ax = super().plot_disp_thickness(PhyTime,fig=fig,ax=ax,**kwargs)
 
-        ax.set_xlabel(r"$x/\delta$")
+        x_label = self.Domain.in_to_out(r"$x/\delta$")
+        ax.set_xlabel(x_label)
+
         ax.relim()
         ax.autoscale_view()
         return fig, ax
@@ -915,7 +901,8 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         lines = ax.get_lines()[-len(x_vals):]
         for line,x in zip(lines,x_vals):
-            line.set_label(r"$x/\delta=%.3g$"%float(x))
+            x_label = self.Domain.in_to_out(r"$x/\delta=%.3g$"%float(x))
+            line.set_label(x_label)
 
         ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
@@ -961,7 +948,9 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         fig, ax = super().plot_Reynolds_x(comp,y_vals_list,Y_plus=Y_plus,
                                             PhyTime=PhyTime,fig=fig,ax=ax,line_kw=line_kw,**kwargs)
         
-        ax.set_xlabel(r"$x/\delta$")
+        x_label = self.Domain.in_to_out(r"$x/\delta$")
+        ax.set_xlabel(x_label)
+
         ax.relim()
         ax.autoscale_view()
         ax.get_gridspec().tight_layout(fig)
@@ -1014,7 +1003,9 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         PhyTime = self.check_PhyTime(PhyTime)        
         fig, ax = super().plot_bulk_velocity(PhyTime,fig,ax,line_kw=line_kw,**kwargs)
 
-        ax.set_xlabel(r"$x/\delta$")
+        x_label = self.Domain.in_to_out(r"$x/\delta$")
+        ax.set_xlabel(x_label)
+
         ax.relim()
         ax.autoscale_view()
         return fig, ax
@@ -1065,7 +1056,9 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         PhyTime = self.check_PhyTime(PhyTime)        
         fig, ax = super().plot_skin_friction(PhyTime,fig,ax,**kwargs)
 
-        ax.set_xlabel(r"$x/\delta$")
+        x_label = self.Domain.in_to_out(r"$x/\delta$")
+        ax.set_xlabel(x_label)
+
         ax.relim()
         ax.autoscale_view()
         return fig, ax
@@ -1106,7 +1099,8 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         
         lines = ax.get_lines()[-len(x_vals):]
         for line, x in zip(lines,x_vals):
-            line.set_label(r"$x/\delta=%.3g$" % float(x))
+            x_label = self.Domain.in_to_out(r"$x/\delta=%.3g$"%float(x))
+            line.set_label(x_label)
 
         ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
@@ -1144,7 +1138,8 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         
         lines = ax.get_lines()[-len(x_vals):]
         for line, x in zip(lines,x_vals):
-            line.set_label(r"$x/\delta=%.3g$"% float(x))
+            x_label = self.Domain.in_to_out(r"$x/\delta=%.3g$"%float(x))
+            line.set_label(x_label)
 
         ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
@@ -1177,7 +1172,8 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         lines = ax.get_lines()[-len(x_vals)-1:-1]
         for line, x in zip(lines,x_vals):
-            line.set_label(r"$x/\delta=%.3g$"% x)
+            x_label = self.Domain.in_to_out(r"$x/\delta=%.3g$"%float(x))
+            line.set_label(x_label)
 
         ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
@@ -1185,7 +1181,6 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         return fig, ax
 
 class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
-    module = sys.modules[__name__]
     tgpost = True
 
     @classmethod
@@ -1399,8 +1394,8 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
 
         AVG_info, NSTATIS1 = self._extract_file(PhyTime,path_to_folder,abs_path)
         
-        factor = metaDF['NCL1_tg_io'][0]*metaDF['NCL3'] if cp.rcParams["dissipation_correction"] else 1.0
-        ioflowflg = True if metaDF['NCL1_tg_io'][1]>2 else False
+        factor = metaDF['NCL1_tg']*metaDF['NCL3'] if cp.rcParams["dissipation_correction"] else 1.0
+        ioflowflg = self.metaDF['iDomain'] in [2,3]
 
         if ioflowflg and time0:
             AVG_info0, NSTATIS0 = self._extract_file(time0,path_to_folder,abs_path)

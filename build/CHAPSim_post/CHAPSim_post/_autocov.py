@@ -33,11 +33,14 @@ from ._fluct import CHAPSim_fluct_io,CHAPSim_fluct_tg
 _fluct_io_class = CHAPSim_fluct_io
 _fluct_tg_class = CHAPSim_fluct_tg
 
+from ._common import Common
+
+
 from ._meta import CHAPSim_meta
 _meta_class = CHAPSim_meta
 
-class CHAPSim_autocov_base(ABC):
-    _module = sys.modules[__name__]
+class CHAPSim_autocov_base(Common,ABC):
+
     def __init__(self,*args,**kwargs):
         fromfile=kwargs.pop('fromfile',False)
         if not fromfile:

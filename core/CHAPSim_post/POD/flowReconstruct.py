@@ -9,11 +9,13 @@ import CHAPSim_post.CHAPSim_plot as cplt
 
 from CHAPSim_post import rcParams
 from CHAPSim_post.CHAPSim_post._fluct import CHAPSim_fluct_base
-from CHAPSim_post.CHAPSim_post._common import common3D
+from CHAPSim_post.CHAPSim_post._common import common3D, Common
 
 _fluct_class = POD._fluct_class
 _avg_class = POD._avg_class
 
+_POD2D_class = POD.POD2D
+_POD3D_class = POD.POD3D
 class flowReconstructBase():
 
     def __init__(self,*args,fromfile=False,**kwargs):
@@ -76,8 +78,7 @@ class flowReconstructBase():
 
         return fig, ax
 
-class flowReconstruct2D(flowReconstructBase):
-    _module = sys.modules[__name__]
+class flowReconstruct2D(flowReconstructBase,Common):
 
     def _extractPOD(self,PhyTime,plane,location,comp=None,path_to_folder='.',method='svd',low_memory=True,abs_path=True,time0=None,
                                 y_mode='half-channel',nsnapshots=100,nmodes=10):
@@ -85,7 +86,7 @@ class flowReconstruct2D(flowReconstructBase):
         if comp is None:
             comp = "uvw"
 
-        self._POD = POD.POD2D(comp,plane,location,path_to_folder,method,low_memory,abs_path,time0,y_mode,nsnapshots,nmodes)
+        self._POD = self._module._POD2D_class(comp,plane,location,path_to_folder,method,low_memory,abs_path,time0,y_mode,nsnapshots,nmodes)
 
         # self.POD_modesDF = POD_.POD_modesDF
         self.avg_data = self._POD.avg_data
@@ -149,7 +150,6 @@ class flowReconstruct2D(flowReconstructBase):
 
 
 class flowReconstruct3D(flowReconstructBase,common3D):
-    _module = sys.modules[__name__]
         
     def _extractPOD(self,PhyTime,comp=None,path_to_folder='.',method='svd',low_memory=True,abs_path=True,
                     time0=None,nsnapshots=100,nmodes=10):
@@ -157,7 +157,7 @@ class flowReconstruct3D(flowReconstructBase,common3D):
         if comp is None:
             comp = "uvw"
 
-        self._POD = POD.POD3D(comp,path_to_folder,method,low_memory,abs_path,time0,nsnapshots,nmodes)
+        self._POD = self._module._POD3D_class(comp,path_to_folder,method,low_memory,abs_path,time0,nsnapshots,nmodes)
 
         self.avg_data = self._POD.avg_data
         self.CoordDF = self.avg_data.CoordDF
@@ -196,7 +196,7 @@ class flowReconstruct3D(flowReconstructBase,common3D):
 
     #     self._POD.save_hdf(file_name,'a',key+"/POD3D")
 
-    def _check_outer_index(self,ProcessDF,PhyTime):
+    def _check_outer(self,ProcessDF,PhyTime):
         return PhyTime
 
     def _getProcessDF(self,modes):
