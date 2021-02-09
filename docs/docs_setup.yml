@@ -19,4 +19,4 @@ dependencies:
   - seaborn
   - pip
   - cython
-  - fortran-compiler 
+  - gfortran_linux-64
