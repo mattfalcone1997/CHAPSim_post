@@ -1,0 +1,23 @@
+name: CHAPSim_post
+channels:
+  - defaults
+  - conda-forge
+  - anaconda
+dependencies:
+  - python=3.7
+  - numpy
+  - pandas
+  - matplotlib
+  - scipy
+  - h5py
+  - pyvista
+  - pyvistaqt
+  - sympy
+  - pytables
+  - paramiko
+  - scp
+  - seaborn
+  - pip
+  - cython
+  - sphinx
+  - sphinx_rtd_theme
