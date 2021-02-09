@@ -9,7 +9,7 @@ formats:
    - pdf
 
 conda:
-   environment: docs/docs_setup..yml
+   environment: docs/docs_setup.yml
 
 python:
   version: 3.7
