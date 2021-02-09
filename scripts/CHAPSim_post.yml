@@ -29,3 +29,5 @@ dependencies:
   - llvmlite
   - pyvista
   - pyvistaqt
+  - sphinx
+  - sphinx_rtd_theme

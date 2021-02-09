@@ -1,0 +1,20 @@
+# Required
+version: 2
+
+# Build documentation in the docs/ directory with Sphinx
+sphinx:
+   configuration: docs/source/conf.py
+   builder: html
+formats:
+   - html
+   - pdf
+
+conda:
+   environment: scripts/CHAPSim_post.yml
+
+python:
+  version: 3.7
+  install:
+    - method: pip
+      path: .
+
