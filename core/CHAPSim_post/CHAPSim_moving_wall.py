@@ -54,6 +54,26 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
             
         return bulk_velo
 
+    def plot_bulk_velocity(self,PhyTime=None,relative=False,fig=None,ax=None,line_kw=None,**kwargs):
+        
+        PhyTime = self.check_PhyTime(PhyTime)
+        if relative:
+            bulk_velo = self._bulk_velo_calc(PhyTime)
+        else:
+            bulk_velo = super()._bulk_velo_calc(PhyTime)
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
+
+        xaxis = self._return_xaxis()
+
+        line_kw = cplt.update_line_kw(line_kw,label=r"$U_{b0}$")
+
+        ax.cplot(xaxis,bulk_velo,**line_kw)
+        ax.set_ylabel(r"$U_b^*$")
+        ax.set_xlabel(r"$x/\delta$")
+        return fig, ax
+
     def accel_param_calc(self,PhyTime=None):
 
         PhyTime = self.check_PhyTime(PhyTime)
@@ -388,6 +408,10 @@ class CHAPSim_meta(cp.CHAPSim_meta):
         hdf_file = h5py.File(file_name,'a')
         hdf_file[key].create_dataset("moving_wall",data=self.__moving_wall)
         hdf_file.close()
+
+    @property
+    def wall_velocity(self):
+        return self.__moving_wall
 
     def moving_wall_calc(self):
         return self.__moving_wall

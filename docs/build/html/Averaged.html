@@ -1,0 +1,684 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>The CHAPSim_post Averaged Class - CHAPSim_AVG &#8212; CHAPSim_post  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="The CHAPSim_post Instantaneous classes - CHAPSim_Inst" href="Instant.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="the-chapsim-post-averaged-class-chapsim-avg">
+<h1>The CHAPSim_post Averaged Class - CHAPSim_AVG<a class="headerlink" href="#the-chapsim-post-averaged-class-chapsim-avg" title="Permalink to this headline">¶</a></h1>
+<p>This is the documentation for the core averged classes for extracting raw data from CHAPSim’s results folder</p>
+<span class="target" id="module-CHAPSim_post.CHAPSim_post"></span><dl class="class">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io">
+<em class="property">class </em><code class="sig-prename descclassname">CHAPSim_post.CHAPSim_post.</code><code class="sig-name descname">CHAPSim_AVG_io</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.bulk_velo_calc">
+<code class="sig-name descname">bulk_velo_calc</code><span class="sig-paren">(</span><em class="sig-param">PhyTime=None</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.bulk_velo_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to calculate the bulk velocity against the streamwise coordinate</p>
+<dl class="simple">
+<dt>PhyTime<span class="classifier">(int,float), optional</span></dt><dd><p>Physical time, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>ndarray</dt><dd><p>array containing the bulk velocity</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.check_PhyTime">
+<code class="sig-name descname">check_PhyTime</code><span class="sig-paren">(</span><em class="sig-param">PhyTime</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.check_PhyTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks whether the physical time provided is valid
+and if not whether it can be recovered.</p>
+<dl class="simple">
+<dt>PhyTime<span class="classifier">float or int</span></dt><dd><p>Input Physical time to be checked</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>float or int</dt><dd><p>Correct or corrected physical time</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.int_thickness_calc">
+<code class="sig-name descname">int_thickness_calc</code><span class="sig-paren">(</span><em class="sig-param">PhyTime=None</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.int_thickness_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the integral thicknesses and shape factor</p>
+<dl class="simple">
+<dt>PhyTime<span class="classifier">float or int, optional</span></dt><dd><p>Physical ime, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>ndarray:</dt><dd><p>Displacement thickness</p>
+</dd>
+<dt>ndarray:</dt><dd><p>Momentum thickness</p>
+</dd>
+<dt>ndarray:</dt><dd><p>Shape factor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_Reynolds">
+<code class="sig-name descname">plot_Reynolds</code><span class="sig-paren">(</span><em class="sig-param">comp</em>, <em class="sig-param">x_vals</em>, <em class="sig-param">PhyTime=None</em>, <em class="sig-param">norm=None</em>, <em class="sig-param">Y_plus=True</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">line_kw=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_Reynolds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the wall-normal distribution of the Reynolds stresses</p>
+<dl class="simple">
+<dt>comp<span class="classifier">str</span></dt><dd><p>Component of the Reynolds stress 
+tensor to be process</p>
+</dd>
+<dt>x_vals<span class="classifier">list or int/float</span></dt><dd><p>streamwise locations to be plotted</p>
+</dd>
+<dt>PhyTime<span class="classifier">int or float, optional</span></dt><dd><p>Physical time, by default None</p>
+</dd>
+<dt>norm<span class="classifier">str, optional</span></dt><dd><p>how the Reynolds stresses are normalised. if ‘wall’ they are 
+local inner scaled; ‘local-bulk’ by the local bulk velocity
+None then default normalisation , by default None</p>
+</dd>
+<dt>Y_plus<span class="classifier">bool, optional</span></dt><dd><p>Whether y coordinate is local wall normalised or not, by default True</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes, by default None</p>
+</dd>
+<dt>line_kw<span class="classifier">dict, optional</span></dt><dd><p>keyword arguments to be passed to the plot method, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_Reynolds_x">
+<code class="sig-name descname">plot_Reynolds_x</code><span class="sig-paren">(</span><em class="sig-param">comp</em>, <em class="sig-param">y_vals_list</em>, <em class="sig-param">Y_plus=True</em>, <em class="sig-param">PhyTime=None</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">line_kw=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_Reynolds_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots a Reynolds stress component against the streamwise coordinate or time</p>
+<dl class="simple">
+<dt>comp<span class="classifier">str</span></dt><dd><p>Component of the Reynolds stress 
+tensor to be process</p>
+</dd>
+<dt>y_vals_list<span class="classifier">list or “max”</span></dt><dd><p>contains y coordinates to be processed or max if the wall
+normal maximum is desired</p>
+</dd>
+<dt>Y_plus<span class="classifier">bool, optional</span></dt><dd><p>Whether the coordinates in y_vals list are local inner-scaled,
+not relevant if y_vals_list is <a href="#id1"><span class="problematic" id="id2">`</span></a>max’. by default True</p>
+</dd>
+<dt>PhyTime<span class="classifier">(int or float), optional</span></dt><dd><p>Physical time, by default None</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes, by default None</p>
+</dd>
+<dt>line_kw<span class="classifier">dict, optional</span></dt><dd><p>keyword arguments to be passed to the plot method, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_bulk_velocity">
+<code class="sig-name descname">plot_bulk_velocity</code><span class="sig-paren">(</span><em class="sig-param">PhyTime=None</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">line_kw=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_bulk_velocity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to plot the bulk velocity variation in the streamwise 
+direction</p>
+<dl class="simple">
+<dt>PhyTime<span class="classifier">(float,int), optional</span></dt><dd><p>Physcial time, by default None</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure instance, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes instance, by default None</p>
+</dd>
+<dt>line_kw<span class="classifier">dict, optional</span></dt><dd><p>keyword arguments to be passed to the plot function, by default None</p>
+</dd>
+<dt><a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs<span class="classifier"></span></dt><dd><p>keyword arguments to be passed to the figure/subplot creation function</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>returns the figure and axes instances associated with the bulk velocity</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_disp_thickness">
+<code class="sig-name descname">plot_disp_thickness</code><span class="sig-paren">(</span><em class="sig-param">PhyTime=None</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_disp_thickness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the displacement thickness from the class against the streamwise coordinate</p>
+<dl class="simple">
+<dt>PhyTime<span class="classifier">float, optional</span></dt><dd><p>Physical time, by default None</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes, by default None</p>
+</dd>
+<dt>line_kw<span class="classifier">dict, optional</span></dt><dd><p>keyword arguments to be passed to the plot method, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_eddy_visc">
+<code class="sig-name descname">plot_eddy_visc</code><span class="sig-paren">(</span><em class="sig-param">x_vals</em>, <em class="sig-param">PhyTime=None</em>, <em class="sig-param">Y_plus=True</em>, <em class="sig-param">Y_plus_max=100</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_eddy_visc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the eddy viscosity against the wall-normal coordinate</p>
+<dl class="simple">
+<dt>x_vals<span class="classifier">list or int/float</span></dt><dd><p>streamwise locations to be plotted</p>
+</dd>
+<dt>PhyTime<span class="classifier">int or float, optional</span></dt><dd><p>Physical time, by default None</p>
+</dd>
+<dt>norm<span class="classifier">str, optional</span></dt><dd><p>how the Reynolds stresses are normalised. if ‘wall’ they are 
+local inner scaled; ‘local-bulk’ by the local bulk velocity
+None then default normalisation , by default None</p>
+</dd>
+<dt>Y_plus<span class="classifier">bool, optional</span></dt><dd><p>Whether y coordinate is local wall normalised or not, by default True</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes, by default None</p>
+</dd>
+<dt>line_kw<span class="classifier">dict, optional</span></dt><dd><p>keyword arguments to be passed to the plot method, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_mean_flow">
+<code class="sig-name descname">plot_mean_flow</code><span class="sig-paren">(</span><em class="sig-param">x_vals</em>, <em class="sig-param">comp='u'</em>, <em class="sig-param">PhyTime=None</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_mean_flow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the mean flow field against the wall-normal coordinate</p>
+<dl class="simple">
+<dt>x_vals<span class="classifier">float ot list of floats</span></dt><dd><p>Streamwise locations for plotting</p>
+</dd>
+<dt>comp<span class="classifier">str</span></dt><dd><p>mean flow component to be plotted</p>
+</dd>
+<dt>PhyTime<span class="classifier">float, optional</span></dt><dd><p>Physical time, by default None</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>pre-existing axes, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_mom_thickness">
+<code class="sig-name descname">plot_mom_thickness</code><span class="sig-paren">(</span><em class="sig-param">PhyTime=None</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">line_kw=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_mom_thickness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the momentum thickness from the class against the streamwise coordinate</p>
+<dl class="simple">
+<dt>PhyTime<span class="classifier">float, optional</span></dt><dd><p>Physical time, by default None</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes, by default None</p>
+</dd>
+<dt>line_kw<span class="classifier">dict, optional</span></dt><dd><p>keyword arguments to be passed to the plot method, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_near_wall">
+<code class="sig-name descname">plot_near_wall</code><span class="sig-paren">(</span><em class="sig-param">x_vals</em>, <em class="sig-param">PhyTime=None</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_near_wall" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots $ar{u}^+$ vs $y^+$</p>
+<dl class="simple">
+<dt>x_vals<span class="classifier">float ot list of floats</span></dt><dd><p>Streamwise locations for plotting</p>
+</dd>
+<dt>PhyTime<span class="classifier">float, optional</span></dt><dd><p>Physical time, by default None</p>
+</dd>
+<dt>fig<span class="classifier">%(fig)s, optional</span></dt><dd><p>pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">%(ax), optional</span></dt><dd><p>pre-existing axes, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>%(fig)s, %(ax)s</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_shape_factor">
+<code class="sig-name descname">plot_shape_factor</code><span class="sig-paren">(</span><em class="sig-param">PhyTime=None</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_shape_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the shape factor from the class against the streamwise coordinate</p>
+<dl class="simple">
+<dt>PhyTime<span class="classifier">float, optional</span></dt><dd><p>Physical time, by default None</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes, by default None</p>
+</dd>
+<dt>line_kw<span class="classifier">dict, optional</span></dt><dd><p>keyword arguments to be passed to the plot method, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_skin_friction">
+<code class="sig-name descname">plot_skin_friction</code><span class="sig-paren">(</span><em class="sig-param">PhyTime=None</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.plot_skin_friction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the skin friction coefficient</p>
+<dl class="simple">
+<dt>PhyTime<span class="classifier">[type], optional</span></dt><dd><p>[description], by default None</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure instance, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes instance, by default None</p>
+</dd>
+<dt>line_kw<span class="classifier">dict, optional</span></dt><dd><p>keyword arguments to be passed to the plot function, by default None</p>
+</dd>
+<dt><a href="#id5"><span class="problematic" id="id6">**</span></a>kwargs<span class="classifier"></span></dt><dd><p>keyword arguments to be passed to the figure/subplot creation function</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>returns the figure and axes instances associated with the bulk velocity</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.tau_calc">
+<code class="sig-name descname">tau_calc</code><span class="sig-paren">(</span><em class="sig-param">PhyTime=None</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.tau_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to return the wall shear stress array</p>
+<dl class="simple">
+<dt>PhyTime<span class="classifier">(float,int), optional</span></dt><dd><p>Physical time, if value is invalid or None the routine will
+attempt recovery, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>ndarray</dt><dd><p>Wall shear stress array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.wall_unit_calc">
+<code class="sig-name descname">wall_unit_calc</code><span class="sig-paren">(</span><em class="sig-param">PhyTime=None</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_io.wall_unit_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns arrays for the friction velocity and viscous lengthscale</p>
+<dl class="simple">
+<dt>PhyTime<span class="classifier">float or int, optional</span></dt><dd><p>Physical time, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>ndarray:</dt><dd><p>Friction velocity array</p>
+</dd>
+<dt>ndarray:</dt><dd><p>Viscous lengthscale array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base">
+<em class="property">class </em><code class="sig-prename descclassname">CHAPSim_post.CHAPSim_post.</code><code class="sig-name descname">CHAPSim_AVG_tg_base</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.bulk_velo_calc">
+<code class="sig-name descname">bulk_velo_calc</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.bulk_velo_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to calculate the bulk velocity against the streamwise coordinate</p>
+<dl class="simple">
+<dt>ndarray</dt><dd><p>array containing the bulk velocity</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.int_thickness_calc">
+<code class="sig-name descname">int_thickness_calc</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.int_thickness_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the integral thicknesses and shape factor</p>
+<dl class="simple">
+<dt>ndarray:</dt><dd><p>Displacement thickness</p>
+</dd>
+<dt>ndarray:</dt><dd><p>Momentum thickness</p>
+</dd>
+<dt>ndarray:</dt><dd><p>Shape factor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_Reynolds">
+<code class="sig-name descname">plot_Reynolds</code><span class="sig-paren">(</span><em class="sig-param">comp</em>, <em class="sig-param">PhyTime</em>, <em class="sig-param">norm=None</em>, <em class="sig-param">Y_plus=True</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_Reynolds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the wall-normal distribution of the Reynolds stresses</p>
+<dl class="simple">
+<dt>comp<span class="classifier">str</span></dt><dd><p>Component of the Reynolds stress 
+tensor to be process</p>
+</dd>
+<dt>x_vals<span class="classifier">list or int/float</span></dt><dd><p>streamwise locations to be plotted</p>
+</dd>
+<dt>norm<span class="classifier">str, optional</span></dt><dd><p>how the Reynolds stresses are normalised. if ‘wall’ they are 
+local inner scaled; ‘local-bulk’ by the local bulk velocity
+None then default normalisation , by default None</p>
+</dd>
+<dt>Y_plus<span class="classifier">bool, optional</span></dt><dd><p>Whether y coordinate is local wall normalised or not, by default True</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes, by default None</p>
+</dd>
+<dt>line_kw<span class="classifier">dict, optional</span></dt><dd><p>keyword arguments to be passed to the plot method, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_Reynolds_x">
+<code class="sig-name descname">plot_Reynolds_x</code><span class="sig-paren">(</span><em class="sig-param">comp</em>, <em class="sig-param">y_vals_list</em>, <em class="sig-param">Y_plus=True</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_Reynolds_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots a Reynolds stress component against the streamwise coordinate or time</p>
+<dl class="simple">
+<dt>comp<span class="classifier">str</span></dt><dd><p>Component of the Reynolds stress 
+tensor to be process</p>
+</dd>
+<dt>y_vals_list<span class="classifier">list or “max”</span></dt><dd><p>contains y coordinates to be processed or max if the wall
+normal maximum is desired</p>
+</dd>
+<dt>Y_plus<span class="classifier">bool, optional</span></dt><dd><p>Whether the coordinates in y_vals list are local inner-scaled,
+not relevant if y_vals_list is <a href="#id7"><span class="problematic" id="id8">`</span></a>max’. by default True</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes, by default None</p>
+</dd>
+<dt>line_kw<span class="classifier">dict, optional</span></dt><dd><p>keyword arguments to be passed to the plot method, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_bulk_velocity">
+<code class="sig-name descname">plot_bulk_velocity</code><span class="sig-paren">(</span><em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_bulk_velocity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to plot the bulk velocity variation in the streamwise 
+direction</p>
+<dl class="simple">
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure instance, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes instance, by default None</p>
+</dd>
+<dt>line_kw<span class="classifier">dict, optional</span></dt><dd><p>keyword arguments to be passed to the plot function, by default None</p>
+</dd>
+<dt><a href="#id9"><span class="problematic" id="id10">**</span></a>kwargs<span class="classifier"></span></dt><dd><p>keyword arguments to be passed to the figure/subplot creation function</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>returns the figure and axes instances associated with the bulk velocity</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_eddy_visc">
+<code class="sig-name descname">plot_eddy_visc</code><span class="sig-paren">(</span><em class="sig-param">times</em>, <em class="sig-param">Y_plus=True</em>, <em class="sig-param">Y_plus_max=100</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_eddy_visc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the eddy viscosity against the wall-normal coordinate</p>
+<dl class="simple">
+<dt>x_vals<span class="classifier">list or int/float</span></dt><dd><p>streamwise locations to be plotted</p>
+</dd>
+<dt>norm<span class="classifier">str, optional</span></dt><dd><p>how the Reynolds stresses are normalised. if ‘wall’ they are 
+local inner scaled; ‘local-bulk’ by the local bulk velocity
+None then default normalisation , by default None</p>
+</dd>
+<dt>Y_plus<span class="classifier">bool, optional</span></dt><dd><p>Whether y coordinate is local wall normalised or not, by default True</p>
+</dd>
+<dt>fig<span class="classifier">%(fig)s, optional</span></dt><dd><p>Pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">%(ax)s, optional</span></dt><dd><p>Pre-existing axes, by default None</p>
+</dd>
+<dt>line_kw<span class="classifier">dict, optional</span></dt><dd><p>keyword arguments to be passed to the plot method, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>%(fig)s, %(ax)s</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_mean_flow">
+<code class="sig-name descname">plot_mean_flow</code><span class="sig-paren">(</span><em class="sig-param">times</em>, <em class="sig-param">comp='u'</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_mean_flow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the mean flow field against the wall-normal coordinate</p>
+<dl class="simple">
+<dt>x_vals<span class="classifier">float ot list of floats</span></dt><dd><p>Streamwise locations for plotting</p>
+</dd>
+<dt>comp<span class="classifier">str</span></dt><dd><p>mean flow component to be plotted</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>pre-existing axes, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_near_wall">
+<code class="sig-name descname">plot_near_wall</code><span class="sig-paren">(</span><em class="sig-param">times</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_near_wall" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots $ar{u}^+$ vs $y^+$</p>
+<dl class="simple">
+<dt>x_vals<span class="classifier">float ot list of floats</span></dt><dd><p>Streamwise locations for plotting</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>pre-existing axes, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_shape_factor">
+<code class="sig-name descname">plot_shape_factor</code><span class="sig-paren">(</span><em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_shape_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the shape factor from the class against the streamwise coordinate</p>
+<dl class="simple">
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes, by default None</p>
+</dd>
+<dt>line_kw<span class="classifier">dict, optional</span></dt><dd><p>keyword arguments to be passed to the plot method, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_skin_friction">
+<code class="sig-name descname">plot_skin_friction</code><span class="sig-paren">(</span><em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.plot_skin_friction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the skin friction coefficient</p>
+<dl class="simple">
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure instance, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes instance, by default None</p>
+</dd>
+<dt>line_kw<span class="classifier">dict, optional</span></dt><dd><p>keyword arguments to be passed to the plot function, by default None</p>
+</dd>
+<dt><a href="#id11"><span class="problematic" id="id12">**</span></a>kwargs<span class="classifier"></span></dt><dd><p>keyword arguments to be passed to the figure/subplot creation function</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>returns the figure and axes instances associated with the bulk velocity</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.save_hdf">
+<code class="sig-name descname">save_hdf</code><span class="sig-paren">(</span><em class="sig-param">file_name</em>, <em class="sig-param">write_mode</em>, <em class="sig-param">key=None</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.save_hdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saving the CHAPSim_AVG classes to a file in hdf5 file format</p>
+<dl class="simple">
+<dt>file_name<span class="classifier">str, path-like</span></dt><dd><p>File path of the resulting hdf5 file</p>
+</dd>
+<dt>write_mode<span class="classifier">str</span></dt><dd><p>Mode of file opening the file must be able to modify the file. Passed to the h5py.File method</p>
+</dd>
+<dt>key<span class="classifier">str (path-like), optional</span></dt><dd><p>Location in the hdf file, by default it is the name of the class</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.tau_calc">
+<code class="sig-name descname">tau_calc</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.tau_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to return the wall shear stress array</p>
+<dl class="simple">
+<dt>ndarray</dt><dd><p>Wall shear stress array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.wall_unit_calc">
+<code class="sig-name descname">wall_unit_calc</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg_base.wall_unit_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns arrays for the friction velocity and viscous lengthscale</p>
+<dl class="simple">
+<dt>ndarray</dt><dd><p>friction velocity array</p>
+</dd>
+<dt>ndarray</dt><dd><p>viscous lengthscale array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg">
+<em class="property">class </em><code class="sig-prename descclassname">CHAPSim_post.CHAPSim_post.</code><code class="sig-name descname">CHAPSim_AVG_tg</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_AVG_tg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">CHAPSim_post</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_content.html">CHAPSim_post</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="CHAPSim_post_mod.html">CHAPSim_post module</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Instant.html">The CHAPSim_post Instantaneous classes - CHAPSim_Inst</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">The CHAPSim_post Averaged Class - CHAPSim_AVG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CHAPSim_post_mod.html#sections">Sections</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="main_content.html">CHAPSim_post</a><ul>
+  <li><a href="CHAPSim_post_mod.html">CHAPSim_post module</a><ul>
+      <li>Previous: <a href="Instant.html" title="previous chapter">The CHAPSim_post Instantaneous classes - CHAPSim_Inst</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Matthew Falcone.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/Averaged.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

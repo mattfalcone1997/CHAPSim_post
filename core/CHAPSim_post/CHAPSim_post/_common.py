@@ -30,7 +30,6 @@ _cylind_to_cart ={
 
 class DomainHandler():
 
-    
     def __init__(self,meta_data):
         if meta_data.metaDF['iCase'] in [1,4]:
             self.coord_sys = 'cart'
@@ -121,16 +120,17 @@ class DomainHandler():
         return div_scalar
 
     def Scalar_laplacian(self,coordDF,flow_array):
-        if flow_array.ndim == 1:
-            factor_in = coordDF['y'] if self.is_cylind else 1.0
-            factor_out = 1/coordDF['y'] if self.is_cylind else 1.0
-            dflow_dy = np.multiply(self.Grad_calc(coordDF,flow_array,'y'),
-                                    factor_in)
-            lap_scalar = np.multiply(self.Grad_calc(coordDF,dflow_dy,'y'),
-                                    factor_out)
-        else:
-            grad_vector = self.Scalar_grad_io(coordDF,flow_array)
-            lap_scalar = self.Vector_div_io(coordDF,grad_vector)
+        grad_vector = self.Scalar_grad_io(coordDF,flow_array)
+        lap_scalar = self.Vector_div_io(coordDF,grad_vector)
+        return lap_scalar
+
+    def Scalar_laplacian_tg(self,coordDF,flow_array):
+        factor_in = coordDF['y'] if self.is_cylind else 1.0
+        factor_out = 1/coordDF['y'] if self.is_cylind else 1.0
+        dflow_dy = np.multiply(self.Grad_calc(coordDF,flow_array,'y'),
+                                factor_in)
+        lap_scalar = np.multiply(self.Grad_calc(coordDF,dflow_dy,'y'),
+                                factor_out)
         return lap_scalar
 
     
@@ -159,23 +159,6 @@ class Common(ABC):
             return False
         else:
             return True
-                
-    def _set_title(self,ax,title,convert_title=True,**kwargs):
-        if convert_title:
-            title = self.Domain.in_to_out(title)
-        ax.set_title(title,**kwargs)
-
-    def _set_xlabel(self,ax,x_label,convert_x=True,**kwargs):
-        if convert_x:
-            x_label = self.Domain.in_to_out(x_label)
-
-        ax.set_xlabel(x_label,**kwargs)
-
-    def _set_ylabel(self,ax,y_label,convert_y=True,**kwargs):
-        if convert_y:
-            y_label = self.Domain.in_to_out(y_label)
-
-        ax.set_ylabel(y_label,**kwargs)
 
     
 class common3D(Common):
@@ -264,7 +247,7 @@ class common3D(Common):
         self._check_attr()
         
         PhyTime = self._check_outer(ProcessDF,PhyTime)          
-        
+
         axis_vals = misc_utils.check_list_vals(axis_vals)
             
         plane , coord, axis_index = indexing.contour_plane(plane,axis_vals,avg_data,y_mode,PhyTime)

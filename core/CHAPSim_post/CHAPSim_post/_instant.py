@@ -17,7 +17,6 @@ import CHAPSim_post.CHAPSim_plot as cplt
 import CHAPSim_post.CHAPSim_Tools as CT
 import CHAPSim_post.CHAPSim_dtypes as cd
 
-# import CHAPSim_post.utils as utils
 from ._common import common3D
 
 from ._meta import CHAPSim_meta
@@ -28,7 +27,7 @@ class CHAPSim_Inst(common3D):
     ## CHAPSim_Inst
     This is a module for processing and visualising instantaneous data from CHAPSim
     """
-
+    @docstring.copy_fromattr("_inst_extract")
     def __init__(self,*args,**kwargs):
         fromfile= kwargs.pop('fromfile',False)
         if not fromfile:
@@ -39,30 +38,60 @@ class CHAPSim_Inst(common3D):
         super().__init__(self._meta_data)
 
     def _inst_extract(self,time,meta_data=None,path_to_folder='.',abs_path = True,tgpost=False):
+        """
+        Instantiates CHAPSim_Inst by extracting data from the 
+        CHAPSim rawdata results folder
+
+        Parameters
+        ----------
+        time : int, float, or list
+            Physical times to extract from results folder
+        meta_data : CHAPSim_meta, optional
+            a metadata instance, if not provided, it will be extracted, by default None
+        path_to_folder : str, optional
+            Path to the results folder, by default '.'
+        abs_path : bool, optional
+            Whether the path provided is an absolute path, by default True
+        tgpost : bool, optional
+            Whether the turbulence generator or spatially developing 
+            region are processed, by default False
+
+        """
+
         if meta_data is None:
             meta_data = self._module._meta_class(path_to_folder,abs_path,tgpost)
         self._meta_data = meta_data
         self.CoordDF = meta_data.CoordDF
         self.NCL = meta_data.NCL
 
-        #Give capacity for both float and lists
-        if isinstance(time,(float,int)): 
-            self.InstDF = self._flow_extract(time,path_to_folder,abs_path,tgpost)
-        elif isinstance(time,(list,tuple)):
-            for PhyTime in time:
-                if not hasattr(self, 'InstDF'):
-                    self.InstDF = self._flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
-                else: #Variable already exists
-                    local_DF = self._flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
-                    # concat_DF = [self.InstDF,local_DF]
-                    self.InstDF.concat(local_DF)
-        else:
-            raise TypeError("\033[1;32 `time' must be either float or list")
+        time = misc_utils.check_list_vals(time)
+
+        for PhyTime in time:
+            if not hasattr(self, 'InstDF'):
+                self.InstDF = self._flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
+            else: #Variable already exists
+                local_DF = self._flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
+                # concat_DF = [self.InstDF,local_DF]
+                self.InstDF.concat(local_DF)
+
         self.shape = (self.NCL[2],self.NCL[1],self.NCL[0])
 
     @classmethod
-    def from_hdf(cls,*args,**kwargs):
-        return cls(fromfile=True,*args,**kwargs)
+    def from_hdf(cls,file_name,key=None):
+        """
+        Creates an instance of CHAPSim_inst by extracting an existing 
+        saved instance from hdf file
+
+        Parameters
+        ----------
+        file_name : str
+            File path to existing hdf5 file
+        key : str, optional
+            path-like, hdf5 key to access the data within the file,
+             by default None (class name)
+
+        """
+        return cls(file_name,fromfile=True,key=key)
     
     def _hdf_extract(self,file_name,key=None):
         if key is None:
@@ -75,6 +104,21 @@ class CHAPSim_Inst(common3D):
         self.InstDF = cd.datastruct.from_hdf(file_name,shapes=self.shape,key=key+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
 
     def save_hdf(self,file_name,write_mode,key=None):
+        """
+        Saves the instance of the class to hdf5 file
+
+        Parameters
+        ----------
+        file_name : str
+            File path to existing hdf5 file
+        write_mode : str
+            The write mode for example append "a" or "w" see documentation for 
+            h5py.File
+        key : str, optional
+            path-like, hdf5 key to access the data within the file,
+             by default None (class name)
+        """
+
         if key is None:
             key = 'CHAPSim_Inst'
         self._meta_data.save_hdf(file_name,write_mode,key=key+'/meta_data')
@@ -178,21 +222,119 @@ class CHAPSim_Inst(common3D):
 
         return super()._check_outer(self.InstDF,PhyTime,err_msg,warn_msg)
 
+    @docstring.sub
     def plot_contour(self,comp,axis_vals,avg_data,plane='xz',PhyTime=None,x_split_list=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
-                
+        """
+        Plot a contour along a given plane at different locations in the third axis
+
+        Parameters
+        ----------
+        comp : str
+            Component of the instantaneous data to be extracted e.g. "u" for the
+            streamwise velocity
+
+        axis_vals : int, float (or list of them)
+            locations in the third axis to be plotted
+        avg_data : CHAPSim_AVG
+            Used to aid plotting certain locations using in the y direction 
+            if wall units are used for example
+        plane : str, optional
+            Plane for the contour plot for example "xz" or "rtheta" (for pipes),
+             by default 'xz'
+        PhyTime : float, optional
+            Physical time to be plotted, None can be used if the instance contains a single 
+            time, by default None
+        x_split_list : list, optional
+            Separating domain into different streamwise lengths useful if the domain is much 
+            longer than its width, by default None
+        y_mode : str, optional
+            Only relevant if the xz plane is being used. The y value can be selected using a 
+            number of different normalisations, by default 'wall'
+        fig : %(fig)s, optional
+            Pre-existing figure, by default None
+        ax : %(ax)s, optional
+            Pre-existing axes, by default None
+        pcolor_kw : dict, optional
+            Arguments passed to the pcolormesh function, by default None
+
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            output figure and axes objects
+        """
         return super().plot_contour(self.InstDF,avg_data,
                                     comp,axis_vals,plane=plane,PhyTime=PhyTime,
                                     x_split_list=x_split_list,y_mode=y_mode,fig=fig,ax=ax,
                                     pcolor_kw=pcolor_kw,**kwargs)
 
-    def plot_vector(self,slice,ax_val,avg_data,PhyTime=None,y_mode='half_channel',spacing=(1,1),scaling=1,x_split_list=None,fig=None,ax=None,quiver_kw=None,**kwargs):
+    @docstring.sub
+    def plot_vector(self,plane,axis_vals,avg_data,PhyTime=None,y_mode='half_channel',spacing=(1,1),scaling=1,x_split_list=None,fig=None,ax=None,quiver_kw=None,**kwargs):
+        """
+        Create vector plot of a plane of the instantaneous flow
+
+        Parameters
+        ----------
+        plane : str, optional
+            Plane for the contour plot for example "xz" or "rtheta" (for pipes),
+            by default 'xz'
+        axis_vals : int, float (or list of them)
+            locations in the third axis to be plotted
+        avg_data : CHAPSim_AVG
+            Used to aid plotting certain locations using in the y direction 
+            if wall units are used for example
+        PhyTime : float, optional
+            Physical time to be plotted, None can be used if the instance contains a single 
+            time, by default None
+        y_mode : str, optional
+            Only relevant if the xz plane is being used. The y value can be selected using a 
+            number of different normalisations, by default 'wall'
+        spacing : tuple, optional
+            [description], by default (1,1)
+        scaling : int, optional
+            [description], by default 1
+        x_split_list : list, optional
+            Separating domain into different streamwise lengths useful if the domain is much 
+            longer than its width, by default None
+        fig : %(fig)s, optional
+            Pre-existing figure, by default None
+        ax : %(ax)s, optional
+            Pre-existing axes, by default None
+        quiver_kw : dict, optional
+            Argument passed to matplotlib quiver plot, by default None
         
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            output figure and axes objects
+        """
         return super().plot_vector(self.InstDF,avg_data,
-                                    slice,ax_val,PhyTime=PhyTime,y_mode=y_mode,
+                                    plane,axis_vals,PhyTime=PhyTime,y_mode=y_mode,
                                     spacing=spacing,scaling=scaling,x_split_list=x_split_list,
                                     fig=fig,ax=ax,quiver_kw=quiver_kw,**kwargs)
     
-    def lambda2_calc(self,PhyTime,x_start_index=None,x_end_index=None,y_index=None):
+    @docstring.sub
+    def lambda2_calc(self,PhyTime=None,x_start_index=None,x_end_index=None,y_index=None):
+        """
+        Calculation of lambda to visualise vortex cores
+
+        Parameters
+        ----------
+        PhyTime : float, optional
+            Physical time to be plotted, None can be used if the instance contains a single 
+            time, by default None
+        x_start_index : int, optional
+            streamwise location to start to calculation, by default None
+        x_end_index : int, optional
+            streamwise location to end to calculation, by default None
+        y_index : int, optional
+            First y_index of the mesh to be calculated, by default None
+
+        Returns
+        -------
+        %(ndarray)s
+            Array of the lambda2 calculation
+        """
+        
         #Calculating strain rate tensor
         velo_list = ['u','v','w']
         coord_list = ['x','y','z']
@@ -229,8 +371,40 @@ class CHAPSim_Inst(common3D):
         lambda2 = np.sort(S2_Omega2_eigvals,axis=3)[:,:,:,1]
         
         return lambda2
+    @docstring.sub
     def plot_lambda2(self,vals_list,x_split_list=None,PhyTime=None,ylim=None,Y_plus=True,avg_data=None,colors=None,fig=None,ax=None,**kwargs):
-                
+        """
+        Creates isosurfaces for the lambda 2 criterion
+
+        Parameters
+        ----------
+        vals_list : list of floats
+            isovalues to be plotted
+        x_split_list : list, optional
+            Separating domain into different streamwise lengths useful if the domain is much 
+            longer than its width, by default None
+        PhyTime : float, optional
+            Physical time to be plotted, None can be used if the instance contains a single 
+            time, by default None
+        ylim : float, optional
+            wall-normal extent of the isosurface plot, by default None
+        Y_plus : bool, optional
+            Whether the above value is in wall units, by default True
+        avg_data : CHAPSim_AVG, optional
+            Instance of avg_data need if Y_plus is True, by default None
+        colors : list of str, optional
+            list to represent the order of the colors to be plotted, by default None
+        fig : %(fig)s, optional
+            Pre-existing figure, by default None
+        ax : %(ax)s, optional
+            Pre-existing axes, by default None
+
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            output figure and axes objects
+
+        """
         PhyTime = self._check_outer_index(self.InstDF,PhyTime)            
         
         
@@ -282,6 +456,19 @@ class CHAPSim_Inst(common3D):
         return fig, ax
 
     def vorticity_calc(self,PhyTime=None):
+        """
+        Calculate the vorticity vector
+
+        Parameters
+        ----------
+        PhyTime : float, optional
+            Physical time, by default None
+
+        Returns
+        -------
+        datastruct
+            Datastruct with the vorticity vector in it
+        """
 
         self._check_outer_index(self.InstDF,PhyTime)
 
@@ -296,8 +483,43 @@ class CHAPSim_Inst(common3D):
 
         return cd.datastruct(vorticity,index=['x','y','z'])
 
+    @docstring.sub
     def plot_vorticity_contour(self,comp,plane,axis_vals,PhyTime=None,avg_data=None,x_split_list=None,y_mode='half_channel',pcolor_kw=None,fig=None,ax=None,**kwargs):
-        
+        """
+        Creates a contour plot of the vorticity contour
+
+        Parameters
+        ----------
+        comp : str
+            Component of the vorticity to be extracted e.g. "x" for 
+            \omega_z, the spanwise vorticity
+        plane : str, optional
+            Plane for the contour plot for example "xz" or "rtheta" (for pipes),
+            by default 'xz'
+        axis_vals : int, float (or list of them)
+            locations in the third axis to be plotted
+        PhyTime : float, optional
+            Physical time to be plotted, None can be used if the instance contains a single 
+            time, by default None
+        avg_data : CHAPSim_AVG
+            Used to aid plotting certain locations using in the y direction 
+            if wall units are used for example
+        x_split_list : list, optional
+            Separating domain into different streamwise lengths useful if the domain is much 
+            longer than its width, by default None
+        y_mode : str, optional
+            Only relevant if the xz plane is being used. The y value can be selected using a 
+            number of different normalisations, by default 'wall'
+        fig : %(fig)s, optional
+            Pre-existing figure, by default None
+        ax : %(ax)s, optional
+            Pre-existing axes, by default None
+
+        Returns
+        -------
+        %(fig)s, %(ax)s
+            output figure and axes objects
+        """
         axis_vals = misc_utils.check_list_vals(axis_vals)
         
         PhyTime = self._check_outer_index(self.InstDF,PhyTime)
@@ -321,12 +543,14 @@ class CHAPSim_Inst(common3D):
 
 class CHAPSim_Inst_io(CHAPSim_Inst):
     tgpost = False
+    @docstring.inherit
     def _inst_extract(self,*args,**kwargs):
         kwargs['tgpost'] = self.tgpost
         super()._inst_extract(*args,**kwargs)
 
 class CHAPSim_Inst_tg(CHAPSim_Inst):
     tgpost = True
+    @docstring.inherit
     def _inst_extract(self,*args,**kwargs):
         kwargs['tgpost'] = self.tgpost
         super()._inst_extract(*args,**kwargs)

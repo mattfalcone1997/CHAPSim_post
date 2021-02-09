@@ -1,0 +1,329 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>The CHAPSim_post Instantaneous classes - CHAPSim_Inst &#8212; CHAPSim_post  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="the-chapsim-post-instantaneous-classes-chapsim-inst">
+<h1>The CHAPSim_post Instantaneous classes - CHAPSim_Inst<a class="headerlink" href="#the-chapsim-post-instantaneous-classes-chapsim-inst" title="Permalink to this headline">¶</a></h1>
+<p>This is the documentation for the core Instantaneous classes for extracting raw data from CHAPSim’s results folder</p>
+<span class="target" id="module-CHAPSim_post.CHAPSim_post"></span><dl class="class">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_Inst">
+<em class="property">class </em><code class="sig-prename descclassname">CHAPSim_post.CHAPSim_post.</code><code class="sig-name descname">CHAPSim_Inst</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_Inst" title="Permalink to this definition">¶</a></dt>
+<dd><p>## CHAPSim_Inst
+This is a module for processing and visualising instantaneous data from CHAPSim</p>
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_Inst.from_hdf">
+<em class="property">classmethod </em><code class="sig-name descname">from_hdf</code><span class="sig-paren">(</span><em class="sig-param">file_name</em>, <em class="sig-param">key=None</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_Inst.from_hdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an instance of CHAPSim_inst by extracting an existing 
+saved instance from hdf file</p>
+<dl class="simple">
+<dt>file_name<span class="classifier">str</span></dt><dd><p>File path to existing hdf5 file</p>
+</dd>
+<dt>key<span class="classifier">str, optional</span></dt><dd><dl class="simple">
+<dt>path-like, hdf5 key to access the data within the file,</dt><dd><p>by default None (class name)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_Inst.lambda2_calc">
+<code class="sig-name descname">lambda2_calc</code><span class="sig-paren">(</span><em class="sig-param">PhyTime=None</em>, <em class="sig-param">x_start_index=None</em>, <em class="sig-param">x_end_index=None</em>, <em class="sig-param">y_index=None</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_Inst.lambda2_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculation of lambda to visualise vortex cores</p>
+<dl class="simple">
+<dt>PhyTime<span class="classifier">float, optional</span></dt><dd><p>Physical time to be plotted, None can be used if the instance contains a single 
+time, by default None</p>
+</dd>
+<dt>x_start_index<span class="classifier">int, optional</span></dt><dd><p>streamwise location to start to calculation, by default None</p>
+</dd>
+<dt>x_end_index<span class="classifier">int, optional</span></dt><dd><p>streamwise location to end to calculation, by default None</p>
+</dd>
+<dt>y_index<span class="classifier">int, optional</span></dt><dd><p>First y_index of the mesh to be calculated, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>ndarray</dt><dd><p>Array of the lambda2 calculation</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_Inst.plot_contour">
+<code class="sig-name descname">plot_contour</code><span class="sig-paren">(</span><em class="sig-param">comp</em>, <em class="sig-param">axis_vals</em>, <em class="sig-param">avg_data</em>, <em class="sig-param">plane='xz'</em>, <em class="sig-param">PhyTime=None</em>, <em class="sig-param">x_split_list=None</em>, <em class="sig-param">y_mode='wall'</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">pcolor_kw=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_Inst.plot_contour" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a contour along a given plane at different locations in the third axis</p>
+<dl class="simple">
+<dt>comp<span class="classifier">str</span></dt><dd><p>Component of the instantaneous data to be extracted e.g. “u” for the
+streamwise velocity</p>
+</dd>
+<dt>axis_vals<span class="classifier">int, float (or list of them)</span></dt><dd><p>locations in the third axis to be plotted</p>
+</dd>
+<dt>avg_data<span class="classifier">CHAPSim_AVG</span></dt><dd><p>Used to aid plotting certain locations using in the y direction 
+if wall units are used for example</p>
+</dd>
+<dt>plane<span class="classifier">str, optional</span></dt><dd><dl class="simple">
+<dt>Plane for the contour plot for example “xz” or “rtheta” (for pipes),</dt><dd><p>by default ‘xz’</p>
+</dd>
+</dl>
+</dd>
+<dt>PhyTime<span class="classifier">float, optional</span></dt><dd><p>Physical time to be plotted, None can be used if the instance contains a single 
+time, by default None</p>
+</dd>
+<dt>x_split_list<span class="classifier">list, optional</span></dt><dd><p>Separating domain into different streamwise lengths useful if the domain is much 
+longer than its width, by default None</p>
+</dd>
+<dt>y_mode<span class="classifier">str, optional</span></dt><dd><p>Only relevant if the xz plane is being used. The y value can be selected using a 
+number of different normalisations, by default ‘wall’</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes, by default None</p>
+</dd>
+<dt>pcolor_kw<span class="classifier">dict, optional</span></dt><dd><p>Arguments passed to the pcolormesh function, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_Inst.plot_lambda2">
+<code class="sig-name descname">plot_lambda2</code><span class="sig-paren">(</span><em class="sig-param">vals_list</em>, <em class="sig-param">x_split_list=None</em>, <em class="sig-param">PhyTime=None</em>, <em class="sig-param">ylim=None</em>, <em class="sig-param">Y_plus=True</em>, <em class="sig-param">avg_data=None</em>, <em class="sig-param">colors=None</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_Inst.plot_lambda2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates isosurfaces for the lambda 2 criterion</p>
+<dl class="simple">
+<dt>vals_list<span class="classifier">list of floats</span></dt><dd><p>isovalues to be plotted</p>
+</dd>
+<dt>x_split_list<span class="classifier">list, optional</span></dt><dd><p>Separating domain into different streamwise lengths useful if the domain is much 
+longer than its width, by default None</p>
+</dd>
+<dt>PhyTime<span class="classifier">float, optional</span></dt><dd><p>Physical time to be plotted, None can be used if the instance contains a single 
+time, by default None</p>
+</dd>
+<dt>ylim<span class="classifier">float, optional</span></dt><dd><p>wall-normal extent of the isosurface plot, by default None</p>
+</dd>
+<dt>Y_plus<span class="classifier">bool, optional</span></dt><dd><p>Whether the above value is in wall units, by default True</p>
+</dd>
+<dt>avg_data<span class="classifier">CHAPSim_AVG, optional</span></dt><dd><p>Instance of avg_data need if Y_plus is True, by default None</p>
+</dd>
+<dt>colors<span class="classifier">list of str, optional</span></dt><dd><p>list to represent the order of the colors to be plotted, by default None</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_Inst.plot_vector">
+<code class="sig-name descname">plot_vector</code><span class="sig-paren">(</span><em class="sig-param">plane</em>, <em class="sig-param">axis_vals</em>, <em class="sig-param">avg_data</em>, <em class="sig-param">PhyTime=None</em>, <em class="sig-param">y_mode='half_channel'</em>, <em class="sig-param">spacing=(1</em>, <em class="sig-param">1)</em>, <em class="sig-param">scaling=1</em>, <em class="sig-param">x_split_list=None</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">quiver_kw=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_Inst.plot_vector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create vector plot of a plane of the instantaneous flow</p>
+<dl class="simple">
+<dt>plane<span class="classifier">str, optional</span></dt><dd><p>Plane for the contour plot for example “xz” or “rtheta” (for pipes),
+by default ‘xz’</p>
+</dd>
+<dt>axis_vals<span class="classifier">int, float (or list of them)</span></dt><dd><p>locations in the third axis to be plotted</p>
+</dd>
+<dt>avg_data<span class="classifier">CHAPSim_AVG</span></dt><dd><p>Used to aid plotting certain locations using in the y direction 
+if wall units are used for example</p>
+</dd>
+<dt>PhyTime<span class="classifier">float, optional</span></dt><dd><p>Physical time to be plotted, None can be used if the instance contains a single 
+time, by default None</p>
+</dd>
+<dt>y_mode<span class="classifier">str, optional</span></dt><dd><p>Only relevant if the xz plane is being used. The y value can be selected using a 
+number of different normalisations, by default ‘wall’</p>
+</dd>
+<dt>spacing<span class="classifier">tuple, optional</span></dt><dd><p>[description], by default (1,1)</p>
+</dd>
+<dt>scaling<span class="classifier">int, optional</span></dt><dd><p>[description], by default 1</p>
+</dd>
+<dt>x_split_list<span class="classifier">list, optional</span></dt><dd><p>Separating domain into different streamwise lengths useful if the domain is much 
+longer than its width, by default None</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes, by default None</p>
+</dd>
+<dt>quiver_kw<span class="classifier">dict, optional</span></dt><dd><p>Argument passed to matplotlib quiver plot, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_Inst.plot_vorticity_contour">
+<code class="sig-name descname">plot_vorticity_contour</code><span class="sig-paren">(</span><em class="sig-param">comp</em>, <em class="sig-param">plane</em>, <em class="sig-param">axis_vals</em>, <em class="sig-param">PhyTime=None</em>, <em class="sig-param">avg_data=None</em>, <em class="sig-param">x_split_list=None</em>, <em class="sig-param">y_mode='half_channel'</em>, <em class="sig-param">pcolor_kw=None</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_Inst.plot_vorticity_contour" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a contour plot of the vorticity contour</p>
+<dl class="simple">
+<dt>comp<span class="classifier">str</span></dt><dd><p>Component of the vorticity to be extracted e.g. “x” for 
+omega_z, the spanwise vorticity</p>
+</dd>
+<dt>plane<span class="classifier">str, optional</span></dt><dd><p>Plane for the contour plot for example “xz” or “rtheta” (for pipes),
+by default ‘xz’</p>
+</dd>
+<dt>axis_vals<span class="classifier">int, float (or list of them)</span></dt><dd><p>locations in the third axis to be plotted</p>
+</dd>
+<dt>PhyTime<span class="classifier">float, optional</span></dt><dd><p>Physical time to be plotted, None can be used if the instance contains a single 
+time, by default None</p>
+</dd>
+<dt>avg_data<span class="classifier">CHAPSim_AVG</span></dt><dd><p>Used to aid plotting certain locations using in the y direction 
+if wall units are used for example</p>
+</dd>
+<dt>x_split_list<span class="classifier">list, optional</span></dt><dd><p>Separating domain into different streamwise lengths useful if the domain is much 
+longer than its width, by default None</p>
+</dd>
+<dt>y_mode<span class="classifier">str, optional</span></dt><dd><p>Only relevant if the xz plane is being used. The y value can be selected using a 
+number of different normalisations, by default ‘wall’</p>
+</dd>
+<dt>fig<span class="classifier">CHAPSimFigure, optional</span></dt><dd><p>Pre-existing figure, by default None</p>
+</dd>
+<dt>ax<span class="classifier">AxesCHAPSim, optional</span></dt><dd><p>Pre-existing axes, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHAPSimFigure, AxesCHAPSim</dt><dd><p>output figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_Inst.save_hdf">
+<code class="sig-name descname">save_hdf</code><span class="sig-paren">(</span><em class="sig-param">file_name</em>, <em class="sig-param">write_mode</em>, <em class="sig-param">key=None</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_Inst.save_hdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the instance of the class to hdf5 file</p>
+<dl class="simple">
+<dt>file_name<span class="classifier">str</span></dt><dd><p>File path to existing hdf5 file</p>
+</dd>
+<dt>write_mode<span class="classifier">str</span></dt><dd><p>The write mode for example append “a” or “w” see documentation for 
+h5py.File</p>
+</dd>
+<dt>key<span class="classifier">str, optional</span></dt><dd><dl class="simple">
+<dt>path-like, hdf5 key to access the data within the file,</dt><dd><p>by default None (class name)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="CHAPSim_post.CHAPSim_post.CHAPSim_Inst.vorticity_calc">
+<code class="sig-name descname">vorticity_calc</code><span class="sig-paren">(</span><em class="sig-param">PhyTime=None</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.CHAPSim_post.CHAPSim_Inst.vorticity_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the vorticity vector</p>
+<dl class="simple">
+<dt>PhyTime<span class="classifier">float, optional</span></dt><dd><p>Physical time, by default None</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>datastruct</dt><dd><p>Datastruct with the vorticity vector in it</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">CHAPSim_post</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="main_content.html">CHAPSim_post</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CHAPSim_post_mod.html">CHAPSim_post module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Matthew Falcone.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/Instant.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -505,7 +505,7 @@ class CHAPSim_budget_tg(CHAPSim_budget_base):
         u1u2 = self.avg_data.UU_tensorDF[PhyTime,uu_comp]
 
         REN = self.avg_data._metaDF['REN']
-        viscous_diff = (1/REN)*self.Domain.Scalar_laplacian(self.avg_data.CoordDF,u1u2)
+        viscous_diff = (1/REN)*self.Domain.Scalar_laplacian_tg(self.avg_data.CoordDF,u1u2)
         return viscous_diff#.flatten()
 
     def _production_extract(self,PhyTime,comp1,comp2):
