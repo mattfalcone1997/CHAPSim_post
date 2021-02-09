@@ -31,4 +31,4 @@ dependencies:
   - pyvistaqt
   - sphinx
   - sphinx_rtd_theme
-  - fortran-compiler
+  - gfortran_linux-64
