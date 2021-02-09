@@ -19,6 +19,4 @@ dependencies:
   - seaborn
   - pip
   - cython
-  - sphinx
-  - sphinx_rtd_theme
   - fortran-compiler 
