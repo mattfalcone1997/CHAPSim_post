@@ -6,6 +6,7 @@ if __name__ == "__main__":
     from numpy.distutils import fcompiler
     from Cython.Build import cythonize
 
+    print(fcompiler.get_default_fcompiler())
 
     cy_ext = Extension(name = "CHAPSim_post.CHAPSim_post._cy_ext_base",
                 sources = ["src/autocorr_parallel.pyx"],
