@@ -21,3 +21,4 @@ dependencies:
   - cython
   - sphinx
   - sphinx_rtd_theme
+  - fortran-compiler 
