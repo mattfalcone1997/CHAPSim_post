@@ -7,7 +7,6 @@ sphinx:
    builder: html
 formats:
    - html
-   - pdf
 
 conda:
    environment: scripts/CHAPSim_post.yml
