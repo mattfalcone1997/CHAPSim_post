@@ -992,7 +992,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         line_kw : dict, optional
             keyword arguments to be passed to the plot function, by default None
         
-        \*\*kwargs : 
+        **kwargs : 
             keyword arguments to be passed to the figure/subplot creation function
         Returns
         -------
@@ -1045,7 +1045,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         line_kw : dict, optional
             keyword arguments to be passed to the plot function, by default None
         
-        \*\*kwargs : 
+        **kwargs : 
             keyword arguments to be passed to the figure/subplot creation function
         Returns
         -------
@@ -1651,7 +1651,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         line_kw : dict, optional
             keyword arguments to be passed to the plot function, by default None
         
-        \*\*kwargs : 
+        **kwargs : 
             keyword arguments to be passed to the figure/subplot creation function
         Returns
         -------
@@ -1692,7 +1692,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         line_kw : dict, optional
             keyword arguments to be passed to the plot function, by default None
         
-        \*\*kwargs : 
+        **kwargs : 
             keyword arguments to be passed to the figure/subplot creation function
         Returns
         -------

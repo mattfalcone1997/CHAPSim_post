@@ -134,16 +134,20 @@ class DomainHandler():
         return lap_scalar
 
     
-
+class classproperty():
+    def __init__(self,func):
+        self.f = func
+    def __get__(self,obj,cls):
+        return self.f(cls)
     
 
 class Common(ABC):
     def __init__(self,meta_data):
         self.Domain = DomainHandler(meta_data)
 
-    @property
-    def _module(self):
-        return sys.modules[self.__class__.__module__]
+    @classproperty
+    def _module(cls):
+        return sys.modules[cls.__module__]
 
     def _check_outer(self,processDF,outer,err_msg,warn_msg):
 
