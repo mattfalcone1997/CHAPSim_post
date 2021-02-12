@@ -310,7 +310,7 @@ class AxesCHAPSim(mpl.axes.Axes):
 
         if lines:
             for line in lines:
-                x_data = line.get_xdata().copy()
+                x_data = np.array(line.get_xdata())
                 x_data += val
                 line.set_xdata(x_data)
 
@@ -345,7 +345,7 @@ class AxesCHAPSim(mpl.axes.Axes):
 
         if lines:
             for line in lines:
-                y_data = line.get_ydata().copy()
+                y_data = np.array(line.get_ydata())
                 y_data += val
                 line.set_ydata(y_data)
 
