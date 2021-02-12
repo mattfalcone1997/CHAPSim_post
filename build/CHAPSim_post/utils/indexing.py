@@ -132,6 +132,37 @@ def coord_index_calc(CoordDF,comp,coord_list):
 
     return index_list
 
+def true_coords_from_coords(CoordDF,comp,coord_list):
+    indices = coord_index_calc(CoordDF, comp, coord_list)
+    return CoordDF[comp][indices]
+
+def ycoords_from_coords(avg_data,coord_list,x_vals=None,mode='half_channel'):
+    if mode=='half_channel':
+        norm_distance=np.ones((avg_data.NCL[0]))
+    elif mode == 'disp_thickness':
+        norm_distance, _,_ = avg_data._int_thickness_calc(avg_data.flow_AVGDF.index[0][0])
+    elif mode == 'mom_thickness':
+        _, norm_distance, _ = avg_data._int_thickness_calc(avg_data.flow_AVGDF.index[0][0])
+    elif mode == 'wall':
+        _, norm_distance = avg_data._wall_unit_calc(avg_data.flow_AVGDF.index[0][0])
+    else:
+        raise ValueError("The mode of normalisation must be 'half_channel', 'disp_thickness','mom_thickness',"+\
+                                " or 'wall. Value used was %s\n"%mode)
+
+    indices = y_coord_index_norm(avg_data,coord_list,x_vals,mode)
+
+    if x_vals is None:
+        x_index=list(range(avg_data.shape[-1]))
+    else:
+        x_vals = misc_utils.check_list_vals(x_vals)
+        x_index =[avg_data._return_index(x) for x in x_vals]
+
+    true_ycoords = []
+    for x,index in zip(x_index,indices):
+        norm_coordDF = (1-abs(avg_data.CoordDF))/norm_distance[x]
+        true_ycoords.append(norm_coordDF['y'][index])
+
+    return true_ycoords
 
 def contour_plane(plane,axis_vals,avg_data,y_mode,PhyTime):
     if plane not in ['xy','zy','xz']:

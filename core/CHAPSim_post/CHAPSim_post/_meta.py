@@ -161,7 +161,7 @@ class CHAPSim_meta():
         y_size = YCC.size
         file.close()
 
-        CoordDF = cd.datastruct.from_dict({'x':XCC,'y':YCC,'z':ZCC})
+        CoordDF = cd.datastruct({'x':XCC,'y':YCC,'z':ZCC})
         NCL = [x_size, y_size, z_size]
         return CoordDF, NCL
 
@@ -228,7 +228,7 @@ class CHAPSim_meta():
         y_size = YCC.size
         file.close()
 
-        CoordDF = cd.datastruct.from_dict({'x':XCC,'y':YCC,'z':ZCC})
+        CoordDF = cd.datastruct({'x':XCC,'y':YCC,'z':ZCC})
         NCL = [x_size, y_size, z_size]
         return CoordDF, NCL
         

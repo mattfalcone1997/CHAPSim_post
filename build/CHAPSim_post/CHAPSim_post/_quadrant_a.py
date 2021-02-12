@@ -36,11 +36,10 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
     def __init__(self,*args,**kwargs):
         fromfile=kwargs.pop('fromfile',False)
         if not fromfile:
-            self._meta_data, self.NCL, self._avg_data,\
-            self.QuadAnalDF,self.shape = self._quad_extract(*args,**kwargs)
+            self._quad_extract(*args,**kwargs)
         else:
-            self._meta_data, self.NCL, self._avg_data,\
-            self.QuadAnalDF,self.shape = self._hdf_extract(*args,**kwargs)
+            self._hdf_extract(*args,**kwargs)
+
     def save_hdf(self,file_name,write_mode,key=None):
         if key is None:
             key = 'CHAPSim_Quad_Anal'
@@ -155,24 +154,25 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
             times = list(filter(lambda x: x > time0, times))
         if cp.rcParams['TEST']:
             times.sort(); times= times[-3:]
-        meta_data = self._module._meta_class(path_to_folder,abs_path)
-        NCL = meta_data.NCL
+        self._meta_data = self._module._meta_class(path_to_folder,abs_path)
+        self.NCL = self._meta_data.NCL
+
         try:
-            avg_data = self._module._avg_io_class(max(times),meta_data,path_to_folder,time0,abs_path)
+            self._avg_data = self._module._avg_io_class(max(times),self._meta_data,path_to_folder,time0,abs_path)
         except Exception:
             times.remove(max(times))
-            avg_data = self._module._avg_io_class(max(times),meta_data,path_to_folder,time0)
+            self._avg_data = self._module._avg_io_class(max(times),self._meta_data,path_to_folder,time0)
         i=1
         for timing in times:
-            fluct_data = self._module._fluct_io_class(timing,avg_data,time0=time0,path_to_folder=path_to_folder,
+            fluct_data = self._module._fluct_io_class(timing,self._avg_data,time0=time0,path_to_folder=path_to_folder,
                                         abs_path=abs_path)
-            fluct_uv, quadrant_array = self._quadrant_extract(fluct_data.fluctDF,timing,NCL)
+            fluct_uv, quadrant_array = self._quadrant_extract(fluct_data.fluctDF,timing,self.NCL)
             coe3 = (i-1)/i
             coe2 = 1/i
             if i==1:
-                quad_anal_array = self._quad_calc(avg_data,fluct_uv,quadrant_array,NCL,h_list,timing)
+                quad_anal_array = self._quad_calc(self._avg_data,fluct_uv,quadrant_array,self.NCL,h_list,timing)
             else:
-                local_quad_anal_array = self._quad_calc(avg_data,fluct_uv,quadrant_array,NCL,h_list,timing)
+                local_quad_anal_array = self._quad_calc(self._avg_data,fluct_uv,quadrant_array,self.NCL,h_list,timing)
                 assert local_quad_anal_array.shape == quad_anal_array.shape, "shape of previous array (%d,%d) " % quad_anal_array.shape\
                     + " and current array (%d,%d) must be the same" % local_quad_anal_array.shape
                 quad_anal_array = quad_anal_array*coe3 + local_quad_anal_array*coe2
@@ -182,25 +182,20 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
         for h in h_list:
             index[0].extend([h]*4)
         index[1]=[1,2,3,4]*len(h_list)
-        shape = avg_data.shape        
-        QuadAnalDF=cd.datastruct(quad_anal_array,index=index)
-
-        return meta_data, NCL, avg_data, QuadAnalDF, shape
+        self.shape = self._avg_data.shape        
+        self.QuadAnalDF=cd.datastruct(quad_anal_array,index=index)
 
     def _hdf_extract(self,file_name,key=None):
         if key is None:
             key = 'CHAPSim_Quad_Anal'
-        meta_data = self._module.CHAPSim_meta.from_hdf(file_name,key+'/meta_data')
-        NCL= meta_data.NCL
-        avg_data = self._module._avg_io_class.from_hdf(file_name,key+'/avg_data')
-        shape = (NCL[1],NCL[0])
+        self._meta_data = self._module.CHAPSim_meta.from_hdf(file_name,key+'/meta_data')
+        self.NCL= self._meta_data.NCL
+        self._avg_data = self._module._avg_io_class.from_hdf(file_name,key+'/avg_data')
+        self.shape = (self.NCL[1],self.NCL[0])
         
-        QuadAnalDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/QuadAnalDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
+        self.QuadAnalDF = cd.datastruct.from_hdf(file_name,shapes=self.shape,key=key+'/QuadAnalDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
                 
-        return meta_data, NCL, avg_data, QuadAnalDF, shape
-
-    @staticmethod
-    def _quad_calc(avg_data,fluct_uv,quadrant_array,NCL,h_list,PhyTime):
+    def _quad_calc(self,avg_data,fluct_uv,quadrant_array,NCL,h_list,PhyTime):
         if type(PhyTime) == float: #Convert float to string to be compatible with dataframe
             PhyTime = "{:.10g}".format(PhyTime)
 
@@ -219,6 +214,8 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
                 quad_array=quadrant_array == i
                 fluct_array = np.abs(quad_array*fluct_uv) > h*u_rms*v_rms
                 uv_q[i-1]=np.mean(fluct_uv*fluct_array,axis=0)
+                if cp.rcParams['SymmetryAVG'] and self._meta_data['iCase'] ==1:
+                    uv_q[i-1] = 0.5*(uv_q[i-1] - uv_q[i-1,::-1])
             quad_anal_array[j*4:j*4+4]=uv_q
         return quad_anal_array
 

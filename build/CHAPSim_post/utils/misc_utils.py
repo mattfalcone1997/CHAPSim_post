@@ -51,7 +51,7 @@ def check_list_vals(x_list):
     if isinstance(x_list,(float,int)):
         x_list=[x_list]
     elif not isinstance(x_list,(tuple,list)):
-        msg =  f"x_list must be of type float, int, tuple or list"
+        msg =  f"x_list must be of type float, int, tuple or list not %s"%type(x_list)
         raise TypeError(msg)
     else: # x_list is a tuple or list
         if not all([isinstance(x,(float,int)) for x in x_list]):

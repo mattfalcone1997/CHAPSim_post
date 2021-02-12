@@ -370,7 +370,7 @@ class CHAPSim_AVG_base(Common,ABC):
             else:
                 y_coord_local = y_coord
 
-            label=r"$x/\delta =%.3g$" % self.CoordDF['x'][x]
+            label=r"$x/\delta =%.2g$" % self.CoordDF['x'][x]
             label = self.Domain.in_to_out(label)
             ax.cplot(y_coord_local,uu[:,x],label=label,**line_kw)
 
@@ -422,16 +422,17 @@ class CHAPSim_AVG_base(Common,ABC):
 
         line_kw = cplt.update_line_kw(line_kw)
         if y_vals_list != 'max':
-            for i in range(len(y_index)):
-                ax.cplot(xaxis,rms_vals[i],label=r"$y^+=%.3g$"% y_vals_list[i],**line_kw)
+
+            y_vals_list = indexing.ycoords_from_coords(self,y_vals_list,mode='wall')[0]
+            for i,y_val in enumerate(y_vals_list):
+                ax.cplot(xaxis,rms_vals[i],label=r"$y^+=%.2g$"% y_val,**line_kw)
 
             ncol = cplt.get_legend_ncols(len(y_index))
-            ax.clegend(vertical=False,ncol=ncol)
-            ax.set_ylabel(r"$(\langle %s\rangle/U_{b0}^2)$"%uu_label)
-            
+            ax.clegend(vertical=False,ncol=ncol)            
         else:
             ax.cplot(xaxis,rms_vals,label=r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%uu_label,**line_kw)
-            ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%uu_label)
+        
+        ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%uu_label)
         
         fig.tight_layout()
         return fig, ax
@@ -631,6 +632,8 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         del AVG_info; gc.collect()
 
+
+
         Phy_string = '%.9g' % PhyTime
         flow_index = [[Phy_string]*4,['u','v','w','P']]
         vector_index = [[Phy_string]*3,['u','v','w']]
@@ -657,6 +660,22 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         Velo_grad_tensorDF = cd.datastruct(Velo_grad_tensor,index=tensor_2_index,copy=False) 
         PR_Velo_grad_tensorDF = cd.datastruct(Pr_Velo_grad_tensor,index=tensor_2_index,copy=False) 
         DUDX2_tensorDF = cd.datastruct(DUDX2_tensor,index=tensor_4_index,copy=False) 
+
+        if cp.rcParams["SymmetryAVG"] and self._metaDF['iCase'] == 1:
+            flow_AVGDF = 0.5*(flow_AVGDF + \
+                            flow_AVGDF.symmetrify(dim=0))
+            PU_vectorDF = 0.5*(PU_vectorDF +\
+                            PU_vectorDF.symmetrify(dim=0))
+            UU_tensorDF = 0.5*(UU_tensorDF + \
+                            UU_tensorDF.symmetrify(dim=0))
+            UUU_tensorDF = 0.5*(UUU_tensorDF + \
+                            UUU_tensorDF.symmetrify(dim=0))
+            Velo_grad_tensorDF = 0.5*(Velo_grad_tensorDF + \
+                            Velo_grad_tensorDF.symmetrify(dim=0))
+            PR_Velo_grad_tensorDF = 0.5*(PR_Velo_grad_tensorDF + \
+                            PR_Velo_grad_tensorDF.symmetrify(dim=0))
+            DUDX2_tensorDF = 0.5*(DUDX2_tensorDF + \
+                            DUDX2_tensorDF.symmetrify(dim=0))
 
         return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
                     Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
@@ -899,9 +918,12 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
                                         norm=norm,Y_plus=Y_plus,
                                         fig=fig,ax=ax,line_kw=line_kw,**kwargs)
 
+        x_vals = indexing.true_coords_from_coords(self.CoordDF,'x',x_vals)
+
+
         lines = ax.get_lines()[-len(x_vals):]
         for line,x in zip(lines,x_vals):
-            x_label = self.Domain.in_to_out(r"$x/\delta=%.3g$"%float(x))
+            x_label = self.Domain.in_to_out(r"$x/\delta=%.2g$"%float(x))
             line.set_label(x_label)
 
         ncol = cplt.get_legend_ncols(len(lines))
@@ -992,7 +1014,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         line_kw : dict, optional
             keyword arguments to be passed to the plot function, by default None
         
-        \*\*kwargs : 
+        **kwargs : 
             keyword arguments to be passed to the figure/subplot creation function
         Returns
         -------
@@ -1045,7 +1067,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         line_kw : dict, optional
             keyword arguments to be passed to the plot function, by default None
         
-        \*\*kwargs : 
+        **kwargs : 
             keyword arguments to be passed to the figure/subplot creation function
         Returns
         -------
@@ -1097,9 +1119,11 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         fig, ax = super().plot_eddy_visc(x_vals,PhyTime,Y_plus,Y_plus_max,fig,ax,**kwargs)
         
+        x_vals = indexing.true_coords_from_coords(self.CoordDF,'x',x_vals)
+        
         lines = ax.get_lines()[-len(x_vals):]
         for line, x in zip(lines,x_vals):
-            x_label = self.Domain.in_to_out(r"$x/\delta=%.3g$"%float(x))
+            x_label = self.Domain.in_to_out(r"$x/\delta=%.1f$"%float(x))
             line.set_label(x_label)
 
         ncol = cplt.get_legend_ncols(len(lines))
@@ -1136,9 +1160,11 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
         fig, ax = super().plot_mean_flow(x_vals,comp,PhyTime,fig=fig,ax=ax,**kwargs)
         
+        x_vals = indexing.true_coords_from_coords(self.CoordDF,'x',x_vals)
+
         lines = ax.get_lines()[-len(x_vals):]
         for line, x in zip(lines,x_vals):
-            x_label = self.Domain.in_to_out(r"$x/\delta=%.3g$"%float(x))
+            x_label = self.Domain.in_to_out(r"$x/\delta=%.1f$"%float(x))
             line.set_label(x_label)
 
         ncol = cplt.get_legend_ncols(len(lines))
@@ -1170,9 +1196,11 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         PhyTime = self.check_PhyTime(PhyTime)
         fig, ax = super().plot_near_wall(x_vals,PhyTime,fig=fig,ax=ax,**kwargs)
 
+        x_vals = indexing.true_coords_from_coords(self.CoordDF,'x',x_vals)
+
         lines = ax.get_lines()[-len(x_vals)-1:-1]
         for line, x in zip(lines,x_vals):
-            x_label = self.Domain.in_to_out(r"$x/\delta=%.3g$"%float(x))
+            x_label = self.Domain.in_to_out(r"$x/\delta=%.2g$"%float(x))
             line.set_label(x_label)
 
         ncol = cplt.get_legend_ncols(len(lines))
@@ -1651,7 +1679,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         line_kw : dict, optional
             keyword arguments to be passed to the plot function, by default None
         
-        \*\*kwargs : 
+        **kwargs : 
             keyword arguments to be passed to the figure/subplot creation function
         Returns
         -------
@@ -1692,7 +1720,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         line_kw : dict, optional
             keyword arguments to be passed to the plot function, by default None
         
-        \*\*kwargs : 
+        **kwargs : 
             keyword arguments to be passed to the figure/subplot creation function
         Returns
         -------

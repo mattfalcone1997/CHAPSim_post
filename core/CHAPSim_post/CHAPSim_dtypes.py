@@ -21,16 +21,19 @@ import os
 import operator
 from . import CHAPSim_Tools as CT
 
+import CHAPSim_post as cp
+
 class datastruct:
-    def __init__(self,*args,from_array=False,from_dict=False,from_hdf=False,**kwargs):
-        if not from_array and not from_dict and not from_hdf:
-            if isinstance(args[0],np.ndarray):
-                from_array=True
-            elif isinstance(args[0],dict):
-                from_dict=True
-            else:
-                msg = "No extract type selected"
-                raise ValueError(msg)
+    def __init__(self,*args,from_hdf=False,**kwargs):
+
+        from_array=False; from_dict = False
+        if isinstance(args[0],np.ndarray):
+            from_array=True
+        elif isinstance(args[0],dict):
+            from_dict=True
+        elif not from_hdf:
+            msg = "No extract type selected"
+            raise ValueError(msg)
         
         if from_array:
             self._array_ini(*args,**kwargs)
@@ -92,7 +95,7 @@ class datastruct:
                 else:
                     index = key
                 self._index.append(index)
-                self._data[index] = np.array(hdf_data[key][:])
+                self._data[index] = np.array(hdf_data[key][:]).astype(cp.rcParams['dtype'])
 
             if self._is_multidim():
                 self._outer_index = list(set([i[0] for i in self._index]))
@@ -123,15 +126,11 @@ class datastruct:
                         self._index[i] = (None,*self._index[i][1:])
         
         if shapes is not None:
-            self._data = {i : dataFrame.data[i] for i in self._index}
+            self._data = {i : dataFrame.data[i].astype(cp.rcParams['dtype']) for i in self._index}
         else:
-            self._data = {i : dataFrame.coord[i] for i in self._index}
+            self._data = {i : dataFrame.coord[i].astype(cp.rcParams['dtype']) for i in self._index}
         self._outer_index = list(set([x[0] for x in self._index]))
 
-
-    @classmethod
-    def from_array(cls,*args,**kwargs):
-        return cls(*args,array=True,**kwargs)
     
     def _array_ini(self,array,index=None,copy=False):
 
@@ -142,11 +141,9 @@ class datastruct:
         if len(self._index) != len(array):
             msg = "The length of the indices must be the same as the outer dimension of the array"
             raise ValueError(msg)
-        if copy:
-            self._data = {i : value.copy() for i, value in zip(self._index,array)}
-        else:
-            self._data = {i : value for i, value in zip(self._index,array)}
-    
+
+        self._data = {i : value.astype(cp.rcParams['dtype'],copy=copy) for i, value in zip(self._index,array)}
+
     @staticmethod
     def _index_construct(index,array):
         if all(isinstance(x,tuple) for x in index):
@@ -177,19 +174,14 @@ class datastruct:
         
         return index, outer_index
 
-        
-    @classmethod
-    def from_dict(cls,*args,**kwargs):
-        return cls(*args,dict=True,**kwargs)
     
     def _dict_ini(self,dict_data,copy=False):
         if not all([isinstance(val,np.ndarray) for val in dict_data.values()]):
             msg = "The type of the values of the dictionary must be a numpy array"
             raise TypeError(msg)
-        if copy:
-            self._data = {key : val.copy() for key, val in dict_data.items()}
-        else:
-            self._data = dict_data
+
+        self._data = {key : val.astype(cp.rcParams['dtype'],copy=copy) for key, val in dict_data.items()}
+
 
         self._index = list(dict_data.keys())
 
@@ -274,8 +266,8 @@ class datastruct:
         if not all(x==shape_list[0] for x in shape_list):
             msg = "To use this function all the arrays in the datastruct must be the same shape"
             raise AttributeError(msg)
-
-        return np.stack(self._data.values(),axis=0)
+        stack_list = list(self._data.values())
+        return np.stack(stack_list,axis=0)
 
     def __str__(self):
         return self._data.__str__()
@@ -450,11 +442,11 @@ class datastruct:
 
     def _arith_binary_op(self,other_obj,func):
         if isinstance(other_obj,datastruct):
-            if not all(self.index==other_obj.index):
+            if not self.index==other_obj.index:
                 msg = "This can only be used if the indices in both datastructs are the same"
                 raise ValueError(msg)
             new_data = {}
-            for key, val in self,:
+            for key, val in self:
                 new_data[key] = func(val,other_obj[key])
 
         else:
@@ -513,6 +505,29 @@ class datastruct:
     def __deepcopy__(self,memo):
         return self.copy()
     
+    def symmetrify(self,dim=None):
+        if self._is_multidim():
+            comp_list = self.inner_index
+        else:
+            comp_list=self.index
+
+        symm_count=[]
+        for comp in comp_list:
+            symm_count.append(comp.count('v') + comp.count('y'))
+
+        slicer = slice(None,None,None)
+        indexer = [slicer for _ in range(self.values.ndim-1)]
+        if dim is not None:
+            indexer[dim] = slice(None,None,-1)
+
+        data = {}
+        for index,count in zip(self.index,symm_count):
+
+            data[index] = self._data[index][tuple(indexer)]*(-1)**count
+
+        return datastruct(data)
+
+
 class metastruct():
     def __init__(self,*args,from_hdf=False,**kwargs):
         from_list = False; from_dict=False

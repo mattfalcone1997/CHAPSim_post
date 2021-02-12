@@ -256,6 +256,10 @@ class common3D(Common):
             
         plane , coord, axis_index = indexing.contour_plane(plane,axis_vals,avg_data,y_mode,PhyTime)
 
+        if coord == 'y':
+            axis_vals = indexing.ycoords_from_coords(avg_data,axis_vals,mode=y_mode)[0]
+        else:
+            axis_vals = indexing.true_coords_from_coords(self.CoordDF,coord,axis_vals)
 
         x_coords = self.CoordDF[plane[0]]
         z_coords = self.CoordDF[plane[1]]
@@ -296,9 +300,9 @@ class common3D(Common):
                 ax1.set_clim(min_val,max_val)
 
                 ax1.axes.set_xlabel(r"$%s/\delta$" % plane[0])
-                ax1.axes.set_ylabel(r"$%s/\delta$" % plane[0])
+                ax1.axes.set_ylabel(r"$%s/\delta$" % plane[1])
                 ax1.axes.set_xlim([x_split_list[j],x_split_list[j+1]])
-                ax1.axes.set_title(r"$%s/\delta=%.3g$"%(title_symbol,axis_vals[i]),loc='right')
+                ax1.axes.set_title(r"$%s=%.2g$"%(title_symbol,axis_vals[i]),loc='right')
                 ax1.axes.set_title(r"$t^*=%s$"%PhyTime,loc='left')
                 
                 cbar=fig.colorbar(ax1,ax=ax[j*len(axis_vals)+i])
@@ -377,8 +381,9 @@ class common3D(Common):
 
         y_vals = misc_utils.check_list_vals(y_vals)    
 
-        axis_index = indexing.y_coord_index_norm(avg_data,y_vals,0,y_mode)
-        axis_index = np.diag(axis_index)
+        axis_index = indexing.y_coord_index_norm(avg_data,y_vals,mode=y_mode)[0]
+        # axis_index = np.diag(axis_index)
+        y_vals = indexing.ycoords_from_coords(avg_data,y_vals,mode=y_mode)[0]
 
         CoordDF = self.meta_data.CoordDF
 
@@ -437,6 +442,12 @@ class common3D(Common):
 
         slice, coord, axis_index = indexing.contour_plane(slice,ax_val,avg_data,y_mode,PhyTime)
 
+        if coord == 'y':
+            ax_val = indexing.ycoords_from_coords(avg_data,ax_val,mode=y_mode)[0]
+        else:
+            ax_val = indexing.true_coords_from_coords(self.CoordDF,coord,axis_vals)
+
+
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[8,4*len(ax_val)])
         fig, ax = cplt.create_fig_ax_without_squeeze(len(ax_val),fig=fig,ax=ax,**kwargs)
 
@@ -460,7 +471,7 @@ class common3D(Common):
             Q = ax[i].quiver(coord_1_mesh, coord_2_mesh,U_space[:,:,i].T,V_space[:,:,i].T,angles='uv',scale_units='xy', scale=scale,**quiver_kw)
             ax[i].set_xlabel(r"$%s/\delta$"%slice[0])
             ax[i].set_ylabel(r"$%s/\delta$"%slice[1])
-            ax[i].set_title(r"$%s = %.3g$"%(coord,ax_val[i]),loc='right')
+            ax[i].set_title(r"$%s = %.2g$"%(coord,ax_val[i]),loc='right')
             ax[i].set_title(r"$t^*=%s$"%PhyTime,loc='left')
             ax_out.append(Q)
         if len(ax_out) ==1:

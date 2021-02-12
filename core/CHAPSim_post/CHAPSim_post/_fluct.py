@@ -137,7 +137,7 @@ class CHAPSim_fluct_base(common3D):
             return ax
 
         return cplt.create_general_video(fig,path_to_folder,
-                                        abs_path,func,(),{})
+                                        abs_path,func,time_range=time_range)
         
     def __str__(self):
         return self.fluctDF.__str__()

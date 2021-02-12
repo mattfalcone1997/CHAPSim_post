@@ -12,6 +12,7 @@ class Params:
                         "ForceMode":False,
                         "Spacing":int(1),
                         "dtype": np.dtype('f8'),
+                        "SymmetryAVG" : True,
                         "dissipation_correction": False,
                         "gradient_method":"numpy",
                         "gradient_order": 2,

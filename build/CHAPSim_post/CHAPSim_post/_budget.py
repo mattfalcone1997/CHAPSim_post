@@ -231,8 +231,9 @@ class CHAPSim_budget_base(Common,ABC):
                     y_index = CT.coord_index_calc(self.CoordDF,'y',y_vals_list)
                 budget_term = self.budgetDF[PhyTime,comp]
 
-                for i in range(len(y_index)):
-                    ax.cplot(budget_term[i],label=r"%s $y^+=%.3g$"% (comp,y_vals_list[i]))
+                y_vals_list = indexing.ycoords_from_coords(self,y_vals_list,mode='wall')[0]
+                for i, y_val in enumerate(y_vals_list):
+                    ax.cplot(budget_term[i],label=r"%s $y^+=%.2g$"% (comp,y_val))
                 
                 ncol = cplt.get_legend_ncols(len(budget_terms)*len(y_vals_list))
                 ax.clegend(vertical=False,ncol=ncol, fontsize=16)
@@ -388,8 +389,10 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
 
         fig, ax = super()._budget_plot(PhyTime, x_list,budget_terms,wall_units=wall_units, fig=fig, ax =ax,**kwargs)
         
+        x_list = indexing.true_coords_from_coords(self.avg_data.CoordDF,'x',x_list)
+
         for a,x in zip(ax,x_list):
-            title = self.Domain.in_to_out(r"$x/\delta=%.2f$"%x)
+            title = self.Domain.in_to_out(r"$x/\delta=%.2g$"%x)
             a.set_title(title,loc='right')
             a.relim()
             a.autoscale_view()

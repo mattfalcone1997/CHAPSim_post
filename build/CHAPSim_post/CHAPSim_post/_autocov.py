@@ -388,6 +388,11 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
                 R_x = R_x*coe3 + local_R_x*coe2
                 R_z = R_z*coe3 + local_R_z*coe2
 
+        if cp.rcParams['SymmetryAVG'] and self._meta_data['iCase'] ==1:
+            vy_count = comp1.count('v') + comp2.count('v')
+            R_x = 0.5*(R_x + R_x[:,::-1]*(-1)**vy_count )
+            R_z = 0.5*(R_z + R_z[:,::-1]*(-1)**vy_count )
+
         self.autocorrDF = cd.datastruct.from_dict({'x':R_x,'z':R_z})#.data([shape_x,shape_z])
    
     def _hdf_extract(self,file_name, key=None):
