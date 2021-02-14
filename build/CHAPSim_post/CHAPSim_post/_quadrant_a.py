@@ -214,7 +214,7 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
                 quad_array=quadrant_array == i
                 fluct_array = np.abs(quad_array*fluct_uv) > h*u_rms*v_rms
                 uv_q[i-1]=np.mean(fluct_uv*fluct_array,axis=0)
-                if cp.rcParams['SymmetryAVG'] and self._meta_data['iCase'] ==1:
+                if cp.rcParams['SymmetryAVG'] and self._meta_data.metaDF['iCase'] ==1:
                     uv_q[i-1] = 0.5*(uv_q[i-1] - uv_q[i-1,::-1])
             quad_anal_array[j*4:j*4+4]=uv_q
         return quad_anal_array
