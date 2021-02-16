@@ -393,7 +393,7 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
             R_x = 0.5*(R_x + R_x[:,::-1]*(-1)**vy_count )
             R_z = 0.5*(R_z + R_z[:,::-1]*(-1)**vy_count )
 
-        self.autocorrDF = cd.datastruct.from_dict({'x':R_x,'z':R_z})#.data([shape_x,shape_z])
+        self.autocorrDF = cd.datastruct({'x':R_x,'z':R_z})#.data([shape_x,shape_z])
    
     def _hdf_extract(self,file_name, key=None):
         if key is None:
