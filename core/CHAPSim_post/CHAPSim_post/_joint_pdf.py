@@ -147,6 +147,10 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
             for i in range(len(y_index)):
                 u_prime_array[i].extend(u_prime_data[:,y_index[i],x_index[i]])
                 v_prime_array[i].extend(v_prime_data[:,y_index[i],x_index[i]])
+                if cp.rcParams['SymmetryAVG'] and self.meta_data.metaDF['iCase'] ==1:
+                    y_size = u_prime_data.shape[1]
+                    u_prime_array[i].extend(u_prime_data[:,y_size-y_index[i],x_index[i]])
+                    v_prime_array[i].extend(-1*v_prime_data[:,y_index[i],x_index[i]])
             # del fluct_data#; del u_prime_data; del v_prime_data
             gc.collect()
 
