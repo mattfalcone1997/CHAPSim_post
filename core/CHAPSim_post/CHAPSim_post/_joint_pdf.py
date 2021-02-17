@@ -98,7 +98,6 @@ class CHAPSim_joint_PDF_base(Common,ABC):
 
 
 class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
-    _module = sys.modules[__name__]
 
     def _extract_fluct(self,x,y,path_to_folder=None,time0=None,gridsize=200,y_mode='half-channel',use_ini=True,xy_inner=True,tgpost=False,abs_path=True):
         

@@ -158,12 +158,12 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         ax.autoscale_view()
         return fig, ax
 
-    def avg_line_plot(self,x_vals,*args,relative=False,fig=None,ax=None,**kwargs):
+    def plot_mean_flow(self,x_vals,*args,relative=False,fig=None,ax=None,**kwargs):
         
         if not relative:
-            return super().avg_line_plot(x_vals,*args,fig=fig,ax=ax,**kwargs)
+            return super().plot_mean_flow(x_vals,*args,fig=fig,ax=ax,**kwargs)
         else:
-            fig, ax = super().avg_line_plot(x_vals,*args,fig=fig,ax=ax,**kwargs)
+            fig, ax = super().plot_mean_flow(x_vals,*args,fig=fig,ax=ax,**kwargs)
             x_indices = indexing.coord_index_calc(self.CoordDF,'x',x_vals)
             moving_wall = self._meta_data.moving_wall_calc()[x_indices]
             for line, val in zip(ax.get_lines(),moving_wall):

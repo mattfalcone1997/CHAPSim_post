@@ -214,13 +214,14 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
                 quad_array=quadrant_array == i
                 fluct_array = np.abs(quad_array*fluct_uv) > h*u_rms*v_rms
                 uv_q[i-1]=np.mean(fluct_uv*fluct_array,axis=0)
-                if cp.rcParams['SymmetryAVG'] and self._meta_data.metaDF['iCase'] ==1:
-                    uv_q[i-1] = 0.5*(uv_q[i-1] - uv_q[i-1,::-1])
+            if cp.rcParams['SymmetryAVG'] and self._meta_data.metaDF['iCase'] ==1:
+                symmetry_map = {1: 4,2:3,4:1,3:2}
+                for i in range(1,4):
+                    uv_q[i-1] = 0.5*(uv_q[i-1] - uv_q[symmetry_map[i]-1,::-1])
             quad_anal_array[j*4:j*4+4]=uv_q
         return quad_anal_array
 
 class CHAPSim_Quad_Anl_tg(CHAPSim_Quad_Anl_base):
-    _module = sys.modules[__name__]
     def _quad_extract(self,h_list,path_to_folder='.',time0=None,abs_path=True):
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:

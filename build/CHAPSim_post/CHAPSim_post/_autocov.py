@@ -339,7 +339,6 @@ class CHAPSim_autocov_base(Common,ABC):
         return self.autocorrDF.__str__()
 
 class CHAPSim_autocov_io(CHAPSim_autocov_base):
-    _module = sys.modules[__name__]
     def _autocov_extract(self,comp1,comp2,path_to_folder=".",time0=None,abs_path=True,max_x_sep=None,max_z_sep=None):
 
         times = CT.time_extract(path_to_folder,abs_path)
@@ -568,7 +567,6 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
         return fig, ax
 
 class CHAPSim_autocov_tg(CHAPSim_autocov_base):
-    _module = sys.modules[__name__]
     def _autocov_extract(self,comp1,comp2,path_to_folder='.',time0=None,abs_path=True,max_x_sep=None,max_z_sep=None):
         times = CT.time_extract(path_to_folder,abs_path)
         if time0 is not None:
