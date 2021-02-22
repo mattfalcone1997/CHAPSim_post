@@ -7,13 +7,13 @@ if __name__ == "__main__":
     from Cython.Build import cythonize
 
 
-    cy_ext = Extension(name = "CHAPSim_post.CHAPSim_post._cy_ext_base",
+    cy_ext = Extension(name = "CHAPSim_post.post._cy_ext_base",
                 sources = ["src/autocorr_parallel.pyx"],
                 extra_compile_args = ["-fopenmp","-O3"],
                 extra_link_args = ["-fopenmp","-O3"])
 
     if fcompiler.get_default_fcompiler():
-        f90_ext = Extension(name = 'CHAPSim_post.CHAPSim_post._f90_ext_base',
+        f90_ext = Extension(name = 'CHAPSim_post.post._f90_ext_base',
                             sources = ["src/autocorr_parallel.f90"],
                             extra_link_args=["-lgomp"],
                             extra_f90_compile_args=['-O3','-fopenmp'])
@@ -27,14 +27,14 @@ if __name__ == "__main__":
                             ext_modules = cythonize(ext_list))
 
 
-    config.add_subpackage(subpackage_name='CHAPSim_post',
-                        subpackage_path="core/CHAPSim_post/CHAPSim_post")
+    config.add_subpackage(subpackage_name='post',
+                        subpackage_path="core/CHAPSim_post/post")
     
     config.add_subpackage(subpackage_name="utils",
                         subpackage_path="core/CHAPSim_post/utils")
     
-    config.add_subpackage(subpackage_name="CHAPSim_plot",
-                        subpackage_path="core/CHAPSim_post/CHAPSim_plot")
+    config.add_subpackage(subpackage_name="plot",
+                        subpackage_path="core/CHAPSim_post/plot")
 
     config.add_subpackage(subpackage_name="POD",
                         subpackage_path="core/CHAPSim_post/POD")

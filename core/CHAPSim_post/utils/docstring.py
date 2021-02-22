@@ -7,7 +7,7 @@ import inspect
 from functools import wraps
 
 import numpy as np
-import CHAPSim_post.CHAPSim_plot as cplt
+import CHAPSim_post.plot as cplt
 
 from matplotlib import docstring
 

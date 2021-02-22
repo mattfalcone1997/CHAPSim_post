@@ -3,8 +3,6 @@ import numpy as np
 __name__ = "CHAPSim_post"
 __path__ = [os.path.dirname(__file__)]
 
-TEST = False
-
 class Params:
     def __init__(self):
         self.__params = {"TEST":False,
@@ -44,3 +42,5 @@ class Params:
             self.__params[key] = value
 
 rcParams = Params()
+
+

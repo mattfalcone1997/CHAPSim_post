@@ -79,7 +79,7 @@ if hash conda &>/dev/null ; then
 	echo -e "### Testing conda environment\n "
 
 	conda activate CHAPSim_post
-	if $CONDA_PREFIX/bin/python3 -c "import CHAPSim_post.CHAPSim_post; import CHAPSim_post.CHAPSim_Tools; import CHAPSim_post.CHAPSim_plot; import CHAPSim_post.CHAPSim_dtypes" ; then
+	if $CONDA_PREFIX/bin/python3 -c "import CHAPSim_post.post; import CHAPSim_post.plot; import CHAPSim_post.dtypes" ; then
 		echo -e "Import test complete" 
 		conda deactivate
 	else

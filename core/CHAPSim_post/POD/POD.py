@@ -2,12 +2,14 @@
 import sys
 import numpy as np
 import h5py
-import CHAPSim_post.CHAPSim_post as cp
-import CHAPSim_post.CHAPSim_dtypes as cd
-import CHAPSim_post.CHAPSim_plot as cplt
+import CHAPSim_post.post as cp
+import CHAPSim_post.dtypes as cd
+import CHAPSim_post.plot as cplt
+
 from CHAPSim_post import rcParams
 from CHAPSim_post.utils import misc_utils,indexing
-from CHAPSim_post.CHAPSim_post._common import common3D, Common
+from CHAPSim_post.post._common import common3D, Common
+
 _avg_class = cp.CHAPSim_AVG_io
 _fluct_class = cp.CHAPSim_fluct_io
 

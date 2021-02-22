@@ -4,12 +4,12 @@ import h5py
 
 from . import POD
 from CHAPSim_post.utils import indexing
-import CHAPSim_post.CHAPSim_dtypes as cd
-import CHAPSim_post.CHAPSim_plot as cplt
+import CHAPSim_post.dtypes as cd
+import CHAPSim_post.plot as cplt
 
 from CHAPSim_post import rcParams
-from CHAPSim_post.CHAPSim_post._fluct import CHAPSim_fluct_base
-from CHAPSim_post.CHAPSim_post._common import common3D, Common
+from CHAPSim_post.post._fluct import CHAPSim_fluct_base
+from CHAPSim_post.post._common import common3D, Common
 
 _fluct_class = POD._fluct_class
 _avg_class = POD._avg_class
