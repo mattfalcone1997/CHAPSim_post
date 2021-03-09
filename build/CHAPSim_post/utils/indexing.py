@@ -164,6 +164,21 @@ def ycoords_from_coords(avg_data,coord_list,x_vals=None,mode='half_channel'):
 
     return true_ycoords
 
+def ycoords_from_norm_coords(avg_data,coord_list,x_vals=None,mode='half_channel'):
+    indices = y_coord_index_norm(avg_data,coord_list,x_vals,mode)
+    true_ycoords = []
+    for index in zip(indices):
+        true_ycoords.append(avg_data.CoordDF['y'][index])
+
+    return true_ycoords
+
+def coords_from_norm_coords(CoordDF,comp,coord_list):
+    indices = coord_index_calc(CoordDF,comp,coord_list)
+    return CoordDF[comp][indices]
+
+
+
+
 def contour_plane(plane,axis_vals,avg_data,y_mode,PhyTime):
     if plane not in ['xy','zy','xz']:
         plane = plane[::-1]

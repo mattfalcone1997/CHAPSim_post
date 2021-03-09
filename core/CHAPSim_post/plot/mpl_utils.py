@@ -17,6 +17,11 @@ from shutil import which
 import CHAPSim_post as cp
 from CHAPSim_post.utils import misc_utils
 
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from numpy.core.fromnumeric import swapaxes
+from scipy.interpolate import RectBivariateSpline as RBS
+from scipy.interpolate import interpn,interp1d
+from skimage import measure
 
 
 if which('lualatex') is not None:
@@ -181,7 +186,6 @@ class AxesCHAPSim(mpl.axes.Axes):
                 handles, labels = self.get_legend_handles_labels()
                 kwargs['labels'] = flip_leg_col(labels,ncol)
                 kwargs['handles'] = flip_leg_col(handles,ncol)
-
         return super().legend(*args, **kwargs)
 
     def set_label_fontsize(self ,fontsize,tight_layout=True,**kwargs):
@@ -437,6 +441,78 @@ class Axes3DCHAPSim(Axes3D):
         lims = [lim+val for lim in self.get_zlim()]
         self.set_zlim(lims)
 
+    def plot_isosurface(self,X,Y,Z,data,level,scaling=None,**kwargs):
+        had_data = self.has_data()
+        old_verts, faces, normals, values = measure.marching_cubes(data, level=level)
+
+        def get_var_index(array):
+            avail_arr = []
+            for dim in range(array.ndim):
+                slice_list = [0]*array.ndim
+                slice_list[dim] = slice(None)
+                arr_single_dim = array[tuple(slice_list)]
+
+                if all(arr_single_dim == arr_single_dim[0]):
+                    continue
+                elif not all(np.diff(arr_single_dim)>0):
+                    msg = "array must be strictly increasing"
+                    raise ValueError(msg)
+                else:
+                    #print(arr_single_dim)
+                    avail_arr.append((tuple(slice_list),dim))
+
+            if len(avail_arr) ==0 :
+                msg = "array needs to be not constant in one direction"
+                raise ValueError(msg)
+            elif len(avail_arr) >1:
+                msg = "array needs to be constant in ojust ne direction"
+                raise ValueError(msg)
+            else:
+                return avail_arr[0]
+
+        indexer1,dim1 = get_var_index(X)
+        indexer2,dim2 = get_var_index(Y)
+        indexer3,dim3 = get_var_index(Z)
+        indexer_list = [indexer1,indexer2,indexer3]
+        dim_list = [dim1,dim2,dim3]
+
+        for indexer,array in zip(indexer_list,[X,Y,Z]):
+            if isinstance(indexer[0],slice):
+                xt = array[indexer]
+            elif isinstance(indexer[1],slice):
+                yt = array[indexer]
+            elif isinstance(indexer[2],slice):
+                zt = array[indexer]
+            else:
+                raise Exception
+
+        xinterp = interp1d(np.arange(xt.size),xt)
+        yinterp = interp1d(np.arange(yt.size),yt)
+        zinterp = interp1d(np.arange(zt.size),zt)
+
+        verts = np.zeros_like(old_verts)
+        verts[:,dim1] = xinterp(old_verts[:,0])
+        verts[:,dim2] = yinterp(old_verts[:,1])
+        verts[:,dim3] = zinterp(old_verts[:,2])
+        # print(scaling)
+        if scaling is not None:
+            if len(scaling) !=3:
+                msg = "The length of the scaling array must be 3"
+                raise ValueError(msg)
+
+            X = X[::scaling[0],::scaling[1],::scaling[2]].copy()
+            Y = Y[::scaling[0],::scaling[1],::scaling[2]].copy()
+            Z = Z[::scaling[0],::scaling[1],::scaling[2]].copy()
+            data = data[::scaling[0],::scaling[1],::scaling[2]].copy()
+
+        # print(X.shape)
+        # print(verts[faces])
+        mesh = Poly3DCollection(verts[faces],**kwargs)
+        self.add_collection(mesh)
+        self.auto_scale_xyz(X,Y, Z, had_data)
+
+        return mesh
+
 mpl.projections.register_projection(AxesCHAPSim)
 mpl.projections.register_projection(Axes3DCHAPSim)
 
@@ -532,7 +608,7 @@ def create_fig_ax_with_squeeze(fig=None,ax=None,**kwargs):
         if not isinstance(fig, CHAPSimFigure):
             msg = f"fig needs to be an instance of {CHAPSimFigure.__name__}"
             raise TypeError(msg)
-        if not isinstance(ax,AxesCHAPSim):
+        if not isinstance(ax,(AxesCHAPSim, Axes3DCHAPSim)):
             msg = f"ax needs to be an instance of {AxesCHAPSim.__name__}"
             raise TypeError(msg)
     

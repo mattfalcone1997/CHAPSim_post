@@ -16,12 +16,12 @@ from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
 import CHAPSim_post.plot as cplt
 import CHAPSim_post.dtypes as cd
 
-from ._common import common3D
+from ._common import Common
 
 from ._meta import CHAPSim_meta
 _meta_class=CHAPSim_meta
 
-class CHAPSim_Inst(common3D):
+class CHAPSim_Inst(Common):
     """
     ## CHAPSim_Inst
     This is a module for processing and visualising instantaneous data from CHAPSim
@@ -186,7 +186,7 @@ class CHAPSim_Inst(common3D):
         index = [[Phy_string]*4,['u','v','w','P']]
 
         # creating datastruct so that data can be easily accessible elsewhere
-        Instant_DF = cd.datastruct(flow_info,index=index,copy=False)# pd.DataFrame(flow_info1,index=index)
+        Instant_DF = cd.flowstruct3D(self.CoordDF,flow_info,index=index,copy=False)# pd.DataFrame(flow_info1,index=index)
 
         for file in open_list:
             file.close()
@@ -215,14 +215,16 @@ class CHAPSim_Inst(common3D):
         flow_interp[3,:,:,:] = flow_info[3,:,:,:-1] #Removing final pressure value 
         return flow_interp
 
-    def _check_outer(self,ProcessDF,PhyTime):
+    def check_PhyTime(self,PhyTime):
         warn_msg = f"PhyTime invalid ({PhyTime}), varaible being set to only PhyTime present in datastruct"
-        err_msg = "PhyTime provided is not in the CHAPSim_AVG datastruct, recovery impossible"
-
-        return super()._check_outer(self.InstDF,PhyTime,err_msg,warn_msg)
+        err_msg = f"PhyTime provided ({PhyTime}) is not in the {self.__class__.__name__} datastruct, recovery impossible"
+        
+        err = ValueError(err_msg)
+        warn = UserWarning(warn_msg)
+        return self.InstDF.check_times(PhyTime,err_msg,warn_msg)
 
     @docstring.sub
-    def plot_contour(self,comp,axis_vals,avg_data,plane='xz',PhyTime=None,x_split_list=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
+    def plot_contour(self,comp,axis_vals,avg_data=None,plane='xz',PhyTime=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
         """
         Plot a contour along a given plane at different locations in the third axis
 
@@ -261,13 +263,52 @@ class CHAPSim_Inst(common3D):
         %(fig)s, %(ax)s
             output figure and axes objects
         """
-        return super().plot_contour(self.InstDF,avg_data,
-                                    comp,axis_vals,plane=plane,PhyTime=PhyTime,
-                                    x_split_list=x_split_list,y_mode=y_mode,fig=fig,ax=ax,
-                                    pcolor_kw=pcolor_kw,**kwargs)
+        plane = self.Domain.out_to_in(plane)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
+        PhyTime = self.check_PhyTime(PhyTime)
+
+        plane, coord = self.InstDF.CoordDF.check_plane(plane)
+
+        if coord == 'y':
+            if avg_data is None:
+                msg = "If the xz plane is selected the avg_data variable must be set"
+                raise TypeError(msg)
+
+            axis_vals = indexing.ycoords_from_coords(avg_data,axis_vals,mode=y_mode)[0]
+            int_vals = indexing.ycoords_from_norm_coords(avg_data,axis_vals,mode=y_mode)[0]
+        else:
+            int_vals = axis_vals = indexing.true_coords_from_coords(self.CoordDF,coord,axis_vals)
+        
+        x_size, z_size = self.InstDF.get_unit_figsize(plane)
+        figsize=[x_size*len(axis_vals),z_size]
+
+        axes_output = True if isinstance(ax,mpl.axes.Axes) else False
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
+
+        title_symbol = misc_utils.get_title_symbol(coord,y_mode,False)
+
+        for i,val in enumerate(int_vals):
+            fig, ax1 = self.InstDF.plot_contour(comp,plane,val,time=PhyTime,fig=fig,ax=ax[i],pcolor_kw=pcolor_kw)
+            ax1.axes.set_xlabel(r"$%s/\delta$" % plane[0])
+            ax1.axes.set_ylabel(r"$%s/\delta$" % plane[1])
+            ax1.axes.set_title(r"$%s=%.2g$"%(title_symbol,axis_vals[i]),loc='right')
+            ax1.axes.set_title(r"$t^*=%s$"%PhyTime,loc='left')
+            
+            cbar=fig.colorbar(ax1,ax=ax[i])
+            cbar.set_label(r"$%s^\prime$"%comp)
+
+            ax[i]=ax1
+            ax[i].axes.set_aspect('equal')
+
+        if axes_output:
+            return fig, ax[0]
+        else:
+            return fig, ax
 
     @docstring.sub
-    def plot_vector(self,plane,axis_vals,avg_data,PhyTime=None,y_mode='half_channel',spacing=(1,1),scaling=1,x_split_list=None,fig=None,ax=None,quiver_kw=None,**kwargs):
+    def plot_vector(self,plane,axis_vals,avg_data,PhyTime=None,y_mode='half_channel',spacing=(1,1),scaling=1,fig=None,ax=None,quiver_kw=None,**kwargs):
         """
         Create vector plot of a plane of the instantaneous flow
 
@@ -306,10 +347,43 @@ class CHAPSim_Inst(common3D):
         %(fig)s, %(ax)s
             output figure and axes objects
         """
-        return super().plot_vector(self.InstDF,avg_data,
-                                    plane,axis_vals,PhyTime=PhyTime,y_mode=y_mode,
-                                    spacing=spacing,scaling=scaling,x_split_list=x_split_list,
-                                    fig=fig,ax=ax,quiver_kw=quiver_kw,**kwargs)
+        plane = self.Domain.out_to_in(plane)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
+        PhyTime = self.check_PhyTime(PhyTime)
+
+        plane, coord = self.InstDF.CoordDF.check_plane(plane)
+
+        if coord == 'y':
+            if avg_data is None:
+                msg = "If the xz plane is selected the avg_data variable must be set"
+                raise TypeError(msg)
+            axis_vals = indexing.ycoords_from_coords(avg_data,axis_vals,mode=y_mode)[0]
+            int_vals = indexing.ycoords_from_norm_coords(avg_data,axis_vals,mode=y_mode)[0]
+        else:
+            int_vals = axis_vals = indexing.true_coords_from_coords(self.CoordDF,coord,axis_vals)
+
+        x_size, z_size = self.InstDF.get_unit_figsize(plane)
+        figsize=[x_size*len(axis_vals),z_size]
+
+        axes_output = True if isinstance(ax,mpl.axes.Axes) else False
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
+
+        title_symbol = misc_utils.get_title_symbol(coord,y_mode,False)
+
+        for i, val in enumerate(int_vals):
+            fig, ax[i] = self.InstDF.plot_vector(plane,val,time=PhyTime,spacing=spacing,scaling=scaling,
+                                                    fig=fig,ax=ax[i],quiver_kw=quiver_kw)
+            ax[i].axes.set_xlabel(r"$%s/\delta$"%slice[0])
+            ax[i].axes.set_ylabel(r"$%s/\delta$"%slice[1])
+            ax[i].axes.set_title(r"$%s = %.2g$"%(title_symbol,axis_vals[i]),loc='right')
+            ax[i].axes.set_title(r"$t^*=%s$"%PhyTime,loc='left')
+
+        if axes_output:
+            return fig, ax[0]
+        else:
+            return fig, ax
     
     @docstring.sub
     def lambda2_calc(self,PhyTime=None,x_start_index=None,x_end_index=None,y_index=None):
@@ -370,6 +444,7 @@ class CHAPSim_Inst(common3D):
         lambda2 = np.sort(S2_Omega2_eigvals,axis=3)[:,:,:,1]
         
         return lambda2
+
     @docstring.sub
     def plot_lambda2(self,vals_list,x_split_list=None,PhyTime=None,ylim=None,Y_plus=True,avg_data=None,colors=None,fig=None,ax=None,**kwargs):
         """
@@ -469,7 +544,7 @@ class CHAPSim_Inst(common3D):
             Datastruct with the vorticity vector in it
         """
 
-        self._check_outer_index(self.InstDF,PhyTime)
+        self.check_PhyTime(self.InstDF,PhyTime)
 
         vorticity = np.zeros((3,*self.shape),dtype='f8')
         u_velo = self.InstDF[PhyTime,'u']
@@ -480,7 +555,8 @@ class CHAPSim_Inst(common3D):
         vorticity[1] = gradient.Grad_calc(self.CoordDF,u_velo,'z') - gradient.Grad_calc(self.CoordDF,w_velo,'x')      
         vorticity[2] = gradient.Grad_calc(self.CoordDF,v_velo,'x') - gradient.Grad_calc(self.CoordDF,u_velo,'y')     
 
-        return cd.datastruct(vorticity,index=['x','y','z'])
+        index = [(PhyTime,x) for x in ['x','y','z']]
+        return cd.flowstruct3D(self.CoordDF,vorticity,index=index)
 
     @docstring.sub
     def plot_vorticity_contour(self,comp,plane,axis_vals,PhyTime=None,avg_data=None,x_split_list=None,y_mode='half_channel',pcolor_kw=None,fig=None,ax=None,**kwargs):
@@ -519,15 +595,52 @@ class CHAPSim_Inst(common3D):
         %(fig)s, %(ax)s
             output figure and axes objects
         """
-        axis_vals = misc_utils.check_list_vals(axis_vals)
-        
-        PhyTime = self._check_outer_index(self.InstDF,PhyTime)
+
         VorticityDF = self.vorticity_calc(PhyTime=PhyTime)
 
-        return super().plot_contour(VorticityDF,avg_data,
-                                    comp,axis_vals,plane=plane,PhyTime=PhyTime,
-                                    x_split_list=x_split_list,y_mode=y_mode,fig=fig,ax=ax,
-                                    pcolor_kw=pcolor_kw,**kwargs)
+        plane = self.Domain.out_to_in(plane)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
+        PhyTime = self.check_PhyTime(PhyTime)
+
+        plane, coord = VorticityDF.CoordDF.check_plane(plane)
+
+        if coord == 'y':
+            if avg_data is None:
+                msg = "If the xz plane is selected the avg_data variable must be set"
+                raise TypeError(msg)
+
+            axis_vals = indexing.ycoords_from_coords(avg_data,axis_vals,mode=y_mode)[0]
+            int_vals = indexing.ycoords_from_norm_coords(avg_data,axis_vals,mode=y_mode)[0]
+        else:
+            int_vals = axis_vals = indexing.true_coords_from_coords(self.CoordDF,coord,axis_vals)
+        
+        x_size, z_size = VorticityDF.get_unit_figsize(plane)
+        figsize=[x_size,z_size*len(axis_vals)]
+
+        axes_output = True if isinstance(ax,mpl.axes.Axes) else False
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
+
+        title_symbol = misc_utils.get_title_symbol(coord,y_mode,False)
+
+        for i,val in enumerate(int_vals):
+            fig, ax1 = VorticityDF.plot_contour(comp,plane,val,time=PhyTime,fig=fig,ax=ax[i],pcolor_kw=pcolor_kw)
+            ax1.axes.set_xlabel(r"$%s/\delta$" % plane[0])
+            ax1.axes.set_ylabel(r"$%s/\delta$" % plane[1])
+            ax1.axes.set_title(r"$%s=%.2g$"%(title_symbol,axis_vals[i]),loc='right')
+            ax1.axes.set_title(r"$t^*=%s$"%PhyTime,loc='left')
+            
+            cbar=fig.colorbar(ax1,ax=ax[i])
+            cbar.set_label(r"$%s^\prime$"%comp)
+
+            ax[i]=ax1
+            ax[i].axes.set_aspect('equal')
+
+        if axes_output:
+            return fig, ax[0]
+        else:
+            return fig, ax
 
     def plot_entrophy(self):
         pass

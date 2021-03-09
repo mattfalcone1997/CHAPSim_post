@@ -207,8 +207,8 @@ class Common(ABC):
     # def vtk(self):
     #     raise NotImplementedError
 
-    def to_vtk(self,filename):
-        pyvista.save_meshio(filename,self.vtk,file_format="vtk")
+    # def to_vtk(self,filename):
+    #     pyvista.save_meshio(filename,self.vtk,file_format="vtk")
 
         
 

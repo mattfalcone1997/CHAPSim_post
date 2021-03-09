@@ -184,7 +184,7 @@ _avg_class = CHAPSim_AVG
 
 class CHAPSim_perturb():
     def __init__(self,time=None,avg_data=None, meta_data=None,path_to_folder='.',time0=None,abs_path=True):
-        if avg_data is None:
+        if avg_data is not None:
             self.__avg_data = avg_data
             times = list(set([x[0] for x in avg_data.UU_tensorDF.index]))
             if len(times)>1 and not times:
@@ -210,7 +210,7 @@ class CHAPSim_perturb():
             U_velo_mean[i] -= wall_velo
 
         start = self._meta_data.metaDF['location_start_end'][0]
-        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)
+        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)[0]
         
         centre_index =int(0.5*self.__avg_data.shape[0])
         U_c0 = U_velo_mean[centre_index,0]
@@ -252,7 +252,7 @@ class CHAPSim_perturb():
             ax.set_ylim([-1,y_max])
 
         ncol = cplt.get_legend_ncols(len(ax.get_lines()))
-        ax.clegend(vertical=False,ncol=ncol, fontsize=16)
+        ax.clegend(vertical=False,ncol=ncol)
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
@@ -262,14 +262,13 @@ class CHAPSim_perturb():
         bulkvelo = self.__avg_data._bulk_velo_calc(PhyTime)
 
         start = self._meta_data.metaDF['location_start_end'][0]
-        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
+        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)[0]+1
 
         REN = self._meta_data.metaDF['REN']
         rho_star = 1.0
         Cf_du = tau_du[x_loc:]/(0.5*REN*rho_star*(bulkvelo[x_loc:]-bulkvelo[0])**2)
         
-        x_coords = self._meta_data.CoordDF['x'][x_loc:] 
-        x_coords -= start
+        x_coords = self._meta_data.CoordDF['x'][x_loc:] - start
 
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
         fig,ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
@@ -286,7 +285,7 @@ class CHAPSim_perturb():
         mean_velo = self.mean_velo_peturb_calc('u',PhyTime)
 
         start = self._meta_data.metaDF['location_start_end'][0]
-        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
+        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)[0]+1
 
         y_coords = self.__avg_data.CoordDF['y']
 
@@ -312,10 +311,10 @@ class CHAPSim_perturb():
         fig,ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         start = self._meta_data.metaDF['location_start_end'][0]
-        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
+        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)[0]+1
 
-        x_coords = self._meta_data.CoordDF['x'][x_loc:] 
-        x_coords -= start
+        x_coords = self._meta_data.CoordDF['x'][x_loc:] - start
+
         delta, theta, H = self.int_thickness_calc(PhyTime)
 
         ax.cplot(x_coords, H,label=r"$H$")
@@ -332,10 +331,10 @@ class CHAPSim_perturb():
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         start = self._meta_data.metaDF['location_start_end'][0]
-        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
+        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)[0]+1
 
-        x_coords = self._meta_data.CoordDF['x'][x_loc:] 
-        x_coords -= start
+        x_coords = self._meta_data.CoordDF['x'][x_loc:] - start
+
         delta, theta, H = self.int_thickness_calc(PhyTime)
 
         ax.cplot(x_coords, theta,label=r"$\theta$")
@@ -351,10 +350,9 @@ class CHAPSim_perturb():
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         start = self._meta_data.metaDF['location_start_end'][0]
-        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)+1
+        x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)[0]+1
 
-        x_coords = self._meta_data.CoordDF['x'][x_loc:] 
-        x_coords -= start
+        x_coords = self._meta_data.CoordDF['x'][x_loc:] - start
         delta, theta, H = self.int_thickness_calc(PhyTime)
 
         ax.cplot(x_coords, delta,label=r"$\delta^*$")

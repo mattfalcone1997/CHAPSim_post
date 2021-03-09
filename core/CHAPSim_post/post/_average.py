@@ -1435,7 +1435,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         AVG_info, NSTATIS1 = self._extract_file(PhyTime,path_to_folder,abs_path)
         
         factor = metaDF['NCL1_tg']*metaDF['NCL3'] if cp.rcParams["dissipation_correction"] else 1.0
-        ioflowflg = self.metaDF['iDomain'] in [2,3]
+        ioflowflg = self._metaDF['iDomain'] in [2,3]
 
         if ioflowflg and time0:
             AVG_info0, NSTATIS0 = self._extract_file(time0,path_to_folder,abs_path)

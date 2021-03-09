@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 import h5py
+import matplotlib as mpl
 
 from . import POD
 from CHAPSim_post.utils import indexing
@@ -9,13 +10,15 @@ import CHAPSim_post.plot as cplt
 
 from CHAPSim_post import rcParams
 from CHAPSim_post.post._fluct import CHAPSim_fluct_base
-from CHAPSim_post.post._common import common3D, Common
+from CHAPSim_post.post._common import Common
+from CHAPSim_post.utils import misc_utils
 
 _fluct_class = POD._fluct_class
 _avg_class = POD._avg_class
 
 _POD2D_class = POD.POD2D
 _POD3D_class = POD.POD3D
+
 class flowReconstructBase():
 
     def __init__(self,*args,fromfile=False,**kwargs):
@@ -149,8 +152,11 @@ class flowReconstruct2D(flowReconstructBase,Common):
         return fig, ax1
 
 
-class flowReconstruct3D(flowReconstructBase,common3D):
-        
+class flowReconstruct3D(flowReconstructBase,Common):
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        Common.__init__(self,self.meta_data)
+
     def _extractPOD(self,PhyTime,comp=None,path_to_folder='.',method='svd',low_memory=True,abs_path=True,
                     time0=None,nsnapshots=100,nmodes=10):
         
@@ -176,6 +182,7 @@ class flowReconstruct3D(flowReconstructBase,common3D):
             POD_coeffs.append(np.inner(fluct,POD_array))
         self._POD_coeffs = np.array(POD_coeffs)
 
+
     def _hdf_extract(self,file_name,key=None):
         if key is None:
             key = self.__class__.__name__
@@ -199,7 +206,7 @@ class flowReconstruct3D(flowReconstructBase,common3D):
     def _check_outer(self,ProcessDF,PhyTime):
         return PhyTime
 
-    def _getProcessDF(self,modes):
+    def _getFluctDF(self,modes):
         coeffs = self.POD_coeffs[modes]
         indices =self.POD.POD_modesDF.index
 
@@ -210,33 +217,115 @@ class flowReconstruct3D(flowReconstructBase,common3D):
 
         # flow_reconstruct = np.sum(reconstruct_arrays,axis=-1)
 
-        return cd.datastruct(flow_reconstruct,index=indices)
+        return cd.flowstruct3D(self.CoordDF,flow_reconstruct,index=indices)
 
-    def plot_contour(self,comp,modes,*args,**kwargs):
+    def plot_contour(self,comp,modes,axis_vals,plane='xz',y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
         
-        ProcessDF = self._getProcessDF(modes)
-        kwargs['PhyTime'] = None
+        FluctDF = self._getFluctDF(modes)
+        
+        plane = self.Domain.out_to_in(plane)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
 
-        return super().plot_contour(ProcessDF,self.avg_data,comp,*args,**kwargs)
+        plane, coord = FluctDF.CoordDF.check_plane(plane)
+
+        if coord == 'y':
+            axis_vals = indexing.ycoords_from_coords(self.avg_data,axis_vals,mode=y_mode)[0]
+            int_vals = indexing.ycoords_from_norm_coords(self.avg_data,axis_vals,mode=y_mode)[0]
+        else:
+            int_vals = axis_vals = indexing.true_coords_from_coords(self.CoordDF,coord,axis_vals)
+            # int_vals = indexing.coord_index_calc(self.CoordDF,coord,axis_vals)
+        
+        x_size, z_size = FluctDF.get_unit_figsize(plane)
+        figsize=[x_size,z_size*len(axis_vals)]
+
+        axes_output = True if isinstance(ax,mpl.axes.Axes) else False
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
+
+        title_symbol = misc_utils.get_title_symbol(coord,y_mode,False)
+
+        for i,val in enumerate(int_vals):
+            fig, ax1 = FluctDF.plot_contour(comp,plane,val,time=None,fig=fig,ax=ax[i],pcolor_kw=pcolor_kw)
+            ax1.axes.set_xlabel(r"$%s/\delta$" % plane[0])
+            ax1.axes.set_ylabel(r"$%s/\delta$" % plane[1])
+            ax1.axes.set_title(r"$%s=%.2g$"%(title_symbol,axis_vals[i]),loc='right')
+            
+            cbar=fig.colorbar(ax1,ax=ax[i])
+            cbar.set_label(r"$%s^\prime$"%comp)
+
+            ax[i]=ax1
+            ax[i].axes.set_aspect('equal')
+
+        if axes_output:
+            return fig, ax[0]
+        else:
+            return fig, ax
+
 
     def plot_streaks(self,comp,modes,*args,**kwargs):
     
-        ProcessDF = self._getProcessDF(modes)
-        kwargs['PhyTime'] = None
+        fluctDF = self._getFluctDF(modes)
 
-        return super().plot_streaks(ProcessDF,self.avg_data,comp,*args,**kwargs)
 
-    def plot_fluct3D_xz(self,comp,modes,*args,**kwargs):
-    
-        ProcessDF = self._getProcessDF(modes)
-        kwargs['PhyTime'] = None
 
-        return super().plot_fluct3D_xz(ProcessDF,self.avg_data,comp,*args,**kwargs)
+    def plot_fluct3D_xz(self,comp,modes,y_vals,y_mode='half-channel',x_split_pair=None,fig=None,ax=None,surf_kw=None,**kwargs):
+        FluctDF = self._getFluctDF(modes)
 
-    def plot_vector(self,comp,modes,*args,**kwargs):
-    
-        ProcessDF = self._getProcessDF(modes)
-        kwargs['PhyTime'] = None
+        y_vals = misc_utils.check_list_vals(y_vals)
+        y_int_vals  = indexing.ycoords_from_norm_coords(self.avg_data,y_vals,mode=y_mode)[0]
 
-        return super().plot_vector(ProcessDF,self.avg_data,comp,*args,**kwargs)
+        axes_output = True if isinstance(ax,mpl.axes.Axes) else False
+        kwargs = cplt.update_subplots_kw(kwargs,subplot_kw={'projection':'3d'},antialiased=True)
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(y_int_vals),fig=fig,ax=ax,**kwargs)
+
+
+        for i, val in enumerate(y_int_vals):
+            fig, ax[i] = FluctDF.plot_surf(comp,'xz',val,time=None,x_split_pair=x_split_pair,fig=fig,ax=ax[i],surf_kw=surf_kw)
+            ax[i].axes.set_ylabel(r'$x/\delta$')
+            ax[i].axes.set_xlabel(r'$z/\delta$')
+            ax[i].axes.set_zlabel(r'$%s^\prime$'%comp)
+            ax[i].axes.invert_xaxis()
+
+        if axes_output:
+            return fig, ax[0]
+        else:
+            return fig, ax
+
         
+        
+    def plot_vector(self,plane,modes,axis_vals,y_mode='half_channel',spacing=(1,1),scaling=1,fig=None,ax=None,quiver_kw=None,**kwargs):
+    
+        FluctDF = self._getFluctDF(modes)        
+        plane = self.Domain.out_to_in(plane)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
+
+        plane, coord = FluctDF.CoordDF.check_plane(plane)
+
+        if coord == 'y':
+            axis_vals = indexing.ycoords_from_coords(self.avg_data,axis_vals,mode=y_mode)[0]
+            int_vals = indexing.ycoords_from_norm_coords(self.avg_data,axis_vals,mode=y_mode)[0]
+        else:
+            int_vals = axis_vals = indexing.true_coords_from_coords(self.CoordDF,coord,axis_vals)
+
+        x_size, z_size = FluctDF.get_unit_figsize(plane)
+        figsize=[x_size,z_size*len(axis_vals)]
+
+        axes_output = True if isinstance(ax,mpl.axes.Axes) else False
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
+
+        title_symbol = misc_utils.get_title_symbol(coord,y_mode,False)
+
+        for i, val in enumerate(int_vals):
+            fig, ax[i] = FluctDF.plot_vector(plane,val,time=None,spacing=spacing,scaling=scaling,
+                                                    fig=fig,ax=ax[i],quiver_kw=quiver_kw)
+            ax[i].axes.set_xlabel(r"$%s/\delta$"%slice[0])
+            ax[i].axes.set_ylabel(r"$%s/\delta$"%slice[1])
+            ax[i].axes.set_title(r"$%s = %.2g$"%(title_symbol,axis_vals[i]),loc='right')
+
+        if axes_output:
+            return fig, ax[0]
+        else:
+            return fig, ax

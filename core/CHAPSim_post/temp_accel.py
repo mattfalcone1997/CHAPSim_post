@@ -224,8 +224,8 @@ class CHAPSim_perturb():
 
         x_loc = self.__avg_data._return_index(self.start)+1
 
-        times = self.__avg_data._return_xaxis()[x_loc:] 
-        times -= self.start
+        times = self.__avg_data._return_xaxis()[x_loc:] - self.start
+
         _, _, H = self.int_thickness_calc()
 
         ax.cplot(times, H,label=r"$H$")
@@ -243,8 +243,8 @@ class CHAPSim_perturb():
 
         x_loc = self.__avg_data._return_index(self.start)+1
 
-        times = self.__avg_data._return_xaxis()[x_loc:] 
-        times -= self.start
+        times = self.__avg_data._return_xaxis()[x_loc:] - self.start
+
         _, theta, _ = self.int_thickness_calc()
 
         ax.cplot(times, theta,label=r"$\theta$")
@@ -261,8 +261,7 @@ class CHAPSim_perturb():
 
         x_loc = self.__avg_data._return_index(self.start)+1
 
-        times = self.__avg_data._return_xaxis()[x_loc:] 
-        times -= self.start
+        times = self.__avg_data._return_xaxis()[x_loc:] - self.start
 
         delta, _, _ = self.int_thickness_calc()
 

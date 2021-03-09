@@ -31,7 +31,7 @@ from ._meta import CHAPSim_meta
 _meta_class=CHAPSim_meta
 
 from ._average import CHAPSim_AVG,CHAPSim_AVG_io,CHAPSim_AVG_tg_base
-from ._common import common3D
+from ._common import Common
 
 _avg_io_class = CHAPSim_AVG_io
 _avg_class = CHAPSim_AVG
@@ -40,7 +40,7 @@ _avg_tg_base_class = CHAPSim_AVG_tg_base
 from ._instant import CHAPSim_Inst
 _instant_class = CHAPSim_Inst
 
-class CHAPSim_fluct_base(common3D):
+class CHAPSim_fluct_base(Common):
     def save_hdf(self,file_name,write_mode,key=None):
         if key is None:
             key= 'CHAPSim_fluct'
@@ -51,39 +51,144 @@ class CHAPSim_fluct_base(common3D):
         self.meta_data.save_hdf(file_name,'a',key+'/meta_data')
         self.fluctDF.to_hdf(file_name,key=key+'/fluctDF',mode='a')#,format='fixed',data_columns=True)
 
-    def _check_outer(self,ProcessDF,PhyTime):
+    def check_PhyTime(self,PhyTime):
         warn_msg = f"PhyTime invalid ({PhyTime}), varaible being set to only PhyTime present in datastruct"
-        err_msg = "PhyTime provided is not in the CHAPSim_AVG datastruct, recovery impossible"
-
-        return super()._check_outer(self.fluctDF,PhyTime,err_msg,warn_msg)
+        err_msg = f"PhyTime provided ({PhyTime}) is not in the {self.__class__.__name__} datastruct, recovery impossible"
+        
+        err = ValueError(err_msg)
+        warn = UserWarning(warn_msg)
+        return self.fluctDF.check_times(PhyTime,err_msg,warn_msg)
     
     def plot_contour(self,comp,axis_vals,plane='xz',PhyTime=None,x_split_list=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
         
-        return super().plot_contour(self.fluctDF,self.avg_data,
-                                    comp,axis_vals,plane=plane,PhyTime=PhyTime,
-                                    x_split_list=x_split_list,y_mode=y_mode,fig=fig,ax=ax,
-                                    pcolor_kw=pcolor_kw,**kwargs)
+        plane = self.Domain.out_to_in(plane)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
+        PhyTime = self.check_PhyTime(PhyTime)
+
+        plane, coord = self.fluctDF.CoordDF.check_plane(plane)
+
+        if coord == 'y':
+            axis_vals = indexing.ycoords_from_coords(self.avg_data,axis_vals,mode=y_mode)[0]
+            int_vals = indexing.ycoords_from_norm_coords(self.avg_data,axis_vals,mode=y_mode)[0]
+        else:
+            int_vals = axis_vals = indexing.true_coords_from_coords(self.CoordDF,coord,axis_vals)
+        
+        x_size, z_size = self.fluctDF.get_unit_figsize(plane)
+        figsize=[x_size,z_size*len(axis_vals)]
+
+        axes_output = True if isinstance(ax,mpl.axes.Axes) else False
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
+
+        title_symbol = misc_utils.get_title_symbol(coord,y_mode,False)
+
+        for i,val in enumerate(int_vals):
+            fig, ax1 = self.fluctDF.plot_contour(comp,plane,val,time=PhyTime,fig=fig,ax=ax[i],pcolor_kw=pcolor_kw)
+            ax1.axes.set_xlabel(r"$%s/\delta$" % plane[0])
+            ax1.axes.set_ylabel(r"$%s/\delta$" % plane[1])
+            ax1.axes.set_title(r"$%s=%.2g$"%(title_symbol,axis_vals[i]),loc='right')
+            ax1.axes.set_title(r"$t^*=%s$"%PhyTime,loc='left')
             
-    def plot_streaks(self,comp,vals_list,x_split_list=None,PhyTime=None,ylim='',Y_plus=True,*args,colors='',fig=None,ax=None,**kwargs):
-        return super().plot_streaks(self.fluctDF,self.avg_data,
-                                    comp,vals_list,x_split_list=x_split_list,
-                                    PhyTime=PhyTime,ylim=ylim,Y_plus=Y_plus,
-                                    *args,colors=colors,fig=fig,ax=ax,
-                                    **kwargs)
+            cbar=fig.colorbar(ax1,ax=ax[i])
+            cbar.set_label(r"$%s^\prime$"%comp)
+
+            ax[i]=ax1
+            ax[i].axes.set_aspect('equal')
+
+        if axes_output:
+            return fig, ax[0]
+        else:
+            return fig, ax
+            
+    def plot_streaks(self,comp,vals_list,x_split_pair=None,PhyTime=None,y_limit=None,y_mode='wall',colors=None,surf_kw=None,fig=None,ax=None,**kwargs):
         
-    def plot_fluct3D_xz(self,comp,y_vals,y_mode='half-channel',PhyTime=None,x_split_list=None,fig=None,ax=None,surf_kw=None,**kwargs):
+        vals_list = misc_utils.check_list_vals(vals_list)
+        PhyTime = self.check_PhyTime(PhyTime)
+        if y_limit is not None:
+            y_lim_int = indexing.ycoords_from_norm_coords(self.avg_data,[y_limit],mode=y_mode)[0][0]
+            print(y_lim_int)
+        else:
+            y_lim_int = None
+
+        kwargs = cplt.update_subplots_kw(kwargs,subplot_kw={'projection':'3d'})
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig=fig,ax=ax,**kwargs)
+
         
-        return super().plot3D_xz(self.fluctDF,self.avg_data,
-                                comp,y_vals,y_mode=y_mode,
-                                PhyTime=PhyTime,x_split_list=x_split_list,
-                                fig=fig, ax=ax,surf_kw=surf_kw,**kwargs)
+        for i,val in enumerate(vals_list):
+            if colors is not None:
+                color = colors[i%len(colors)]
+                surf_kw['facecolor'] = color
+            fig, ax1 = self.fluctDF.plot_isosurface(comp,val,time=PhyTime,y_limit=y_lim_int,
+                                            x_split_pair=x_split_pair,fig=fig,ax=ax,
+                                            surf_kw=surf_kw)
+            ax.axes.set_ylabel(r'$x/\delta$')
+            ax.axes.set_xlabel(r'$z/\delta$')
+            ax.axes.invert_xaxis()
+
+        return fig, ax1
+
+        
+    def plot_fluct3D_xz(self,comp,y_vals,y_mode='half-channel',PhyTime=None,x_split_pair=None,fig=None,ax=None,surf_kw=None,**kwargs):
+        
+        y_vals = misc_utils.check_list_vals(y_vals)
+        PhyTime = self.check_PhyTime(PhyTime)
+        y_int_vals  = indexing.ycoords_from_norm_coords(self.avg_data,y_vals,mode=y_mode)[0]
+
+        axes_output = True if isinstance(ax,mpl.axes.Axes) else False
+        kwargs = cplt.update_subplots_kw(kwargs,subplot_kw={'projection':'3d'},antialiased=True)
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(y_int_vals),fig=fig,ax=ax,**kwargs)
+
+
+        for i, val in enumerate(y_int_vals):
+            fig, ax[i] = self.fluctDF.plot_surf(comp,'xz',val,time=PhyTime,x_split_pair=x_split_pair,fig=fig,ax=ax[i],surf_kw=surf_kw)
+            ax[i].axes.set_ylabel(r'$x/\delta$')
+            ax[i].axes.set_xlabel(r'$z/\delta$')
+            ax[i].axes.set_zlabel(r'$%s^\prime$'%comp)
+            ax[i].axes.invert_xaxis()
+
+        if axes_output:
+            return fig, ax[0]
+        else:
+            return fig, ax
         
 
-    def plot_vector(self,slice,ax_val,PhyTime=None,y_mode='half_channel',spacing=(1,1),scaling=1,x_split_list=None,fig=None,ax=None,quiver_kw=None,**kwargs):
-        return super().plot_vector(self.fluctDF,self.avg_data,
-                                    slice,ax_val,PhyTime=PhyTime,y_mode=y_mode,
-                                    spacing=spacing,scaling=scaling,x_split_list=x_split_list,
-                                    fig=fig,ax=ax,quiver_kw=quiver_kw,**kwargs)
+    def plot_vector(self,plane,axis_vals,PhyTime=None,y_mode='half_channel',spacing=(1,1),scaling=1,x_split_list=None,fig=None,ax=None,quiver_kw=None,**kwargs):
+        
+        plane = self.Domain.out_to_in(plane)
+        axis_vals = misc_utils.check_list_vals(axis_vals)
+        PhyTime = self.check_PhyTime(PhyTime)
+
+        plane, coord = self.fluctDF.CoordDF.check_plane(plane)
+
+        if coord == 'y':
+            axis_vals = indexing.ycoords_from_coords(self.avg_data,axis_vals,mode=y_mode)[0]
+            int_vals = indexing.ycoords_from_norm_coords(self.avg_data,axis_vals,mode=y_mode)[0]
+        else:
+            int_vals = axis_vals = indexing.true_coords_from_coords(self.CoordDF,coord,axis_vals)
+
+        x_size, z_size = self.fluctDF.get_unit_figsize(plane)
+        figsize=[x_size,z_size*len(axis_vals)]
+
+        axes_output = True if isinstance(ax,mpl.axes.Axes) else False
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
+
+        title_symbol = misc_utils.get_title_symbol(coord,y_mode,False)
+
+        for i, val in enumerate(int_vals):
+            fig, ax[i] = self.fluctDF.plot_vector(plane,val,time=PhyTime,spacing=spacing,scaling=scaling,
+                                                    fig=fig,ax=ax[i],quiver_kw=quiver_kw)
+            ax[i].axes.set_xlabel(r"$%s/\delta$"%slice[0])
+            ax[i].axes.set_ylabel(r"$%s/\delta$"%slice[1])
+            ax[i].axes.set_title(r"$%s = %.2g$"%(title_symbol,axis_vals[i]),loc='right')
+            ax[i].axes.set_title(r"$t^*=%s$"%PhyTime,loc='left')
+
+        if axes_output:
+            return fig, ax[0]
+        else:
+            return fig, ax
        
     @classmethod
     def create_video(cls,axis_vals,comp,avg_data=None,contour=True,plane='xz',meta_data=None,path_to_folder='.',time_range=None,
@@ -162,7 +267,7 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
                 else:
                     inst_data += self._module._instant_class(time_inst_data,path_to_folder=path_to_folder,abs_path=abs_path,tgpost=False)
 
-        self.fluctDF = self._fluctDF_calc(inst_data,avg_data)
+        super().__init__(avg_data._meta_data)
 
         self.avg_data = avg_data
         self.meta_data = avg_data._meta_data
@@ -170,7 +275,11 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
         self.CoordDF = self.meta_data.CoordDF
         self.shape = inst_data.shape
 
-        super().__init__(self.meta_data)
+        self.fluctDF = self._fluctDF_calc(inst_data,avg_data)
+
+
+
+        
 
         
     def _fluctDF_calc(self, inst_data, avg_data):
@@ -190,7 +299,7 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
                 fluct[j,i] = inst_values[i] -avg_values
             del inst_values
 
-        return cd.datastruct(fluct,index=inst_data.InstDF.index.copy())
+        return cd.flowstruct3D(self.CoordDF,fluct,index=inst_data.InstDF.index.copy())
     
 class CHAPSim_fluct_tg(CHAPSim_fluct_base):
     tgpost = True

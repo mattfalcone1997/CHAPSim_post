@@ -5,6 +5,7 @@ import h5py
 import CHAPSim_post.post as cp
 import CHAPSim_post.dtypes as cd
 import CHAPSim_post.plot as cplt
+import matplotlib as mpl
 
 from CHAPSim_post import rcParams
 from CHAPSim_post.utils import misc_utils,indexing
@@ -235,7 +236,10 @@ class POD2D(_PODbase,Common):
 
         return fig, ax
 
-class POD3D(_PODbase,common3D):
+class POD3D(_PODbase,Common):
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        Common.__init__(self,self.meta_data)
     def _POD_extract(self,comp,path_to_folder='.',method='svd',low_memory=True,abs_path=True,time0=None,nsnapshots=100,nmodes=10):
         max_time = misc_utils.max_time_calc(path_to_folder,abs_path)
         self.avg_data = self._module._avg_class(max_time,path_to_folder=path_to_folder,
@@ -285,52 +289,47 @@ class POD3D(_PODbase,common3D):
     def _check_outer(self,ProcessDF,PhyTime):
         return PhyTime
 
-    def plot_mode_contour(self,comp,modes,axis_vals,plane='xz',x_split_list=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
+    def plot_mode_contour(self,comp,modes,axis_val,plane='xz',y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
         
         modes = misc_utils.check_list_vals(modes)
-        axis_vals = misc_utils.check_list_vals(axis_vals)
+        axes_output = True if isinstance(ax,mpl.axes.Axes) else False
+
+        axis_val = misc_utils.check_list_vals(axis_val)
         
-        if x_split_list is not None:
-            if not len(modes) !=1 or not len(x_split_list)!=2:
-                msg = "Either the number of modes to be visualised or the x sections needs to be 1"
-                raise ValueError(msg)
-
-        if x_split_list is None or len(x_split_list) ==2:
-            ax_layout = (len(modes),len(axis_vals))
-            figsize=[10*len(axis_vals),3*len(modes)]
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
-            fig, ax = cplt.create_fig_ax_without_squeeze(*ax_layout,fig=fig,ax=ax,**kwargs)
-            for i, mode in enumerate(modes):
-                PODmodes = self.POD_modesDF.values[:,:,:,:,mode]
-                POD_modeDF = cd.datastruct(PODmodes,index=self.POD_modesDF.index)
-                for j, val in enumerate(axis_vals):
-                    fig , ax[j*len(axis_vals)+i] = super().plot_contour(POD_modeDF,self.avg_data,
-                                        comp,axis_vals,plane=plane,PhyTime=None,
-                                        x_split_list=x_split_list,y_mode=y_mode,fig=fig,
-                                        ax=ax[j*len(axis_vals)+i],pcolor_kw=pcolor_kw,**kwargs)
-            
-                    ax[j*len(axis_vals)+i].axes.set_title(r"Mode %d"%(mode+1),loc='left')
-                    ax[j*len(axis_vals)+i].colorbar.remove()
-        elif len(modes) == 1:
-            ax_layout = (len(x_split_list),len(axis_vals))
-            figsize=[10*len(axis_vals),3*(len(x_split_list)-1)]
-            kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
-            fig, ax = cplt.create_fig_ax_without_squeeze(*ax_layout,fig=fig,ax=ax,**kwargs)
-
-            PODmodes = self.POD_modesDF.values[:,:,:,:,modes]
-            POD_modeDF = cd.datastruct(PODmodes,index=self.POD_modesDF.index)
-            for j, val in enumerate(axis_vals):
-                start = j*len(axis_vals)
-                end = start+len(x_split_list)-1
-                fig , ax[start:end] = super().plot_contour(POD_modeDF,self.avg_data,
-                                    comp,axis_vals,plane=plane,PhyTime=None,
-                                    x_split_list=x_split_list,y_mode=y_mode,fig=fig,
-                                    ax=ax[start:end],pcolor_kw=pcolor_kw,**kwargs)
-            for a in ax:
-                ax.axes.set_title(r"Mode %d"%(modes[0]+1),loc='left')
-                ax.axes.colorbar.remove()
-        else:
-            msg = "There is a problem"
+        if len(axis_val) > 1:
+            msg = "This routine can only process one slice in a single call"
             raise ValueError(msg)
-            
-        return fig, ax
+
+        for i,mode in enumerate(modes):
+
+            PODmodes = self.POD_modesDF.values[:,:,:,:,mode]
+            POD_modeDF = cd.flowstruct3D(self.CoordDF,PODmodes,index=self.POD_modesDF.index)
+            plane, coord = POD_modeDF.CoordDF.check_plane(plane)
+
+            if coord == 'y':
+                val = indexing.ycoords_from_coords(self.avg_data,axis_val,mode=y_mode)[0][0]
+                int_val = indexing.ycoords_from_norm_coords(self.avg_data,axis_val,mode=y_mode)[0][0]   
+            else:
+                int_val = val = indexing.true_coords_from_coords(self.CoordDF,coord,axis_val)[0]
+
+            if i == 0:
+                x_size, z_size = POD_modeDF.get_unit_figsize(plane)
+                figsize=[x_size,z_size*len(modes)]
+                kwargs = cplt.update_subplots_kw(kwargs,figsize=figsize)
+                fig, ax = cplt.create_fig_ax_without_squeeze(len(modes),fig=fig,ax=ax,**kwargs)
+
+            title_symbol = misc_utils.get_title_symbol(coord,y_mode,False)
+
+            fig, ax[i] = POD_modeDF.plot_contour(comp,plane,int_val,time=None,fig=fig,ax=ax[i],pcolor_kw=pcolor_kw)
+            ax[i].axes.set_xlabel(r"$%s/\delta$" % plane[0])
+            ax[i].axes.set_ylabel(r"$%s/\delta$" % plane[1])
+            ax[i].axes.set_title(r"$%s=%.2g$"%(title_symbol,val),loc='right')
+            ax[i].axes.set_title(r"Mode %d"%(mode+1),loc='left')
+            cbar=fig.colorbar(ax[i],ax=ax[i].axes)
+            ax[i].axes.set_aspect('equal')
+
+                    
+        if axes_output:
+            return fig, ax[0]
+        else:
+            return fig, ax

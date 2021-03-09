@@ -22,9 +22,7 @@ import operator
 
 import CHAPSim_post as cp
 import sys
-import pyvista
-from CHAPSim_post.utils import misc_utils,indexing
-import CHAPSim_post.plot as cplt
+
 
 class datastruct:
     def __init__(self,*args,from_hdf=False,**kwargs):
@@ -37,11 +35,11 @@ class datastruct:
         elif not from_hdf:
             msg = "No extract type selected"
             raise ValueError(msg)
-
+        
         if from_array:
             self._array_ini(*args,**kwargs)
         elif from_dict:
-            self._dict_ini(*args,**kwargs)
+            self._dict_ini(*args,*kwargs)
         elif from_hdf:
             self._file_extract(*args,**kwargs)
         else:
@@ -74,7 +72,7 @@ class datastruct:
                     inner_keys = ["/".join([key,ikey]) for ikey in hdf_obj[key].keys()]
                     keys_list.extend(inner_keys)
                 else:
-                    keys_list.append(key)
+                    keys_list = outer_key
             if key is not None:
                 for k in keys_list:
                     k = "/".join([key,k])
@@ -92,9 +90,9 @@ class datastruct:
                 hdf_data= hdf_file
                     
             keys = self._construct_key(hdf_data)
-            if 'order' in hdf_data.attrs.keys():
-                order = list(hdf_data.attrs['order'][:])
-                keys = [keys[i] for i in order]
+            if 'order' in hdf_data.attr.keys():
+                order = list(hdf_data.attr['order'][:])
+                keys = keys[order]
                 
             self._data = {}
             self._index = []
@@ -212,7 +210,7 @@ class datastruct:
                 k = str(index)
             return k
 
-        hdf_data = hdffile if key is None else hdffile.create_group(key)
+        hdf_data = hdffile if key is None else hdffile[key]
         order =[]
         for k, val in self: 
             k = convert2str(k)
@@ -230,7 +228,7 @@ class datastruct:
         hdf_order = np.zeros_like(order_num,dtype=np.int32)
         for i,num in enumerate(order_num):
             hdf_order[num] = i
-        hdf_data.attrs['order'] = hdf_order
+        hdf_data.attr['order'] = hdf_order
         hdffile.close()
 
     def _is_multidim(self):
@@ -244,7 +242,7 @@ class datastruct:
         for key,val1 in self:
             if key not in other_datastruct.index:
                 return False
-            if not np.allclose(val1,other_datastruct[key]):
+            if not np.array_equal(val1,other_datastruct[key]):
                 return False
         return True
 
@@ -547,71 +545,165 @@ class datastruct:
 
         return datastruct(data)
 
+class coordstruct:
+    def __init__(self,path,abs_path,from_hdf=False,key=None,metaDF=None):
+        if from_hdf:
+            self._CoordDF = self._coord_extract()
 
-class coordstruct(datastruct):
-    def set_domain_handler(self,GeomHandler):
-        self._domain_handler = GeomHandler
-    @property
-    def DomainHandler(self):
-        if hasattr(self,"_domain_handler"):
-            return self._domain_handler
-        else: 
-            return None
+    def _coord_extract(self,path_to_folder,abs_path,tgpost,ioflg):
+        if os.path.isdir(os.path.join(path_to_folder,'0_log_monitors')):
+            return self._coord_extract_new(path_to_folder,abs_path,tgpost,ioflg)
+        else:
+            return self._coord_extract_old(path_to_folder,abs_path,tgpost,ioflg)
+
+    def _coord_extract_new(self,path_to_folder,abs_path,tgpost,ioflg):
+        full_path = misc_utils.check_paths(path_to_folder,'0_log_monitors',
+                                                            '.')
+
+        if not abs_path:
+            x_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_XND.dat'))
+            y_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_YND.dat'))
+            z_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_ZND.dat'))
+        else:
+            x_coord_file = os.path.join(full_path,'CHK_COORD_XND.dat')
+            y_coord_file = os.path.join(full_path,'CHK_COORD_YND.dat')
+            z_coord_file = os.path.join(full_path,'CHK_COORD_ZND.dat')
+    #===================================================================
+        #Extracting XND from the .dat file
+    
+        file=open(x_coord_file,'rb')
+        x_coord=np.loadtxt(file,comments='#',usecols=1)
+        
+        if tgpost and not ioflg:
+            XND = x_coord[:-1]
+        else:
+            index = int(self.metaDF['NCL1_tg']) + 1 
+            if tgpost and ioflg:
+                XND = x_coord[:index]
+                XND -= XND[0]
+            else:
+                XND = x_coord[index:]
+        file.close()
+        #===========================================================
+    
+        #Extracting YCC from the .dat file
+        file=open(y_coord_file,'rb')
+        y_coord=np.loadtxt(file,usecols=1,skiprows=1)
+        index = int(self.metaDF['NCL1_tg']) + 1 
+        YCC=y_coord[index:]
+        y_size = YCC.size
+        file.close()
+        #============================================================
+    
+        file=open(z_coord_file,'rb')
+        ZND=np.loadtxt(file,comments='#',usecols=1)
+
+        #============================================================
+        XCC, ZCC = self._coord_interp(XND,ZND)
+
+        z_size = ZCC.size
+        x_size = XCC.size
+        y_size = YCC.size
+        file.close()
+
+        CoordDF = datastruct({'x':XCC,'y':YCC,'z':ZCC})
+        return CoordDF
+
+
+    def _coord_extract_old(self,path_to_folder,abs_path,tgpost,ioflg):
+        """ Function to extract the coordinates from their .dat file """
+        
+        full_path = misc_utils.check_paths(path_to_folder,'0_log_monitors',
+                                                            '.')
+
+        if not abs_path:
+            x_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_XND.dat'))
+            y_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_YND.dat'))
+            z_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_ZND.dat'))
+        else:
+            x_coord_file = os.path.join(full_path,'CHK_COORD_XND.dat')
+            y_coord_file = os.path.join(full_path,'CHK_COORD_YND.dat')
+            z_coord_file = os.path.join(full_path,'CHK_COORD_ZND.dat')
+        #===================================================================
+        #Extracting XND from the .dat file
+    
+        file=open(x_coord_file,'rb')
+        x_coord=np.loadtxt(file,comments='#')
+        x_size=  int(x_coord[0])
+        x_coord=np.delete(x_coord,0)
+        
+        if tgpost and not ioflg:
+            XND = x_coord[:-1]
+        else:
+            for i in range(x_size):
+                if x_coord[i] == 0.0:
+                    index=i
+                    break
+            if tgpost and ioflg:
+                XND = x_coord[:index+1]
+                XND -= XND[0]
+            else:
+                XND = x_coord[index+1:]
+        file.close()
+        #===========================================================
+    
+        #Extracting YCC from the .dat file
+        file=open(y_coord_file,'rb')
+        y_coord=np.loadtxt(file,comments='#',usecols=1)
+        y_size = int(y_coord[0])
+        for i in range(y_coord.size):
+            if y_coord[i] == 1.0:
+                index=i
+                break
+        YCC=np.delete(y_coord,np.arange(index+1))
+        y_size = YCC.size
+        file.close()
+        #============================================================
+    
+        file=open(z_coord_file,'rb')
+        z_coord=np.loadtxt(file,comments='#')
+        z_size = int(z_coord[0])
+        ZND=np.delete(z_coord,0)
+        #============================================================
+        XCC, ZCC = self._coord_interp(XND,ZND)
+
+        z_size = ZCC.size
+        x_size = XCC.size
+        y_size = YCC.size
+        file.close()
+
+        CoordDF = datastruct({'x':XCC,'y':YCC,'z':ZCC})
+        return CoordDF
+        
+    def _coord_interp(self,XND, ZND):
+        """ Interpolate the coordinates to give their cell centre values """
+        XCC=np.zeros(XND.size-1)
+        for i in range(XCC.size):
+            XCC[i] = 0.5*(XND[i+1] + XND[i])
+    
+        ZCC=np.zeros(ZND.size-1)
+        for i in range(ZCC.size):
+            ZCC[i] = 0.5*(ZND[i+1] + ZND[i])
+    
+        return XCC, ZCC
+
+    @classmethod
+    def from_hdf(cls,file_name,key=None,metaDF=None):
+        return cls(file_name,key=key,metaDF=metaDF)
     @property
     def staggered(self):
-        XCC = self['x']
-        YCC = self['y']
-        ZCC = self['z']
+        pass
 
-        XND = np.zeros(XCC.size+1) 
-        YND = np.zeros(YCC.size+1)
-        ZND = np.zeros(ZCC.size+1)
+class flowstruct_base:
+    pass
 
-        XND[0] = 0.0
-        YND[0] = -1.0 if self.metaDF['iCase'] == 1 else 0
-        ZND[0] = 0.0
+class flowstruct2D(flowstruct_base):
+    pass
 
-        for i in  range(1,XND.size):
-            XND[i] = XND[i-1] + 2*XCC[i-1]-XND[i-1]
-        
-        for i in  range(1,YND.size):
-            YND[i] = YND[i-1] + 2*YCC[i-1]-YND[i-1]
-
-        for i in  range(1,ZND.size):
-            ZND[i] = ZND[i-1] + 2*ZCC[i-1]-ZND[i-1]
-
-        return self.__class__({'x':XND,'y':YND,'z':ZND})
-
-    def vtkStructuredGrid(self):
-        x_coords = self.staggered['x']
-        y_coords = self.staggered['y']
-        z_coords = self.staggered['z']
-        Y,Z,X = np.meshgrid(y_coords,z_coords,x_coords)
-        grid = pyvista.StructuredGrid(Y,Z,X)
-        return grid
-
-    def index_calc(self,comp,vals):
-        return indexing.coord_index_calc(self,comp,vals)
-    
-    def check_plane(self,plane):
-        if plane not in ['xy','zy','xz']:
-            plane = plane[::-1]
-            if plane not in ['xy','zy','xz']:
-                msg = "The contour slice must be either %s"%['xy','yz','xz']
-                raise KeyError(msg)
-        slice_set = set(plane)
-        coord_set = set(list('xyz'))
-        coord = "".join(coord_set.difference(slice_set))
-        return plane, coord
-
-class flowstruct_base(datastruct):
+class flowstruct3D(datastruct):
     def __init__(self,CoordDF,*args,from_hdf=False,**kwargs):
         super().__init__(*args,from_hdf=from_hdf,**kwargs)
-        self._set_coords(CoordDF,from_hdf,*args,**kwargs)   
-
-    @property
-    def CoordDF(self):
-        return self._CoordDF
+        self._set_coords(CoordDF,from_hdf,*args,**kwargs)
 
     def _set_coords(self,CoordDF,from_hdf,*args,**kwargs):
         if from_hdf:
@@ -628,14 +720,14 @@ class flowstruct_base(datastruct):
             else:
                 key = "/".join([key,sub_key])
             if key in hdf_file.keys():
-                self._CoordDF = coordstruct.from_hdf(file_name,key=key)
+                self._CoordDF = datastruct.from_hdf(file_name,key=key)
             elif CoordDF is not None:
                 self._CoordDF = CoordDF
             else:
                 msg = "If CoordDF datastruct is not present in HDF file, a datastruct must be provided"
                 raise KeyError(msg)
         else:
-            self._CoordDF = coordstruct(CoordDF._data,copy=True)
+            self._CoordDF = CoordDF
 
     @classmethod
     def from_hdf(cls,*args,CoordDF=None,**kwargs):
@@ -644,8 +736,7 @@ class flowstruct_base(datastruct):
     def to_hdf(self,filepath,key=None,mode='a'):
         super().to_hdf(filepath,key=key,mode=mode)
         self._CoordDF.to_hdf(filepath,key=key+"/coordDF",mode='a')
-
-        
+    
     @property
     def times(self):
         return self.outer_index
@@ -654,32 +745,22 @@ class flowstruct_base(datastruct):
     def comp(self):
         return self.inner_index
 
-    @property
-    def data_shape(self):
-        return self._data[self.index[0]].shape
+    def check_times(self,*args,**kwargs):
+        return self.check_outer(*args,**kwargs)
 
-    def check_times(self,key,err=None,warn=None):
-        if err is None:
-            msg = f"flowstruct3D soes not have time {key}"
-            err = KeyError(msg)
-        return self.check_outer(key,err,warn=warn)
+    def check_comp(self,*args,**kwargs):
+        return self.check_inner(*args,**kwargs)
 
-    def check_comp(self,key,err=None):
-        if err is None:
-            msg = f"Component {key} not in {self.__class__.__name__}"
-            err = KeyError(msg)
-        return self.check_inner(key,err)
-
-    # def concat(self,arr_or_data):
-    #     msg= "The coordinate data of the flowstructs must be the same"
-    #     if isinstance(arr_or_data,self.__class__):
-    #         if not self._CoordDF != arr_or_data._CoordDF:
-    #             raise ValueError(msg)
-    #     elif hasattr(arr_or_data,"__iter__"):
-    #         if not all([self._CoordDF != arr._CoordDF for arr in arr_or_data]):
-    #             raise ValueError(msg)
-    #     super().concat(arr_or_data)
-
+    def concat(self,arr_or_data):
+        msg= "The coordinate data of the flowstructs must be the same"
+        if isinstance(arr_or_data,self.__class__):
+            if not self._CoordDF != arr_or_data._CoordDF:
+                raise ValueError(msg)
+        elif hasattr(arr_or_data,"__iter__"):
+            if not all([self._CoordDF != arr._CoordDF for arr in arr_or_data]):
+                raise ValueError(msg)
+        super().concat(arr_or_data)
+    
     def append(self,*args,**kwargs):
         msg = "This method is not available for this class"
         raise NotImplementedError(msg)
@@ -695,154 +776,6 @@ class flowstruct_base(datastruct):
     def copy(self):
         cls = self.__class__
         return cls(self._CoordDF,self._data,copy=True)
-
-class flowstruct3D(flowstruct_base):
-
-    def _set_coords(self,CoordDF,from_hdf,*args,**kwargs):
-        super()._set_coords(CoordDF,from_hdf,*args,**kwargs)
-        if len(self._CoordDF.index) != 3:
-            msg = ("for a 3D flowstruct the number of keys in the "
-                    f"coordstruct should be 3 not {len(self._CoordDF.index)}")
-            raise ValueError(msg)
-
-    def get_unit_figsize(self,plane):
-        plane, coord = self.CoordDF.check_plane(plane)
-
-        x_coords = self.CoordDF[plane[0]]
-        z_coords = self.CoordDF[plane[1]]
-
-        x_size = 1.5*(np.amax(x_coords) - np.amin(x_coords))
-        z_size = 1.2*(np.amax(z_coords) - np.amin(z_coords))
-
-        return x_size,z_size
-
-    def to_vtk(self,file_name):
-        
-        for i,time in enumerate(self.times):
-            file_base = os.path.basename(file_name)
-            file_name = os.path.join(file_base,".vtk")
-            grid = self.CoordDF.vtkStructuredGrid()
-            if len(self.times) > 1:
-                num_zeros = int(np.log10(len(self.times)))+1
-                ext = str(num_zeros).zfill(num_zeros)
-                file_name = os.path.join(file_name,".%s"%ext)
-
-            for comp in self.comp:
-                grid.point_arrays[comp] = self[time,comp].flatten()
-            pyvista.save_meshio(file_name,grid,file_format="vtk")
-
-
-    def plot_contour(self,comp,plane,axis_val,time=None,fig=None,ax=None,pcolor_kw=None,**kwargs):
-        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
-        pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
-
-        time = self.check_times(time)
-        comp = self.check_comp(comp)
-
-        plane, coord = self.CoordDF.check_plane(plane)
-
-        axis_index = self.CoordDF.index_calc(coord,axis_val)
-        flow_slice = indexing.contour_indexer(self[time,comp],axis_index,coord)
-
-        x_coord = self.CoordDF[plane[0]]
-        y_coord = self.CoordDF[plane[1]]
-
-        X,Y = np.meshgrid(x_coord,y_coord)
-
-        ax = ax.pcolormesh(X,Y,flow_slice.squeeze(),**pcolor_kw)
-
-        return fig, ax
-
-    def plot_vector(self,plane,axis_val,time=None,spacing=(1,1),scaling=1,fig=None,ax=None,quiver_kw=None,**kwargs):
-        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
-        quiver_kw = cplt.update_quiver_kw(quiver_kw)
-
-        time = self.check_times(time)
-
-        plane, coord = self.CoordDF.check_plane(plane)
-
-        coord_1 = self.CoordDF[slice[0]][::spacing[0]]
-        coord_2 = self.CoordDF[slice[1]][::spacing[1]]
-        UV_slice = [chr(ord(x)-ord('x')+ord('u')) for x in plane]
-        U = self[time,UV_slice[0]]
-        V = self[time,UV_slice[1]]
-
-        axis_index = self.CoordDF.index_calc(coord,axis_val)
-
-        U_space, V_space = indexing.vector_indexer(U,V,axis_index,coord,spacing[0],spacing[1])
-        U_space = U_space.squeeze(); V_space = V_space.squeeze()
-        coord_1_mesh, coord_2_mesh = np.meshgrid(coord_1,coord_2)
-        scale = np.amax(U_space[:,:])*coord_1.size/np.amax(coord_1)/scaling
-        ax = ax.quiver(coord_1_mesh, coord_2_mesh,U_space[:,:].T,V_space[:,:].T,angles='uv',scale_units='xy', scale=scale,**quiver_kw)
-
-        return fig, ax
-
-    def plot_isosurface(self,comp,Value,time=None,y_limit=None,x_split_pair=None,fig=None,ax=None,surf_kw=None,**kwargs):
-        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,projection='3d',**kwargs)
-        surf_kw = cplt.update_mesh_kw(surf_kw)
-
-        time = self.check_times(time)
-        comp = self.check_comp(comp)
-
-        z_coords = self.CoordDF['z']
-        y_coords = self.CoordDF['y']
-        x_coords = self.CoordDF['x']
-
-        if x_split_pair is None:
-            x_split_pair = [np.amin(x_coords),np.amax(x_coords)]
-        
-        x_index_list = self.CoordDF.index_calc('x',x_split_pair)
-
-        x_coords = x_coords[x_index_list[0]:x_index_list[1]]
-
-        if y_limit is not None:
-            y_index = self.CoordDF.index_calc('y',y_limit)[0]
-            y_coords = y_coords[:y_index]
-        else:
-            y_index = y_coords.size
-
-        Z,Y,X = misc_utils.meshgrid(z_coords,y_coords,x_coords)
-
-        flow_array = self[time,comp][:,:y_index,x_index_list[0]:x_index_list[1]]
-
-        ax = ax.plot_isosurface(Z,X,Y,flow_array,Value,**surf_kw)
-        coord_lims = [np.amax(Z) - np.amin(Z),np.amax(X) - np.amin(X),np.amax(Y) - np.amin(Y) ]
-        ax.axes.set_box_aspect(coord_lims)
-        return fig, ax
-
-
-    def plot_surf(self,comp,plane,axis_val,time=None,x_split_pair=None,fig=None,ax=None,surf_kw=None,**kwargs):
-        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,projection='3d',**kwargs)
-        surf_kw = cplt.update_mesh_kw(surf_kw)
-
-        time = self.check_times(time)
-        comp = self.check_comp(comp)
-
-        plane, coord = self.CoordDF.check_plane(plane)
-
-        axis_index = self.CoordDF.index_calc(coord,axis_val)
-        flow_slice = indexing.contour_indexer(self[time,comp],axis_index,coord)
-
-        x_coord = self.CoordDF[plane[0]]
-        y_coord = self.CoordDF[plane[1]]
-
-        if x_split_pair is None or plane[0] != 'x':
-            x_split_pair = [np.amin(x_coord),np.amax(x_coord)]
-        
-        x_index_list = self.CoordDF.index_calc('x',x_split_pair)
-
-        x_coord = x_coord[x_index_list[0]:x_index_list[1]]
-
-        X,Y = np.meshgrid(x_coord,y_coord)
-
-        axis_index = self.CoordDF.index_calc(coord,axis_val)
-        flow_slice = indexing.contour_indexer(self[time,comp],axis_index,coord)
-        flow_slice = flow_slice[:,x_index_list[0]:x_index_list[1]]
-
-        ax = ax.plot_surface( Y,X,flow_slice,**surf_kw)
-
-        return fig, ax
-
 
 class metastruct():
     def __init__(self,*args,from_hdf=False,**kwargs):
@@ -873,6 +806,7 @@ class metastruct():
             item = [self._meta[old_key]]
         else:
             item = self._meta[old_key]
+
         for i, key in enumerate(replacement_keys):
             self._meta[key] = item[i]
 

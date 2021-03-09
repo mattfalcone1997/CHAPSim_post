@@ -78,3 +78,22 @@ def get_title_symbol(coord_dir,y_mode,local=True):
         title_symbol = coord_dir
 
     return title_symbol
+
+def meshgrid(*args):
+    if not all([isinstance(arg,np.ndarray) for arg in args]):
+        msg = "The inputs must be numpy arrays"
+        raise TypeError(msg)
+    if not all([arg.ndim == 1 for arg in args]):
+        msg = "Each numpy array must have a single dimension"
+        raise ValueError(msg)
+
+    out_arr_size = tuple(arg.size for arg in args)
+    array_tuple = tuple(np.zeros(out_arr_size) for arg in args)
+    
+    for i, arg in enumerate(args):
+        for j in range(len(args[i])):
+            slice_list = [slice(None)]*len(args)
+            slice_list[i] = j
+            array_tuple[i][tuple(slice_list)] = args[i][j]
+
+    return array_tuple
