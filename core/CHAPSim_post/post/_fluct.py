@@ -71,8 +71,9 @@ class CHAPSim_fluct_base(Common):
             axis_vals = indexing.ycoords_from_coords(self.avg_data,axis_vals,mode=y_mode)[0]
             int_vals = indexing.ycoords_from_norm_coords(self.avg_data,axis_vals,mode=y_mode)[0]
         else:
-            int_vals = axis_vals = indexing.true_coords_from_coords(self.CoordDF,coord,axis_vals)
-        
+            axis_vals = indexing.true_coords_from_coords(self.CoordDF,coord,axis_vals)
+            int_vals = axis_vals.copy()
+
         x_size, z_size = self.fluctDF.get_unit_figsize(plane)
         figsize=[x_size,z_size*len(axis_vals)]
 
@@ -107,7 +108,6 @@ class CHAPSim_fluct_base(Common):
         PhyTime = self.check_PhyTime(PhyTime)
         if y_limit is not None:
             y_lim_int = indexing.ycoords_from_norm_coords(self.avg_data,[y_limit],mode=y_mode)[0][0]
-            print(y_lim_int)
         else:
             y_lim_int = None
 
@@ -278,17 +278,13 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
         self.fluctDF = self._fluctDF_calc(inst_data,avg_data)
 
 
-
-        
-
-        
     def _fluctDF_calc(self, inst_data, avg_data):
         
         fluct = np.zeros((len(inst_data.InstDF.index),*inst_data.shape[:]))
         avg_time = list(set([x[0] for x in avg_data.flow_AVGDF.index]))
         
         assert len(avg_time) == 1, "In this context therecan only be one time in avg_data"
-        fluct = np.zeros((len(inst_data.InstDF.index),*inst_data.shape[:]))
+        fluct = np.zeros((len(inst_data.InstDF.index),*inst_data.shape[:]),dtype=cp.rcParams['dtype'])
         j=0
         
         for j, (time, comp) in enumerate(inst_data.InstDF.index):

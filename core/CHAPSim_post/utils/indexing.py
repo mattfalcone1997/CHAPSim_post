@@ -22,10 +22,7 @@ def Y_plus_index_calc(AVG_DF,CoordDF,coord_list,x_vals=None):
     elif not isinstance(coord_list,list):
         raise TypeError("\033[1;32 coord_list must be of type float, list or int")
     avg_time = AVG_DF.flow_AVGDF.index[0][0]
-    # if hasattr(AVG_DF,"par_dir"):
-    #     par_dir = AVG_DF.par_dir
-    #     u_tau_star, delta_v_star = cpar.wall_unit_calc(AVG_DF,avg_time,par_dir)
-    # else:
+
     u_tau_star, delta_v_star = AVG_DF.wall_unit_calc(avg_time)
     
     if x_vals:
@@ -105,8 +102,8 @@ def y_coord_index_norm(avg_data,coord_list,x_vals=None,mode='half_channel'):
     
 def coord_index_calc(CoordDF,comp,coord_list):
     coords = CoordDF[comp]
-    if isinstance(coord_list,float) or isinstance(coord_list,int):
-        coord_list = [coord_list]
+    coord_list = misc_utils.check_list_vals(coord_list)
+    
     index_list=[]
     for coord in coord_list:
         try:
@@ -169,7 +166,7 @@ def ycoords_from_norm_coords(avg_data,coord_list,x_vals=None,mode='half_channel'
     true_ycoords = []
     for index in zip(indices):
         true_ycoords.append(avg_data.CoordDF['y'][index])
-
+    
     return true_ycoords
 
 def coords_from_norm_coords(CoordDF,comp,coord_list):
