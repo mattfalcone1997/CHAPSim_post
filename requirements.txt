@@ -66,7 +66,7 @@ ipython @ file:///tmp/build/80754af9/ipython_1610725412642/work
 ipython-genutils==0.2.0
 isort==4.3.21
 jedi @ file:///home/conda/feedstock_root/build_artifacts/jedi_1605054524816/work
-Jinja2==2.11.2
+Jinja2>=2.11.3
 jupyter-client @ file:///home/conda/feedstock_root/build_artifacts/jupyter_client_1610375432619/work
 jupyter-core @ file:///home/conda/feedstock_root/build_artifacts/jupyter_core_1605735018888/work
 kiwisolver @ file:///home/conda/feedstock_root/build_artifacts/kiwisolver_1610099773791/work
