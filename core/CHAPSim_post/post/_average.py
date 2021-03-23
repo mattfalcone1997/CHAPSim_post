@@ -219,17 +219,18 @@ class CHAPSim_AVG_base(Common,ABC):
         y_coords = self.CoordDF['y']
 
         U0 = U_mean[U0_index]
-        theta_integrand = np.zeros((U0_index,self.shape[1]))
-        delta_integrand = np.zeros((U0_index,self.shape[1]))
+        theta_integrand = np.zeros_like(U_mean)
+        delta_integrand = np.zeros_like(U_mean)
         mom_thickness = np.zeros(self.shape[1])
         disp_thickness = np.zeros(self.shape[1])
 
-        for i in range(U0_index):
+        for i, _ in enumerate(theta_integrand):
             theta_integrand[i] = (U_mean[i]/U0)*(1 - U_mean[i]/U0)
             delta_integrand[i] = 1 - U_mean[i]/U0
+
         for j in range(self.shape[1]):
-            mom_thickness[j] = integrate.simps(theta_integrand[:,j],y_coords[:U0_index])
-            disp_thickness[j] = integrate.simps(delta_integrand[:,j],y_coords[:U0_index])
+            mom_thickness[j] = 0.5*integrate.simps(theta_integrand[:,j],y_coords[:U0_index])
+            disp_thickness[j] = 0.5*integrate.simps(delta_integrand[:,j],y_coords[:U0_index])
         shape_factor = disp_thickness/mom_thickness
         
         return disp_thickness, mom_thickness, shape_factor
@@ -321,12 +322,15 @@ class CHAPSim_AVG_base(Common,ABC):
         lines = ax.get_lines()[-len(x_vals):]
         u_tau_star, _ = self._wall_unit_calc(PhyTime)
         y_plus = self._y_plus_calc(PhyTime)
-        Y_extent = int(self.shape[0]*0.5)
+        
+        Y_extent = int(self.shape[0]*0.5) if self._metaDF['iCase'] != 5\
+                        else self.shape[0]
 
         for line,x_val in zip(lines,x_vals):
             x_loc = self._return_index(x_val)
             y_data = line.get_ydata()
             y_data = y_data[:Y_extent]/u_tau_star[x_loc]
+
             line.set_ydata(y_data)
             line.set_xdata(y_plus[x_loc])
             ylim = ax.get_ylim()[1]
@@ -338,8 +342,6 @@ class CHAPSim_AVG_base(Common,ABC):
         ax.set_xlabel(r"$y^+$")
         ax.set_ylabel(r"$\bar{u}^+$")
         ax.set_xscale('log')
-        ax.relim()
-        ax.autoscale_view()
 
         return fig, ax
 

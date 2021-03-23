@@ -33,7 +33,7 @@ _cylind_to_cart ={
 class DomainHandler():
 
     def __init__(self,meta_data):
-        if meta_data.metaDF['iCase'] in [1,4]:
+        if meta_data.metaDF['iCase'] in [1,4,5]:
             self.coord_sys = 'cart'
         elif meta_data.metaDF['iCase'] in [2,3]:
             self.coord_sys = 'cylind'

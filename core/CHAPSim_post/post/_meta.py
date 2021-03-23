@@ -132,9 +132,12 @@ class CHAPSim_meta():
             XND = x_coord[:-1]
         else:
             index = int(self.metaDF['NCL1_tg']) + 1 
-            if tgpost and ioflg:
+            if (tgpost and ioflg):
                 XND = x_coord[:index]
                 XND -= XND[0]
+            elif self.metaDF['iCase'] == 5:
+                index = int(self.metaDF['NCL1_io']) 
+                XND = x_coord[:index]
             else:
                 XND = x_coord[index:]
         file.close()
@@ -143,7 +146,7 @@ class CHAPSim_meta():
         #Extracting YCC from the .dat file
         file=open(y_coord_file,'rb')
         y_coord=np.loadtxt(file,usecols=1,skiprows=1)
-        index = int(self.metaDF['NCL1_tg']) + 1 
+        index = int(self.metaDF['NCL2']) + 1 
         YCC=y_coord[index:]
         y_size = YCC.size
         file.close()

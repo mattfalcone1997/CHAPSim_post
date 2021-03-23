@@ -186,7 +186,7 @@ def contour_plane(plane,axis_vals,avg_data,y_mode,PhyTime):
     coord_set = set(list('xyz'))
     coord = "".join(coord_set.difference(slice_set))
 
-    
+    axis_vals = misc_utils.check_list_vals(axis_vals)
 
     if coord == 'y':
         tg_post = True if all([x == 'None' for x in avg_data.flow_AVGDF.outer_index]) else False
