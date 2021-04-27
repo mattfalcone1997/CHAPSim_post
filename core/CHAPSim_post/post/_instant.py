@@ -34,8 +34,6 @@ class CHAPSim_Inst(Common):
         else:
             self._hdf_extract(*args,**kwargs)
 
-        super().__init__(self._meta_data)
-
     def _inst_extract(self,time,meta_data=None,path_to_folder='.',abs_path = True,tgpost=False):
         """
         Instantiates CHAPSim_Inst by extracting data from the 
@@ -62,6 +60,8 @@ class CHAPSim_Inst(Common):
         self._meta_data = meta_data
         self.CoordDF = meta_data.CoordDF
         self.NCL = meta_data.NCL
+
+        super().__init__(self._meta_data)
 
         time = misc_utils.check_list_vals(time)
 
@@ -99,8 +99,10 @@ class CHAPSim_Inst(Common):
         self.CoordDF=self._meta_data.CoordDF
         self.NCL=self._meta_data.NCL
 
+        super().__init__(self._meta_data)
+
         self.shape = (self.NCL[2],self.NCL[1],self.NCL[0])
-        self.InstDF = cd.datastruct.from_hdf(file_name,shapes=self.shape,key=key+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
+        self.InstDF = cd.flowstruct3D.from_hdf(file_name,shapes=self.shape,CoordDF=self.CoordDF,key=key+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
 
     def save_hdf(self,file_name,write_mode,key=None):
         """
@@ -186,7 +188,7 @@ class CHAPSim_Inst(Common):
         index = [[Phy_string]*4,['u','v','w','P']]
 
         # creating datastruct so that data can be easily accessible elsewhere
-        Instant_DF = cd.flowstruct3D(self.CoordDF,flow_info,index=index,copy=False)# pd.DataFrame(flow_info1,index=index)
+        Instant_DF = cd.flowstruct3D(self.CoordDF,flow_info,Domain=self.Domain,index=index,copy=False)# pd.DataFrame(flow_info1,index=index)
 
         for file in open_list:
             file.close()
@@ -221,7 +223,7 @@ class CHAPSim_Inst(Common):
         
         err = ValueError(err_msg)
         warn = UserWarning(warn_msg)
-        return self.InstDF.check_times(PhyTime,err_msg,warn_msg)
+        return self.InstDF.check_times(PhyTime,err,warn_msg)
 
     @docstring.sub
     def plot_contour(self,comp,axis_vals,avg_data=None,plane='xz',PhyTime=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
@@ -265,6 +267,7 @@ class CHAPSim_Inst(Common):
         """
         plane = self.Domain.out_to_in(plane)
         axis_vals = misc_utils.check_list_vals(axis_vals)
+
         PhyTime = self.check_PhyTime(PhyTime)
 
         plane, coord = self.InstDF.CoordDF.check_plane(plane)
@@ -556,7 +559,7 @@ class CHAPSim_Inst(Common):
         vorticity[2] = gradient.Grad_calc(self.CoordDF,v_velo,'x') - gradient.Grad_calc(self.CoordDF,u_velo,'y')     
 
         index = [(PhyTime,x) for x in ['x','y','z']]
-        return cd.flowstruct3D(self.CoordDF,vorticity,index=index)
+        return cd.flowstruct3D(self.CoordDF,vorticity,Domain=self.Domain,index=index)
 
     @docstring.sub
     def plot_vorticity_contour(self,comp,plane,axis_vals,PhyTime=None,avg_data=None,x_split_list=None,y_mode='half_channel',pcolor_kw=None,fig=None,ax=None,**kwargs):

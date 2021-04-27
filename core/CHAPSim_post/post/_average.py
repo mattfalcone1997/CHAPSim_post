@@ -99,6 +99,8 @@ class CHAPSim_AVG_base(Common,ABC):
         if key is None:
             key = self.__class__.__name__
 
+        misc_utils.check_path_exists(file_name,True)
+        print(os.path.exists(file_name))
         self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
         self.CoordDF = self._meta_data.CoordDF
         self._metaDF = self._meta_data.metaDF
@@ -229,8 +231,8 @@ class CHAPSim_AVG_base(Common,ABC):
             delta_integrand[i] = 1 - U_mean[i]/U0
 
         for j in range(self.shape[1]):
-            mom_thickness[j] = 0.5*integrate.simps(theta_integrand[:,j],y_coords[:U0_index])
-            disp_thickness[j] = 0.5*integrate.simps(delta_integrand[:,j],y_coords[:U0_index])
+            mom_thickness[j] = 0.5*integrate.simps(theta_integrand[:,j],y_coords)
+            disp_thickness[j] = 0.5*integrate.simps(delta_integrand[:,j],y_coords)
         shape_factor = disp_thickness/mom_thickness
         
         return disp_thickness, mom_thickness, shape_factor
@@ -276,6 +278,7 @@ class CHAPSim_AVG_base(Common,ABC):
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         xaxis = self._return_xaxis()
+
         line_kw = cplt.update_line_kw(line_kw,label=r"$\delta$")
         ax.cplot(xaxis,delta,**line_kw)
         ax.set_ylabel(r"$\delta^*$")
@@ -388,12 +391,13 @@ class CHAPSim_AVG_base(Common,ABC):
             label = self.Domain.in_to_out(label)
             ax.cplot(y_coord_local,uu[:,x],label=label,**line_kw)
 
-
         uu_label = self.Domain.in_to_out(r"%s'%s'"%tuple(comp_uu))
 
         denom = r"u_\tau" if norm == 'wall' else r"U_b" if norm == 'local-bulk' else r'U_{b0}'
         sign = "-" if comp_uu == 'uv' else ""
-        y_label = r"$%s\langle %s\rangle/%s^2$"%(sign,uu_label,denom)
+
+        AVG_style = misc_utils.GetStyle_func()
+        y_label = r"$%s %s/%s^2$"%(sign,AVG_style(uu_label),denom)
 
         ax.set_ylabel(y_label)# ,fontsize=20)
                     
@@ -435,6 +439,9 @@ class CHAPSim_AVG_base(Common,ABC):
         uu_label = self.Domain.in_to_out(r"%s'%s'"%tuple(comp_uu))
 
         line_kw = cplt.update_line_kw(line_kw)
+
+        AVG_style = misc_utils.GetStyle_func()
+
         if y_vals_list != 'max':
 
             y_vals_list = indexing.ycoords_from_coords(self,y_vals_list,mode='wall')[0]
@@ -444,9 +451,9 @@ class CHAPSim_AVG_base(Common,ABC):
             ncol = cplt.get_legend_ncols(len(y_index))
             ax.clegend(vertical=False,ncol=ncol)            
         else:
-            ax.cplot(xaxis,rms_vals,label=r"$(\langle %s\rangle/U_{b0}^2)_{max}$"%uu_label,**line_kw)
+            ax.cplot(xaxis,rms_vals,label=r"$(%s/U_{b0}^2)_{max}$"%AVG_style(uu_label),**line_kw)
         
-        ax.set_ylabel(r"$\langle %s\rangle/U_{b0}^2$"%uu_label)
+        ax.set_ylabel(r"$%s/U_{b0}^2$"%AVG_style(uu_label))
         
         fig.tight_layout()
         return fig, ax
@@ -1400,15 +1407,16 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
     def _extract_file(self,PhyTime,path_to_folder,abs_path):
         instant = "%0.9E" % PhyTime
         
+        full_path = misc_utils.check_paths(path_to_folder,'2_averaged_rawdata',
+                                                            '2_averagd_D')
+
+
         file_string = "DNS_perixz_AVERAGD_T" + instant + "_FLOW.D"
         
-        file_folder = "2_averagd_D"
         if not abs_path:
-            file_path = os.path.abspath(os.path.join(path_to_folder, \
-                                        file_folder, file_string))
+            file_path = os.path.abspath(os.path.join(full_path, file_string))
         else:
-            file_path = os.path.join(path_to_folder, \
-                                        file_folder, file_string)
+            file_path = os.path.join(full_path, file_string)
                 
         file = open(file_path,'rb')
         
@@ -1484,6 +1492,9 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         if key is None:
             key = 'CHAPSim_AVG_tg'
         
+        misc_utils.check_path_exists(file_name,True)
+
+
         hdf_file = h5py.File(file_name,'r')
         self.shape = tuple(hdf_file[key].attrs["shape"][:])
         self._times = list(np.char.decode(hdf_file[key].attrs["times"][:]))

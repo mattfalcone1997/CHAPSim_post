@@ -18,8 +18,26 @@ _instant_class = CHAPSim_Inst
 
 class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
     def _int_thickness_calc(self,PhyTime):
-        disp_thickness, mom_thickness, shape_factor = super()._int_thickness_calc(PhyTime)
-        return 2* disp_thickness, 2*mom_thickness, shape_factor
+
+        U_mean = self.flow_AVGDF[PhyTime,'u'].copy()
+        y_coords = self.CoordDF['y']
+
+        U0 = U_mean[-1]
+        theta_integrand = np.zeros_like(U_mean)
+        delta_integrand = np.zeros_like(U_mean)
+        mom_thickness = np.zeros(self.shape[1])
+        disp_thickness = np.zeros(self.shape[1])
+
+        for i, _ in enumerate(theta_integrand):
+            theta_integrand[i] = (U_mean[i]/U0)*(1 - U_mean[i]/U0)
+            delta_integrand[i] = 1 - U_mean[i]/U0
+
+        for j in range(self.shape[1]):
+            mom_thickness[j] = integrate.simps(theta_integrand[:,j],y_coords)
+            disp_thickness[j] = integrate.simps(delta_integrand[:,j],y_coords)
+        shape_factor = disp_thickness/mom_thickness
+        
+        return disp_thickness, mom_thickness, shape_factor
     def _tau_calc(self,PhyTime):
         
         u_velo = self.flow_AVGDF[PhyTime,'u']

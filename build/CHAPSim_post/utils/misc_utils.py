@@ -1,12 +1,15 @@
 import os
+from pathlib import PurePath
 import numpy as np
+import sys
+
+from CHAPSim_post import rcParams
 
 __all__ = ["max_time_calc"]
 
 def check_paths(path_to_folder,*folder_options):
-    if not os.path.isdir(path_to_folder):
-        msg = "path_to_folder provided \"%s\" does not exist"%path_to_folder
-        raise FileNotFoundError(msg)
+
+    check_path_exists(path_to_folder,False)
 
     for folder in folder_options:
         full_path = os.path.join(path_to_folder,folder)
@@ -14,6 +17,29 @@ def check_paths(path_to_folder,*folder_options):
             return full_path
 
     msg = "Directory(ies) %s cannot be found in path: %s"%(folder_options,path_to_folder)
+    raise FileNotFoundError(msg)
+    
+def check_path_exists(file_folder_path,check_file=None):
+    
+    if check_file is None:
+        check_func, handle_name = (os.path.exists, "Path")
+    elif check_file:
+        check_func, handle_name = (os.path.isfile, "File")
+    else:
+        check_func, handle_name = (os.path.isdir, "Directory")
+    
+    if check_func(file_folder_path):
+        return True
+    else:
+        comps = PurePath(file_folder_path).parts
+        for i in range(1,len(comps)):
+            partial_path = os.path.join(*comps[:i])
+            if not os.path.exists(partial_path):
+                msg = "%s provided \"%s\" does not exist\n"%(handle_name,file_folder_path) +\
+                        "Sub-path \"%s\" not found"%partial_path
+                break
+        
+        raise FileNotFoundError(msg)
 
 def file_extract(path_to_folder,abs_path=True):
     full_path = check_paths(path_to_folder,'2_averaged_rawdata',
@@ -95,3 +121,19 @@ def meshgrid(*args):
             array_tuple[i][tuple(slice_list)] = args[i][j]
 
     return array_tuple
+
+def AVG_Style_overline(label):
+    return "\overline{%s}"%label
+
+def AVG_Style_langle(label):
+    return "\langle %s\rangle"%label
+
+def GetStyle_func():
+    module = sys.modules[__name__]
+
+    if not hasattr(module,"AVG_Style_%s"%rcParams['AVG_Style']):
+        msg = "No style named %s found"%rcParams['AVG_Style']
+        raise AttributeError(msg)
+    else:
+        return getattr(module,"AVG_Style_%s"%rcParams['AVG_Style'])
+

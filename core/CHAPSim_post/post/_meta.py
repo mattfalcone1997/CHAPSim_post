@@ -136,7 +136,7 @@ class CHAPSim_meta():
                 XND = x_coord[:index]
                 XND -= XND[0]
             elif self.metaDF['iCase'] == 5:
-                index = int(self.metaDF['NCL1_io']) 
+                index = int(self.metaDF['NCL1_io']) + 1
                 XND = x_coord[:index]
             else:
                 XND = x_coord[index:]

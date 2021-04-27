@@ -393,8 +393,12 @@ class CHAPSim_meta(cp.CHAPSim_meta):
             
             mw_file = open(file_path)
             wall_velo_ND = np.loadtxt(mw_file,comments='#',usecols=1)
-            for i in range(1,NCL[0]+1):
-                wall_velo[i-1] = 0.5*(wall_velo_ND[i+1] + wall_velo_ND[i])
+            if wall_velo_ND.size == self.NCL[0] +2:
+                for i in range(1,NCL[0]+1):
+                    wall_velo[i-1] = 0.5*(wall_velo_ND[i+1] + wall_velo_ND[i])
+            else:
+                for i in range(NCL[0]):
+                    wall_velo[i] = 0.5*(wall_velo_ND[i+1] + wall_velo_ND[i])
             mw_file.close()
         return wall_velo
 
@@ -421,6 +425,22 @@ _fluct_class = CHAPSim_fluct_io
 
 class CHAPSim_budget_io(cp.CHAPSim_budget_io):
     pass
+
+class CHAPSim_momentum_budget_io(cp.CHAPSim_Momentum_budget_io):
+    def __init__(self,comp,avg_data=None,PhyTime=None,relative=True,*args,**kwargs):
+        if avg_data is None:
+            avg_data = self._module._avg_class(PhyTime,*args,**kwargs)
+        
+        if relative:
+            avg_data_original = avg_data.copy()
+            u_velo = avg_data.flow_AVGDF[PhyTime,'u']
+            wall_velos = avg_data._meta_data.wall_velocity
+            for i,velo in enumerate(wall_velos):
+                u_velo[:,i] -= velo
+        super().__init__(comp,avg_data,PhyTime)
+        if relative:
+            self.avg_data = avg_data_original
+            
 
 class CHAPSim_autocov_io(cp.CHAPSim_autocov_io):
    pass

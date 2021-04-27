@@ -39,8 +39,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="CHAPSim_post module" href="CHAPSim_post_mod.html" />
-    <link rel="prev" title="CHAPSim_post" href="index.html" /> 
+    <link rel="next" title="Module Reference" href="CHAPSim_post_mod.html" />
+    <link rel="prev" title="CHAPSim_post Index" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -88,11 +88,18 @@
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">CHAPSim_post</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="CHAPSim_post_mod.html">CHAPSim_post module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#modules">Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CHAPSim_post_mod.html">Module Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Best_practice.html">Best Practice guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="User_guide.html">User Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develop_guide.html">Developer’s Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-reference">Module Reference</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="CHAPSim_post_mod.html">CHAPSim_post module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CHAPSim_post_mod.html">Module Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Best_practice.html">Best Practice guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="User_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="develop_guide.html">Developer’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CHAPSim_post_mod.html">Module Reference</a></li>
 </ul>
 
             
@@ -162,22 +169,40 @@
             
   <div class="section" id="chapsim-post">
 <h1>CHAPSim_post<a class="headerlink" href="#chapsim-post" title="Permalink to this headline">¶</a></h1>
-<p>This is the documentation for CHAPSim_post, a postprocessing Python code for the CHAPSim DNS solver.
-The index for the documentation is here.</p>
+<p>This is the documentation for CHAPSim_post, a postprocessing Python code for the CHAPSim DNS solver. This contains guides for using the modules. There is also some documentation containing function headers but these are limited. It should be noted that this code is updated and maintained on an ad hoc basis, bugs and issues can be put on the code’s GitHub page <a class="reference external" href="https://github.com/mattfalcone1997/CHAPSim_post">here</a>.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="CHAPSim_post_mod.html">CHAPSim_post module</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="Instant.html">The CHAPSim_post Instantaneous classes - CHAPSim_Inst</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Averaged.html">The CHAPSim_post Averaged Class - CHAPSim_AVG</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CHAPSim_post_mod.html">Module Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Instant.html">The <code class="docutils literal notranslate"><span class="pre">post</span></code> Instantaneous classes - CHAPSim_Inst</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Averaged.html">The <code class="docutils literal notranslate"><span class="pre">post</span></code> Averaged Class - CHAPSim_AVG</a></li>
 <li class="toctree-l2"><a class="reference internal" href="CHAPSim_post_mod.html#sections">Sections</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Best_practice.html">Best Practice guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Best_practice.html#accessing-data">Accessing data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Best_practice.html#storing-data">Storing data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Best_practice.html#processing-data-on-hpcs">Processing data on HPCs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="User_guide.html">User Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="User_guide.html#installation-guide">Installation Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="User_guide.html#extracting-data-and-visualisation">Extracting Data and Visualisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="User_guide.html#the-plot-module-and-figure-cutomisation">The <code class="docutils literal notranslate"><span class="pre">plot</span></code> module and Figure cutomisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="User_guide.html#the-dtype-module">The <code class="docutils literal notranslate"><span class="pre">dtype</span></code> module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="develop_guide.html">Developer’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="develop_guide.html#understanding-chapsim-post-s-code-structure">Understanding CHAPSim_post’s code structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develop_guide.html#brief-module-description">Brief Module Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develop_guide.html#creating-your-own-modules">Creating your own modules</a></li>
 </ul>
 </li>
 </ul>
 </div>
-<div class="section" id="modules">
-<h2>Modules<a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-reference">
+<h2>Module Reference<a class="headerlink" href="#module-reference" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference internal" href="CHAPSim_post_mod.html"><span class="doc">CHAPSim_post module</span></a></p></li>
+<li><p><a class="reference internal" href="CHAPSim_post_mod.html"><span class="doc">Module Reference</span></a></p></li>
 </ul>
 </div>
 </div>
@@ -188,8 +213,8 @@ The index for the documentation is here.</p>
           </div>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="CHAPSim_post_mod.html" class="btn btn-neutral float-right" title="CHAPSim_post module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-        <a href="index.html" class="btn btn-neutral float-left" title="CHAPSim_post" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="CHAPSim_post_mod.html" class="btn btn-neutral float-right" title="Module Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="index.html" class="btn btn-neutral float-left" title="CHAPSim_post Index" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>

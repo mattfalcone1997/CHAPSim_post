@@ -27,6 +27,10 @@ from ._common import Common
 
 from ._average import CHAPSim_AVG
 _avg_class = CHAPSim_AVG
+
+__all__ = ['CHAPSim_budget_io','CHAPSim_budget_tg','CHAPSim_k_budget_io',
+            'CHAPSim_k_budget_tg','CHAPSim_Momentum_budget_io','CHAPSim_Momentum_budget_tg']
+
 class CHAPSim_budget_base(Common,ABC):
 
     def __init__(self,comp1,comp2,avg_data=None,PhyTime=None,*args,**kwargs):
@@ -57,57 +61,6 @@ class CHAPSim_budget_base(Common,ABC):
     #     self._set_vtk_cell_array(grid,"Velo_grad_tensorDF")
     #     self._set_vtk_cell_array(grid,"PR_Velo_grad_tensorDF")
     #     self._set_vtk_cell_array(grid,"DUDX2_tensorDF")
-
-    def _budget_extract(self,PhyTime,comp1,comp2):
-            
-        production = self._production_extract(PhyTime,comp1,comp2)
-        advection = self._advection_extract(PhyTime,comp1,comp2)
-        turb_transport = self._turb_transport(PhyTime,comp1,comp2)
-        pressure_diffusion = self._pressure_diffusion(PhyTime,comp1,comp2)
-        pressure_strain = self._pressure_strain(PhyTime,comp1,comp2)
-        viscous_diff = self._viscous_diff(PhyTime,comp1,comp2)
-        dissipation = self._dissipation_extract(PhyTime,comp1,comp2)
-
-        array_concat = [production,advection,turb_transport,pressure_diffusion,\
-                        pressure_strain,viscous_diff,dissipation]
-
-        budget_array = np.stack(array_concat,axis=0)
-        
-        budget_index = ['production','advection','turbulent transport','pressure diffusion',\
-                     'pressure strain','viscous diffusion','dissipation']  
-        phystring_index = [PhyTime]*7
-    
-        budgetDF = cd.datastruct(budget_array,index =[phystring_index,budget_index])
-        
-        return budgetDF
-
-    @abstractmethod
-    def _production_extract(self,*args,**kwargs):
-        raise NotImplementedError
-
-    @abstractmethod
-    def _advection_extract(self,*args,**kwargs):
-        raise NotImplementedError
-
-    @abstractmethod
-    def _turb_transport(self,*args,**kwargs):
-        raise NotImplementedError
-
-    @abstractmethod
-    def _pressure_diffusion(self,*args,**kwargs):
-        raise NotImplementedError
-
-    @abstractmethod
-    def _pressure_strain(self,*args,**kwargs):
-        raise NotImplementedError
-
-    @abstractmethod
-    def _viscous_diff(self,*args,**kwargs):
-        raise NotImplementedError
-
-    @abstractmethod
-    def _dissipation_extract(self,*args,**kwargs):
-        raise NotImplementedError
     
     def _check_terms(self,comp):
         
@@ -258,8 +211,60 @@ class CHAPSim_budget_base(Common,ABC):
 
     def __str__(self):
         return self.budgetDF.__str__()
+class CHAPSim_Reynolds_budget_base(CHAPSim_budget_base):
+    def _budget_extract(self,PhyTime,comp1,comp2):
+            
+        production = self._production_extract(PhyTime,comp1,comp2)
+        advection = self._advection_extract(PhyTime,comp1,comp2)
+        turb_transport = self._turb_transport(PhyTime,comp1,comp2)
+        pressure_diffusion = self._pressure_diffusion(PhyTime,comp1,comp2)
+        pressure_strain = self._pressure_strain(PhyTime,comp1,comp2)
+        viscous_diff = self._viscous_diff(PhyTime,comp1,comp2)
+        dissipation = self._dissipation_extract(PhyTime,comp1,comp2)
 
-class CHAPSim_budget_io(CHAPSim_budget_base):
+        array_concat = [production,advection,turb_transport,pressure_diffusion,\
+                        pressure_strain,viscous_diff,dissipation]
+
+        budget_array = np.stack(array_concat,axis=0)
+        
+        budget_index = ['production','advection','turbulent transport','pressure diffusion',\
+                     'pressure strain','viscous diffusion','dissipation']  
+        phystring_index = [PhyTime]*7
+    
+        budgetDF = cd.datastruct(budget_array,index =[phystring_index,budget_index])
+        
+        return budgetDF
+
+    @abstractmethod
+    def _production_extract(self,*args,**kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _advection_extract(self,*args,**kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _turb_transport(self,*args,**kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _pressure_diffusion(self,*args,**kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _pressure_strain(self,*args,**kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _viscous_diff(self,*args,**kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _dissipation_extract(self,*args,**kwargs):
+        raise NotImplementedError
+
+
+class CHAPSim_budget_io(CHAPSim_Reynolds_budget_base):
 
     def _advection_extract(self,PhyTime,comp1,comp2):
         uu_comp = comp1 + comp2 
@@ -436,7 +441,7 @@ class CHAPSim_budget_io(CHAPSim_budget_base):
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
-class CHAPSim_budget_tg(CHAPSim_budget_base):
+class CHAPSim_budget_tg(CHAPSim_Reynolds_budget_base):
 
     def __init__(self,*args,**kwargs):
         if 'PhyTime' in kwargs.keys():
@@ -560,6 +565,268 @@ class CHAPSim_budget_tg(CHAPSim_budget_base):
         REN = self.avg_data._metaDF['REN']
         dissipation = -(2/REN)*(du1dxdu2dx + du1dydu2dy)
         return dissipation#.flatten()
+
+    def budget_plot(self, times_list,wall_units=True, fig=None, ax =None,**kwargs):
+
+        if not isinstance(times_list,(float,list)):
+            times_list = [times_list]
+        PhyTime = None
+        fig, ax = super()._budget_plot(PhyTime, times_list,wall_units=wall_units, fig=fig, ax =ax,**kwargs)
+
+        for a,t in zip(ax,times_list):
+            a.set_title(r"$t^*=%s$"%t,loc='right')
+            a.relim()
+            a.autoscale_view()
+        handles, labels = ax[0].get_legend_handles_labels()
+        handles = cplt.flip_leg_col(handles,4)
+        labels = cplt.flip_leg_col(labels,4)
+
+        fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.1),ncol=4)
+        ax[0].get_gridspec().tight_layout(fig,rect=(0,0.1,1,1))
+        
+        return fig, ax
+
+    def plot_integral_budget(self,budget_terms=None, wall_units=True, fig=None, ax=None, **kwargs):
+        PhyTime = None
+        fig, ax = super()._plot_integral_budget(budget_terms=budget_terms,PhyTime=PhyTime, wall_units=wall_units, fig=fig, ax=ax, **kwargs)
+        ax.set_xlabel(r"$t^*$")
+
+        ax.get_gridspec().tight_layout(fig)
+        return fig, ax
+
+    def plot_budget_x(self,budget_terms=None,y_vals_list='max',Y_plus=True,fig=None,ax=None,**kwargs):
+        PhyTime = None
+
+        fig, ax = super()._plot_budget_x(budget_terms,y_vals_list,Y_plus,PhyTime,fig=fig, ax=ax)
+        
+        ax.set_xlabel(r"$t^*$")
+        ax.get_gridspec().tight_layout(fig)
+        return fig, ax
+
+class CHAPSim_k_budget_base(ABC):
+        def __init__(self,avg_data=None,PhyTime=None,*args,**kwargs):
+
+            if avg_data is not None:
+                self.avg_data = avg_data
+            elif PhyTime is not None:
+                self.avg_data = self._module._avg_class(PhyTime,*args,**kwargs)
+            else:
+                raise Exception
+
+            super().__init__(self.avg_data._meta_data)
+
+            if PhyTime is None:
+                PhyTime = list(set([x[0] for x in self.avg_data.flow_AVGDF.index]))[0]
+            
+            uu_budgetDF = self._budget_extract(PhyTime,'u','u')
+            vv_budgetDF = self._budget_extract(PhyTime,'v','v')
+            ww_budgetDF = self._budget_extract(PhyTime,'w','w')
+
+            self.budgetDF = 0.5*(uu_budgetDF + vv_budgetDF + ww_budgetDF)
+            self.shape = self.avg_data.shape
+
+class CHAPSim_k_budget_io(CHAPSim_k_budget_base,CHAPSim_budget_io):
+    pass
+
+class CHAPSim_k_budget_tg(CHAPSim_k_budget_base,CHAPSim_budget_tg):
+    pass
+
+class CHAPSim_Momentum_budget_base(CHAPSim_budget_base):
+    def __init__(self,comp,avg_data=None,PhyTime=None,*args,**kwargs):
+
+        if avg_data is not None:
+            self.avg_data = avg_data
+        elif PhyTime is not None:
+            self.avg_data = self._module._avg_class(PhyTime,*args,**kwargs)
+        else:
+            raise Exception
+
+        Common.__init__(self,self.avg_data._meta_data)
+
+        if PhyTime is None:
+            PhyTime = list(set([x[0] for x in self.avg_data.flow_AVGDF.index]))[0]
+        
+        self.comp=comp
+        self.budgetDF = self._budget_extract(PhyTime,comp)
+        self.shape = self.avg_data.shape
+
+    def _budget_extract(self,PhyTime,comp):
+            
+        advection = self._advection_extract(PhyTime,comp)
+        pressure_grad = self._pressure_grad(PhyTime,comp)
+        viscous = self._viscous_extract(PhyTime,comp)
+        Reynolds_stress = self._turb_transport(PhyTime,comp)
+
+
+        array_concat = [advection,pressure_grad,viscous,Reynolds_stress]
+
+        budget_array = np.stack(array_concat,axis=0)
+        
+        budget_index = ['advection','pressure gradient','viscous stresses','reynolds stresses']  
+        phystring_index = [PhyTime]*4
+
+        budgetDF = cd.datastruct(budget_array,index =[phystring_index,budget_index])
+        
+        return budgetDF
+
+    @abstractmethod
+    def _advection_extract(self,PhyTime,comp):
+        raise NotImplementedError
+    
+    @abstractmethod 
+    def _pressure_grad(self,PhyTime,comp):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _viscous_extract(self,PhyTime,comp):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _turb_transport(self,PhyTime,comp):
+        raise NotImplementedError
+
+    def plot_integrated_budget(self, x_list,budget_terms=None,PhyTime=None, fig=None, ax =None,**kwargs):
+        local_budgetDF = self.budgetDF.copy()
+        middle_index = int(0.5*self.shape[0])
+        for index, val in self.budgetDF:
+            budget = np.zeros_like(val)
+            for i in range(len(budget)//2):
+                
+                y = -1*self.avg_data.CoordDF['y'][middle_index:middle_index-i-1:-1]
+                integrand = val[middle_index:middle_index-i-1:-1]
+                budget[middle_index-i-1,:] = integrate.simps(integrand,y,axis=0)
+                budget[middle_index+i,:] = integrate.simps(integrand,y,axis=0)
+            self.budgetDF[index] = budget
+
+        fig, ax = self.budget_plot(x_list,budget_terms,PhyTime,False,fig,ax,**kwargs)
+
+        self.budgetDF = local_budgetDF
+        return fig, ax
+class CHAPSim_Momentum_budget_io(CHAPSim_Momentum_budget_base):
+    def _advection_extract(self,PhyTime,comp):
+        
+        
+        UU = self.avg_data.flow_AVGDF[PhyTime,comp]*self.avg_data.flow_AVGDF[PhyTime,'u']
+        UV = self.avg_data.flow_AVGDF[PhyTime,comp]*self.avg_data.flow_AVGDF[PhyTime,'v']
+        UW = self.avg_data.flow_AVGDF[PhyTime,comp]*self.avg_data.flow_AVGDF[PhyTime,'w']
+
+        advection_pre = np.stack([UU,UV,UW],axis=0)
+
+        return -1*self.Domain.Vector_div_io(self.avg_data.CoordDF,advection_pre)
+
+    def _pressure_grad(self, PhyTime, comp):
+        
+        pressure = self.avg_data.flow_AVGDF[PhyTime,'P']
+        dir = chr(ord(comp)-ord('u') + ord('x'))
+
+        return -1.0*self.Domain.Grad_calc(self.avg_data.CoordDF,pressure,dir)
+
+    def _viscous_extract(self, PhyTime, comp):
+        dir = chr(ord(comp)-ord('u') + ord('x'))
+
+        S_comp_1 = 0.5*(self.avg_data.Velo_grad_tensorDF[PhyTime,comp+'x'] +\
+                        self.avg_data.Velo_grad_tensorDF[PhyTime,'u'+dir])
+
+        S_comp_2 = 0.5*(self.avg_data.Velo_grad_tensorDF[PhyTime,comp+'y'] +\
+                        self.avg_data.Velo_grad_tensorDF[PhyTime,'v'+dir])
+        
+        S_comp = np.stack([S_comp_1,S_comp_2],axis=0)
+        REN = self.avg_data._metaDF['REN']
+        mu_star = 1.0
+        return (mu_star/REN)*self.Domain.Vector_div_io(self.avg_data.CoordDF,S_comp) 
+
+    def _turb_transport(self, PhyTime, comp):
+
+        comp_uu = comp + 'u'
+        comp_uv = comp + 'v'
+
+        if comp_uu[0] > comp_uu[1]:
+            comp_uu = comp_uu[::-1]
+        if comp_uv[0] > comp_uv[1]:
+            comp_uv = comp_uv[::-1]
+        
+        uu = self.avg_data.UU_tensorDF[PhyTime,comp_uu]
+        uv = self.avg_data.UU_tensorDF[PhyTime,comp_uv]
+
+        advection_pre = np.stack([uu,uv],axis=0)
+
+        return -1*self.Domain.Vector_div_io(self.avg_data.CoordDF,advection_pre)
+
+
+    def budget_plot(self, x_list,budget_terms=None,PhyTime=None,wall_units=True, fig=None, ax =None,**kwargs):
+        
+        PhyTime = self.avg_data.check_PhyTime(PhyTime)
+
+        fig, ax = super()._budget_plot(PhyTime, x_list,budget_terms,wall_units=wall_units, fig=fig, ax =ax,**kwargs)
+        
+        x_list = indexing.true_coords_from_coords(self.avg_data.CoordDF,'x',x_list)
+
+        for a,x in zip(ax,x_list):
+            title = self.Domain.in_to_out(r"$x/\delta=%.2g$"%x)
+            a.set_title(title,loc='right')
+            a.relim()
+            a.autoscale_view()
+        handles, labels = ax[0].get_legend_handles_labels()
+        handles = cplt.flip_leg_col(handles,4)
+        labels = cplt.flip_leg_col(labels,4)
+
+        fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.1),ncol=4)
+        ax[0].get_gridspec().tight_layout(fig,rect=(0,0.1,1,1))
+        
+        return fig, ax
+
+    def plot_integral_budget(self,comp=None, PhyTime=None, wall_units=True, fig=None, ax=None, **kwargs):
+        
+        PhyTime = self.avg_data.check_PhyTime(PhyTime)
+
+        fig, ax = super()._plot_integral_budget(comp,PhyTime, wall_units=wall_units, fig=fig, ax=ax, **kwargs)
+        
+        x_label = self.Domain.in_to_out(r"$x/\delta$")
+        ax.set_xlabel(x_label)
+
+        return fig, ax
+
+    def plot_budget_x(self,budget_terms=None,y_vals_list='max',Y_plus=True,PhyTime=None,fig=None,ax=None,**kwargs):
+        
+        PhyTime = self.avg_data.check_PhyTime(PhyTime)
+
+
+        fig, ax = super()._plot_budget_x(budget_terms,y_vals_list,Y_plus,PhyTime,fig=fig, ax=ax)
+
+        x_label = self.Domain.in_to_out(r"$x/\delta$")
+        ax.set_xlabel(x_label)
+        
+        ax.get_gridspec().tight_layout(fig)
+        return fig, ax
+
+    
+class CHAPSim_Momentum_budget_tg(CHAPSim_Momentum_budget_base):
+    def _advection_extract(self, PhyTime, comp):
+        UV = self.avg_data.flow_AVGDF[PhyTime,comp]*self.avg_data.flow_AVGDF[PhyTime,'v']
+
+        return self.Domain.Grad_calc(self.avg_data.CoordDF,UV,'y')
+
+    def _viscous_extract(self, PhyTime, comp):
+        dir = chr(ord(comp)-ord('u') + ord('x'))
+
+
+        S_comp_2 = 0.5*(self.avg_data.Velo_grad_tensorDF[PhyTime,comp+'y'] +\
+                        self.avg_data.Velo_grad_tensorDF[PhyTime,'v'+dir])
+        
+        REN = self.avg_data._metaDF['REN']
+        mu_star = 1.0
+        
+        return (mu_star/REN)*self.Domain.Grad_calc(self.avg_data.CoordDF,S_comp_2,'y')
+
+    def _turb_transport(self, PhyTime, comp):
+        comp_uv = comp + 'v'
+
+        if comp_uv[0] > comp_uv[1]:
+            comp_uv = comp_uv[::-1]
+
+        uv = self.avg_data.UU_tensorDF[PhyTime,comp_uv]
+
+        return self.Domain.Grad_calc(self.avg_data.CoordDF,uv,'y')
 
     def budget_plot(self, times_list,wall_units=True, fig=None, ax =None,**kwargs):
 

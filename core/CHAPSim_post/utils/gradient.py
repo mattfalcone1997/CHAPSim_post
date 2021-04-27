@@ -57,6 +57,9 @@ class Gradient():
             dim = ord('z') - ord(comp)
         elif flow_array.ndim == 2:
             dim = ord('y') - ord(comp)
+            if comp == 'z':
+                msg = "gradients in the z direction can only be calculated on 3-d arrays"
+                raise Exception(msg)
         else:
             msg = "This method can only be used on two and three dimensional arrays"
             raise TypeError(msg)

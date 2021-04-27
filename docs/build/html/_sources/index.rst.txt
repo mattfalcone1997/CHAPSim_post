@@ -1,13 +1,15 @@
-CHAPSim_post
-============
+CHAPSim_post Index
+==================
 A high-level post-processing pacakge for the CHAPSim DNS code!
 
 .. toctree::
-   :maxdepth: 2
    :caption: Contents:
    
    main_content
    CHAPSim_post_mod
+   Best_practice
+   User_guide
+   develop_guide
 
 
 

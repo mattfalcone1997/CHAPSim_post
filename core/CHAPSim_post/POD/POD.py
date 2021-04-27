@@ -240,6 +240,9 @@ class POD3D(_PODbase,Common):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         Common.__init__(self,self.meta_data)
+
+
+
     def _POD_extract(self,comp,path_to_folder='.',method='svd',low_memory=True,abs_path=True,time0=None,nsnapshots=100,nmodes=10):
         max_time = misc_utils.max_time_calc(path_to_folder,abs_path)
         self.avg_data = self._module._avg_class(max_time,path_to_folder=path_to_folder,
@@ -303,7 +306,7 @@ class POD3D(_PODbase,Common):
         for i,mode in enumerate(modes):
 
             PODmodes = self.POD_modesDF.values[:,:,:,:,mode]
-            POD_modeDF = cd.flowstruct3D(self.CoordDF,PODmodes,index=self.POD_modesDF.index)
+            POD_modeDF = cd.flowstruct3D(self.CoordDF,PODmodes,Domain=self.Domain,index=self.POD_modesDF.index)
             plane, coord = POD_modeDF.CoordDF.check_plane(plane)
 
             if coord == 'y':

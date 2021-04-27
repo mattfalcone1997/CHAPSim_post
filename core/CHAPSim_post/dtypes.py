@@ -22,8 +22,10 @@ import operator
 
 import CHAPSim_post as cp
 import sys
-import pyvista
+from pyvista import StructuredGrid,vtk
+
 from CHAPSim_post.utils import misc_utils,indexing
+from CHAPSim_post.post._common import DomainHandler
 import CHAPSim_post.plot as cplt
 
 class datastruct:
@@ -347,7 +349,7 @@ class datastruct:
 
     def check_outer(self,key,err,warn=None):
         if isinstance(key, (float,int)):
-            key = "%g"%key
+            key = "%.9g"%key
         else:
             key = str(key)
 
@@ -551,6 +553,7 @@ class datastruct:
 class coordstruct(datastruct):
     def set_domain_handler(self,GeomHandler):
         self._domain_handler = GeomHandler
+
     @property
     def DomainHandler(self):
         if hasattr(self,"_domain_handler"):
@@ -568,7 +571,7 @@ class coordstruct(datastruct):
         ZND = np.zeros(ZCC.size+1)
 
         XND[0] = 0.0
-        YND[0] = -1.0 if self.metaDF['iCase'] == 1 else 0
+        YND[0] = 0 if self._domain_handler.is_cylind else -1.0
         ZND[0] = 0.0
 
         for i in  range(1,XND.size):
@@ -586,8 +589,9 @@ class coordstruct(datastruct):
         x_coords = self.staggered['x']
         y_coords = self.staggered['y']
         z_coords = self.staggered['z']
-        Y,Z,X = np.meshgrid(y_coords,z_coords,x_coords)
-        grid = pyvista.StructuredGrid(Y,Z,X)
+
+        Z,Y,X = misc_utils.meshgrid(z_coords,y_coords,x_coords)
+        grid = StructuredGrid(Z,Y,X)
         return grid
 
     def index_calc(self,comp,vals):
@@ -605,9 +609,23 @@ class coordstruct(datastruct):
         return plane, coord
 
 class flowstruct_base(datastruct):
-    def __init__(self,CoordDF,*args,from_hdf=False,**kwargs):
+    def __init__(self,CoordDF,*args,from_hdf=False,Domain=None,**kwargs):
         super().__init__(*args,from_hdf=from_hdf,**kwargs)
         self._set_coords(CoordDF,from_hdf,*args,**kwargs)   
+        self.set_domain_handler(Domain)
+
+    def set_domain_handler(self,Domain):
+        if Domain is not None:
+            if isinstance(Domain,DomainHandler):
+                self._domain_handler = Domain
+                self.CoordDF.set_domain_handler(Domain)
+            else:
+                msg = "Type of domain must be DomainHandler"
+                raise TypeError(msg)
+
+    @property
+    def Domain(self):
+        return self._domain_handler
 
     @property
     def CoordDF(self):
@@ -719,8 +737,18 @@ class flowstruct3D(flowstruct_base):
     def to_vtk(self,file_name):
         
         for i,time in enumerate(self.times):
-            file_base = os.path.basename(file_name)
-            file_name = os.path.join(file_base,".vtk")
+            file_base, file_ext = os.path.splitext(file_name)
+            if file_ext == ".vtk":
+                writer = vtk.vtkStructuredGridWriter()
+            elif file_ext == ".vts":
+                writer = vtk.vtkXMLStructuredGridWriter()
+            elif file_ext == "":
+                file_name = file_base +".vtk"
+                writer = vtk.vtkStructuredGridWriter()
+            else:
+                msg = "This function can only use the vtk or vts file extension not %s"%file_ext
+                raise ValueError(msg)
+
             grid = self.CoordDF.vtkStructuredGrid()
             if len(self.times) > 1:
                 num_zeros = int(np.log10(len(self.times)))+1
@@ -728,8 +756,19 @@ class flowstruct3D(flowstruct_base):
                 file_name = os.path.join(file_name,".%s"%ext)
 
             for comp in self.comp:
-                grid.point_arrays[comp] = self[time,comp].flatten()
-            pyvista.save_meshio(file_name,grid,file_format="vtk")
+                grid.cell_arrays[np.str_(comp)] = self[time,comp].flatten()
+            # pyvista.save_meshio(file_name,grid,file_format="vtk")
+
+            
+            writer.SetFileName(file_name)
+
+            if vtk.vtkVersion().GetVTKMajorVersion() <= 5:
+                grid.Update()
+                writer.SetInput(grid)
+            else:
+                writer.SetInputData(grid)
+                
+            writer.Write()
 
 
     def plot_contour(self,comp,plane,axis_val,time=None,fig=None,ax=None,pcolor_kw=None,**kwargs):
@@ -761,8 +800,8 @@ class flowstruct3D(flowstruct_base):
 
         plane, coord = self.CoordDF.check_plane(plane)
 
-        coord_1 = self.CoordDF[slice[0]][::spacing[0]]
-        coord_2 = self.CoordDF[slice[1]][::spacing[1]]
+        coord_1 = self.CoordDF[plane[0]][::spacing[0]]
+        coord_2 = self.CoordDF[plane[1]][::spacing[1]]
         UV_slice = [chr(ord(x)-ord('x')+ord('u')) for x in plane]
         U = self[time,UV_slice[0]]
         V = self[time,UV_slice[1]]
@@ -1040,112 +1079,112 @@ class metastruct():
     def __deepcopy__(self,memo):
         return self.copy()
 
-warnings.filterwarnings('ignore',category=UserWarning)
-@pd.api.extensions.register_dataframe_accessor("data")
-class DataFrame():
-    def __init__(self,pandas_obj):
-        self._obj = pandas_obj
-        self._reshape = None
-        self._active=False
+# warnings.filterwarnings('ignore',category=UserWarning)
+# @pd.api.extensions.register_dataframe_accessor("data")
+# class DataFrame():
+#     def __init__(self,pandas_obj):
+#         self._obj = pandas_obj
+#         self._reshape = None
+#         self._active=False
 
-    def __call__(self, shape):
-        self._validate()
-        self.FrameShape = shape
-        return self._obj
+#     def __call__(self, shape):
+#         self._validate()
+#         self.FrameShape = shape
+#         return self._obj
 
-    def _validate(self):
-        cols = self._obj.columns
-        if not all([type(col)==int for col in cols]):
-            msg = "The columns must be integers the use this attribute"
-            raise ValueError(msg)
-    @property
-    def FrameShape(self):
-        return self._reshape
+#     def _validate(self):
+#         cols = self._obj.columns
+#         if not all([type(col)==int for col in cols]):
+#             msg = "The columns must be integers the use this attribute"
+#             raise ValueError(msg)
+#     @property
+#     def FrameShape(self):
+#         return self._reshape
 
-    @FrameShape.setter
-    def FrameShape(self,shape):
-        self._FrameShapeHelper(shape)
-        self._reshape = shape
+#     @FrameShape.setter
+#     def FrameShape(self,shape):
+#         self._FrameShapeHelper(shape)
+#         self._reshape = shape
     
-    def _FrameShapeHelper(self,shape):
-        msg = "The shape provided to this function must be able to"+\
-             f" reshape an array of the appropriate size {self._obj.shape}."+\
-            f" Shape provided {shape}"
-        if hasattr(shape[0],"__iter__"):
+#     def _FrameShapeHelper(self,shape):
+#         msg = "The shape provided to this function must be able to"+\
+#              f" reshape an array of the appropriate size {self._obj.shape}."+\
+#             f" Shape provided {shape}"
+#         if hasattr(shape[0],"__iter__"):
 
-            size_list = [series.dropna().size for _,series in self._obj.iterrows()]
-            for shape_i in shape:
-                num_true = list(size_list == np.prod(shape_i)).count(True)
-                if  num_true ==0:
-                    raise ValueError(msg)
-                elif num_true > 1:
-                    warn_msg = "The array of this size appears more than "+\
-                                "once data attribute should not be used"
-                    warnings.warn(warn_msg,stacklevel=2)
-                    break
-                else:
-                    self._active=True
+#             size_list = [series.dropna().size for _,series in self._obj.iterrows()]
+#             for shape_i in shape:
+#                 num_true = list(size_list == np.prod(shape_i)).count(True)
+#                 if  num_true ==0:
+#                     raise ValueError(msg)
+#                 elif num_true > 1:
+#                     warn_msg = "The array of this size appears more than "+\
+#                                 "once data attribute should not be used"
+#                     warnings.warn(warn_msg,stacklevel=2)
+#                     break
+#                 else:
+#                     self._active=True
                 
-        else:
-            if np.prod(shape) not in self._obj.shape:
-                raise ValueError(msg)
-            self._active=True
+#         else:
+#             if np.prod(shape) not in self._obj.shape:
+#                 raise ValueError(msg)
+#             self._active=True
         
 
 
-    def __getitem__(self,key):
-        if not self._active:
-            raise RuntimeError("This functionality cannot be used here")
-        if self._reshape is None:
-            msg = "The shape has not been set, this function cannot be used"
-            raise TypeError(msg)
-        try:
-            shape = self._getitem_helper(key)
-            return self._obj.loc[key].dropna().values.reshape(shape)
-        except KeyError as msg:
-            if self._obj.index.nlevels==2:
-                times = list(set([float(x[0]) for x in self._obj.index]))
-                if len(times) ==1 or all(np.isnan(np.array(times))):
-                    return self._obj.loc[times[0],key].dropna().values.reshape(shape)
-                else:
-                    tb = sys.exc_info()[2]
-                    raise KeyError(msg.args[0]).with_traceback(tb)
-            else:
-                tb = sys.exc_info()[2]
-                raise KeyError(msg.args[0]).with_traceback(tb)
+#     def __getitem__(self,key):
+#         if not self._active:
+#             raise RuntimeError("This functionality cannot be used here")
+#         if self._reshape is None:
+#             msg = "The shape has not been set, this function cannot be used"
+#             raise TypeError(msg)
+#         try:
+#             shape = self._getitem_helper(key)
+#             return self._obj.loc[key].dropna().values.reshape(shape)
+#         except KeyError as msg:
+#             if self._obj.index.nlevels==2:
+#                 times = list(set([float(x[0]) for x in self._obj.index]))
+#                 if len(times) ==1 or all(np.isnan(np.array(times))):
+#                     return self._obj.loc[times[0],key].dropna().values.reshape(shape)
+#                 else:
+#                     tb = sys.exc_info()[2]
+#                     raise KeyError(msg.args[0]).with_traceback(tb)
+#             else:
+#                 tb = sys.exc_info()[2]
+#                 raise KeyError(msg.args[0]).with_traceback(tb)
 
-    def _getitem_helper(self,key):
-        if hasattr(self.FrameShape[0],"__iter__"):
-            arr_size = self._obj.loc[key].dropna().values.size
-            for shape in self.FrameShape:
-                if np.prod(shape) == arr_size:
-                    return shape
-        else:
-            return self.FrameShape
+#     def _getitem_helper(self,key):
+#         if hasattr(self.FrameShape[0],"__iter__"):
+#             arr_size = self._obj.loc[key].dropna().values.size
+#             for shape in self.FrameShape:
+#                 if np.prod(shape) == arr_size:
+#                     return shape
+#         else:
+#             return self.FrameShape
 
 
-@pd.api.extensions.register_dataframe_accessor("coord")
-class CoordFrame():
-    def __init__(self,pandas_obj):
-        self._obj = pandas_obj
-        self._active = False
+# @pd.api.extensions.register_dataframe_accessor("coord")
+# class CoordFrame():
+#     def __init__(self,pandas_obj):
+#         self._obj = pandas_obj
+#         self._active = False
 
-    def _validate(self):
-        cols = self._obj.columns.to_list()
-        msg = f"The columns of the DataFrame must be {['x','y','z']}"
-        if not cols == ['x','y','z']:
-            raise ValueError(msg)
+#     def _validate(self):
+#         cols = self._obj.columns.to_list()
+#         msg = f"The columns of the DataFrame must be {['x','y','z']}"
+#         if not cols == ['x','y','z']:
+#             raise ValueError(msg)
 
-    def __call__(self):
-        self._validate()
-        self._active = True
-        return self._obj
-    def __getitem__(self,key):
-        if self._active:
-            return self._obj[key].dropna().values
-        else:
-            msg = "This DataFrame extension is not active, the __call__ "+\
-                        "special method needs to be called on the DataFrame"
-            raise AttributeError(msg)
+#     def __call__(self):
+#         self._validate()
+#         self._active = True
+#         return self._obj
+#     def __getitem__(self,key):
+#         if self._active:
+#             return self._obj[key].dropna().values
+#         else:
+#             msg = "This DataFrame extension is not active, the __call__ "+\
+#                         "special method needs to be called on the DataFrame"
+#             raise AttributeError(msg)
             
-warnings.resetwarnings()
+# warnings.resetwarnings()

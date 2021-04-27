@@ -180,8 +180,8 @@ class CHAPSim_fluct_base(Common):
         for i, val in enumerate(int_vals):
             fig, ax[i] = self.fluctDF.plot_vector(plane,val,time=PhyTime,spacing=spacing,scaling=scaling,
                                                     fig=fig,ax=ax[i],quiver_kw=quiver_kw)
-            ax[i].axes.set_xlabel(r"$%s/\delta$"%slice[0])
-            ax[i].axes.set_ylabel(r"$%s/\delta$"%slice[1])
+            ax[i].axes.set_xlabel(r"$%s/\delta$"%plane[0])
+            ax[i].axes.set_ylabel(r"$%s/\delta$"%plane[1])
             ax[i].axes.set_title(r"$%s = %.2g$"%(title_symbol,axis_vals[i]),loc='right')
             ax[i].axes.set_title(r"$t^*=%s$"%PhyTime,loc='left')
 
@@ -295,7 +295,7 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
                 fluct[j,i] = inst_values[i] -avg_values
             del inst_values
 
-        return cd.flowstruct3D(self.CoordDF,fluct,index=inst_data.InstDF.index.copy())
+        return cd.flowstruct3D(self.CoordDF,fluct,Domain=self.Domain,index=inst_data.InstDF.index.copy())
     
 class CHAPSim_fluct_tg(CHAPSim_fluct_base):
     tgpost = True

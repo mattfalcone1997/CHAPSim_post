@@ -217,7 +217,7 @@ class flowReconstruct3D(flowReconstructBase,Common):
 
         # flow_reconstruct = np.sum(reconstruct_arrays,axis=-1)
 
-        return cd.flowstruct3D(self.CoordDF,flow_reconstruct,index=indices)
+        return cd.flowstruct3D(self.CoordDF,flow_reconstruct,Domain=self.Domain,index=indices)
 
     def plot_contour(self,comp,modes,axis_vals,plane='xz',y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
         

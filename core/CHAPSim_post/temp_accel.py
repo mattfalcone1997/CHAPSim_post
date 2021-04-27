@@ -5,6 +5,7 @@ Module for processing temporal acceleration
 """
 
 from . import post as cp
+from . import dtypes as cd
 from . import plot as cplt
 from .utils import misc_utils
 import sys
@@ -285,6 +286,24 @@ _fluct_tg_class = CHAPSim_fluct_tg
 
 class CHAPSim_budget_tg(cp.CHAPSim_budget_tg):
     pass
+
+class CHAPSim_momentum_budget_tg(cp.CHAPSim_Momentum_budget_tg):
+    def _budget_extract(self, PhyTime, comp):
+        transient  = self._transient_extract(None,comp)
+        budgetDF = cd.datastruct(transient,index=(None,'transient'))
+
+        otherBudgetDF =  super()._budget_extract(PhyTime, comp)
+        budgetDF.concat(otherBudgetDF)
+        return budgetDF
+        # array_concat.insert(0,transient)
+        # budget_index.insert(0,'transient')
+        # phystring_index = [PhyTime]*5
+
+    def _transient_extract(self,PhyTime,comp):
+        U = self.avg_data.flow_AVGDF[None,comp]
+
+        times = self.avg_data.get_times()
+        return np.gradient(U,times,axis=1)
 class CHAPSim_autocov_tg(cp.CHAPSim_autocov_tg):
     pass
 

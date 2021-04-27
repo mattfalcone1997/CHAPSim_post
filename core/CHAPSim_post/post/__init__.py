@@ -16,8 +16,7 @@ from ._meta import CHAPSim_meta
 from ._fluct import CHAPSim_fluct_io
 from ._fluct import CHAPSim_fluct_tg
 
-from ._budget import CHAPSim_budget_io
-from ._budget import CHAPSim_budget_tg
+from ._budget import *
 
 from ._autocov import CHAPSim_autocov_io
 from ._autocov import CHAPSim_autocov_tg
