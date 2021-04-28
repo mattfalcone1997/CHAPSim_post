@@ -100,7 +100,7 @@ class CHAPSim_AVG_base(Common,ABC):
             key = self.__class__.__name__
 
         misc_utils.check_path_exists(file_name,True)
-        print(os.path.exists(file_name))
+
         self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
         self.CoordDF = self._meta_data.CoordDF
         self._metaDF = self._meta_data.metaDF

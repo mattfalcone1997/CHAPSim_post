@@ -145,12 +145,15 @@ class classproperty():
 
 class Common(ABC):
     def __init__(self,meta_data):
-        self.Domain = DomainHandler(meta_data)
+        self._Domain = DomainHandler(meta_data)
 
     @classproperty
     def _module(cls):
         return sys.modules[cls.__module__]
 
+    @property
+    def Domain(self):
+        return self._Domain
     def _check_outer(self,processDF,outer,err_msg,warn_msg):
 
         err = ValueError(err_msg)

@@ -106,6 +106,7 @@ class CHAPSim_fluct_base(Common):
         
         vals_list = misc_utils.check_list_vals(vals_list)
         PhyTime = self.check_PhyTime(PhyTime)
+        
         if y_limit is not None:
             y_lim_int = indexing.ycoords_from_norm_coords(self.avg_data,[y_limit],mode=y_mode)[0][0]
         else:

@@ -590,8 +590,9 @@ class coordstruct(datastruct):
         y_coords = self.staggered['y']
         z_coords = self.staggered['z']
 
-        Z,Y,X = misc_utils.meshgrid(z_coords,y_coords,x_coords)
-        grid = StructuredGrid(Z,Y,X)
+        Y,X,Z = np.meshgrid(y_coords,x_coords,z_coords)
+
+        grid = StructuredGrid(X,Z,Y)
         return grid
 
     def index_calc(self,comp,vals):
@@ -743,8 +744,8 @@ class flowstruct3D(flowstruct_base):
             elif file_ext == ".vts":
                 writer = vtk.vtkXMLStructuredGridWriter()
             elif file_ext == "":
-                file_name = file_base +".vtk"
-                writer = vtk.vtkStructuredGridWriter()
+                file_name = file_base +".vts"
+                writer = vtk.vtkXMLStructuredGridWriter()
             else:
                 msg = "This function can only use the vtk or vts file extension not %s"%file_ext
                 raise ValueError(msg)

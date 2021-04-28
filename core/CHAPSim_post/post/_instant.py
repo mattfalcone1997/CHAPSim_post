@@ -389,7 +389,7 @@ class CHAPSim_Inst(Common):
             return fig, ax
     
     @docstring.sub
-    def lambda2_calc(self,PhyTime=None,x_start_index=None,x_end_index=None,y_index=None):
+    def lambda2_calc(self,PhyTime=None):
         """
         Calculation of lambda to visualise vortex cores
 
@@ -411,32 +411,28 @@ class CHAPSim_Inst(Common):
             Array of the lambda2 calculation
         """
         
+        PhyTime = self.check_PhyTime(PhyTime)
+
         #Calculating strain rate tensor
         velo_list = ['u','v','w']
         coord_list = ['x','y','z']
-        
-        arr_len_y = y_index if y_index is not None else self.NCL[1]
-        
-        if x_start_index is None:
-            x_start_index=0 
-        if x_end_index is None:
-            x_end_index = self.NCL[0]
-        arr_len_x = x_end_index - x_start_index
-
-        strain_rate = np.zeros((self.NCL[2],arr_len_y,arr_len_x,3,3))
-        rot_rate =  np.zeros((self.NCL[2],arr_len_y,arr_len_x,3,3))
+                
+        strain_rate = np.zeros((*self.shape,3,3))
+        rot_rate =  np.zeros((*self.shape,3,3))
         i=0
         for velo1,coord1 in zip(velo_list,coord_list):
             j=0
             for velo2,coord2 in zip(velo_list,coord_list):
-                velo_field1 = self.InstDF[PhyTime,velo1][:,:arr_len_y,x_start_index:x_end_index]
-                velo_field2 = self.InstDF[PhyTime,velo2][:,:arr_len_y,x_start_index:x_end_index]
+                velo_field1 = self.InstDF[PhyTime,velo1]
+                velo_field2 = self.InstDF[PhyTime,velo2]
+
                 strain_rate[:,:,:,i,j] = 0.5*(gradient.Grad_calc(self.CoordDF,velo_field1,coord2) \
                                         + gradient.Grad_calc(self.CoordDF,velo_field2,coord1))
                 rot_rate[:,:,:,i,j] = 0.5*(gradient.Grad_calc(self.CoordDF,velo_field1,coord2) \
                                         - gradient.Grad_calc(self.CoordDF,velo_field2,coord1))
                 j+=1
             i+=1
+
         del velo_field1 ; del velo_field2
         S2_Omega2 = strain_rate**2 + rot_rate**2
         del strain_rate ; del rot_rate
@@ -446,10 +442,10 @@ class CHAPSim_Inst(Common):
         
         lambda2 = np.sort(S2_Omega2_eigvals,axis=3)[:,:,:,1]
         
-        return lambda2
+        return cd.flowstruct3D(self.CoordDF,{(PhyTime,'lambda_2'):lambda2},Domain=self.Domain)
 
     @docstring.sub
-    def plot_lambda2(self,vals_list,x_split_list=None,PhyTime=None,ylim=None,Y_plus=True,avg_data=None,colors=None,fig=None,ax=None,**kwargs):
+    def plot_lambda2(self,vals_list,x_split_pair=None,PhyTime=None,y_limit=None,y_mode='half_channel',Y_plus=True,avg_data=None,colors=None,surf_kw=None,fig=None,ax=None,**kwargs):
         """
         Creates isosurfaces for the lambda 2 criterion
 
@@ -482,55 +478,30 @@ class CHAPSim_Inst(Common):
             output figure and axes objects
 
         """
-        PhyTime = self._check_outer_index(self.InstDF,PhyTime)            
-        
-        
-        if not hasattr(vals_list,'__iter__'):
-            vals_list = [vals_list]
-        X = self._meta_data.CoordDF['x']
-        Y = self._meta_data.CoordDF['y']
-        Z = self._meta_data.CoordDF['z']
+        PhyTime = self.check_PhyTime(PhyTime)
+        vals_list = misc_utils.check_list_vals(vals_list)
 
-        if ylim is not None:
-            if Y_plus:
-                if avg_data is None:
-                    msg = "If Y_plus is selected, the avg_data keyword argument needs to be given"
-                    raise ValueError(msg)
-                y_index= indexing.Y_plus_index_calc(avg_data,self.CoordDF,ylim)
-            else:
-                y_index=indexing.coord_index_calc(self.CoordDF,'y',ylim)
-            Y=Y[:y_index]
-            # lambda2=lambda2[:,:y_index,:]
-        if x_split_list is None:
-            x_split_list = [np.amin(X),np.amax(X)]
-        
-        if fig is None:
-            if 'figsize' not in kwargs.keys():
-                kwargs['figsize'] = [9,5.5*(len(x_split_list)-1)]
-            fig = cplt.mCHAPSimFigure(visible='off',**kwargs)
+        if y_limit is not None:
+            y_lim_int = indexing.ycoords_from_norm_coords(self.avg_data,[y_limit],mode=y_mode)[0][0]
         else:
-            if not isinstance(fig, cplt.matlabFigure):
-                raise TypeError("fig must be of type %s not %s"\
-                                %(cplt.matlabFigure,type(fig)))
-        if ax is None:
-            ax = fig.subplots(len(x_split_list)-1,squeeze=False)
-        else:
-            if not isinstance(ax, cplt.matlabAxes) and not isinstance(ax,np.ndarray):
-                raise TypeError("fig must be of type %s not %s"\
-                                %(cplt.matlabAxes,type(ax)))
-        for j in range(len(x_split_list)-1):
-            x_start = indexing.coord_index_calc(self.CoordDF,'x',x_split_list[j])
-            x_end = indexing.coord_index_calc(self.CoordDF,'x',x_split_list[j+1])
-            lambda2 = self.lambda2_calc(PhyTime,x_start,x_end)
-            if ylim:
-                lambda2=lambda2[:,:y_index,:]
-            for val,i in zip(vals_list,range(len(vals_list))):
-                
-                color = colors[i%len(colors)] if colors is not None else ''
-                patch = ax[j].plot_isosurface(Y,Z,X[x_start:x_end],lambda2,val,color)
-        
-        
-        return fig, ax
+            y_lim_int = None
+
+        kwargs = cplt.update_subplots_kw(kwargs,subplot_kw={'projection':'3d'})
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig=fig,ax=ax,**kwargs)
+
+        lambda_2DF = self.lambda2_calc(PhyTime)
+        for i,val in enumerate(vals_list):
+            if colors is not None:
+                color = colors[i%len(colors)]
+                surf_kw['facecolor'] = color
+            fig, ax1 = lambda_2DF.plot_isosurface('lambda_2',val,time=PhyTime,y_limit=y_lim_int,
+                                            x_split_pair=x_split_pair,fig=fig,ax=ax,
+                                            surf_kw=surf_kw)
+            ax.axes.set_ylabel(r'$x/\delta$')
+            ax.axes.set_xlabel(r'$z/\delta$')
+            ax.axes.invert_xaxis()
+
+        return fig, ax1
 
     def vorticity_calc(self,PhyTime=None):
         """
