@@ -14,7 +14,6 @@ class Params:
                         "dissipation_correction": False,
                         "gradient_method":"numpy",
                         "gradient_order": 2,
-                        "UsePyVista" : True,
                         "AVG_Style": "overline"}
 
     def __getitem__(self,key):

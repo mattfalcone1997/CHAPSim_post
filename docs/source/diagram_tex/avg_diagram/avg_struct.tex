@@ -1,0 +1,74 @@
+\documentclass[convert={density=300,size=1080x800,outext=.png}]{standalone}
+
+\usepackage{tikz}
+
+\usetikzlibrary{shapes,arrows,positioning,backgrounds,shadows}
+% \tikzexternalize
+
+\tikzstyle{decision} = [diamond, draw, fill=white!20, 
+    text width=4.5em, text badly centered, node distance=3cm, inner sep=0pt]
+\tikzstyle{block} = [rectangle, draw, fill=white!20, 
+    text width=8em, text centered, rounded corners, minimum height=2em,node distance=4em]
+\tikzstyle{block2} = [rectangle, draw, fill=white!20, 
+    text width=8em, text centered, rounded corners, minimum height=2em,node distance=4em,fill=red!20]
+\tikzstyle{output} = [rectangle, draw, fill=white!20, 
+    text width=8em, text centered, rounded corners, minimum height=2em,node distance=4em,fill=green!20]
+% \tikzstyle{easy} = [rectangle, draw, fill=green!40, 
+%     text width=5em, text centered, rounded corners, minimum height=4em]
+% \tikzstyle{medium} = [rectangle, draw, fill=orange!40, 
+%     text width=5em, text centered, rounded corners, minimum height=4em]
+% \tikzstyle{hard} = [rectangle, draw, fill=red!40, 
+%     text width=5em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, ellipse,fill=red!20, node distance=3cm,
+    minimum height=2em]
+
+\begin{document}
+\pgfdeclarelayer{bg}
+\pgfsetlayers{bg,main}
+\begin{tikzpicture}
+    \node[block,text width=10em] (common) {\texttt{Common}};
+    \node[block,text width=10em,below of=common,node distance=4em] (base) {\texttt{CHAPSim\_AVG\_base}};
+    \node[block,below of=base,node distance=7em,xshift=-5em,text width=9em] (io) {\texttt{CHAPSim\_AVG\_io}};
+    \node[block,below of=base,text width=11em,node distance=4em,xshift=5em] (tg_base) {\texttt{CHAPSim\_AVG\_tg\_base}};
+    \node[block,below of=tg_base,text width=9em,node distance=3em] (tg) {\texttt{CHAPSim\_AVG\_tg}};
+    \node[block,below of=io,text width=9em,node distance=5em] (move) {\texttt{CHAPSim\_AVG\_io}};
+    \node[block,below of=tg,node distance=3.5em,xshift=7.5em,text width=13em] (temp) {\texttt{CHAPSim\_AVG\_tg\_custom\_t}};
+    \node[block,below of=temp,node distance=3em,text width=9em] (temp2) {\texttt{CHAPSim\_AVG\_tg}};
+
+    \path [line] (common.south) -- (base.north);
+    \path [line] (base.south) -- (tg_base);
+    \path [line] (base.south) -- (io.north);
+    \path [line] (io) -- (move);
+    \path [line] (tg_base) -- (tg) ;
+    \path [line] (tg_base.east) -| (temp.north);
+    \path [line] (temp) -- (temp2);
+
+    \begin{pgfonlayer}{bg}
+        \path (common.west |- common.north)+(-1em,0.75em) node (common_top) {}; 
+        \path (common.east |- common.south)+(7.5em,-0.75em) node (common_bot) {};
+
+        \path[fill=green!30,rounded corners, draw=black!50, dashed] (common_top) rectangle (common_bot) ; 
+
+        \path (common.east)+(3.5em,0) node (common_label) {\texttt{post.\_common}};
+
+        \path (io.west |- base.north)+(-1em,0.5em) node (top_left) {}; 
+        \path (tg.east |- tg.south)+(10em,-0.2em) node (bot_right) {};
+        \path[fill=yellow!30,rounded corners, draw=black!50, dashed] (top_left) rectangle (bot_right) ; 
+
+        \path (base.east)+(8em,0) node (label1) {\texttt{post.\_averaged}};
+
+        \path (move.west |- move.north)+(-1em,0.5em) node (top_left_move) {}; 
+        \path (move.east |- move.south)+(1em,-3em) node (bot_right_move) {};
+        \path[fill=red!30,rounded corners, draw=black!50, dashed] (top_left_move) rectangle (bot_right_move) ; 
+
+        \path (move.south)+(0,-2em) node (label2) {\texttt{moving\_wall}};
+
+        \path (temp.west |- temp.north)+(-1em,0.5em) node (top_left_temp) {}; 
+        \path (temp.east |- temp2.south)+(0.5em,-2em) node (bot_right_temp) {};
+        \path[fill=blue!30,rounded corners, draw=black!50, dashed] (top_left_temp) rectangle (bot_right_temp) ; 
+
+        \path (temp.south)+(0,-4em) node (label2) {\texttt{temp\_accel}};
+    \end{pgfonlayer}
+\end{tikzpicture}
+\end{document}

@@ -115,6 +115,9 @@ This code performs the following
 #. Plots the skin friction coefficient
 #. Saves the plot to file
 
+
+.. _inst_data:
+
 Instantaneous Data
 ^^^^^^^^^^^^^^^^^^
 
@@ -201,6 +204,35 @@ To extract this data:
    inst_data_new = cp.CHAPSim_AVG_io.from_hdf("many_data.h5",key="inst_data")
    
 Finer control can be acheived through knowledge of the ``h5py`` library which was used to implement this feature. The library documentation can be found `here <https://docs.h5py.org/en/stable/>`_
+
+
+CHAPSim_post's ``rcParams``
+---------------------------
+
+This is not to be confused with Matplotlib's rcParams. Global parameters can be set in CHAPSim_post to aid the processing of results. The parameters which can be set like dictionary are:
+
+* **TEST** - Limits the nmber of timesteps used in certain calculations. This is often used when testing code particularly when creating videos to ensure that the layout is correct before running the script on an HPC. Default ``False``.
+* **autocorr_mode** - Method used to calculate the autocovariance. This code is loop-heavy therefore not ideal for native python. There are three modes: 0: numba accelerator; 1: Fortran with OpenMP; 2: Cython with OpenMP. Default ``2``. 
+* **ForceMode** - If there is an error using either mode 1 or 2, should the code fallback to mode 0. Default False (fallback allowed).
+* **Spacing** - Not implemented yet. This will enable code stored in datastructs to be reduced by 'skipping' values. So 2 would store every two values. Default 1.
+* **dtype** - The float type which data is stored at. Sometimes using double precision may require substantial memory resources. This allows data to be downcast to single precision. Default double precision.
+* **SymmetryAVG** - Whether to automatically perform symmetry averaging on channel flow data. Default True. 
+* **gradient_method** - The method used to calculate gradients. Default numpy. Potentially more will be implemented which can use an arbitrary stencil and hence arbitrary order.
+* **gradient_order** - Only relevant if more gradient methods are implemented.
+* **AVG_Style** - The averaging style on labels. Some may prefer to use angled brackets although default is to use an overline.
+
+Here is an exmaple of some commonly used rcParams
+
+.. code-block:: python
+
+   from CHAPSim_post import rcParams
+   
+   # setting storage type to single precision
+   rcParams['dtype'] = 'f4'
+
+   # activating test mode
+   rcParams['TEST'] = True
+
 
 
 The ``plot`` module and Figure cutomisation

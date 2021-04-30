@@ -63,7 +63,7 @@ def time_extract(path_to_folder,abs_path=True):
         raise RuntimeError(msg)
     return times
 
-def max_time_calc(path_to_folder,abs_path):
+def max_time_calc(path_to_folder,abs_path=True):
     if isinstance(path_to_folder,list):
         max_time = np.float('inf')
         for path in path_to_folder:

@@ -1,6 +1,6 @@
 CHAPSim_post Index
 ==================
-A high-level post-processing pacakge for the CHAPSim DNS code!
+A high-level post-processing package for the CHAPSim DNS code!
 
 .. toctree::
    :caption: Contents:
