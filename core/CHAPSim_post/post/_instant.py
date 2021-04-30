@@ -102,7 +102,7 @@ class CHAPSim_Inst(Common):
         super().__init__(self._meta_data)
 
         self.shape = (self.NCL[2],self.NCL[1],self.NCL[0])
-        self.InstDF = cd.flowstruct3D.from_hdf(file_name,shapes=self.shape,CoordDF=self.CoordDF,key=key+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
+        self.InstDF = cd.flowstruct3D.from_hdf(file_name,shapes=self.shape,Domain=self.Domain,CoordDF=self.CoordDF,key=key+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
 
     def save_hdf(self,file_name,write_mode,key=None):
         """

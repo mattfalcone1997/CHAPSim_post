@@ -33,6 +33,7 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -87,7 +88,19 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="main_content.html">CHAPSim_post</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_content.html">CHAPSim_post</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="CHAPSim_post_mod.html">Module Reference</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">The <code class="docutils literal notranslate"><span class="pre">post</span></code> Instantaneous classes - CHAPSim_Inst</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Averaged.html">The <code class="docutils literal notranslate"><span class="pre">post</span></code> Averaged Class - CHAPSim_AVG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="CHAPSim_post_mod.html#sections">Sections</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Best_practice.html">Best Practice guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="User_guide.html">User Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develop_guide.html">Developer’s Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main_content.html#module-reference">Module Reference</a></li>
+</ul>
+</li>
 <li class="toctree-l1 current"><a class="reference internal" href="CHAPSim_post_mod.html">Module Reference</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">The <code class="docutils literal notranslate"><span class="pre">post</span></code> Instantaneous classes - CHAPSim_Inst</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Averaged.html">The <code class="docutils literal notranslate"><span class="pre">post</span></code> Averaged Class - CHAPSim_AVG</a></li>
@@ -97,12 +110,6 @@
 <li class="toctree-l1"><a class="reference internal" href="Best_practice.html">Best Practice guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="User_guide.html">User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="develop_guide.html">Developer’s Guide</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="CHAPSim_post_mod.html">Module Reference</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">The <code class="docutils literal notranslate"><span class="pre">post</span></code> Instantaneous classes - CHAPSim_Inst</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Averaged.html">The <code class="docutils literal notranslate"><span class="pre">post</span></code> Averaged Class - CHAPSim_AVG</a></li>
-<li class="toctree-l2"><a class="reference internal" href="CHAPSim_post_mod.html#sections">Sections</a></li>
-</ul>
-</li>
 </ul>
 
             
@@ -200,7 +207,7 @@ saved instance from hdf file</p>
 
 <dl class="method">
 <dt id="CHAPSim_post.post.CHAPSim_Inst.lambda2_calc">
-<code class="sig-name descname">lambda2_calc</code><span class="sig-paren">(</span><em class="sig-param">PhyTime=None</em>, <em class="sig-param">x_start_index=None</em>, <em class="sig-param">x_end_index=None</em>, <em class="sig-param">y_index=None</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.post.CHAPSim_Inst.lambda2_calc" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">lambda2_calc</code><span class="sig-paren">(</span><em class="sig-param">PhyTime=None</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.post.CHAPSim_Inst.lambda2_calc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculation of lambda to visualise vortex cores</p>
 <dl class="simple">
 <dt>PhyTime<span class="classifier">float, optional</span></dt><dd><p>Physical time to be plotted, None can be used if the instance contains a single 
@@ -261,7 +268,7 @@ number of different normalisations, by default ‘wall’</p>
 
 <dl class="method">
 <dt id="CHAPSim_post.post.CHAPSim_Inst.plot_lambda2">
-<code class="sig-name descname">plot_lambda2</code><span class="sig-paren">(</span><em class="sig-param">vals_list</em>, <em class="sig-param">x_split_list=None</em>, <em class="sig-param">PhyTime=None</em>, <em class="sig-param">ylim=None</em>, <em class="sig-param">Y_plus=True</em>, <em class="sig-param">avg_data=None</em>, <em class="sig-param">colors=None</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.post.CHAPSim_Inst.plot_lambda2" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot_lambda2</code><span class="sig-paren">(</span><em class="sig-param">vals_list</em>, <em class="sig-param">x_split_pair=None</em>, <em class="sig-param">PhyTime=None</em>, <em class="sig-param">y_limit=None</em>, <em class="sig-param">y_mode='half_channel'</em>, <em class="sig-param">Y_plus=True</em>, <em class="sig-param">avg_data=None</em>, <em class="sig-param">colors=None</em>, <em class="sig-param">surf_kw=None</em>, <em class="sig-param">fig=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CHAPSim_post.post.CHAPSim_Inst.plot_lambda2" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates isosurfaces for the lambda 2 criterion</p>
 <dl class="simple">
 <dt>vals_list<span class="classifier">list of floats</span></dt><dd><p>isovalues to be plotted</p>

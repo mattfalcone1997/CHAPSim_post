@@ -18,24 +18,7 @@ echo -e "\n *** SETTING UP CHAPSim_post ***\n"
 echo -e "Making CHAPSim_post\n"
 
 current_dir=$(pwd)
-if [ ! -d core ]; then
-	echo -e "This has not be initiated from the correct directory\n"
-	exit 1
-fi
 
-#Modifying PYTHONPATH in .bashrc
-#Ensuring that the .bashrc file isn't modified multiple times
-# if [ -f $HOME/.bashrc ]; then 
-# 	if [ ! $(cat $HOME/.bashrc | grep PYTHONPATH=\"\$PYTHONPATH:\$CHAPSim_bin\") &>/dev/null ]; then
-# 		current_dir=${current_dir// /"\ "}
-# 		#Adding to .bashrc
-# 		bashrc_mod="if [ -d \"$current_dir\" ]; then \n\tCHAPSim_bin=\"$current_dir/core\" \n\texport PYTHONPATH=\"\$PYTHONPATH:\$CHAPSim_bin\" \nfi"
-
-# 		echo -e "\nModifying $HOME/.bashrc\n"
-# 		echo -e "\n# *** CHAPSim_post setup ***" >> $HOME/.bashrc
-# 		echo -e $bashrc_mod >> $HOME/.bashrc
-# 	fi
-# fi
 
 
 #Adding path to conda if present

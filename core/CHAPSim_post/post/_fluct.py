@@ -254,8 +254,10 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
         if avg_data is None:
             time = misc_utils.max_time_calc(path_to_folder,abs_path)
             avg_data = self._module._avg_io_class(time,path_to_folder=path_to_folder,abs_path=abs_path,*args,**kwargs)
+        
         if not isinstance(time_inst_data_list,(list,tuple)):
             time_inst_data_list = [time_inst_data_list]
+            
         for time_inst_data in time_inst_data_list:
             if isinstance(time_inst_data,self._module._instant_class):
                 if 'inst_data' not in locals():
