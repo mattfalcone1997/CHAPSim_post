@@ -32,9 +32,6 @@ if __name__ == "__main__":
     
     config.add_subpackage(subpackage_name="utils",
                         subpackage_path="core/CHAPSim_post/utils")
-    
-    config.add_subpackage(subpackage_name="plot",
-                        subpackage_path="core/CHAPSim_post/plot")
 
     config.add_subpackage(subpackage_name="POD",
                         subpackage_path="core/CHAPSim_post/POD")

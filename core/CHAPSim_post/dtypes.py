@@ -144,8 +144,8 @@ class datastruct:
 
     
     def _array_ini(self,array,index=None,copy=False):
-
-        self._index, self._outer_index = self._index_construct(index,array)
+        
+        self._index_construct(index,array)
         if self._index is None:
             self._index = list(range(array.shape[0]))
 
@@ -155,14 +155,11 @@ class datastruct:
 
         self._data = {i : value.astype(cp.rcParams['dtype'],copy=copy) for i, value in zip(self._index,array)}
 
-    @staticmethod
-    def _index_construct(index,array):
-        if all(isinstance(x,tuple) for x in index):
-            if len(index) != len(array):
-                msg = "The index is not the correct size"
-                raise ValueError(msg)
-            outer_index = list(set([x[0] for x in index]))
-        elif len(index[0]) == len(array):
+    def _index_construct(self,index,array):
+        
+
+        if all(len(i) == len(array) for i in index):
+
             outer_index = None
             if all([hasattr(x,"__iter__") and not isinstance(x,str) for x in index]):
                 if not len(index) == 2:
@@ -179,29 +176,44 @@ class datastruct:
             else:
                 index = None
                 outer_index = [None]
+
+        elif len(index) == len(array):
+            
+            outer_index = None
+            if all(isinstance(x,tuple) for x in index):
+                if all(len(x) == 2 for x in index):
+                    inner_index = list(str(k[1]) if not isinstance(k,numbers.Number)\
+                                else "%g"%k[1] for k in index )
+                    outer_index = list(str(k[0]) if not isinstance(k,numbers.Number)\
+                                else "%g"%k[0] for k in index )
+                    index = list(zip(outer_index,inner_index))
+                    outer_index = list(set(outer_index))
+                else:
+                    msg = "This class can only currently handle up to two dimensional indices"
+                    raise ValueError(msg)
+            else:
+                index = list(str(k) if not isinstance(k,numbers.Number)\
+                                else "%g"%k for k in index )
+                outer_index = None
         else:
             msg = "The index list is the wrong size"
             raise ValueError(msg)
         
-        return index, outer_index
+        self._index = index
+        self._outer_index = outer_index
 
     
     def _dict_ini(self,dict_data,copy=False):
         if not all([isinstance(val,np.ndarray) for val in dict_data.values()]):
             msg = "The type of the values of the dictionary must be a numpy array"
             raise TypeError(msg)
+        
+        index = list(dict_data.keys())
+        array = list(dict_data.values())
 
-        self._data = {key : val.astype(cp.rcParams['dtype'],copy=copy) for key, val in dict_data.items()}
+        self._index_construct(index,array)
 
-
-        self._index = list(dict_data.keys())
-
-        if self._is_multidim():
-            self._outer_index = list(set([i[0] for i in self._index]))
-            if None in self._outer_index and len(self._outer_index) == 1:
-                self._outer_index=None
-        else:
-            self._outer_index = None
+        self._data = {i : value.astype(cp.rcParams['dtype'],copy=copy) for i, value in zip(self._index,array)}
 
 
 
@@ -361,7 +373,7 @@ class datastruct:
                 raise err
             else:
                 if warn is None:
-                    warnings.warm(warn,stacklevel=4)
+                    warnings.warn(warn,stacklevel=4)
                 key = self.outer_index[0]
 
         return key
@@ -391,7 +403,7 @@ class datastruct:
             raise KeyError(msg)
         key = tuple(str(k) if not isinstance(k,numbers.Number) else "%g"%k for k in key )
 
-        if key not in self._index:
+        if key not in self.index:
             msg = f"The key {key} is not present in the datastruct's indices, if you want to "+\
                 "add this key create new datastruct and use the concat method"
             raise KeyError(msg)
@@ -411,7 +423,19 @@ class datastruct:
         
         self._data[key] = value
         
+    def __delitem__(self,key):
+        if isinstance(key,tuple):
+            key = tuple(str(k) if not isinstance(k,numbers.Number) else "%g"%k for k in key )
+        elif isinstance(key, numbers.Number):
+            key = "%g"%key
+        else:
+            key = str(key)
 
+        del self._data[key]
+        self._index.remove(key)
+        if self._is_multidim():
+            self._outer_index = [x[0] for x in self.index]
+            
     def __iter__(self):
         return self._data.items().__iter__()
 
@@ -585,6 +609,38 @@ class coordstruct(datastruct):
 
         return self.__class__({'x':XND,'y':YND,'z':ZND})
 
+    def _get_subdomain_lims(self,xmin=None,xmax=None,ymin=None,ymax=None,zmin=None,zmax=None):
+        if xmin is None:
+            xmin = np.amin(self['x'])
+        if xmax is None:
+            xmax = np.amax(self['x'])
+        if ymin is None:
+            ymin = np.amin(self['y'])
+        if ymax is None:
+            ymax = np.amax(self['y'])
+        if zmin is None:
+            zmin = np.amin(self['z'])
+        if zmax is None:
+            zmax = np.amax(self['z'])
+            
+        xmin_index, xmax_index = (self.index_calc('x',xmin)[0],
+                                    self.index_calc('x',xmax)[0])
+        ymin_index, ymax_index = (self.index_calc('y',ymin)[0],
+                                    self.index_calc('y',ymax)[0])
+        zmin_index, zmax_index = (self.index_calc('z',zmin)[0],
+                                    self.index_calc('z',zmax)[0])
+        return xmin_index,xmax_index,ymin_index,ymax_index,zmin_index,zmax_index
+    def create_subdomain(self,xmin=None,xmax=None,ymin=None,ymax=None,zmin=None,zmax=None):
+        (xmin_index,xmax_index,
+        ymin_index,ymax_index,
+        zmin_index,zmax_index) = self._get_subdomain_lims(xmin,xmax,ymin,ymax,zmin,zmax)
+
+        xcoords = self['x'][xmin_index:xmax_index]
+        ycoords = self['y'][ymin_index:ymax_index]
+        zcoords = self['z'][zmin_index:zmax_index]
+
+        return self.__class__({'x':xcoords, 'y':ycoords,'z':zcoords})
+
     def vtkStructuredGrid(self):
         x_coords = self.staggered['x']
         y_coords = self.staggered['y']
@@ -689,15 +745,15 @@ class flowstruct_base(datastruct):
             err = KeyError(msg)
         return self.check_inner(key,err)
 
-    # def concat(self,arr_or_data):
-    #     msg= "The coordinate data of the flowstructs must be the same"
-    #     if isinstance(arr_or_data,self.__class__):
-    #         if not self._CoordDF != arr_or_data._CoordDF:
-    #             raise ValueError(msg)
-    #     elif hasattr(arr_or_data,"__iter__"):
-    #         if not all([self._CoordDF != arr._CoordDF for arr in arr_or_data]):
-    #             raise ValueError(msg)
-    #     super().concat(arr_or_data)
+    def concat(self,arr_or_data):
+        msg= "The coordinate data of the flowstructs must be the same"
+        if isinstance(arr_or_data,self.__class__):
+            if self._CoordDF != arr_or_data._CoordDF:
+                raise ValueError(msg)
+        elif hasattr(arr_or_data,"__iter__"):
+            if not all([self._CoordDF != arr._CoordDF for arr in arr_or_data]):
+                raise ValueError(msg)
+        super().concat(arr_or_data)
 
     def append(self,*args,**kwargs):
         msg = "This method is not available for this class"
@@ -715,6 +771,22 @@ class flowstruct_base(datastruct):
         cls = self.__class__
         return cls(self._CoordDF,self._data,copy=True)
 
+class VTKstruct:
+    def __init__(self,flowstruct_obj):
+        if not isinstance(flowstruct_obj,flowstruct3D):
+            msg = "This class can only be used on objects of type flowstruct3D"
+            raise TypeError(msg)
+
+        self._flowstruct = flowstruct_obj
+        self._grid = self._flowstruct.CoordDF.vtkStructuredGrid()
+
+    def __getitem__(self,key):
+        data = self._flowstruct[key]
+        return_grid = self._grid.copy()
+        return_grid.cell_arrays[np.str_(key[1])] = data.flatten()
+        return return_grid
+
+
 class flowstruct3D(flowstruct_base):
 
     def _set_coords(self,CoordDF,from_hdf,*args,**kwargs):
@@ -723,6 +795,10 @@ class flowstruct3D(flowstruct_base):
             msg = ("for a 3D flowstruct the number of keys in the "
                     f"coordstruct should be 3 not {len(self._CoordDF.index)}")
             raise ValueError(msg)
+
+    @property
+    def VTK(self):
+        return VTKstruct(self)
 
     def get_unit_figsize(self,plane):
         plane, coord = self.CoordDF.check_plane(plane)
@@ -734,6 +810,30 @@ class flowstruct3D(flowstruct_base):
         z_size = 1.2*(np.amax(z_coords) - np.amin(z_coords))
 
         return x_size,z_size
+    def create_subdomain(self,xmin=None,xmax=None,ymin=None,ymax=None,zmin=None,zmax=None):
+        (xmin_index,xmax_index,
+        ymin_index,ymax_index,
+        zmin_index,zmax_index) = self.CoordDF._get_subdomain_lims(xmin,xmax,ymin,ymax,zmin,zmax)
+
+
+        subCoordDF = self.CoordDF.create_subdomain(xmin,xmax,ymin,ymax,zmin,zmax)
+        shape = (len(self.index),zmax_index-zmin_index,
+                ymax_index-ymin_index,
+                xmax_index-xmin_index )
+
+        vals_array = np.zeros(shape)
+        for i,vals in enumerate(self.values):
+            vals_array[i] = vals[zmin_index:zmax_index,
+                                ymin_index:ymax_index,
+                                xmin_index:xmax_index]
+
+        return self.__class__(subCoordDF,vals_array,index=self.index,Domain=self.Domain)
+
+
+
+    def create_slice(self,index):
+        slice_dict = {index : self[index]}
+        return self.__class__(self.CoordDF,slice_dict,Domain=self.Domain)
 
     def to_vtk(self,file_name):
         
@@ -928,6 +1028,7 @@ class metastruct():
             'REINI_TIME' : ['ReIni','TLgRe'],
             'FLDRVTP' : ['iFlowDriven'],
             'CF' :['Cf_Given'],
+            'accel_start_end':['temp_start_end'],
             'HEATWALLBC' : ['iThermalWallType'],
             'WHEAT0' : ['thermalWallBC_Dim'],
             'RSTflg_tg_io' : ['iIniField_tg','iIniField_io'],
@@ -1070,6 +1171,11 @@ class metastruct():
 
     def __getitem__(self,key):
         return self._meta[key]
+
+    def __setitem__(self,key,value):
+        warn_msg = "item in metastruct being manually overriden, this may be undesireable"
+        warnings.warn(warn_msg)
+        self._meta[key] = value
 
     def copy(self):
         cls = self.__class__

@@ -25,7 +25,7 @@ class _PODbase:
 
     def save_hdf(self,file_name,write_mode,key=None):
         if key is None:
-            key = "POD"
+            key = self.__class__.__name__
         hdf_file = h5py.File(file_name,write_mode)
         group = hdf_file.create_group(key)
         group.create_dataset("eig_values",data=self._eig_values)
@@ -241,13 +241,27 @@ class POD3D(_PODbase,Common):
         super().__init__(*args,**kwargs)
         Common.__init__(self,self.meta_data)
 
+    def save_hdf(self, file_name, write_mode,key=None):
+        if key is None:
+            key = self.__class__.__name__
+        
+        super().save_hdf(file_name, write_mode, key=key)
+        self.CoordDF.to_hdf(file_name,key = key+"/CoordDF",mode='a')
+    
+    def _hdf_extract(self, file_name, key=None):
+        if key is None:
+            key = self.__class__.__name__
 
+        super()._hdf_extract(file_name, key=key)
+        self.CoordDF = cd.coordstruct.from_hdf(file_name,key=key+"/CoordDF")
 
-    def _POD_extract(self,comp,path_to_folder='.',method='svd',low_memory=True,abs_path=True,time0=None,nsnapshots=100,nmodes=10):
+    def _POD_extract(self,comp,path_to_folder='.',method='svd',low_memory=True,abs_path=True,time0=None,subdomain=None,nsnapshots=100,nmodes=10):
         max_time = misc_utils.max_time_calc(path_to_folder,abs_path)
         self.avg_data = self._module._avg_class(max_time,path_to_folder=path_to_folder,
                                             abs_path=abs_path,time0=time0)
-        self.CoordDF = self.avg_data.CoordDF
+        self.CoordDF = cd.coordstruct(self.avg_data.CoordDF._data)
+        if subdomain is not None:
+            self.CoordDF= self.CoordDF.create_subdomain(**subdomain)
         self.meta_data = self.avg_data._meta_data
 
         times = misc_utils.time_extract(path_to_folder,abs_path)
@@ -265,9 +279,9 @@ class POD3D(_PODbase,Common):
             nmodes = len(times)
 
         if method.lower() == "svd":
-            PODmodes, self._eig_values = self._performSVD(comp,path_to_folder,abs_path,self.avg_data,times,nmodes)
+            PODmodes, self._eig_values = self._performSVD(comp,path_to_folder,abs_path,self.avg_data,times,nmodes,subdomain)
         elif method.lower() == "snapshots":
-            PODmodes, self._eig_values = self._performSnapShots(comp,path_to_folder,abs_path,low_memory,self.avg_data,times,nmodes)
+            PODmodes, self._eig_values = self._performSnapShots(comp,path_to_folder,abs_path,low_memory,self.avg_data,times,nmodes,subdomain)
         else:
             msg = f"Method selected ({method}) is not valid"
             raise ValueError(msg)
@@ -276,13 +290,17 @@ class POD3D(_PODbase,Common):
         self.POD_modesDF = cd.datastruct(PODmodes,index=index)
 
     
-    def _get_fluct_array(self,time,comp,path_to_folder,abs_path,avg_data):
+    def _get_fluct_array(self,time,comp,path_to_folder,abs_path,avg_data,subdomain):
         shape = None
         fluct_data = self._module._fluct_class(time,avg_data,path_to_folder,abs_path)
+        if subdomain is not None:
+            fluct_data = fluct_data.create_subdomain(**subdomain)
 
         X_i = []
         for char in comp:
             fluct_array = fluct_data.fluctDF[time,char]
+            # print(fluct_array)
+
             shape = fluct_array.shape
             X_i.append(fluct_array.flatten())
 

@@ -17,7 +17,7 @@ from . import plot as cplt
 
 from CHAPSim_post.utils import misc_utils,indexing
 from CHAPSim_post import POD
-
+import CHAPSim_post.dtypes as cd
 
 class CHAPSim_Inst(cp.CHAPSim_Inst):
     pass
@@ -427,20 +427,63 @@ class CHAPSim_budget_io(cp.CHAPSim_budget_io):
     pass
 
 class CHAPSim_momentum_budget_io(cp.CHAPSim_Momentum_budget_io):
-    def __init__(self,comp,avg_data=None,PhyTime=None,relative=True,*args,**kwargs):
-        if avg_data is None:
-            avg_data = self._module._avg_class(PhyTime,*args,**kwargs)
+    def __init__(self,comp,avg_data=None,PhyTime=None,relative=True,apparent_Re=False,*args,**kwargs):
         
+        cp.CHAPSim_Momentum_budget_io.__init__(self,comp,avg_data,PhyTime,*args,**kwargs)
         if relative:
-            avg_data_original = avg_data.copy()
-            u_velo = avg_data.flow_AVGDF[PhyTime,'u']
-            wall_velos = avg_data._meta_data.wall_velocity
-            for i,velo in enumerate(wall_velos):
-                u_velo[:,i] -= velo
-        super().__init__(comp,avg_data,PhyTime)
-        if relative:
-            self.avg_data = avg_data_original
-            
+            PhyTime = self.avg_data.check_PhyTime(PhyTime)
+            self._update_relative_budget(comp,PhyTime)
+        
+        if apparent_Re:
+            PhyTime = self.avg_data.check_PhyTime(PhyTime)
+            self._create_uniform(PhyTime)
+
+    def _create_uniform(self,PhyTime):
+        advection = self.budgetDF[PhyTime,'advection']
+        centre_index = int(0.5*advection.shape[0])
+        advection_centre = advection[centre_index]
+
+        uniform_bf = self.budgetDF[PhyTime,'pressure gradient'] + advection_centre
+        non_uniform_bf = advection - advection_centre
+
+        times = self.budgetDF.outer_index
+        for time in times:
+            key1 = (time,'advection')
+            key2 = (time,'pressure gradient')
+            del self.budgetDF[key1]; del self.budgetDF[key2]
+
+        cal_dict = {(PhyTime,'uniform'):uniform_bf,
+                    (PhyTime,'non-uniform') : non_uniform_bf}
+        index = [[PhyTime]*2,['uniform','non-uniform']]
+        dstruct = cd.datastruct(np.array([uniform_bf,non_uniform_bf]),
+                            index=index)
+        self.budgetDF.concat(dstruct)
+
+
+    def _update_relative_budget(self,comp,PhyTime):
+        wall_velo = self.avg_data._meta_data.wall_velocity
+        x_coords = self.avg_data.CoordDF['x']
+
+        U_w_grad = np.gradient(wall_velo,x_coords)
+        advection = self.budgetDF[PhyTime,'advection']
+        pressure_grad = self.budgetDF[PhyTime,'pressure gradient']
+
+        U_comp = self.avg_data.flow_AVGDF[PhyTime,comp]
+        U_comp_grad = self.Domain.Grad_calc(self.avg_data.CoordDF,U_comp,'x')
+        advection += U_comp_grad*wall_velo
+        pressure_grad -= U_comp_grad*wall_velo
+
+        if comp == 'u':
+            U = self.avg_data.flow_AVGDF[PhyTime,'u']
+            advection += U*U_w_grad
+            advection -= wall_velo*U_w_grad
+
+
+            pressure_grad -= U*U_w_grad
+            pressure_grad += wall_velo*U_w_grad
+
+        self.budgetDF[PhyTime,'advection'] = advection
+        self.budgetDF[PhyTime,'pressure gradient'] = pressure_grad
 
 class CHAPSim_autocov_io(cp.CHAPSim_autocov_io):
    pass
@@ -462,4 +505,7 @@ class flowReconstruct2D(POD.flowReconstruct2D):
     pass
 
 class flowReconstruct3D(POD.flowReconstruct3D):
+    pass
+
+class CHAPSim_FIK_io(cp.CHAPSim_FIK_io):
     pass

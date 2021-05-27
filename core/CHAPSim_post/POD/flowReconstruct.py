@@ -158,18 +158,18 @@ class flowReconstruct3D(flowReconstructBase,Common):
         Common.__init__(self,self.meta_data)
 
     def _extractPOD(self,PhyTime,comp=None,path_to_folder='.',method='svd',low_memory=True,abs_path=True,
-                    time0=None,nsnapshots=100,nmodes=10):
+                    subdomain=None,time0=None,nsnapshots=100,nmodes=10):
         
         if comp is None:
             comp = "uvw"
 
-        self._POD = self._module._POD3D_class(comp,path_to_folder,method,low_memory,abs_path,time0,nsnapshots,nmodes)
+        self._POD = self._module._POD3D_class(comp,path_to_folder,method,low_memory,abs_path,time0,subdomain,nsnapshots,nmodes)
 
         self.avg_data = self._POD.avg_data
-        self.CoordDF = self.avg_data.CoordDF
+        self.CoordDF = self.POD.CoordDF
         self.meta_data = self.avg_data._meta_data
 
-        fluct_array, _ = self.POD._get_fluct_array(PhyTime,comp,path_to_folder,abs_path,self.avg_data)
+        fluct_array, _ = self.POD._get_fluct_array(PhyTime,comp,path_to_folder,abs_path,self.avg_data,subdomain)
         
         if rcParams['TEST'] and nmodes > 7:
             nmodes=7
@@ -192,7 +192,7 @@ class flowReconstruct3D(flowReconstructBase,Common):
         self._POD = POD.POD3D.from_hdf(file_name,key+"/POD3D")
         
         self.avg_data = self.POD.avg_data
-        self.CoordDF = self.avg_data.CoordDF
+        self.CoordDF = self.POD.CoordDF
         self.meta_data = self.avg_data._meta_data
 
     # def save_hdf(self,file_name,write_mode,key=None):

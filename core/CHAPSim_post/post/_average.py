@@ -757,7 +757,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
             Correct or corrected physical time
         """
 
-        warn_msg = f"PhyTime invalid ({PhyTime}), varaible being set to only PhyTime present in datastruct"
+        warn_msg = f"PhyTime invalid ({PhyTime}), variable being set to only PhyTime present in datastruct"
         err_msg = "PhyTime provided is not in the CHAPSim_AVG datastruct, recovery impossible"
         
         return self._check_outer(self.flow_AVGDF,PhyTime,err_msg,warn_msg)
@@ -1821,7 +1821,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
             output figure and axes objects
         """
 
-        fig, ax = super().plot_mean_flow(times,None,comp,fig=fig,ax=ax,**kwargs)
+        fig, ax = super().plot_mean_flow(times,comp,PhyTime=None,fig=fig,ax=ax,**kwargs)
 
         lines = ax.get_lines()[-len(times):]
         for line, time in zip(lines,times):

@@ -17,7 +17,8 @@ from shutil import which
 import CHAPSim_post as cp
 from CHAPSim_post.utils import misc_utils
 
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+# from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import matplotlib.tri as mtri
 from numpy.core.fromnumeric import swapaxes
 from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.interpolate import interpn,interp1d
@@ -443,8 +444,19 @@ class Axes3DCHAPSim(Axes3D):
 
     def plot_isosurface(self,X,Y,Z,data,level,scaling=None,**kwargs):
         had_data = self.has_data()
-        old_verts, faces, normals, values = measure.marching_cubes(data, level=level)
 
+        if scaling is not None:
+            if len(scaling) !=3:
+                msg = "The length of the scaling array must be 3"
+                raise ValueError(msg)
+
+            X = X[::scaling[0],::scaling[1],::scaling[2]].copy()
+            Y = Y[::scaling[0],::scaling[1],::scaling[2]].copy()
+            Z = Z[::scaling[0],::scaling[1],::scaling[2]].copy()
+            data = data[::scaling[0],::scaling[1],::scaling[2]].copy()
+
+        old_verts, faces, normals, values = measure.marching_cubes(data, level=level)
+        
         def get_var_index(array):
             avail_arr = []
             for dim in range(array.ndim):
@@ -495,21 +507,14 @@ class Axes3DCHAPSim(Axes3D):
         verts[:,dim2] = yinterp(old_verts[:,1])
         verts[:,dim3] = zinterp(old_verts[:,2])
         # print(scaling)
-        if scaling is not None:
-            if len(scaling) !=3:
-                msg = "The length of the scaling array must be 3"
-                raise ValueError(msg)
 
-            X = X[::scaling[0],::scaling[1],::scaling[2]].copy()
-            Y = Y[::scaling[0],::scaling[1],::scaling[2]].copy()
-            Z = Z[::scaling[0],::scaling[1],::scaling[2]].copy()
-            data = data[::scaling[0],::scaling[1],::scaling[2]].copy()
+        Tri = mtri.Triangulation(verts[:,0],verts[:,1])
 
         # print(X.shape)
         # print(verts[faces])
-        mesh = Poly3DCollection(verts[faces],**kwargs)
-        self.add_collection(mesh)
-        self.auto_scale_xyz(X,Y, Z, had_data)
+        mesh = self.plot_trisurf(verts[:,0],verts[:,1],verts[:,2],triangles=Tri.triangles, **kwargs)
+        # self.add_collection(mesh)
+        # self.auto_scale_xyz(X,Y, Z, had_data)
 
         return mesh
 
@@ -546,6 +551,16 @@ def update_pcolor_kw(pcolor_kw):
         if 'shading' not in pcolor_kw.keys():
             pcolor_kw['shading'] = 'gouraud'
     return pcolor_kw
+
+def update_mesh_kw(mesh_kw,**kwargs):
+    if mesh_kw is None:
+        mesh_kw = {}
+
+    for key, val in kwargs.items():
+        if key not in mesh_kw.keys():
+            mesh_kw[key] = val
+    
+    return mesh_kw
 
 def update_quiver_kw(quiver_kw):
     if quiver_kw is not None:

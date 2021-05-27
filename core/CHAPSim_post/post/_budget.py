@@ -29,7 +29,8 @@ from ._average import CHAPSim_AVG
 _avg_class = CHAPSim_AVG
 
 __all__ = ['CHAPSim_budget_io','CHAPSim_budget_tg','CHAPSim_k_budget_io',
-            'CHAPSim_k_budget_tg','CHAPSim_Momentum_budget_io','CHAPSim_Momentum_budget_tg']
+            'CHAPSim_k_budget_tg','CHAPSim_Momentum_budget_io','CHAPSim_Momentum_budget_tg',
+            'CHAPSim_FIK_io','CHAPSim_FIK_tg']
 
 class CHAPSim_budget_base(Common,ABC):
 
@@ -698,7 +699,7 @@ class CHAPSim_Momentum_budget_base(CHAPSim_budget_base):
                 budget[middle_index+i,:] = integrate.simps(integrand,y,axis=0)
             self.budgetDF[index] = budget
 
-        fig, ax = self.budget_plot(x_list,budget_terms,PhyTime,False,fig,ax,**kwargs)
+        fig, ax = super()._budget_plot(PhyTime,x_list,budget_terms,False,fig,ax,**kwargs)
 
         self.budgetDF = local_budgetDF
         return fig, ax
@@ -799,8 +800,29 @@ class CHAPSim_Momentum_budget_io(CHAPSim_Momentum_budget_base):
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
+    def plot_integrated_budget(self, x_list,budget_terms=None,PhyTime=None, fig=None, ax =None,**kwargs):
+        fig, ax = super().plot_integrated_budget(x_list,budget_terms,PhyTime, fig, ax ,**kwargs)
+
+        x_list = indexing.true_coords_from_coords(self.avg_data.CoordDF,'x',x_list)
+
+        for a,x in zip(ax,x_list):
+            title = self.Domain.in_to_out(r"$x/\delta=%.2g$"%x)
+            a.set_title(title,loc='right')
+            a.relim()
+            a.autoscale_view()
+        handles, labels = ax[0].get_legend_handles_labels()
+        handles = cplt.flip_leg_col(handles,4)
+        labels = cplt.flip_leg_col(labels,4)
+
+        fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.1),ncol=4)
+        ax[0].get_gridspec().tight_layout(fig,rect=(0,0.1,1,1))
+        
+        return fig, ax
+
     
 class CHAPSim_Momentum_budget_tg(CHAPSim_Momentum_budget_base):
+    
+    
     def _advection_extract(self, PhyTime, comp):
         UV = self.avg_data.flow_AVGDF[PhyTime,comp]*self.avg_data.flow_AVGDF[PhyTime,'v']
 
@@ -826,7 +848,7 @@ class CHAPSim_Momentum_budget_tg(CHAPSim_Momentum_budget_base):
 
         uv = self.avg_data.UU_tensorDF[PhyTime,comp_uv]
 
-        return self.Domain.Grad_calc(self.avg_data.CoordDF,uv,'y')
+        return -1*self.Domain.Grad_calc(self.avg_data.CoordDF,uv,'y')
 
     def budget_plot(self, times_list,wall_units=True, fig=None, ax =None,**kwargs):
 
@@ -864,3 +886,203 @@ class CHAPSim_Momentum_budget_tg(CHAPSim_Momentum_budget_base):
         ax.set_xlabel(r"$t^*$")
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
+
+    def plot_integrated_budget(self, times_list,budget_terms=None,PhyTime=None, fig=None, ax =None,**kwargs):
+        fig, ax = super().plot_integrated_budget(times_list,budget_terms,PhyTime, fig, ax ,**kwargs)
+
+        x_list = indexing.true_coords_from_coords(self.avg_data.CoordDF,'x',times_list)
+
+        for a,t in zip(ax,times_list):
+            a.set_title(r"$t^*=%s$"%t,loc='right')
+            a.relim()
+            a.autoscale_view()
+        handles, labels = ax[0].get_legend_handles_labels()
+        handles = cplt.flip_leg_col(handles,4)
+        labels = cplt.flip_leg_col(labels,4)
+
+        fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.1),ncol=4)
+        ax[0].get_gridspec().tight_layout(fig,rect=(0,0.1,1,1))
+        
+        return fig, ax
+
+class CHAPSim_FIK_base(CHAPSim_budget_base):
+    def __init__(self,avg_data=None,PhyTime=None,*args,**kwargs):
+
+        if avg_data is not None:
+            self.avg_data = avg_data
+        elif PhyTime is not None:
+            self.avg_data = self._module._avg_class(PhyTime,*args,**kwargs)
+        else:
+            raise Exception
+
+        Common.__init__(self,self.avg_data._meta_data)
+
+        if PhyTime is None:
+            PhyTime = list(set([x[0] for x in self.avg_data.flow_AVGDF.index]))[0]
+        
+        self.budgetDF = self._budget_extract(PhyTime)
+        self.shape = self.avg_data.shape    
+
+    def _budget_extract(self,PhyTime):
+        laminar = self._laminar_extract(PhyTime)
+        turbulent = self._turbulent_extract(PhyTime)
+        inertia = self._inertia_extract(PhyTime)
+
+        array_concat = [laminar,turbulent,inertia]
+
+        budget_array = np.stack(array_concat,axis=0)
+        budget_index = ['laminar', 'turbulent','non-homogeneous']
+        phystring_index = [PhyTime]*3
+
+        budgetDF = cd.datastruct(budget_array,index =[phystring_index,budget_index])
+
+        return budgetDF
+
+
+    def _laminar_extract(self,PhyTime):
+
+        rel_bulk = self.avg_data._bulk_velo_calc(PhyTime=PhyTime)
+        REN = self.avg_data._metaDF['REN']
+        const = 4.0 if self.Domain.is_cylind else 3.0
+        return const/(REN*rel_bulk**2)
+
+    def _turbulent_extract(self,PhyTime):
+
+        bulk = self.avg_data._bulk_velo_calc(PhyTime=PhyTime)
+
+
+        y_coords = self.avg_data.CoordDF['y']
+        limit = int(0.5*y_coords.size)
+        uv = self.avg_data.UU_tensorDF[PhyTime,'uv'][:limit]
+
+        turbulent = np.zeros_like(uv)
+        for i,y in enumerate(y_coords[:limit]):
+            turbulent[i] =    6*y*uv[i,:]
+
+
+        return integrate.simps(turbulent,y_coords[:limit]+1,axis=0)/bulk**2
+
+    @abstractmethod
+    def _inertia_extract(self,PhyTime):
+        pass  
+    
+    @abstractmethod
+    def plot(self,budget_terms=None,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
+
+        budget_terms = self._check_terms(budget_terms)
+        
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
+        fig, ax  = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
+
+        line_kw= cplt.update_line_kw(line_kw)
+        xaxis_vals = self.avg_data._return_xaxis()
+
+        for comp in budget_terms:
+            budget_term = self.budgetDF[PhyTime,comp].copy()
+                
+            label = r"%s"%comp.title()
+            ax.cplot(xaxis_vals,budget_term,label=label,**line_kw)
+        ax.cplot(xaxis_vals,np.sum(self.budgetDF.values,axis=0),label="Total")
+        ncol = cplt.get_legend_ncols(len(budget_terms))
+        ax.clegend(ncol=ncol,vertical=False)
+        return fig, ax
+
+    
+class CHAPSim_FIK_io(CHAPSim_FIK_base):
+
+    def _inertia_extract(self,PhyTime):
+        y_coords = self.avg_data.CoordDF['y']
+
+        bulk = self.avg_data._bulk_velo_calc(PhyTime=PhyTime)
+
+
+        pressure = self.avg_data.flow_AVGDF[PhyTime,'P']
+        pressure_grad_x = self.Domain.Grad_calc(self.avg_data.CoordDF,pressure,'x')
+
+        p_prime2 = pressure_grad_x - 0.5*integrate.simps(pressure_grad_x,y_coords,axis=0)
+
+        u_mean2 = self.avg_data.flow_AVGDF[PhyTime,'u']**2
+        uu = self.avg_data.UU_tensorDF[PhyTime,'uu']
+        d_UU_dx = self.Domain.Grad_calc(self.avg_data.CoordDF,
+                                        u_mean2+uu,'x')
+        
+        UV = self.avg_data.flow_AVGDF[PhyTime,'u']*self.avg_data.flow_AVGDF[PhyTime,'v']
+        d_uv_dy = self.Domain.Grad_calc(self.avg_data.CoordDF,UV,'y')
+
+        REN = self.avg_data._metaDF['REN']
+        U_mean = self.avg_data.flow_AVGDF[PhyTime,'u']
+        d2u_dx2 = self.Domain.Grad_calc(self.avg_data.CoordDF,
+                    self.Domain.Grad_calc(self.avg_data.CoordDF,U_mean,'x'),'x')
+
+        I_x = d_UU_dx + d_uv_dy - (1/REN)*d2u_dx2
+
+        I_x_prime  = I_x - 0.5*integrate.simps(I_x,y_coords,axis=0)
+
+        limit = int(0.5*y_coords.size)
+        limit = int(0.5*y_coords.size)
+        out = np.zeros_like(U_mean[:limit])
+        for i,y in enumerate(y_coords[:limit]):
+            out[i] = (p_prime2 + I_x_prime)[i,:]*y**2
+
+
+        return -3.0*integrate.simps(out,y_coords[:limit]+1,axis=0)/(bulk**2)
+
+    def plot(self,*args,**kwargs):
+        fig, ax = super().plot(*args,**kwargs)
+        ax.set_xlabel(r"$x/\delta$")
+        return fig, ax
+class CHAPSim_FIK_tg(CHAPSim_FIK_base):
+
+    def _laminar_extract(self,PhyTime):
+        PhyTime=None
+        return super()._laminar_extract(PhyTime)
+
+    def _turbulent_extract(self,PhyTime):
+        PhyTime=None
+        return super()._turbulent_extract(PhyTime)
+
+    def _inertia_extract(self,PhyTime):
+        PhyTime=None
+        y_coords = self.avg_data.CoordDF['y']
+
+        bulk = self.avg_data.bulk_velo_calc()
+
+        U_mean = self.avg_data.flow_AVGDF[PhyTime,'u']
+        times = self.avg_data._return_xaxis()
+
+        REN = self.avg_data._metaDF['REN']
+        d2u_dy2 = self.Domain.Grad_calc(self.avg_data.CoordDF,
+                    self.Domain.Grad_calc(self.avg_data.CoordDF,U_mean,'y'),'y')
+        
+        uv = self.avg_data.UU_tensorDF[PhyTime,'uv']
+        duv_dy = self.Domain.Grad_calc(self.avg_data.CoordDF,uv,'y')
+        dudt = np.gradient(U_mean,times,axis=-1,edge_order=2)
+
+        dpdx = (1/REN)*d2u_dy2 - duv_dy  - dudt
+
+        dp_prime_dx = dpdx - 0.5*integrate.simps((1/REN)*d2u_dy2 - duv_dy,y_coords,axis=0) 
+
+        UV = self.avg_data.flow_AVGDF[PhyTime,'u']*self.avg_data.flow_AVGDF[PhyTime,'v']
+        I_x = self.Domain.Grad_calc(self.avg_data.CoordDF,UV,'y')
+
+        I_x_prime = I_x - 0.5*integrate.simps(I_x,y_coords,axis=0)
+
+        limit = int(0.5*U_mean.shape[0])
+        out = np.zeros((limit,U_mean.shape[1]))
+        for i,y in enumerate(y_coords[:limit]):
+            out[i] = (I_x_prime + dp_prime_dx + dudt)[i,:]*y**2
+    
+
+        return -3.0*integrate.simps(out,1+y_coords[:limit],axis=0)/(bulk**2)
+
+    def plot(self,budget_terms=None,*args,**kwargs):
+        fig, ax = super().plot(budget_terms,PhyTime=None,*args,**kwargs)
+        ax.set_xlabel(r"$t^*$")
+        return fig, ax
+
+
+
+
+
+
+
