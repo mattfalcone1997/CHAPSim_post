@@ -22,7 +22,9 @@ import operator
 
 import CHAPSim_post as cp
 import sys
-from pyvista import StructuredGrid,vtk
+
+from pyvista import StructuredGrid
+import vtk
 
 from CHAPSim_post.utils import misc_utils,indexing
 from CHAPSim_post.post._common import DomainHandler
