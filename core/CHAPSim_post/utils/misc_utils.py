@@ -5,7 +5,7 @@ import sys
 
 from CHAPSim_post import rcParams
 
-__all__ = ["max_time_calc"]
+__all__ = ["max_time_calc","time_extract"]
 
 def check_paths(path_to_folder,*folder_options):
 
@@ -35,11 +35,15 @@ def check_path_exists(file_folder_path,check_file=None):
         for i in range(1,len(comps)):
             partial_path = os.path.join(*comps[:i])
             if not os.path.exists(partial_path):
-                msg = "%s provided \"%s\" does not exist\n"%(handle_name,file_folder_path) +\
-                        "Sub-path \"%s\" not found"%partial_path
+                if i == len(comps) -1:
+                    msg = "%s provided \"%s\" does not exist\n"%(handle_name,file_folder_path) +\
+                            "Sub-path \"%s\" not found"%partial_path
+
+                    raise FileNotFoundError(msg)
+                else:
+                    continue
+            else:
                 break
-        
-        raise FileNotFoundError(msg)
 
 def file_extract(path_to_folder,abs_path=True):
     full_path = check_paths(path_to_folder,'2_averaged_rawdata',

@@ -228,10 +228,10 @@ class CHAPSim_perturb():
     def mean_velo_peturb_calc(self,comp):
         U_velo_mean = self.__avg_data.flow_AVGDF[None,comp].copy()
     
-        time_0_index = self.__avg_data._return_index(self.start)
+        time_0_index = self.__avg_data._return_index(self.start) -1
 
         centre_index =int(0.5*self.__avg_data.shape[0])
-        U_c0 = U_velo_mean[centre_index,0]
+        U_c0 = U_velo_mean[centre_index,time_0_index]
         mean_velo_peturb = np.zeros((self.__avg_data.shape[0],self.__avg_data.shape[1]-time_0_index))
         for i in range(time_0_index,self.__avg_data.shape[1]):
             mean_velo_peturb[:,i-time_0_index] = (U_velo_mean[:,i]-U_velo_mean[:,0])/(U_velo_mean[centre_index,i]-U_c0)
@@ -319,7 +319,7 @@ class CHAPSim_perturb():
 
         return disp_thickness, mom_thickness, shape_factor
 
-    def plot_shape_factor(self,fig=None,ax=None,**kwargs):
+    def plot_shape_factor(self,fig=None,ax=None,line_kw=None,**kwargs):
 
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
@@ -330,7 +330,9 @@ class CHAPSim_perturb():
 
         _, _, H = self.int_thickness_calc()
 
-        ax.cplot(times, H,label=r"$H$")
+        line_kw = cplt.update_line_kw(line_kw,label = r"$H$")
+
+        ax.cplot(times, H,**line_kw)
         ax.set_xlabel(r"$t^*$")
         ax.set_ylabel(r"$H$")
         ax.set_ylim([0,2*H[-1]])

@@ -434,7 +434,7 @@ class CHAPSim_Inst(Common):
             i+=1
 
         del velo_field1 ; del velo_field2
-        S2_Omega2 = strain_rate**2 + rot_rate**2
+        S2_Omega2 = np.matmul(strain_rate,strain_rate) + np.matmul(rot_rate,rot_rate)
         del strain_rate ; del rot_rate
 
         S2_Omega2_eigvals, e_vecs = np.linalg.eigh(S2_Omega2)
@@ -495,6 +495,53 @@ class CHAPSim_Inst(Common):
                 color = colors[i%len(colors)]
                 surf_kw['facecolor'] = color
             fig, ax1 = lambda_2DF.plot_isosurface('lambda_2',val,time=PhyTime,y_limit=y_lim_int,
+                                            x_split_pair=x_split_pair,fig=fig,ax=ax,
+                                            surf_kw=surf_kw)
+            ax.axes.set_ylabel(r'$x/\delta$')
+            ax.axes.set_xlabel(r'$z/\delta$')
+            ax.axes.invert_xaxis()
+
+        return fig, ax1
+
+    def Q_crit_calc(self,PhyTime=None):
+        PhyTime = self.check_PhyTime(PhyTime)
+
+        #Calculating strain rate tensor
+        velo_list = ['u','v','w']
+        coord_list = ['x','y','z']
+                
+        D = np.zeros((*self.shape,3,3))
+
+        for i,velo in enumerate(velo_list):
+            velo_field = self.InstDF[PhyTime,velo]
+            for j,coord in enumerate(coord_list):
+                D[:,:,:,i,j] = gradient.Grad_calc(self.CoordDF,velo_field,coord)
+
+        del velo_field
+
+        Q = 0.5*(np.trace(D,axis1=3,axis2=4)**2 - \
+            np.trace(np.matmul(D,D),axis1=3,axis2=4))
+        del D
+        return cd.flowstruct3D(self.CoordDF,{(PhyTime,'Q'):Q},Domain=self.Domain)
+
+    def plot_Q_criterion(self,vals_list,x_split_pair=None,PhyTime=None,y_limit=None,y_mode='half_channel',Y_plus=True,avg_data=None,colors=None,surf_kw=None,fig=None,ax=None,**kwargs):
+        PhyTime = self.check_PhyTime(PhyTime)
+        vals_list = misc_utils.check_list_vals(vals_list)
+
+        if y_limit is not None:
+            y_lim_int = indexing.ycoords_from_norm_coords(self.avg_data,[y_limit],mode=y_mode)[0][0]
+        else:
+            y_lim_int = None
+
+        kwargs = cplt.update_subplots_kw(kwargs,subplot_kw={'projection':'3d'})
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig=fig,ax=ax,**kwargs)
+
+        Q = self.Q_crit_calc(PhyTime)
+        for i,val in enumerate(vals_list):
+            if colors is not None:
+                color = colors[i%len(colors)]
+                surf_kw['facecolor'] = color
+            fig, ax1 = Q.plot_isosurface('Q',val,time=PhyTime,y_limit=y_lim_int,
                                             x_split_pair=x_split_pair,fig=fig,ax=ax,
                                             surf_kw=surf_kw)
             ax.axes.set_ylabel(r'$x/\delta$')

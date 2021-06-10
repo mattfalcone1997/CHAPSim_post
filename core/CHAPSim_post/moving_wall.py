@@ -305,7 +305,7 @@ class CHAPSim_perturb():
 
         return disp_thickness, mom_thickness, shape_factor
 
-    def plot_shape_factor(self,PhyTime=None,fig=None,ax=None,**kwargs):
+    def plot_shape_factor(self,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
         
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
         fig,ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
@@ -315,9 +315,10 @@ class CHAPSim_perturb():
 
         x_coords = self._meta_data.CoordDF['x'][x_loc:] - start
 
-        delta, theta, H = self.int_thickness_calc(PhyTime)
+        _, _, H = self.int_thickness_calc(PhyTime)
+        line_kw = cplt.update_line_kw(line_kw,label = r"$H$")
 
-        ax.cplot(x_coords, H,label=r"$H$")
+        ax.cplot(x_coords, H,**line_kw)
         ax.set_xlabel(r"$x/\delta$")
         ax.set_ylabel(r"$H$")
         ax.set_ylim([0,2*H[-1]])
