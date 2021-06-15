@@ -12,7 +12,7 @@ import warnings
 import gc
 
 from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
-
+from CHAPSim_post import rcParams
 import CHAPSim_post.plot as cplt
 import CHAPSim_post.dtypes as cd
 
@@ -519,8 +519,8 @@ class CHAPSim_Inst(Common):
 
         del velo_field
 
-        Q = 0.5*(np.trace(D,axis1=3,axis2=4)**2 - \
-            np.trace(np.matmul(D,D),axis1=3,axis2=4))
+        Q = 0.5*(np.trace(D,axis1=3,axis2=4,dtype=rcParams['dtype'])**2 - \
+            np.trace(np.matmul(D,D,dtype=rcParams['dtype']),axis1=3,axis2=4,dtype=rcParams['dtype']))
         del D
         return cd.flowstruct3D(self.CoordDF,{(PhyTime,'Q'):Q},Domain=self.Domain)
 

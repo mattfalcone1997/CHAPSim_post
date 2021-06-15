@@ -19,6 +19,7 @@ import h5py
 import numbers
 import os
 import operator
+import itertools
 
 import CHAPSim_post as cp
 import sys
@@ -781,13 +782,99 @@ class VTKstruct:
 
         self._flowstruct = flowstruct_obj
         self._grid = self._flowstruct.CoordDF.vtkStructuredGrid()
+    def __getattr__(self,attr):
+        if not hasattr(self._grid,attr):
+            msg = f"Method must be either an attribute of VTKstruct or {self._grid.__class__}"
+            raise AttributeError(msg)
+
+        inner_list = self._flowstruct.inner_index
+        outer_list = self._flowstruct.outer_index
+
+        grid = self[outer_list,inner_list]
+
+        return getattr(grid,attr)
 
     def __getitem__(self,key):
-        data = self._flowstruct[key]
         return_grid = self._grid.copy()
-        return_grid.cell_arrays[np.str_(key[1])] = data.flatten()
+
+        if isinstance(key[0],slice):
+            start = key[0].start
+            stop = key[0].stop
+            for i,i_index in enumerate(self._flowstruct.outer_index):
+                if i_index == start:
+                    start_i = i
+                
+                if i_index == stop:
+                    stop_i = i
+            
+            if stop_i < start_i:
+                tmp = stop_i
+                stop_i = start_i
+                start_i= tmp
+
+            outer_list = self._flowstruct.outer_index[start_i:stop_i+1]
+        elif isinstance(key[0],list):
+            outer_list = key[0]
+        else:
+            outer_list = [key[0]]
+
+        if isinstance(key[1],slice):
+            start = key[1].start
+            stop = key[1].stop
+            for i,i_index in enumerate(self._flowstruct.inner_index):
+                if i_index == start:
+                    start_i = i
+                
+                if i_index == stop:
+                    stop_i = i
+            
+            if stop_i < start_i:
+                tmp = stop_i
+                stop_i = start_i
+                start_i= tmp
+
+            inner_list = self._flowstruct.inner_index[start_i:stop_i+1]
+        elif isinstance(key[1],list):
+            inner_list = key[1]
+        else:
+            inner_list = [key[1]]
+
+        keys = itertools.product(outer_list,inner_list)
+
+        for k in keys:
+
+            data = self._flowstruct[k]
+            if len(outer_list) < 2:
+                k = k[1]
+            return_grid.cell_arrays[np.str_(k)] = data.flatten()
         return return_grid
 
+    def __iadd__(self,other_VTKstruct):
+        if not isinstance(other_VTKstruct,self.__class__):
+            msg = "This operation can only be used with other VTKstruct's"
+            raise TypeError(msg)
+        
+        if not np.allclose(self._grid.points,other_VTKstruct._grid.points):
+            msg = "The grids of the VTKstruct's must be allclose"
+            raise ValueError(msg)
+
+        self._flowstruct.concat(other_VTKstruct._flowstruct)
+        # other_vtk_cell_keys = other_VTKstruct._grid.cell_arrays.keys()
+        # other_vtk_point_keys = other_VTKstruct._grid.point_arrays.keys()
+
+        # if any([key in self._grid.cell_arrays.keys() for key in other_vtk_cell_keys]):
+        #     msg = "To combine two VTKstruct's, they cannot have the any keys the same"
+
+        # if any([key in self._grid.point_arrays.keys() for key in other_vtk_point_keys]):
+        #     msg = "To combine two VTKstruct's, they cannot have the any keys the same"
+
+        # for key in other_vtk_cell_keys:
+        #     self._grid.cell_arrays[key] = other_VTKstruct._grid.cell_arrays[key]
+
+        # for key in other_vtk_point_keys:
+        #     self._grid.point_arrays[key] = other_VTKstruct._grid.point_arrays[key]
+
+        return self
 
 class flowstruct3D(flowstruct_base):
 

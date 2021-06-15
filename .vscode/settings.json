@@ -1,4 +1,4 @@
 {
-    "python.pythonPath": "/home/mfalcone/SOFTWARE/anaconda/bin/python",
+    "python.pythonPath": "/home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/bin/python",
     "restructuredtext.confPath": "${workspaceFolder}/docs/source"
 }
