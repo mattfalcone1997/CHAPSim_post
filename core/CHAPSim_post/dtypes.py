@@ -102,19 +102,12 @@ class datastruct:
                 keys = [keys[i] for i in order]
                 
             self._data = {}
-            self._index = []
             for key in keys:
                 if key.count("/")>0:
                     index = tuple(key.split("/"))
                 else:
                     index = key
-                self._index.append(index)
                 self._data[index] = np.array(hdf_data[key][:]).astype(cp.rcParams['dtype'])
-
-            if self._is_multidim():
-                self._outer_index = list(set([i[0] for i in self._index]))
-            else:
-                self._outer_index = [None]
         finally:
             hdf_file.close()
 
@@ -132,31 +125,30 @@ class datastruct:
             dataFrame = pd.read_hdf(filename,key=key).coord()
             indices = dataFrame.columns
 
-        self._index = list(indices)
+        index = list(indices)
         if self._is_multidim():
-            for i,index in enumerate(self._index):
-                if isinstance(self._index[i][0],numbers.Number):
-                    if np.isnan(self._index[i][0]):
-                        self._index[i] = (None,*self._index[i][1:])
+            for i,index in enumerate(index):
+                if isinstance(index[i][0],numbers.Number):
+                    if np.isnan(index[i][0]):
+                        index[i] = (None,*index[i][1:])
         
         if shapes is not None:
-            self._data = {i : dataFrame.data[i].astype(cp.rcParams['dtype']) for i in self._index}
+            self._data = {i : dataFrame.data[i].astype(cp.rcParams['dtype']) for i in index}
         else:
-            self._data = {i : dataFrame.coord[i].astype(cp.rcParams['dtype']) for i in self._index}
-        self._outer_index = list(set([x[0] for x in self._index]))
+            self._data = {i : dataFrame.coord[i].astype(cp.rcParams['dtype']) for i in index}
 
     
     def _array_ini(self,array,index=None,copy=False):
         
-        self._index_construct(index,array)
-        if self._index is None:
-            self._index = list(range(array.shape[0]))
+        index = self._index_construct(index,array)
+        if index is None:
+            index = list(range(array.shape[0]))
 
-        if len(self._index) != len(array):
+        if len(index) != len(array):
             msg = "The length of the indices must be the same as the outer dimension of the array"
             raise ValueError(msg)
 
-        self._data = {i : value.astype(cp.rcParams['dtype'],copy=copy) for i, value in zip(self._index,array)}
+        self._data = {i : value.astype(cp.rcParams['dtype'],copy=copy) for i, value in zip(index,array)}
 
     def _index_construct(self,index,array):
         
@@ -202,8 +194,8 @@ class datastruct:
             msg = "The index list is the wrong size"
             raise ValueError(msg)
         
-        self._index = index
-        self._outer_index = outer_index
+        return index
+
 
     
     def _dict_ini(self,dict_data,copy=False):
@@ -214,9 +206,9 @@ class datastruct:
         index = list(dict_data.keys())
         array = list(dict_data.values())
 
-        self._index_construct(index,array)
+        index = self._index_construct(index,array)
 
-        self._data = {i : value.astype(cp.rcParams['dtype'],copy=copy) for i, value in zip(self._index,array)}
+        self._data = {i : value.astype(cp.rcParams['dtype'],copy=copy) for i, value in zip(index,array)}
 
 
 
@@ -251,7 +243,7 @@ class datastruct:
         hdffile.close()
 
     def _is_multidim(self):
-        return all([isinstance(i,tuple) for i in self._index])
+        return all([isinstance(i,tuple) for i in self.index])
 
     def equals(self,other_datastruct):
         if not isinstance(other_datastruct,datastruct):
@@ -276,12 +268,11 @@ class datastruct:
     #         raise ValueError(msg)
     #     values = self._obj.values()
 
-    #     self._index = index
 
     @property
     def outer_index(self):
         if self._is_multidim():
-            return self._outer_index
+            return list(set([x[0] for x in self.index]))
         else:
             msg = "This method cannot be used on datastructs with single dimensional indices"
             raise AttributeError(msg)
@@ -289,7 +280,7 @@ class datastruct:
     @property
     def inner_index(self):
         if self._is_multidim():
-            return [x[1] for x in self._index]
+            return list(set([x[1] for x in self.index]))
         else:
             return self.index
 
@@ -338,7 +329,7 @@ class datastruct:
                             " not present and cannot be corrected internally."))
             warn = UserWarning((f"The outer index provided is incorrect ({key[0]})"
                         f" that is present (there is only one value present in the"
-                        f" datastruct ({self._outer_index[0]})"))
+                        f" datastruct ({self.outer_index[0]})"))
             
             inner_key = self.check_inner(key[1],err)
             outer_key = self.check_outer(key[0],err,warn)
@@ -419,7 +410,7 @@ class datastruct:
         else:
             key = str(key)
 
-        if key not in self._index:
+        if key not in self.index:
             msg = f"The key {key} is not present in the datastruct's indices, if you want to "+\
                 "add this key create new datastruct and use the concat method"
             raise KeyError(msg)
@@ -435,9 +426,6 @@ class datastruct:
             key = str(key)
 
         del self._data[key]
-        self._index.remove(key)
-        if self._is_multidim():
-            self._outer_index = [x[0] for x in self.index]
             
     def __iter__(self):
         return self._data.items().__iter__()
@@ -453,7 +441,6 @@ class datastruct:
                             " may be looking for the method {self.append.__name__}"
                         raise ValueError(e_msg)
                 else:
-                    self._index.append(index)
                     self._data[index] = arr_or_data[index]
 
         elif hasattr(arr_or_data,"__iter__"):
@@ -464,8 +451,6 @@ class datastruct:
         else:
             raise TypeError(msg)
         
-        if self._is_multidim():
-            self._outer_index = list(set([i[0] for i in self._index]))
 
     def append(self,arr,key=None,axis=0):
         if isinstance(arr,np.ndarray):
@@ -782,17 +767,25 @@ class VTKstruct:
 
         self._flowstruct = flowstruct_obj
         self._grid = self._flowstruct.CoordDF.vtkStructuredGrid()
+
     def __getattr__(self,attr):
-        if not hasattr(self._grid,attr):
-            msg = f"Method must be either an attribute of VTKstruct or {self._grid.__class__}"
+        if hasattr(self._grid,attr):
+            inner_list = self._flowstruct.inner_index
+            outer_list = self._flowstruct.outer_index
+
+            grid = self[outer_list,inner_list]
+            return getattr(grid,attr)
+
+        elif hasattr(self._flowstruct, attr):
+            return getattr(self._flowstruct,attr)
+
+        else:
+            msg = ("Method must be either an attribute "
+                f"of VTKstruct, {self._grid.__class__},"
+                f" or {self._flowstruct.__class__}")
             raise AttributeError(msg)
 
-        inner_list = self._flowstruct.inner_index
-        outer_list = self._flowstruct.outer_index
-
-        grid = self[outer_list,inner_list]
-
-        return getattr(grid,attr)
+        
 
     def __getitem__(self,key):
         return_grid = self._grid.copy()
