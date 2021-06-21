@@ -833,7 +833,7 @@ class VTKstruct:
         else:
             inner_list = [key[1]]
 
-        keys = itertools.product(outer_list,inner_list)
+        keys = list(itertools.product(outer_list,inner_list))
         if len(keys) > 1:
             keys = [key for key in keys if key in self._flowstruct.index]
 
