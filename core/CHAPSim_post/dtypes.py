@@ -773,6 +773,7 @@ class VTKstruct:
             inner_list = self._flowstruct.inner_index
             outer_list = self._flowstruct.outer_index
 
+
             grid = self[outer_list,inner_list]
             return getattr(grid,attr)
 
@@ -833,6 +834,8 @@ class VTKstruct:
             inner_list = [key[1]]
 
         keys = itertools.product(outer_list,inner_list)
+        if len(keys) > 1:
+            keys = [key for key in keys if key in self._flowstruct.index]
 
         for k in keys:
 
