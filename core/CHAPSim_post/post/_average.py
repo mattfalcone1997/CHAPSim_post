@@ -460,13 +460,10 @@ class CHAPSim_AVG_base(Common,ABC):
 
     def _bulk_velo_calc(self,PhyTime):
             
-        u_velo = self.flow_AVGDF[PhyTime,'u']
+        u_velo = self.flow_AVGDF[PhyTime,'u'].squeeze()
         ycoords = self.CoordDF['y']
-        
-        bulk_velo=np.zeros(self.shape[1])
 
-        for i in range(self.shape[1]):
-            bulk_velo[i] = 0.5*integrate.simps(u_velo[:,i],ycoords)
+        bulk_velo = 0.5*integrate.simps(u_velo,ycoords,axis=0)
             
         return bulk_velo
 
@@ -600,8 +597,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
                 local_DF_list = self._AVG_extract(PhyTime,time0,path_to_folder,abs_path)
                 for i, local_DF in enumerate(DF_list):
                     DF_list[i].concat(local_DF_list[i])
-                    
-            
+
         DF_list=self._Reverse_decomp(*DF_list)
 
 
@@ -609,6 +605,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         self.UU_tensorDF,self.UUU_tensorDF,\
         self.Velo_grad_tensorDF, self.PR_Velo_grad_tensorDF,\
         self.DUDX2_tensorDF = DF_list
+        
 
         self._times = list(set([x[0] for x in self.flow_AVGDF.index]))
         self.shape = (self.NCL[1],self.NCL[0])
@@ -697,7 +694,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
                             PR_Velo_grad_tensorDF.symmetrify(dim=0))
             DUDX2_tensorDF = 0.5*(DUDX2_tensorDF + \
                             DUDX2_tensorDF.symmetrify(dim=0))
-
+        
         return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
                     Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
     
@@ -1246,7 +1243,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
             raise TypeError(msg)
         
         shift_vals = kwargs.pop("shift_vals",[0]*len(path_to_folder))
-        time0 = kwargs.get("time0","")
+        time0 = kwargs.get("time0",None)
         for (i,path),val in zip(enumerate(path_to_folder),shift_vals):
             if i ==0:
                 PhyTimes = [x-val for x in misc_utils.time_extract(path,abs_path)]
@@ -1337,7 +1334,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         filter_times = ["%.9g"% time for time in times]
         time_list = list(set(self._times).intersection(set(filter_times)))
         time_list = sorted(float(x) for x in time_list)
-        time_list = ["%.9g"%x for x in time_list]
+        # time_list = ["%.9g"%x for x in time_list]
         index_list = [self._return_index(x) for x in time_list]
         
         self._times = time_list

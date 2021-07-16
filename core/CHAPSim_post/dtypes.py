@@ -152,48 +152,51 @@ class datastruct:
 
     def _index_construct(self,index,array):
         
+        def _item_handler(item):
+            if isinstance(item,numbers.Number):
+                return "%g"%item
+            elif isinstance(item,str):
+                return "%g"%float(item) if item.isnumeric() else item
+            else:
+                return str(item)
 
         if all(len(i) == len(array) for i in index):
-
             outer_index = None
             if all([hasattr(x,"__iter__") and not isinstance(x,str) for x in index]):
                 if not len(index) == 2:
                     msg = "This class can only currently handle up to two dimensional indices"
                     raise ValueError(msg)
-                outer_index = list(str(k) if not isinstance(k,numbers.Number) else "%g"%k for k in index[0] ) 
-                inner_index = list(str(k) if not isinstance(k,numbers.Number) else "%g"%k for k in index[1] ) 
+
+                outer_index = list(_item_handler(k) for k in index[0] ) 
+                inner_index = list(_item_handler(k) for k in index[1] ) 
                 index = [outer_index,inner_index]
                 outer_index = list(set(outer_index))
                 index = list(zip(*index))
             elif index is not None:
-                index = list(str(k) if not isinstance(k,numbers.Number) else "%g"%k for k in index ) 
+                index = list(_item_handler(k) for k in index ) 
                 outer_index = [None]
             else:
                 index = None
                 outer_index = [None]
 
         elif len(index) == len(array):
-            
             outer_index = None
             if all(isinstance(x,tuple) for x in index):
                 if all(len(x) == 2 for x in index):
-                    inner_index = list(str(k[1]) if not isinstance(k,numbers.Number)\
-                                else "%g"%k[1] for k in index )
-                    outer_index = list(str(k[0]) if not isinstance(k,numbers.Number)\
-                                else "%g"%k[0] for k in index )
+                    inner_index = list(_item_handler(k[1]) for k in index )
+                    outer_index = list(_item_handler(k[0]) for k in index )
                     index = list(zip(outer_index,inner_index))
                     outer_index = list(set(outer_index))
                 else:
                     msg = "This class can only currently handle up to two dimensional indices"
                     raise ValueError(msg)
             else:
-                index = list(str(k) if not isinstance(k,numbers.Number)\
-                                else "%g"%k for k in index )
+                index = list(_item_handler(k) for k in index )
                 outer_index = None
         else:
             msg = "The index list is the wrong size"
             raise ValueError(msg)
-        
+
         return index
 
 
@@ -540,24 +543,18 @@ class datastruct:
         return self.copy()
     
     def symmetrify(self,dim=None):
-        if self._is_multidim():
-            comp_list = self.inner_index
-        else:
-            comp_list=self.index
-
-        symm_count=[]
-        for comp in comp_list:
-            symm_count.append(comp.count('v') + comp.count('y'))
-
+        
         slicer = slice(None,None,None)
         indexer = [slicer for _ in range(self.values.ndim-1)]
         if dim is not None:
             indexer[dim] = slice(None,None,-1)
 
         data = {}
-        for index,count in zip(self.index,symm_count):
-
-            data[index] = self._data[index][tuple(indexer)]*(-1)**count
+        for index,vals in self:
+           
+            comp = index[1] if self._is_multidim() else index
+            count = comp.count('v') + comp.count('y')
+            data[index] = vals.copy()[tuple(indexer)]*(-1)**count
 
         return datastruct(data)
 
@@ -786,8 +783,18 @@ class VTKstruct:
                 f" or {self._flowstruct.__class__}")
             raise AttributeError(msg)
 
+    @property
+    def flowstruct(self):
+        return self._flowstruct
         
+    @property
+    def Grid(self):
+        inner_list = self._flowstruct.inner_index
+        outer_list = self._flowstruct.outer_index
 
+
+        return self[outer_list,inner_list]
+        
     def __getitem__(self,key):
         return_grid = self._grid.copy()
 

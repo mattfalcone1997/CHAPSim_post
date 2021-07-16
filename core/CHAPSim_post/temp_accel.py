@@ -39,17 +39,23 @@ class CHAPSim_AVG_custom_t(cp.CHAPSim_AVG_tg_base):
             metaDF_list.append(CHAPSim_meta(path,abs_path).metaDF)
         kwargs['shift_vals'] = [float(metaDF['temp_start_end'][0]) for metaDF in metaDF_list]
 
-        return super().with_phase_average(*args,**kwargs)
+        obj = super().with_phase_average(*args,**kwargs)
+
+        start = 0.0; end = obj._meta_data.metaDF['temp_start_end'][1] - obj._meta_data.metaDF['temp_start_end'][0]
+        obj._meta_data.metaDF['temp_start_end'] = [start,end]
+        return obj
 
     def shift_times(self,val):
         super().shift_times(val)
         self._metaDF['temp_start_end'][0] -= val
         self._metaDF['temp_start_end'][1] -= val
-
+    
+    
     def conv_distance_calc(self):
         
         bulk_velo = self.bulk_velo_calc()
-
+        print(bulk_velo)
+        print(self._times)
         time0 = float(self._times[0])
         times = [float(x)-time0 for x in self._times]
 
@@ -59,6 +65,9 @@ class CHAPSim_AVG_custom_t(cp.CHAPSim_AVG_tg_base):
         for i , _ in enumerate(bulk_velo):
             conv_distance[i] = integrate.simps(bulk_velo[:(i+1)],times[:(i+1)])
         return conv_distance - start_distance
+
+    # @staticmethod
+    # def _conv_distance_calc(bulk_velo,times):
 
     def accel_param_calc(self):
         U_mean = self.flow_AVGDF[None,'u']
@@ -71,22 +80,17 @@ class CHAPSim_AVG_custom_t(cp.CHAPSim_AVG_tg_base):
         accel_param = (1/(REN*U_infty**3))*dudt
         return accel_param
 
-    def plot_accel_param(self,convective=False,fig=None,ax=None,**kwargs):
+    def plot_accel_param(self,fig=None,ax=None,**kwargs):
         accel_param = self.accel_param_calc()
-        if convective:
-            xaxis = self.conv_distance_calc()
-        else:
-            xaxis = self._return_xaxis()
+
+        xaxis = self._return_xaxis()
 
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         ax.cplot(xaxis,accel_param,label=r"$K$")
 
-        if convective:
-            ax.set_xlabel(r"$x^*_{conv}$")# ,fontsize=18)
-        else:
-            ax.set_xlabel(r"$t^*$")# ,fontsize=18)
+        ax.set_xlabel(r"$t^*$")# ,fontsize=18)
         ax.set_ylabel(r"$K$")# ,fontsize=18)
 
         ax.ticklabel_format(style='sci',axis='y',scilimits=(-5,5))
@@ -110,6 +114,14 @@ class CHAPSim_AVG_tg(CHAPSim_AVG_custom_t):
 _avg_tg_class = CHAPSim_AVG_tg
 
 class CHAPSim_AVG_tg_conv(CHAPSim_AVG_tg):
+
+    @classmethod
+    def with_phase_average(cls,*args,**kwargs):
+        obj = super().with_phase_average(*args, **kwargs)
+        obj.CoordDF['x'] = obj.conv_distance_calc()
+        return obj
+
+
     def _extract_avg(self,*args,**kwargs):
         super()._extract_avg(*args,**kwargs)
 
@@ -118,8 +130,42 @@ class CHAPSim_AVG_tg_conv(CHAPSim_AVG_tg):
     def _return_index(self,x_val):
         return indexing.coord_index_calc(self.CoordDF,'x',x_val)
 
+    def _return_time_index(self,time):
+        return super()._return_index(time)
     def _return_xaxis(self):
         return self.CoordDF['x']
+
+    def filter_times(self,times):
+        filter_times = ["%.9g"% time for time in times]
+        time_list = list(set(self._times).intersection(set(filter_times)))
+        time_list = sorted(float(x) for x in time_list)
+        # time_list = ["%.9g"%x for x in time_list]
+        index_list = [self._return_time_index(x) for x in time_list]
+        
+        self._times = time_list
+
+        for index in self.flow_AVGDF.index:
+            self.flow_AVGDF[index] = self.flow_AVGDF[index][:,index_list]
+
+        for index in self.UU_tensorDF.index:
+            self.UU_tensorDF[index] = self.UU_tensorDF[index][:,index_list]
+        
+        for index in self.UUU_tensorDF.index:
+            self.UUU_tensorDF[index] = self.UUU_tensorDF[index][:,index_list]
+
+        for index in self.PU_vectorDF.index:
+            self.PU_vectorDF[index] = self.PU_vectorDF[index][:,index_list]
+
+        for index in self.Velo_grad_tensorDF.index:
+            self.Velo_grad_tensorDF[index] = self.Velo_grad_tensorDF[index][:,index_list]
+        
+        for index in self.PR_Velo_grad_tensorDF.index:
+            self.PR_Velo_grad_tensorDF[index] = self.PR_Velo_grad_tensorDF[index][:,index_list]
+
+        for index in self.DUDX2_tensorDF.index:
+            self.DUDX2_tensorDF[index] = self.DUDX2_tensorDF[index][:,index_list]
+
+        self.shape=(self.shape[0],len(self._times))
 
     def plot_shape_factor(self,*args,**kwargs):
         fig, ax = super().plot_shape_factor(*args,**kwargs)    
@@ -233,8 +279,9 @@ class CHAPSim_perturb():
         centre_index =int(0.5*self.__avg_data.shape[0])
         U_c0 = U_velo_mean[centre_index,time_0_index]
         mean_velo_peturb = np.zeros((self.__avg_data.shape[0],self.__avg_data.shape[1]-time_0_index))
+
         for i in range(time_0_index,self.__avg_data.shape[1]):
-            mean_velo_peturb[:,i-time_0_index] = (U_velo_mean[:,i]-U_velo_mean[:,0])/(U_velo_mean[centre_index,i]-U_c0)
+            mean_velo_peturb[:,i-time_0_index] = (U_velo_mean[:,i]-U_velo_mean[:,time_0_index])/(U_velo_mean[centre_index,i]-U_c0)
         return mean_velo_peturb
     def plot_perturb_velo(self,times,comp='u',Y_plus=False,Y_plus_max=100,fig=None,ax =None,**kwargs):
         velo_peturb = self.mean_velo_peturb_calc(comp)

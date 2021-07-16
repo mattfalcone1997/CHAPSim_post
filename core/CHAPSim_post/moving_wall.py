@@ -27,7 +27,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
 
     def _tau_calc(self,PhyTime):
 
-        u_velo = self.flow_AVGDF[PhyTime,'u']
+        u_velo = self.flow_AVGDF[PhyTime,'u'].copy()
         ycoords = self.CoordDF['y']
         
         wall_velo = self._meta_data.moving_wall_calc()
@@ -44,13 +44,13 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         u_velo = self.flow_AVGDF[PhyTime,'u'].copy()
         ycoords = self.CoordDF['y']
         wall_velo = self._meta_data.moving_wall_calc()
-        
+
         bulk_velo=np.zeros(self.shape[1])
         for i in range(self.NCL[1]):
             u_velo[i,:]=u_velo[i,:] - wall_velo
         for i in range(self.shape[1]):
             bulk_velo[i] = 0.5*integrate.simps(u_velo[:,i],ycoords)
-            
+        
         return bulk_velo
 
     def plot_bulk_velocity(self,PhyTime=None,relative=False,fig=None,ax=None,line_kw=None,**kwargs):
@@ -77,7 +77,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
 
         PhyTime = self.check_PhyTime(PhyTime)
 
-        U_mean = self.flow_AVGDF[PhyTime,'u']
+        U_mean = self.flow_AVGDF[PhyTime,'u'].copy()
         U0_index = int(self.NCL[1]*0.5)
         U0 = U_mean[U0_index]
         wall_velo = self._meta_data.moving_wall_calc()

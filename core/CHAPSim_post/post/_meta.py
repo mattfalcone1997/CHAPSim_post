@@ -32,7 +32,7 @@ class CHAPSim_meta():
     def __extract_meta(self,path_to_folder='.',abs_path=True,tgpost=False):
         self.metaDF = self._readdata_extract(path_to_folder,abs_path)
         ioflg = self.metaDF['iDomain'] in [2,3]
-        self.CoordDF, self.NCL = self._coord_extract(path_to_folder,abs_path,tgpost,ioflg)
+        self.CoordDF, self.Coord_ND_DF, self.NCL = self._coord_extract(path_to_folder,abs_path,tgpost,ioflg)
         
         self.path_to_folder = path_to_folder
         self._abs_path = abs_path
@@ -49,9 +49,16 @@ class CHAPSim_meta():
             key = 'CHAPSim_meta'
         
         self.CoordDF = cd.datastruct.from_hdf(file_name,key=key+'/CoordDF')#pd.read_hdf(file_name,key=base_name+'/CoordDF').coord()
+        
         self.metaDF = cd.metastruct.from_hdf(file_name,key=key+'/metaDF')#pd.read_hdf(file_name,key=base_name+'/metaDF')
         
         hdf_file = h5py.File(file_name,'r')
+
+        if key+'/Coord_ND_DF' in hdf_file.keys():
+            self.Coord_ND_DF = cd.datastruct.from_hdf(file_name,key=key+'/Coord_ND_DF')
+        else:
+            self.Coord_ND_DF = None
+
         self.NCL = hdf_file[key+'/NCL'][:]
         self.path_to_folder = hdf_file[key].attrs['path_to_folder'].decode('utf-8')
         self._abs_path = bool(hdf_file[key].attrs['abs_path'])
@@ -148,6 +155,7 @@ class CHAPSim_meta():
         y_coord=np.loadtxt(file,usecols=1,skiprows=1)
         index = int(self.metaDF['NCL2']) + 1 
         YCC=y_coord[index:]
+        YND = y_coord[:index]
         y_size = YCC.size
         file.close()
         #============================================================
@@ -164,8 +172,9 @@ class CHAPSim_meta():
         file.close()
 
         CoordDF = cd.datastruct({'x':XCC,'y':YCC,'z':ZCC})
+        Coord_ND_DF = cd.datastruct({'x':XND,'y':YND,'z':ZND})
         NCL = [x_size, y_size, z_size]
-        return CoordDF, NCL
+        return CoordDF, Coord_ND_DF, NCL
 
 
     def _coord_extract_old(self,path_to_folder,abs_path,tgpost,ioflg):
@@ -213,7 +222,10 @@ class CHAPSim_meta():
             if y_coord[i] == 1.0:
                 index=i
                 break
-        YCC=np.delete(y_coord,np.arange(index+1))
+        
+        # YCC=np.delete(y_coord,np.arange(index+1))
+        YND = y_coord[:index+1]
+        YCC = y_coord[(index+1):]
         y_size = YCC.size
         file.close()
         #============================================================
@@ -231,8 +243,9 @@ class CHAPSim_meta():
         file.close()
 
         CoordDF = cd.datastruct({'x':XCC,'y':YCC,'z':ZCC})
+        Coord_ND_DF = cd.datastruct({'x':XND,'y':YND,'z':ZND})
         NCL = [x_size, y_size, z_size]
-        return CoordDF, NCL
+        return CoordDF, Coord_ND_DF, NCL
         
     def _coord_interp(self,XND, ZND):
         """ Interpolate the coordinates to give their cell centre values """
@@ -246,28 +259,28 @@ class CHAPSim_meta():
     
         return XCC, ZCC
 
-    @property
-    def Coord_ND_DF(self):
-        XCC = self.CoordDF['x']
-        YCC = self.CoordDF['y']
-        ZCC = self.CoordDF['z']
+    # @property
+    # def Coord_ND_DF(self):
+    #     XCC = self.CoordDF['x']
+    #     YCC = self.CoordDF['y']
+    #     ZCC = self.CoordDF['z']
 
-        XND = np.zeros(XCC.size+1) 
-        YND = np.zeros(YCC.size+1)
-        ZND = np.zeros(ZCC.size+1)
+    #     XND = np.zeros(XCC.size+1) 
+    #     YND = np.zeros(YCC.size+1)
+    #     ZND = np.zeros(ZCC.size+1)
 
-        XND[0] = 0.0
-        YND[0] = -1.0 if self.metaDF['iCase'] == 1 else 0
-        ZND[0] = 0.0
+    #     XND[0] = 0.0
+    #     YND[0] = -1.0 if self.metaDF['iCase'] == 1 else 0
+    #     ZND[0] = 0.0
 
-        for i in  range(1,XND.size):
-            XND[i] = XND[i-1] + 2*XCC[i-1]-XND[i-1]
+    #     for i in  range(1,XND.size):
+    #         XND[i] = XND[i-1] + 2*XCC[i-1]-XND[i-1]
         
-        for i in  range(1,YND.size):
-            YND[i] = YND[i-1] + 2*YCC[i-1]-YND[i-1]
+    #     for i in  range(1,YND.size):
+    #         YND[i] = YND[i-1] + 2*YCC[i-1]-YND[i-1]
 
-        for i in  range(1,ZND.size):
-            ZND[i] = ZND[i-1] + 2*ZCC[i-1]-ZND[i-1]
+    #     for i in  range(1,ZND.size):
+    #         ZND[i] = ZND[i-1] + 2*ZCC[i-1]-ZND[i-1]
 
-        return cd.datastruct({'x':XND,'y':YND,'z':ZND})
+    #     return cd.datastruct({'x':XND,'y':YND,'z':ZND})
     
