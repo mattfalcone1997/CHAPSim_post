@@ -30,7 +30,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         u_velo = self.flow_AVGDF[PhyTime,'u'].copy()
         ycoords = self.CoordDF['y']
         
-        wall_velo = self._meta_data.moving_wall_calc()
+        wall_velo = self._meta_data.wall_velocity
         
         tau_star = np.zeros_like(u_velo[1])
         mu_star = 1.0
@@ -43,7 +43,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
 
         u_velo = self.flow_AVGDF[PhyTime,'u'].copy()
         ycoords = self.CoordDF['y']
-        wall_velo = self._meta_data.moving_wall_calc()
+        wall_velo = self._meta_data.wall_velocity
 
         bulk_velo=np.zeros(self.shape[1])
         for i in range(self.NCL[1]):
@@ -80,12 +80,12 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         U_mean = self.flow_AVGDF[PhyTime,'u'].copy()
         U0_index = int(self.NCL[1]*0.5)
         U0 = U_mean[U0_index]
-        wall_velo = self._meta_data.moving_wall_calc()
+        wall_velo = self._meta_data.wall_velocity
         x_coords = self.CoordDF['x']
         
         U_infty_grad = np.zeros(self.NCL[0])
         U_infty = U0 - wall_velo
-        REN = self._metaDF['REN']
+        REN = self.metaDF['REN']
         for i in range(self.NCL[0]):
             if i ==0:
                 U_infty_grad[i] = (U_infty[i+1] - U_infty[i])/\
@@ -122,7 +122,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         U0_index = int(np.floor(self.NCL[1]*0.5))
         U_mean = self.flow_AVGDF[PhyTime,'u'].copy()
         
-        wall_velo = self._meta_data.moving_wall_calc()
+        wall_velo = self._meta_data.wall_velocity
         for i in range(wall_velo.size):
             U_mean[:,i] -= wall_velo[i]
 
@@ -145,7 +145,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
     def plot_near_wall(self,x_vals,PhyTime=None,*args,**kwargs):
         
         fig, ax = super().plot_near_wall(x_vals,*args,**kwargs)
-        wall_velo = self._meta_data.moving_wall_calc()
+        wall_velo = self._meta_data.wall_velocity
         u_tau_star, _ = self.wall_unit_calc(PhyTime)
         lines = ax.get_lines()[-len(x_vals)-1:-1]
         for line, x_val in zip(lines,x_vals):
@@ -164,7 +164,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         else:
             fig, ax = super().plot_mean_flow(x_vals,*args,fig=fig,ax=ax,**kwargs)
             x_indices = indexing.coord_index_calc(self.CoordDF,'x',x_vals)
-            moving_wall = self._meta_data.moving_wall_calc()[x_indices]
+            moving_wall = self._meta_data.wall_velocity[x_indices]
             for line, val in zip(ax.get_lines(),moving_wall):
                 ydata = line.get_ydata().copy()
                 ydata-=val
@@ -205,7 +205,7 @@ class CHAPSim_perturb():
 
     def mean_velo_peturb_calc(self,comp,PhyTime):
         U_velo_mean = self.__avg_data.flow_AVGDF[PhyTime,comp].copy()
-        wall_velo = self._meta_data.moving_wall_calc()
+        wall_velo = self._meta_data.wall_velocity
         for i in range(self.__avg_data.shape[0]):
             U_velo_mean[i] -= wall_velo
 
@@ -366,20 +366,23 @@ class CHAPSim_perturb():
 class CHAPSim_meta(cp.CHAPSim_meta):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        fromfile = kwargs.pop('fromfile',False)
-        if fromfile:
+        from_file = kwargs.pop('from_file',False)
+        if from_file:
             self.__moving_wall = self._extract_moving_wall(*args,**kwargs)
         else:
             tgpost = kwargs.get('tgpost',False)
-            self.__moving_wall = self.__moving_wall_setup(self.NCL,self.path_to_folder,
-                                    self._abs_path,self.metaDF,tgpost)
+            path_to_folder= args[0] if len(args) > 0 else kwargs.get('path_to_folder','.')
+            abs_path = args[1] if len(args) > 1 else kwargs.get('abs_path',True)
+            
+            self.__moving_wall = self.__moving_wall_setup(self.NCL,path_to_folder,
+                                    abs_path,self.metaDF,tgpost)
     
     def _extract_moving_wall(self,file_name,key=None):
         if key is None:
             key = 'CHAPSim_meta'
-        hdf_file = h5py.File(file_name,'r')
-        moving_wall = hdf_file[key+"/moving_wall"][:]
-        hdf_file.close()
+        hdf_obj = cd.hdfHandler(file_name,'r',key=key)
+        moving_wall = hdf_obj["moving_wall"][:]
+
         return moving_wall
 
     def __moving_wall_setup(self,NCL,path_to_folder,abs_path,metaDF,tgpost):
@@ -407,9 +410,9 @@ class CHAPSim_meta(cp.CHAPSim_meta):
         if key is None:
             key = 'CHAPSim_meta'
         super().save_hdf(file_name,write_mode,key)
-        hdf_file = h5py.File(file_name,'a')
-        hdf_file[key].create_dataset("moving_wall",data=self.__moving_wall)
-        hdf_file.close()
+
+        hdf_obj = cd.hdfHandler(file_name,'a',key=key)
+        hdf_obj.create_dataset("moving_wall",data=self.__moving_wall)
 
     @property
     def wall_velocity(self):

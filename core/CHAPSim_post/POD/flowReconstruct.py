@@ -32,13 +32,12 @@ class flowReconstructBase():
         if key is None:
             key = self.__class__.__name__
 
-        hdf_file = h5py.File(file_name,write_mode)
-        group = hdf_file.create_group(key)
-        group.create_dataset("POD_coeffs",data=np.array(self.POD_coeffs))
-        hdf_file.close()
+        hdf_obj = cd.hdfHandler(file_name,write_mode,key=key)
+        hdf_obj.set_type_id(self.__class__)
+        hdf_obj.create_dataset("POD_coeffs",data=np.array(self.POD_coeffs))
 
         POD_class = self._POD.__class__.__name__
-        self._POD.save_hdf(file_name,'a',key+"/%s"%POD_class)
+        self._POD.save_hdf(file_name,'a',key+f"/{POD_class}")
 
         # self.POD_modesDF.to_hdf(file_name,key=key+'/POD_modesDF',mode='a')
         # self.meta_data.save_hdf(file_name,'a',key+'/meta_data')
@@ -47,15 +46,12 @@ class flowReconstructBase():
     def _hdf_extract(self,file_name,key=None):
         if key is None:
             key = self.__class__.__name__
-        hdf_file = h5py.File(file_name,'r')
-        self._POD_coeffs = hdf_file[key+"/POD_coeffs"][:]
-        hdf_file.close()
 
-        # self.POD = 
+        hdf_obj = cd.hdfHandler(file_name,'r',key=key)
+        hdf_obj.check_type_id(self.__class__)
 
-        # self.POD_modesDF = cd.datastruct.from_hdf(file_name,key=key+'/POD_modesDF')
-        # self.meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
-        # self.avg_data = self._module._meta_class.from_hdf(file_name,key+'/avg_data')
+        self._POD_coeffs = hdf_obj["POD_coeffs"][:]
+
     @property
     def POD(self):
         return self._POD
@@ -93,8 +89,7 @@ class flowReconstruct2D(flowReconstructBase,Common):
 
         # self.POD_modesDF = POD_.POD_modesDF
         self.avg_data = self._POD.avg_data
-        self.CoordDF = self.avg_data.CoordDF
-        self.meta_data = self.avg_data._meta_data
+        self._meta_data = self.avg_data._meta_data
 
         fluct_array,_ = self.POD._get_fluct_array(PhyTime,comp,path_to_folder,abs_path,self.avg_data,y_mode,plane,location)
 
@@ -117,8 +112,7 @@ class flowReconstruct2D(flowReconstructBase,Common):
         self._POD = POD.POD2D.from_hdf(file_name,key+"/POD2D")
         
         self.avg_data = self._POD.avg_data
-        self.CoordDF = self.avg_data.CoordDF
-        self.meta_data = self.avg_data._meta_data
+        self._meta_data = self.avg_data._meta_data
      
 
 
@@ -155,7 +149,7 @@ class flowReconstruct2D(flowReconstructBase,Common):
 class flowReconstruct3D(flowReconstructBase,Common):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        Common.__init__(self,self.meta_data)
+        Common.__init__(self,self._meta_data)
 
     def _extractPOD(self,PhyTime,comp=None,path_to_folder='.',method='svd',low_memory=True,abs_path=True,
                     subdomain=None,time0=None,nsnapshots=100,nmodes=10):
@@ -166,8 +160,7 @@ class flowReconstruct3D(flowReconstructBase,Common):
         self._POD = self._module._POD3D_class(comp,path_to_folder,method,low_memory,abs_path,time0,subdomain,nsnapshots,nmodes)
 
         self.avg_data = self._POD.avg_data
-        self.CoordDF = self.POD.CoordDF
-        self.meta_data = self.avg_data._meta_data
+        self._meta_data = self.avg_data._meta_data
 
         fluct_array, _ = self.POD._get_fluct_array(PhyTime,comp,path_to_folder,abs_path,self.avg_data,subdomain)
         
@@ -192,8 +185,7 @@ class flowReconstruct3D(flowReconstructBase,Common):
         self._POD = POD.POD3D.from_hdf(file_name,key+"/POD3D")
         
         self.avg_data = self.POD.avg_data
-        self.CoordDF = self.POD.CoordDF
-        self.meta_data = self.avg_data._meta_data
+        self._meta_data = self.avg_data._meta_data
 
     # def save_hdf(self,file_name,write_mode,key=None):
     #     if key is None:
@@ -210,14 +202,9 @@ class flowReconstruct3D(flowReconstructBase,Common):
         coeffs = self.POD_coeffs[modes]
         indices =self.POD.POD_modesDF.index
 
-        # reconstruct_arrays=[]
-        # for index in indices:
-        #     reconstruct_arrays.append(np.multiply(self.POD.POD_modesDF[index][:,:,:,modes],coeffs))
         flow_reconstruct = np.inner(self.POD.POD_modesDF.values[:,:,:,:,modes],coeffs)
 
-        # flow_reconstruct = np.sum(reconstruct_arrays,axis=-1)
-
-        return cd.flowstruct3D(self.CoordDF,flow_reconstruct,Domain=self.Domain,index=indices)
+        return cd.flowstruct3D(self._coorddata,flow_reconstruct,Domain=self.Domain,index=indices)
 
     def plot_contour(self,comp,modes,axis_vals,plane='xz',y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
         

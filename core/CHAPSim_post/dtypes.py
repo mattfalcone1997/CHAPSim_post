@@ -20,7 +20,8 @@ import numbers
 import os
 import operator
 import itertools
-
+import weakref
+from functools import wraps
 import CHAPSim_post as cp
 import sys
 
@@ -28,19 +29,396 @@ from pyvista import StructuredGrid
 import vtk
 
 from CHAPSim_post.utils import misc_utils,indexing
-from CHAPSim_post.post._common import DomainHandler
+from CHAPSim_post.post._meta import coorddata
 import CHAPSim_post.plot as cplt
 
+class structIndexer:
+    def __init__(self, dstruct):
+        self.__parent_dstruct = weakref.ref(dstruct) 
+    
+    @property
+    def _struct_index(self):
+        if self.__parent_dstruct() is None:
+            msg = "The instance of datastruct this {self.__class__.__name__} references has been destroyed"
+            raise AttributeError(msg)
+
+        return list(self.__parent_dstruct()._data.keys())
+
+    @property
+    def is_MultiIndex(self):
+        return all([isinstance(i,tuple) for i in self._struct_index])
+
+    def _item_handler(self,item):
+        
+        if isinstance(item,tuple):
+            return tuple(self._item_handler(k) for k in item)
+        if isinstance(item,numbers.Number):
+            return "%g"%item
+        elif isinstance(item,str):
+            return "%g"%float(item) if item.isnumeric() else item
+        else:
+            return str(item)
+
+    def _construct_op_1_check(self,index,array):
+        return all(len(i) == len(array) for i in index)
+
+    def _construct_op_2_check(self,index,array):
+        return len(index) == len(array)
+
+    def _check_index_type(self,index):
+        return all([isinstance(x,(tuple,list)) for x in index])
+
+    def index_constructor(self,index,array):
+        # two options for index construction
+        # list with two list => [outer_index, inner_index]
+        # list of tuples => each tuple an index in the data struct
+        if index is None:
+            index = list(range(array.shape[0]))
+        elif self._construct_op_1_check(index,array):
+            outer_index = None
+
+            if self._check_index_type(index):
+                if not len(index) == 2:
+                    msg = "This class can only currently handle up to two dimensional indices"
+                    raise ValueError(msg)
+
+                outer_index = list(self._item_handler(k) for k in index[0] ) 
+                inner_index = list(self._item_handler(k) for k in index[1] ) 
+                index = list(zip(outer_index,inner_index))
+            elif index is not None:
+                index = list(self._item_handler(k) for k in index ) 
+            else:
+                index = None
+
+        elif self._construct_op_2_check(index,array):
+            outer_index = None
+            if all(isinstance(x,tuple) for x in index):
+                if all(len(x) == 2 for x in index):
+                    inner_index = list(self._item_handler(k[1]) for k in index )
+                    outer_index = list(self._item_handler(k[0]) for k in index )
+                    index = list(zip(outer_index,inner_index))
+                else:
+                    msg = "This class can only currently handle up to two dimensional indices"
+                    raise ValueError(msg)
+            else:
+                index = list(self._item_handler(k) for k in index )
+        else:
+            msg = "The index list is the wrong size"
+            raise ValueError(msg)
+
+        return index
+
+    def get_index_order(self):
+
+        order = []
+        for x in self._struct_index:
+            hdf_key = self.hdf_key_contructor(x)
+            order.append(np.str(hdf_key))
+
+        order_num = np.argsort(np.array(order,dtype=np.str))
+        hdf_order = np.zeros_like(order_num,dtype=np.int32)
+        for i,num in enumerate(order_num):
+            hdf_order[num] = i
+
+        return hdf_order
+
+    def hdf_key_contructor(self,index,key=None):
+        if self.is_MultiIndex:
+            return "/".join([str(x) for x in index])
+        else:
+            return str(index)
+    
+    def construct_keys_from_hdf(self,hdf_obj,key=None):
+        keys_list =[]
+        outer_key = hdf_obj.keys()
+        for key in outer_key:
+            if hasattr(hdf_obj[key],'keys'):
+                inner_keys = ["/".join([key,ikey]) for ikey in hdf_obj[key].keys()]
+                keys_list.extend(inner_keys)
+            else:
+                keys_list.append(key)
+        if key is not None:
+            for k in keys_list:
+                k = "/".join([key,k])
+        return keys_list
+
+    def get_index(self):
+        return self._struct_index
+
+    def get_outer_index(self):
+        if self.is_MultiIndex:
+            return list(set([x[0] for x in self._struct_index]))
+        else:
+            msg = "This method cannot be used on datastructs with single dimensional indices"
+            raise AttributeError(msg)
+
+    def get_inner_index(self):
+        if self.is_MultiIndex:
+            return list(set([x[1] for x in self._struct_index]))
+        else:
+            return self.index
+
+    def getitem_check_key(self,key,err_msg=None,warn_msg=None):
+        if isinstance(key,tuple):
+            if len(key) > 1:
+                return self._getitem_process_multikey(key)
+            else:
+                return self._getitem_process_singlekey(*key)
+        else:
+            return self._getitem_process_singlekey(key)
+
+    def _getitem_process_multikey(self,key):
+        if not self.is_MultiIndex:
+            msg = "A multidimensional index passed but a single dimensional datastruct"
+            raise KeyError(msg)
+        key = self._item_handler(key)
+        if key in self._struct_index:
+            return key
+        else:
+            err = KeyError((f"The key provided ({key}) to the datastruct is"
+                            " not present and cannot be corrected internally."))
+            warn = UserWarning((f"The outer index provided is incorrect ({key[0]})"
+                        f" that is present (there is only one value present in the"
+                        f" datastruct ({self.get_outer_index()[0]})"))
+            
+            inner_key = self.check_inner(key[1],err)
+            outer_key = self.check_outer(key[0],err,warn)
+
+            return (outer_key, inner_key)
+
+    def _getitem_process_singlekey(self,key):
+        key = self._item_handler(key)
+
+        err_msg = (f"The key provided ({key}) to ""the datastruct is "
+                    "not present and cannot be corrected internally.")
+        err = KeyError(err_msg)
+
+        if key in self._struct_index:
+            return key
+        else:
+            outer_key = self.check_outer(None,err)
+            return (outer_key,key)
+        
+    def check_outer(self,key,err,warn=None):
+        key = self._item_handler(key)
+
+        if not self.is_MultiIndex:
+            raise err
+
+        if key not in self.get_outer_index(): 
+            if len(self.get_outer_index()) > 1:
+                raise err
+            else:
+                if warn is None:
+                    warnings.warn(warn,stacklevel=4)
+                key = self.get_outer_index()[0]
+
+        return key
+
+    def check_inner(self,key,err):
+        if key not in self.get_inner_index():
+            raise err
+        
+        return key
+
+    def setitem_process_multikey(self,key):
+        if not self.is_MultiIndex:
+            msg = "A multidimensional index passed but the datastruct is single dimensional"
+            raise KeyError(msg)
+
+        key = self._item_handler(key)
+
+        if key not in self._struct_index:
+            msg = f"The key {key} is not present in the datastruct's indices, if you want to "+\
+                "add this key create new datastruct and use the concat method"
+            raise KeyError(msg)
+
+        return key
+        
+    def setitem_process_singlekey(self,key):
+        key = self._item_handler(key)
+
+        if key not in self._struct_index:
+            msg = f"The key {key} is not present in the datastruct's indices, if you want to "+\
+                "add this key create new datastruct and use the concat method"
+            raise KeyError(msg)
+
+        return key
+        
+class hdfHandler:
+
+    _available_ext = ['.h5','.hdf5']
+    _write_modes = ['r+','w','w-','x','a']
+    _file_must_exist_modes = ['r','w-','x']
+    
+    def __init__(self,filename,mode='r',key=None):
+        
+        self._check_h5_file_name(filename,mode)
+
+        self._hdf_file = h5py.File(filename,mode=mode)
+
+        self._hdf_data = self._check_h5_key(self._hdf_file,key,mode=mode)
+
+    def __getattr__(self,attr):
+        if hasattr(self._hdf_data,attr):
+            return getattr(self._hdf_data,attr)
+        else:
+            msg = f"The {hdfHandler.__name__} class nor its HDF data object as attribute {attr}"
+            raise AttributeError(msg)
+
+    def __getitem__(self,key):
+        if not self.check_key(key,groups_only=False):
+            msg = (f"The key {key} doesn't exist in the HDF file "
+                    f"{self._hdf_file.filename} at location {self._hdf_data.name}")
+            raise KeyError(msg)
+
+        return self._hdf_data.__getitem__(key)
+
+    def __setitem__(self,key,value):
+        self._hdf_data.__setitem__(key,value)
+
+    def extract_array_by_key(self,key):
+        return np.array(self._hdf_data[key][:])
+
+    def get_index_from_key(self,key):
+        if key.count("/")>0:
+            return tuple(key.split("/"))
+        else:
+            return key
+
+    def _check_h5_file_name(self,filename,mode):
+
+        ext = os.path.splitext(filename)[-1]
+        
+        if ext not in self._available_ext:
+            msg = "The file extention for HDF5 files must be %s not %s"%(self._available_ext,ext)
+            raise ValueError(msg)
+
+        if self._file_must_exist(mode):
+            if not os.path.isfile(filename):
+                msg = f"Using file mode {mode} requires the file to exist"
+                raise ValueError(msg)
+
+    def _write_allowed(self,mode):
+        return bool(set(self._write_modes).intersection(mode))
+
+    def _file_must_exist(self,mode):
+        return bool(set(self._file_must_exist_modes).intersection(mode))
+
+    def check_type_id(self,class_obj):
+        if "type_id" not in self.attrs.keys():
+            return
+
+        if cp.rcParams["relax_HDF_type_checks"]:
+            return
+
+        id = str(self._generate_type_id(class_obj))
+
+        module, class_name = id.split("/")
+
+        type_id = str(self.attrs['type_id'])
+
+        type_m, type_c = id.split("/")
+
+        if class_name != type_c:
+            msg = ("The class_names do not match"
+                    " for the HDF type id check")
+            raise ValueError(msg)
+
+        if module != type_m:
+            msg = "The calling modules do match the HDF type id"
+            warnings.warn(msg)
+            
+
+    def set_type_id(self,class_obj):
+        id = self._generate_type_id(class_obj)
+
+        self.attrs["type_id"] = id
+
+
+    def _generate_type_id(self,class_obj):
+        if not isinstance(class_obj,type):
+            msg = "class needs to be of instance type to generate type id"
+        module = class_obj.__module__
+        class_name = class_obj.__name__
+        return np.string_("/".join([module,class_name]))
+
+    def check_key(self,key,groups_only=True):
+        return self._check_key_recursive(self._hdf_data,key,groups_only)
+
+    def _check_h5_key(self,h5_obj,key,mode=None,groups_only=True):
+        if mode is None:
+            mode = self._hdf_file.mode
+
+        avail_keys = self._get_key_recursive(h5_obj,groups_only)
+
+        if self._check_key_recursive(h5_obj,key,groups_only):
+            return h5_obj[key]
+        else:
+            if key is None:
+                return h5_obj
+            elif self._write_allowed(mode):
+                return h5_obj.create_group(key)
+            else:
+                msg = (f"Key {key} not found in file HDF "
+                        f"file, keys available are {avail_keys}")
+                raise KeyError(msg)
+
+    def _check_key_recursive(self,h5_obj,key,groups_only=True):
+        avail_keys = self._get_key_recursive(h5_obj,groups_only)
+
+        key = os.path.join(h5_obj.name,key)
+
+        return key in avail_keys
+    
+    def _get_key_recursive(self,h5_obj,groups_only=True):
+
+        if groups_only:
+            keys = [key for key in h5_obj.keys() if hasattr(h5_obj[key],'keys')]
+        else:
+            keys= list(h5_obj.keys()) if hasattr(h5_obj,'keys') else []
+
+        all_key = []
+        for key in keys:
+            all_key.append(h5_obj[key].name)
+            all_key.extend(self._get_key_recursive(h5_obj[key],groups_only))
+
+        return all_key
+        
+    def construct_keys_from_hdf(self,key=None):
+        keys_list =[]
+        outer_key = self._hdf_data.keys()
+        for key in outer_key:
+            if hasattr(self._hdf_data[key],'keys'):
+                inner_keys = ["/".join([key,ikey]) for ikey in self._hdf_data[key].keys()]
+                keys_list.extend(inner_keys)
+            else:
+                keys_list.append(key)
+        if key is not None:
+            for k in keys_list:
+                k = "/".join([key,k])
+        return keys_list
+
+    def __del__(self):
+        self._hdf_file.close()
+
 class datastruct:
+
+
     def __init__(self,*args,from_hdf=False,**kwargs):
+
+        self._indexer = structIndexer(self)
 
         from_array=False; from_dict = False
         if isinstance(args[0],np.ndarray):
             from_array=True
+
         elif isinstance(args[0],dict):
             from_dict=True
+            
         elif not from_hdf:
-            msg = "No extract type selected"
+            msg = (f"No valid initialisation method for the {datastruct.__name__}"
+                    " type has been found from arguments")
             raise ValueError(msg)
 
         if from_array:
@@ -49,158 +427,34 @@ class datastruct:
             self._dict_ini(*args,**kwargs)
         elif from_hdf:
             self._file_extract(*args,**kwargs)
-        else:
-            msg = f"This is not a valid initialisation method for the {datastruct.__name__} type"
-            raise ValueError(msg)
+
         
     @classmethod
     def from_hdf(cls,*args,**kwargs):
         return cls(*args,from_hdf=True,**kwargs)
 
-    def _file_extract(self,filename,*args,key=None,**kwargs):
-        hdf_file = h5py.File(filename,mode='r')
-        if key is not None:
-            hdf_data = hdf_file[key]
-        else:
-            hdf_data= hdf_file
-        
-        pd_DF_keys = ['axis0', 'block0_items', 'block0_values']
-        if all([key in list(hdf_data.keys()) for key in pd_DF_keys]):
-            self._extract_pd_DataFrame(filename,*args,key=key,**kwargs)
-        else:
-            self._hdf_extract(filename,key=key)
-        hdf_file.close()
-    
-    def _construct_key(self,hdf_obj,key=None):
-            keys_list =[]
-            outer_key = hdf_obj.keys()
-            for key in outer_key:
-                if hasattr(hdf_obj[key],'keys'):
-                    inner_keys = ["/".join([key,ikey]) for ikey in hdf_obj[key].keys()]
-                    keys_list.extend(inner_keys)
-                else:
-                    keys_list.append(key)
-            if key is not None:
-                for k in keys_list:
-                    k = "/".join([key,k])
-            return keys_list
+    def _file_extract(self,filename,key=None):
+        hdf_obj = hdfHandler(filename,mode='r',key=key)
 
-    def _hdf_extract(self,filename,key=None):
-
-        
-
-        try:
-            hdf_file = h5py.File(filename,mode='r')
-            if key is not None:
-                hdf_data = hdf_file[key]
-            else:
-                hdf_data= hdf_file
+        hdf_obj.check_type_id(self.__class__)
                     
-            keys = self._construct_key(hdf_data)
-            if 'order' in hdf_data.attrs.keys():
-                order = list(hdf_data.attrs['order'][:])
-                keys = [keys[i] for i in order]
-                
-            self._data = {}
-            for key in keys:
-                if key.count("/")>0:
-                    index = tuple(key.split("/"))
-                else:
-                    index = key
-                self._data[index] = np.array(hdf_data[key][:]).astype(cp.rcParams['dtype'])
-        finally:
-            hdf_file.close()
+        keys = hdf_obj.construct_keys_from_hdf()
 
-    # @classmethod
-    # def from_DataFrame(cls,filename,shapes=None,key=None):
-    #     return cls(filename,shapes=shapes,from_DF=True,key=key)
-
-    def _extract_pd_DataFrame(self,filename,shapes=None,key=None):
-        indices = None
-        if shapes is not None:
-            dataFrame = pd.read_hdf(filename,key=key).data(shapes)
-            indices = dataFrame.index
+        if 'order' in hdf_obj.attrs.keys():
+            order = list(hdf_obj.attrs['order'][:])
+            keys = [keys[i] for i in order]
             
-        else:
-            dataFrame = pd.read_hdf(filename,key=key).coord()
-            indices = dataFrame.columns
+        self._data = {}
+        for key in keys:
+            index = hdf_obj.get_index_from_key(key)
+            self._data[index] = hdf_obj.extract_array_by_key(key).astype(cp.rcParams['dtype'])
 
-        index = list(indices)
-        if self._is_multidim():
-            for i,index in enumerate(index):
-                if isinstance(index[i][0],numbers.Number):
-                    if np.isnan(index[i][0]):
-                        index[i] = (None,*index[i][1:])
-        
-        if shapes is not None:
-            self._data = {i : dataFrame.data[i].astype(cp.rcParams['dtype']) for i in index}
-        else:
-            self._data = {i : dataFrame.coord[i].astype(cp.rcParams['dtype']) for i in index}
-
-    
     def _array_ini(self,array,index=None,copy=False):
         
-        index = self._index_construct(index,array)
-        if index is None:
-            index = list(range(array.shape[0]))
-
-        if len(index) != len(array):
-            msg = "The length of the indices must be the same as the outer dimension of the array"
-            raise ValueError(msg)
+        index = self._indexer.index_constructor(index,array)
 
         self._data = {i : value.astype(cp.rcParams['dtype'],copy=copy) for i, value in zip(index,array)}
 
-    def _index_construct(self,index,array):
-        
-        def _item_handler(item):
-            if isinstance(item,numbers.Number):
-                return "%g"%item
-            elif isinstance(item,str):
-                return "%g"%float(item) if item.isnumeric() else item
-            else:
-                return str(item)
-
-        if all(len(i) == len(array) for i in index):
-            outer_index = None
-            if all([hasattr(x,"__iter__") and not isinstance(x,str) for x in index]):
-                if not len(index) == 2:
-                    msg = "This class can only currently handle up to two dimensional indices"
-                    raise ValueError(msg)
-
-                outer_index = list(_item_handler(k) for k in index[0] ) 
-                inner_index = list(_item_handler(k) for k in index[1] ) 
-                index = [outer_index,inner_index]
-                outer_index = list(set(outer_index))
-                index = list(zip(*index))
-            elif index is not None:
-                index = list(_item_handler(k) for k in index ) 
-                outer_index = [None]
-            else:
-                index = None
-                outer_index = [None]
-
-        elif len(index) == len(array):
-            outer_index = None
-            if all(isinstance(x,tuple) for x in index):
-                if all(len(x) == 2 for x in index):
-                    inner_index = list(_item_handler(k[1]) for k in index )
-                    outer_index = list(_item_handler(k[0]) for k in index )
-                    index = list(zip(outer_index,inner_index))
-                    outer_index = list(set(outer_index))
-                else:
-                    msg = "This class can only currently handle up to two dimensional indices"
-                    raise ValueError(msg)
-            else:
-                index = list(_item_handler(k) for k in index )
-                outer_index = None
-        else:
-            msg = "The index list is the wrong size"
-            raise ValueError(msg)
-
-        return index
-
-
-    
     def _dict_ini(self,dict_data,copy=False):
         if not all([isinstance(val,np.ndarray) for val in dict_data.values()]):
             msg = "The type of the values of the dictionary must be a numpy array"
@@ -209,14 +463,15 @@ class datastruct:
         index = list(dict_data.keys())
         array = list(dict_data.values())
 
-        index = self._index_construct(index,array)
+        index = self._indexer.index_constructor(index,array)
 
-        self._data = {i : value.astype(cp.rcParams['dtype'],copy=copy) for i, value in zip(index,array)}
+        self._data = {i : value.astype(cp.rcParams['dtype'],copy=copy)\
+                     for i, value in zip(index,array)}
 
 
 
     def to_hdf(self,filepath,key=None,mode='a'):
-        hdffile=h5py.File(filepath,mode=mode)
+        hdf_obj =hdfHandler(filepath,mode=mode,key=key)
         def convert2str(index):
             if hasattr(index,"__iter__") and not isinstance(index,str):
                 k = [str(x) for x in index]
@@ -224,29 +479,16 @@ class datastruct:
                 k = str(index)
             return k
 
-        hdf_data = hdffile if key is None else hdffile.create_group(key)
-        order =[]
+        hdf_order = self._indexer.get_index_order()
         for k, val in self: 
-            k = convert2str(k)
-            hdf_key = None
-            if hasattr(k,"__iter__") and not isinstance(k,str):
-                hdf_key =   "/".join(k)
-            else:
-                hdf_key = k
-
+            hdf_key = self._indexer.hdf_key_contructor(k)
             
-            order.append(np.str(hdf_key))
-            hdf_data.create_dataset(hdf_key,data=val)
+            hdf_obj.create_dataset(hdf_key,data=val)
 
-        order_num = np.argsort(np.array(order,dtype=np.str))
-        hdf_order = np.zeros_like(order_num,dtype=np.int32)
-        for i,num in enumerate(order_num):
-            hdf_order[num] = i
-        hdf_data.attrs['order'] = hdf_order
-        hdffile.close()
+        hdf_obj.attrs['order'] = hdf_order
 
     def _is_multidim(self):
-        return all([isinstance(i,tuple) for i in self.index])
+        return self._indexer.is_MultiIndex
 
     def equals(self,other_datastruct):
         if not isinstance(other_datastruct,datastruct):
@@ -262,34 +504,15 @@ class datastruct:
 
     @property
     def index(self):
-        return list(self._data.keys())
-
-    # @index.setter
-    # def index(self,index):
-    #     if len(index) != len(self._data):
-    #         msg = "The index given must be the same as the length of the data" 
-    #         raise ValueError(msg)
-    #     values = self._obj.values()
-
+        return self._indexer.get_index()
 
     @property
     def outer_index(self):
-        if self._is_multidim():
-            return list(set([x[0] for x in self.index]))
-        else:
-            msg = "This method cannot be used on datastructs with single dimensional indices"
-            raise AttributeError(msg)
+        return self._indexer.get_outer_index()
 
     @property
     def inner_index(self):
-        if self._is_multidim():
-            return list(set([x[1] for x in self.index]))
-        else:
-            return self.index
-
-    # @times.setter
-    # def times(self,times):
-    #     self._times = times
+        return self._indexer.get_inner_index()
 
     @property
     def values(self):
@@ -297,6 +520,7 @@ class datastruct:
         if not all(x==shape_list[0] for x in shape_list):
             msg = "To use this function all the arrays in the datastruct must be the same shape"
             raise AttributeError(msg)
+
         stack_list = list(self._data.values())
         return np.stack(stack_list,axis=0)
 
@@ -307,126 +531,36 @@ class datastruct:
         return self._data.__str__()
         
     def __getitem__(self,key):
-        key = self._getitem_check_key(key)
+        key = self._indexer.getitem_check_key(key)
         return self._data[key]
-        
-    def _getitem_check_key(self,key,err_msg=None,warn_msg=None):
-        if isinstance(key,tuple):
-            if len(key) > 1:
-                return self._getitem_process_multikey(key,err_msg,warn_msg)
-            else:
-                return self._getitem_process_singlekey(*key,err_msg=err_msg)
-        else:
-            return self._getitem_process_singlekey(key,err_msg=err_msg)
-
-    def _getitem_process_multikey(self,key,err=None,warn=None):
-        if not self._is_multidim():
-            msg = "A multidimensional index passed but a single dimensional datastruct"
-            raise KeyError(msg)
-        key = tuple(str(k) if not isinstance(k,numbers.Number) else "%g"%k for k in key )
-
-        if key in self._data.keys():
-            return key
-        else:
-            err = KeyError((f"The key provided ({key}) to the datastruct is"
-                            " not present and cannot be corrected internally."))
-            warn = UserWarning((f"The outer index provided is incorrect ({key[0]})"
-                        f" that is present (there is only one value present in the"
-                        f" datastruct ({self.outer_index[0]})"))
-            
-            inner_key = self.check_inner(key[1],err)
-            outer_key = self.check_outer(key[0],err,warn)
-
-            return (outer_key, inner_key)
-
-    def _getitem_process_singlekey(self,key,err_msg=None):
-
-        if isinstance(key, numbers.Number):
-            key = "%g"%key
-        else:
-            key = str(key)
-
-        err_msg = (f"The key provided ({key}) to ""the datastruct is "
-                    "not present and cannot be corrected internally.")
-        err = KeyError(err_msg)
-
-        if key in self.index:
-            return key
-        else:
-            outer_key = self.check_outer(None,err)
-            return (outer_key,key)
 
     def check_outer(self,key,err,warn=None):
-        if isinstance(key, (float,int)):
-            key = "%.9g"%key
-        else:
-            key = str(key)
-
-        if not self._is_multidim():
-            raise err
-
-        if key not in self.outer_index: 
-            if len(self.outer_index) > 1:
-                raise err
-            else:
-                if warn is None:
-                    warnings.warn(warn,stacklevel=4)
-                key = self.outer_index[0]
-
-        return key
+        return self._indexer.check_outer(key,err,warn=warn)
 
     def check_inner(self,key,err):
-        if key not in self.inner_index:
-            raise err
-        
-        return key
+        return self._indexer.check_inner(key,err)
     
     def __setitem__(self,key,value):
         if not isinstance(value,np.ndarray):
             msg = f"The input array must be an instance of {np.ndarray.__name__}"
             raise TypeError(msg)
 
+        self.set_value(key,value)
+    
+    def set_value(self,key, value):
         if isinstance(key,tuple):
             if len(key) > 1:
-                self._setitem_process_multikey(key,value)
+                key = self._indexer.setitem_process_multikey(key)
             else:
-                self._setitem_process_singlekey(*key,value)
+                key = self._indexer.setitem_process_singlekey(*key)
         else:
-            self._setitem_process_singlekey(key,value)
-    
-    def _setitem_process_multikey(self,key,value):
-        if not self._is_multidim():
-            msg = "A multidimensional index passed but the datastruct is single dimensional"
-            raise KeyError(msg)
-        key = tuple(str(k) if not isinstance(k,numbers.Number) else "%g"%k for k in key )
+            key = self._indexer.setitem_process_singlekey(key)
 
-        if key not in self.index:
-            msg = f"The key {key} is not present in the datastruct's indices, if you want to "+\
-                "add this key create new datastruct and use the concat method"
-            raise KeyError(msg)
-        
         self._data[key] = value
 
-    def _setitem_process_singlekey(self,key,value):
-        if isinstance(key, numbers.Number):
-            key = "%g"%key
-        else:
-            key = str(key)
-
-        if key not in self.index:
-            msg = f"The key {key} is not present in the datastruct's indices, if you want to "+\
-                "add this key create new datastruct and use the concat method"
-            raise KeyError(msg)
-        
-        self._data[key] = value
         
     def __delitem__(self,key):
-        if isinstance(key,tuple):
-            key = tuple(str(k) if not isinstance(k,numbers.Number) else "%g"%k for k in key )
-        elif isinstance(key, numbers.Number):
-            key = "%g"%key
-        else:
-            key = str(key)
+        key = self._indexer._item_handler(key)
 
         del self._data[key]
             
@@ -440,8 +574,8 @@ class datastruct:
             for index in indices:
                 if index in self.index:
                     if not np.array_equal(arr_or_data[index],self[index]):
-                        e_msg = f"Key exists and arrays are not identical, you"+\
-                            " may be looking for the method {self.append.__name__}"
+                        e_msg = ("Key exists and arrays are not identical, you"
+                            f" may be looking for the method {self.append.__name__}")
                         raise ValueError(e_msg)
                 else:
                     self._data[index] = arr_or_data[index]
@@ -559,7 +693,9 @@ class datastruct:
         return datastruct(data)
 
 
+
 class coordstruct(datastruct):
+    
     def set_domain_handler(self,GeomHandler):
         self._domain_handler = GeomHandler
 
@@ -569,30 +705,6 @@ class coordstruct(datastruct):
             return self._domain_handler
         else: 
             return None
-    @property
-    def staggered(self):
-        XCC = self['x']
-        YCC = self['y']
-        ZCC = self['z']
-
-        XND = np.zeros(XCC.size+1) 
-        YND = np.zeros(YCC.size+1)
-        ZND = np.zeros(ZCC.size+1)
-
-        XND[0] = 0.0
-        YND[0] = 0 if self._domain_handler.is_cylind else -1.0
-        ZND[0] = 0.0
-
-        for i in  range(1,XND.size):
-            XND[i] = XND[i-1] + 2*XCC[i-1]-XND[i-1]
-        
-        for i in  range(1,YND.size):
-            YND[i] = YND[i-1] + 2*YCC[i-1]-YND[i-1]
-
-        for i in  range(1,ZND.size):
-            ZND[i] = ZND[i-1] + 2*ZCC[i-1]-ZND[i-1]
-
-        return self.__class__({'x':XND,'y':YND,'z':ZND})
 
     def _get_subdomain_lims(self,xmin=None,xmax=None,ymin=None,ymax=None,zmin=None,zmax=None):
         if xmin is None:
@@ -615,6 +727,7 @@ class coordstruct(datastruct):
         zmin_index, zmax_index = (self.index_calc('z',zmin)[0],
                                     self.index_calc('z',zmax)[0])
         return xmin_index,xmax_index,ymin_index,ymax_index,zmin_index,zmax_index
+
     def create_subdomain(self,xmin=None,xmax=None,ymin=None,ymax=None,zmin=None,zmax=None):
         (xmin_index,xmax_index,
         ymin_index,ymax_index,
@@ -626,15 +739,15 @@ class coordstruct(datastruct):
 
         return self.__class__({'x':xcoords, 'y':ycoords,'z':zcoords})
 
-    def vtkStructuredGrid(self):
-        x_coords = self.staggered['x']
-        y_coords = self.staggered['y']
-        z_coords = self.staggered['z']
+    # def vtkStructuredGrid(self):
+    #     x_coords = self.staggered['x']
+    #     y_coords = self.staggered['y']
+    #     z_coords = self.staggered['z']
 
-        Y,X,Z = np.meshgrid(y_coords,x_coords,z_coords)
+    #     Y,X,Z = np.meshgrid(y_coords,x_coords,z_coords)
 
-        grid = StructuredGrid(X,Z,Y)
-        return grid
+    #     grid = StructuredGrid(X,Z,Y)
+    #     return grid
 
     def index_calc(self,comp,vals):
         return indexing.coord_index_calc(self,comp,vals)
@@ -651,59 +764,42 @@ class coordstruct(datastruct):
         return plane, coord
 
 class flowstruct_base(datastruct):
-    def __init__(self,CoordDF,*args,from_hdf=False,Domain=None,**kwargs):
+    def __init__(self,coord_data,*args,from_hdf=False,**kwargs):
         super().__init__(*args,from_hdf=from_hdf,**kwargs)
-        self._set_coords(CoordDF,from_hdf,*args,**kwargs)   
-        self.set_domain_handler(Domain)
-
-    def set_domain_handler(self,Domain):
-        if Domain is not None:
-            if isinstance(Domain,DomainHandler):
-                self._domain_handler = Domain
-                self.CoordDF.set_domain_handler(Domain)
-            else:
-                msg = "Type of domain must be DomainHandler"
-                raise TypeError(msg)
+        
+        self._set_coords(coord_data,from_hdf,*args,**kwargs)   
 
     @property
     def Domain(self):
-        return self._domain_handler
+        return self._coorddata._domain_handler
 
     @property
     def CoordDF(self):
-        return self._CoordDF
+        return self._coorddata.centered
 
-    def _set_coords(self,CoordDF,from_hdf,*args,**kwargs):
+    @property
+    def Coord_ND_DF(self):
+        return self._coorddata.staggered
+
+    def _set_coords(self,coord_data,from_hdf,*args,**kwargs):
         if from_hdf:
-            file_name = args[0]
-            hdf_file = h5py.File(file_name,'r')
-            sub_key = "coordDF"
+            filename = args[0]
             if len(args)>1:
                 key=args[1]
             else:
                 key = kwargs.get('key',None)
 
-            if key is None:
-                key = sub_key
-            else:
-                key = "/".join([key,sub_key])
-            if key in hdf_file.keys():
-                self._CoordDF = coordstruct.from_hdf(file_name,key=key)
-            elif CoordDF is not None:
-                self._CoordDF = CoordDF
-            else:
-                msg = "If CoordDF datastruct is not present in HDF file, a datastruct must be provided"
-                raise KeyError(msg)
+            self._coorddata = coorddata.from_hdf(filename,key=key+"/coorddata")
         else:
-            self._CoordDF = coordstruct(CoordDF._data,copy=True)
+            self._coorddata = coord_data.copy()
 
     @classmethod
-    def from_hdf(cls,*args,CoordDF=None,**kwargs):
-        return cls(CoordDF,*args,from_hdf=True,**kwargs)
+    def from_hdf(cls,*args,coorddata=None,**kwargs):
+        return cls(coorddata,*args,from_hdf=True,**kwargs)
 
     def to_hdf(self,filepath,key=None,mode='a'):
         super().to_hdf(filepath,key=key,mode=mode)
-        self._CoordDF.to_hdf(filepath,key=key+"/coordDF",mode='a')
+        self._coorddata.to_hdf(filepath,key=key+"/coorddata",mode='a')
 
         
     @property
@@ -733,10 +829,10 @@ class flowstruct_base(datastruct):
     def concat(self,arr_or_data):
         msg= "The coordinate data of the flowstructs must be the same"
         if isinstance(arr_or_data,self.__class__):
-            if self._CoordDF != arr_or_data._CoordDF:
+            if self.CoordDF != arr_or_data.CoordDF:
                 raise ValueError(msg)
         elif hasattr(arr_or_data,"__iter__"):
-            if not all([self._CoordDF != arr._CoordDF for arr in arr_or_data]):
+            if not all([self.CoordDF != arr.CoordDF for arr in arr_or_data]):
                 raise ValueError(msg)
         super().concat(arr_or_data)
 
@@ -748,13 +844,13 @@ class flowstruct_base(datastruct):
         if isinstance(other_obj,self.__class__):
             msg= "The coordinate data of the flowstructs must be the same"
             if isinstance(other_obj,self.__class__):
-                if not self._CoordDF != other_obj._CoordDF:
+                if not self.CoordDF != other_obj.CoordDF:
                     raise ValueError(msg)
         super()._arith_binary_op(other_obj,func)
 
     def copy(self):
         cls = self.__class__
-        return cls(self._CoordDF,self._data,copy=True)
+        return cls(self._coorddata,self._data,copy=True)
 
 class VTKstruct:
     def __init__(self,flowstruct_obj):
@@ -763,7 +859,7 @@ class VTKstruct:
             raise TypeError(msg)
 
         self._flowstruct = flowstruct_obj
-        self._grid = self._flowstruct.CoordDF.vtkStructuredGrid()
+        self._grid = self._flowstruct._coorddata.create_vtkStructuredGrid()
 
     def __getattr__(self,attr):
         if hasattr(self._grid,attr):
@@ -862,20 +958,6 @@ class VTKstruct:
             raise ValueError(msg)
 
         self._flowstruct.concat(other_VTKstruct._flowstruct)
-        # other_vtk_cell_keys = other_VTKstruct._grid.cell_arrays.keys()
-        # other_vtk_point_keys = other_VTKstruct._grid.point_arrays.keys()
-
-        # if any([key in self._grid.cell_arrays.keys() for key in other_vtk_cell_keys]):
-        #     msg = "To combine two VTKstruct's, they cannot have the any keys the same"
-
-        # if any([key in self._grid.point_arrays.keys() for key in other_vtk_point_keys]):
-        #     msg = "To combine two VTKstruct's, they cannot have the any keys the same"
-
-        # for key in other_vtk_cell_keys:
-        #     self._grid.cell_arrays[key] = other_VTKstruct._grid.cell_arrays[key]
-
-        # for key in other_vtk_point_keys:
-        #     self._grid.point_arrays[key] = other_VTKstruct._grid.point_arrays[key]
 
         return self
 
@@ -883,7 +965,7 @@ class flowstruct3D(flowstruct_base):
 
     def _set_coords(self,CoordDF,from_hdf,*args,**kwargs):
         super()._set_coords(CoordDF,from_hdf,*args,**kwargs)
-        if len(self._CoordDF.index) != 3:
+        if len(self.CoordDF.index) != 3:
             msg = ("for a 3D flowstruct the number of keys in the "
                     f"coordstruct should be 3 not {len(self._CoordDF.index)}")
             raise ValueError(msg)
@@ -902,13 +984,14 @@ class flowstruct3D(flowstruct_base):
         z_size = 1.2*(np.amax(z_coords) - np.amin(z_coords))
 
         return x_size,z_size
+        
     def create_subdomain(self,xmin=None,xmax=None,ymin=None,ymax=None,zmin=None,zmax=None):
         (xmin_index,xmax_index,
         ymin_index,ymax_index,
         zmin_index,zmax_index) = self.CoordDF._get_subdomain_lims(xmin,xmax,ymin,ymax,zmin,zmax)
 
-
-        subCoordDF = self.CoordDF.create_subdomain(xmin,xmax,ymin,ymax,zmin,zmax)
+        new_coorddata = self._coorddata.create_subdomain(xmin,xmax,ymin,ymax,zmin,zmax)
+        
         shape = (len(self.index),zmax_index-zmin_index,
                 ymax_index-ymin_index,
                 xmax_index-xmin_index )
@@ -919,13 +1002,12 @@ class flowstruct3D(flowstruct_base):
                                 ymin_index:ymax_index,
                                 xmin_index:xmax_index]
 
-        return self.__class__(subCoordDF,vals_array,index=self.index,Domain=self.Domain)
-
+        return self.__class__(new_coorddata,vals_array,index=self.index)
 
 
     def create_slice(self,index):
         slice_dict = {index : self[index]}
-        return self.__class__(self.CoordDF,slice_dict,Domain=self.Domain)
+        return self.__class__(self._coorddata,slice_dict)
 
     def to_vtk(self,file_name):
         
@@ -1078,6 +1160,7 @@ class flowstruct3D(flowstruct_base):
 
 class metastruct():
     def __init__(self,*args,from_hdf=False,**kwargs):
+
         from_list = False; from_dict=False
         if isinstance(args[0],list):
             from_list = True
@@ -1094,6 +1177,7 @@ class metastruct():
             self._dict_extract(*args,**kwargs)
         elif from_hdf:
             self._file_extract(*args,**kwargs)
+
     def _conversion(self,old_key,*replacement_keys):
         """
         Converts the old style metadata to the new style metadata
@@ -1176,31 +1260,26 @@ class metastruct():
 
         self._meta = {i:val for i, val in zip(index,list_vals)}
         self._update_keys()
+
     def _dict_extract(self,dictionary):
         self._meta = dictionary
         self._update_keys()
 
     def to_hdf(self,filename,key=None,mode='a'):
-        # hdf_key1 = 'meta_vals'
-        # hdf_key2 = 'meta_index'
-        # if key is not None:
-        #     hdf_key1 = "/".join([key,hdf_key1])
-        #     hdf_key2 = "/".join([key,hdf_key2])
+        hdf_obj = hdfHandler(filename,mode=mode,key=key)
+        hdf_obj.set_type_id(self.__class__)
+        str_items = hdf_obj.create_group('meta_str')
 
-        hdf_file = h5py.File(filename,mode=mode)
         for k, val in self._meta.items():
-            if key is not None:
-                k = "/".join([key,k])
+
             if not hasattr(val,"__iter__") and not isinstance(val,str):
-                hdf_file.create_dataset(k,data=np.array([val]))
+                hdf_obj.create_dataset(k,data=np.array([val]))
             else:
                 if isinstance(val,str):
-                    hdf_file.attrs[key] = val.encode('utf-8')
+                    str_items.attrs[key] = val.encode('utf-8')
                 else:
-                    hdf_file.create_dataset(k,data=np.array(val))
-        # hdf_file.create_dataset(hdf_key2,data=index)
+                    hdf_obj.create_dataset(k,data=np.array(val))
 
-        hdf_file.close()
 
 
     @classmethod
@@ -1208,65 +1287,64 @@ class metastruct():
         return cls(*args,from_hdf=True,**kwargs)
 
     def _file_extract(self,filename,*args,key=None,**kwargs):
-        hdf_file = h5py.File(filename,mode='r')
-        if key is not None:
-            hdf_data = hdf_file[key]
-        else:
-            hdf_data= hdf_file
+        hdf_obj = hdfHandler(filename,mode='r',key=key)
+
+        index = list(hdf_obj.keys())
+        list_vals=[]
+        for k in index:
+            val = list(hdf_obj[k])
+            if len(val)==1:
+                val = val[0]
+            list_vals.append(val)
+
+        index.extend(hdf_obj.attrs.keys())
+
+        str_items = hdf_obj['meta_str'] if 'meta_str' in hdf_obj.keys() else hdf_obj
+        for k in str_items.attrs.keys():
+            list_vals.append(str_items.attrs[k].decode('utf-8'))
         
-        pd_DF_keys = ['axis0', 'block0_items', 'block0_values']
-        if all([key in list(hdf_data.keys()) for key in pd_DF_keys]):
-            self._extract_pd_DataFrame(filename,*args,key=key,**kwargs)
-        else:
-            self._hdf_extract(filename,key=key) 
-        hdf_file.close()
+        self._meta = {i:val for i, val in zip(index,list_vals)}
+
 
         self._update_keys()
 
-    def _hdf_extract(self,filename,key=None):
-        try:
-            hdf_file = h5py.File(filename,mode='r')
+    # def _hdf_extract(self,filename,key=None):
+    #     try:
+    #         hdf_file = h5py.File(filename,mode='r')
 
-            if key is None:
-                hdf_data = hdf_file
-            else:
-                hdf_data=hdf_file[key]
+    #         if key is None:
+    #             hdf_data = hdf_file
+    #         else:
+    #             hdf_data=hdf_file[key]
             
-            index = list(hdf_data.keys())
-            list_vals=[]
-            for k in index:
-                val = list(hdf_data[k][:])
-                if len(val)==1:
-                    val = val[0]
-                list_vals.append(val)
-            index.extend(hdf_data.attrs.keys())
-            for k in hdf_data.attrs.keys():
-                list_vals.append(hdf_data.attrs[key].decode('utf-8'))
-        finally:
-            hdf_file.close()
-        self._meta = {i:val for i, val in zip(index,list_vals)}
-
-    def _extract_pd_DataFrame(self,filename,key=None):
-        dataFrame = pd.read_hdf(filename,key=key)
-        list_vals = []
-        for index in dataFrame.index:
-            val = list(dataFrame.loc[index].dropna().values) 
-            if len(val) ==1:
-                list_vals.append(val[0])
-            else:
-                list_vals.append(val)
-        self._list_extract(list_vals,index=list(dataFrame.index))
+    #         index = list(hdf_data.keys())
+    #         list_vals=[]
+    #         for k in index:
+    #             val = list(hdf_data[k][:])
+    #             if len(val)==1:
+    #                 val = val[0]
+    #             list_vals.append(val)
+    #         index.extend(hdf_data.attrs.keys())
+    #         for k in hdf_data.attrs.keys():
+    #             list_vals.append(hdf_data.attrs[key].decode('utf-8'))
+    #     finally:
+    #         hdf_file.close()
+    #     self._meta = {i:val for i, val in zip(index,list_vals)}
 
     @property
     def index(self):
         return self._meta.keys()
 
     def __getitem__(self,key):
+        if key not in self._meta.keys():
+            msg = "key not found in metastruct"
+            raise KeyError(msg)
         return self._meta[key]
 
     def __setitem__(self,key,value):
         warn_msg = "item in metastruct being manually overriden, this may be undesireable"
         warnings.warn(warn_msg)
+
         self._meta[key] = value
 
     def copy(self):
@@ -1277,113 +1355,3 @@ class metastruct():
 
     def __deepcopy__(self,memo):
         return self.copy()
-
-# warnings.filterwarnings('ignore',category=UserWarning)
-# @pd.api.extensions.register_dataframe_accessor("data")
-# class DataFrame():
-#     def __init__(self,pandas_obj):
-#         self._obj = pandas_obj
-#         self._reshape = None
-#         self._active=False
-
-#     def __call__(self, shape):
-#         self._validate()
-#         self.FrameShape = shape
-#         return self._obj
-
-#     def _validate(self):
-#         cols = self._obj.columns
-#         if not all([type(col)==int for col in cols]):
-#             msg = "The columns must be integers the use this attribute"
-#             raise ValueError(msg)
-#     @property
-#     def FrameShape(self):
-#         return self._reshape
-
-#     @FrameShape.setter
-#     def FrameShape(self,shape):
-#         self._FrameShapeHelper(shape)
-#         self._reshape = shape
-    
-#     def _FrameShapeHelper(self,shape):
-#         msg = "The shape provided to this function must be able to"+\
-#              f" reshape an array of the appropriate size {self._obj.shape}."+\
-#             f" Shape provided {shape}"
-#         if hasattr(shape[0],"__iter__"):
-
-#             size_list = [series.dropna().size for _,series in self._obj.iterrows()]
-#             for shape_i in shape:
-#                 num_true = list(size_list == np.prod(shape_i)).count(True)
-#                 if  num_true ==0:
-#                     raise ValueError(msg)
-#                 elif num_true > 1:
-#                     warn_msg = "The array of this size appears more than "+\
-#                                 "once data attribute should not be used"
-#                     warnings.warn(warn_msg,stacklevel=2)
-#                     break
-#                 else:
-#                     self._active=True
-                
-#         else:
-#             if np.prod(shape) not in self._obj.shape:
-#                 raise ValueError(msg)
-#             self._active=True
-        
-
-
-#     def __getitem__(self,key):
-#         if not self._active:
-#             raise RuntimeError("This functionality cannot be used here")
-#         if self._reshape is None:
-#             msg = "The shape has not been set, this function cannot be used"
-#             raise TypeError(msg)
-#         try:
-#             shape = self._getitem_helper(key)
-#             return self._obj.loc[key].dropna().values.reshape(shape)
-#         except KeyError as msg:
-#             if self._obj.index.nlevels==2:
-#                 times = list(set([float(x[0]) for x in self._obj.index]))
-#                 if len(times) ==1 or all(np.isnan(np.array(times))):
-#                     return self._obj.loc[times[0],key].dropna().values.reshape(shape)
-#                 else:
-#                     tb = sys.exc_info()[2]
-#                     raise KeyError(msg.args[0]).with_traceback(tb)
-#             else:
-#                 tb = sys.exc_info()[2]
-#                 raise KeyError(msg.args[0]).with_traceback(tb)
-
-#     def _getitem_helper(self,key):
-#         if hasattr(self.FrameShape[0],"__iter__"):
-#             arr_size = self._obj.loc[key].dropna().values.size
-#             for shape in self.FrameShape:
-#                 if np.prod(shape) == arr_size:
-#                     return shape
-#         else:
-#             return self.FrameShape
-
-
-# @pd.api.extensions.register_dataframe_accessor("coord")
-# class CoordFrame():
-#     def __init__(self,pandas_obj):
-#         self._obj = pandas_obj
-#         self._active = False
-
-#     def _validate(self):
-#         cols = self._obj.columns.to_list()
-#         msg = f"The columns of the DataFrame must be {['x','y','z']}"
-#         if not cols == ['x','y','z']:
-#             raise ValueError(msg)
-
-#     def __call__(self):
-#         self._validate()
-#         self._active = True
-#         return self._obj
-#     def __getitem__(self,key):
-#         if self._active:
-#             return self._obj[key].dropna().values
-#         else:
-#             msg = "This DataFrame extension is not active, the __call__ "+\
-#                         "special method needs to be called on the DataFrame"
-#             raise AttributeError(msg)
-            
-# warnings.resetwarnings()

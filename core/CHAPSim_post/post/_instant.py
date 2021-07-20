@@ -58,10 +58,6 @@ class CHAPSim_Inst(Common):
         if meta_data is None:
             meta_data = self._module._meta_class(path_to_folder,abs_path,tgpost)
         self._meta_data = meta_data
-        self.CoordDF = meta_data.CoordDF
-        self.NCL = meta_data.NCL
-
-        super().__init__(self._meta_data)
 
         time = misc_utils.check_list_vals(time)
 
@@ -72,8 +68,6 @@ class CHAPSim_Inst(Common):
                 local_DF = self._flow_extract(PhyTime,path_to_folder,abs_path,tgpost)
                 # concat_DF = [self.InstDF,local_DF]
                 self.InstDF.concat(local_DF)
-
-        self.shape = (self.NCL[2],self.NCL[1],self.NCL[0])
 
     @classmethod
     def from_hdf(cls,file_name,key=None):
@@ -95,14 +89,18 @@ class CHAPSim_Inst(Common):
     def _hdf_extract(self,file_name,key=None):
         if key is None:
             key = 'CHAPSim_Inst'
+
+        hdf_obj = cd.hdfHandler(file_name,'r',key=key)
+        hdf_obj.check_type_id(self.__class__)
+
         self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
-        self.CoordDF=self._meta_data.CoordDF
-        self.NCL=self._meta_data.NCL
 
-        super().__init__(self._meta_data)
+        self.InstDF = cd.flowstruct3D.from_hdf(file_name,coorddata=self._coorddata,key=key+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
 
-        self.shape = (self.NCL[2],self.NCL[1],self.NCL[0])
-        self.InstDF = cd.flowstruct3D.from_hdf(file_name,shapes=self.shape,Domain=self.Domain,CoordDF=self.CoordDF,key=key+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
+    @property
+    def shape(self):
+        inst_index = self.InstDF.index[0]
+        return self.InstDF[inst_index].shape
 
     def save_hdf(self,file_name,write_mode,key=None):
         """
@@ -121,8 +119,12 @@ class CHAPSim_Inst(Common):
         """
 
         if key is None:
-            key = 'CHAPSim_Inst'
-        self._meta_data.save_hdf(file_name,write_mode,key=key+'/meta_data')
+            key = self.__class__.__name__
+        
+        hdf_obj = cd.hdfHandler(file_name,write_mode,key=key)
+        hdf_obj.set_type_id(self.__class__)
+
+        self._meta_data.save_hdf(file_name,'a',key=key+'/meta_data')
         self.InstDF.to_hdf(file_name,key=key+'/InstDF',mode='a')
 
     def _flow_extract(self,Time_input,path_to_folder,abs_path,tgpost):
@@ -188,7 +190,7 @@ class CHAPSim_Inst(Common):
         index = [[Phy_string]*4,['u','v','w','P']]
 
         # creating datastruct so that data can be easily accessible elsewhere
-        Instant_DF = cd.flowstruct3D(self.CoordDF,flow_info,Domain=self.Domain,index=index,copy=False)# pd.DataFrame(flow_info1,index=index)
+        Instant_DF = cd.flowstruct3D(self._coorddata,flow_info,index=index,copy=False)# pd.DataFrame(flow_info1,index=index)
 
         for file in open_list:
             file.close()
@@ -442,7 +444,7 @@ class CHAPSim_Inst(Common):
         
         lambda2 = np.sort(S2_Omega2_eigvals,axis=3)[:,:,:,1]
         
-        return cd.flowstruct3D(self.CoordDF,{(PhyTime,'lambda_2'):lambda2},Domain=self.Domain)
+        return cd.flowstruct3D(self._coorddata,{(PhyTime,'lambda_2'):lambda2})
 
     @docstring.sub
     def plot_lambda2(self,vals_list,x_split_pair=None,PhyTime=None,y_limit=None,y_mode='half_channel',Y_plus=True,avg_data=None,colors=None,surf_kw=None,fig=None,ax=None,**kwargs):
@@ -522,7 +524,7 @@ class CHAPSim_Inst(Common):
         Q = 0.5*(np.trace(D,axis1=3,axis2=4,dtype=rcParams['dtype'])**2 - \
             np.trace(np.matmul(D,D,dtype=rcParams['dtype']),axis1=3,axis2=4,dtype=rcParams['dtype']))
         del D
-        return cd.flowstruct3D(self.CoordDF,{(PhyTime,'Q'):Q},Domain=self.Domain)
+        return cd.flowstruct3D(self._coorddata,{(PhyTime,'Q'):Q})
 
     def plot_Q_criterion(self,vals_list,x_split_pair=None,PhyTime=None,y_limit=None,y_mode='half_channel',Y_plus=True,avg_data=None,colors=None,surf_kw=None,fig=None,ax=None,**kwargs):
         PhyTime = self.check_PhyTime(PhyTime)
@@ -577,7 +579,7 @@ class CHAPSim_Inst(Common):
         vorticity[2] = gradient.Grad_calc(self.CoordDF,v_velo,'x') - gradient.Grad_calc(self.CoordDF,u_velo,'y')     
 
         index = [(PhyTime,x) for x in ['x','y','z']]
-        return cd.flowstruct3D(self.CoordDF,vorticity,Domain=self.Domain,index=index)
+        return cd.flowstruct3D(self._coorddata,vorticity,index=index)
 
     @docstring.sub
     def plot_vorticity_contour(self,comp,plane,axis_vals,PhyTime=None,avg_data=None,x_split_list=None,y_mode='half_channel',pcolor_kw=None,fig=None,ax=None,**kwargs):
@@ -688,7 +690,7 @@ class CHAPSim_Inst_tg(CHAPSim_Inst):
         kwargs['tgpost'] = self.tgpost
         super()._inst_extract(*args,**kwargs)
         
-        NCL1_io = self._meta_data.metaDF['NCL1_io']
+        NCL1_io = self.metaDF['NCL1_io']
         ioflowflg = True if NCL1_io > 2 else False
         
         if ioflowflg:

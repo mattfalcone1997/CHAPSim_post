@@ -41,16 +41,22 @@ from ._instant import CHAPSim_Inst
 _instant_class = CHAPSim_Inst
 
 class CHAPSim_fluct_base(Common):
+
     def save_hdf(self,file_name,write_mode,key=None):
         if key is None:
-            key= 'CHAPSim_fluct'
-        hdf_file = h5py.File(file_name,write_mode)
-        group = hdf_file.create_group(key)
-        group.create_dataset("NCL",data=np.array(self.shape))
-        hdf_file.close()
-        self.meta_data.save_hdf(file_name,'a',key+'/meta_data')
-        self.fluctDF.to_hdf(file_name,key=key+'/fluctDF',mode='a')#,format='fixed',data_columns=True)
+            key= self.__class__.__name__
 
+        hdf_obj = cd.hdfHandler(file_name,write_mode,key=key)
+        hdf_obj.set_type_id(self.__class__)
+
+        self._meta_data.save_hdf(file_name,'a',key+'/meta_data')
+        self.fluctDF.to_hdf(file_name,key=key+'/fluctDF',mode='a')
+
+    @property
+    def shape(self):
+        fluct_index = self.fluctDF.index[0]
+        return self.fluctDF[fluct_index].shape
+    
     def check_PhyTime(self,PhyTime):
         warn_msg = f"PhyTime invalid ({PhyTime}), varaible being set to only PhyTime present in datastruct"
         err_msg = f"PhyTime provided ({PhyTime}) is not in the {self.__class__.__name__} datastruct, recovery impossible"
@@ -270,13 +276,8 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
                 else:
                     inst_data += self._module._instant_class(time_inst_data,path_to_folder=path_to_folder,abs_path=abs_path,tgpost=False)
 
-        super().__init__(avg_data._meta_data)
-
         self.avg_data = avg_data
-        self.meta_data = avg_data._meta_data
-        self.NCL = self.meta_data.NCL
-        self.CoordDF = self.meta_data.CoordDF
-        self.shape = inst_data.shape
+        self._meta_data = avg_data._meta_data
 
         self.fluctDF = self._fluctDF_calc(inst_data,avg_data)
 
@@ -298,7 +299,7 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
                 fluct[j,i] = inst_values[i] -avg_values
             del inst_values
 
-        return cd.flowstruct3D(self.CoordDF,fluct,Domain=self.Domain,index=inst_data.InstDF.index.copy())
+        return cd.flowstruct3D(self._coorddata,fluct,index=inst_data.InstDF.index.copy())
     
 class CHAPSim_fluct_tg(CHAPSim_fluct_base):
     tgpost = True
@@ -323,12 +324,7 @@ class CHAPSim_fluct_tg(CHAPSim_fluct_base):
 
         self.fluctDF = self._fluctDF_calc(inst_data,avg_data)
         self.avg_data = avg_data
-        self.meta_data = avg_data._meta_data
-        self.NCL = self.meta_data.NCL
-        self.CoordDF = self.meta_data.CoordDF
-        self.shape = inst_data.shape
-
-        super().__init__(self.meta_data)
+        self._meta_data = avg_data._meta_data
     
     def _fluctDF_calc(self, inst_data, avg_data):
         avg_times = avg_data.get_times()

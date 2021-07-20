@@ -41,25 +41,24 @@ class CHAPSim_AVG_custom_t(cp.CHAPSim_AVG_tg_base):
 
         obj = super().with_phase_average(*args,**kwargs)
 
-        start = 0.0; end = obj._meta_data.metaDF['temp_start_end'][1] - obj._meta_data.metaDF['temp_start_end'][0]
-        obj._meta_data.metaDF['temp_start_end'] = [start,end]
+        start = 0.0; end = obj.metaDF['temp_start_end'][1] - obj.metaDF['temp_start_end'][0]
+        obj.metaDF['temp_start_end'] = [start,end]
         return obj
 
     def shift_times(self,val):
         super().shift_times(val)
-        self._metaDF['temp_start_end'][0] -= val
-        self._metaDF['temp_start_end'][1] -= val
+        self.metaDF['temp_start_end'][0] -= val
+        self.metaDF['temp_start_end'][1] -= val
     
     
     def conv_distance_calc(self):
         
         bulk_velo = self.bulk_velo_calc()
-        print(bulk_velo)
-        print(self._times)
+
         time0 = float(self._times[0])
         times = [float(x)-time0 for x in self._times]
 
-        accel_start = self._metaDF['temp_start_end'][0]
+        accel_start = self.metaDF['temp_start_end'][0]
         start_distance = bulk_velo[0]*(accel_start - time0)
         conv_distance = np.zeros_like(bulk_velo)
         for i , _ in enumerate(bulk_velo):
@@ -75,7 +74,7 @@ class CHAPSim_AVG_custom_t(cp.CHAPSim_AVG_tg_base):
 
         times = self._return_xaxis()
         dudt = np.gradient(U_infty,times,edge_order=2)
-        REN = self._metaDF['REN']
+        REN = self.metaDF['REN']
 
         accel_param = (1/(REN*U_infty**3))*dudt
         return accel_param
@@ -121,6 +120,11 @@ class CHAPSim_AVG_tg_conv(CHAPSim_AVG_tg):
         obj.CoordDF['x'] = obj.conv_distance_calc()
         return obj
 
+    # @property
+    # def CoordDF(self):
+    #     CoordDF = super().CoordDF
+    #     CoordDF['x'] = self.conv_distance_calc()
+    #     return CoordDF
 
     def _extract_avg(self,*args,**kwargs):
         super()._extract_avg(*args,**kwargs)
@@ -164,8 +168,6 @@ class CHAPSim_AVG_tg_conv(CHAPSim_AVG_tg):
 
         for index in self.DUDX2_tensorDF.index:
             self.DUDX2_tensorDF[index] = self.DUDX2_tensorDF[index][:,index_list]
-
-        self.shape=(self.shape[0],len(self._times))
 
     def plot_shape_factor(self,*args,**kwargs):
         fig, ax = super().plot_shape_factor(*args,**kwargs)    
@@ -265,7 +267,7 @@ class CHAPSim_perturb():
         if meta_data is None:
             meta_data = self.__avg_data._meta_data
         self._meta_data = meta_data
-        self.start  = self._meta_data.metaDF['temp_start_end'][0]
+        self.start  = self.metaDF['temp_start_end'][0]
     def tau_du_calc(self):
         
         tau_w = self.__avg_data.tau_calc()
@@ -326,7 +328,7 @@ class CHAPSim_perturb():
 
         x_loc = self.__avg_data._return_index(self.start)+1
 
-        REN = self._meta_data.metaDF['REN']
+        REN = self.metaDF['REN']
         rho_star = 1.0
         Cf_du = tau_du[x_loc:]/(0.5*REN*rho_star*(bulkvelo[x_loc:]-bulkvelo[0])**2)
         
@@ -346,9 +348,7 @@ class CHAPSim_perturb():
 
         mean_velo = self.mean_velo_peturb_calc('u')
 
-        print(self.start)
         x_loc = self.__avg_data._return_index(self.start)+1
-        print(x_loc)
         y_coords = self.__avg_data.CoordDF['y']
 
         U0_index = int(self.__avg_data.shape[0]*0.5)
@@ -356,7 +356,7 @@ class CHAPSim_perturb():
         disp_thickness = np.zeros(self.__avg_data.shape[1]-x_loc)
         theta_integrand = mean_velo[:U0_index]*(1-mean_velo[:U0_index])
         delta_integrand = 1-mean_velo[:U0_index]
-        print(delta_integrand.shape,disp_thickness.shape)
+
         for j in range(self.__avg_data.shape[1]-x_loc):
             mom_thickness[j] = integrate.simps(theta_integrand[:,j],y_coords[:U0_index])
             disp_thickness[j] = integrate.simps(delta_integrand[:,j],y_coords[:U0_index])
@@ -430,165 +430,165 @@ class CHAPSim_meta(cp.CHAPSim_meta):
         super().__init__(*args,**kwargs)
 _meta_class = CHAPSim_meta
 
-class CHAPSim_meta_moving_wall(CHAPSim_meta):
-    def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs)
-        fromfile = kwargs.pop('fromfile',False)
-        if fromfile:
-            self.__moving_wall = self._extract_moving_wall(*args,**kwargs)
-        else:
-            self.__moving_wall = self.__moving_wall_setup(self.NCL,self.path_to_folder,
-                                    self._abs_path,self.metaDF)
+# class CHAPSim_meta_moving_wall(CHAPSim_meta):
+#     def __init__(self,*args,**kwargs):
+#         super().__init__(*args,**kwargs)
+#         fromfile = kwargs.pop('fromfile',False)
+#         if fromfile:
+#             self.__moving_wall = self._extract_moving_wall(*args,**kwargs)
+#         else:
+#             self.__moving_wall = self.__moving_wall_setup(self.NCL,self.path_to_folder,
+#                                     self._abs_path,self.metaDF)
     
-    def _extract_moving_wall(self,file_name,key=None):
-        if key is None:
-            key = self.__class__.__name__
-        hdf_file = h5py.File(file_name,'r')
-        moving_wall = hdf_file[key+"/moving_wall"][:]
-        hdf_file.close()
-        return moving_wall
+#     def _extract_moving_wall(self,file_name,key=None):
+#         if key is None:
+#             key = self.__class__.__name__
+#         hdf_file = h5py.File(file_name,'r')
+#         moving_wall = hdf_file[key+"/moving_wall"][:]
+#         hdf_file.close()
+#         return moving_wall
 
-    def __moving_wall_setup(self,NCL,path_to_folder,abs_path,metaDF):
-        wall_velo = np.zeros(NCL[0])
-        if int(metaDF['temp_accelflg']) == 2:
-            full_path = misc_utils.check_paths(path_to_folder,'0_log_monitors',
-                                                            '.')
-            if not abs_path:
-                file_path = os.path.abspath(os.path.join(full_path,'CHK_TEMP_ACCEL.dat'))
-            else:
-                file_path = os.path.join(full_path,'CHK_TEMP_ACCEL.dat')
+#     def __moving_wall_setup(self,NCL,path_to_folder,abs_path,metaDF):
+#         wall_velo = np.zeros(NCL[0])
+#         if int(metaDF['temp_accelflg']) == 2:
+#             full_path = misc_utils.check_paths(path_to_folder,'0_log_monitors',
+#                                                             '.')
+#             if not abs_path:
+#                 file_path = os.path.abspath(os.path.join(full_path,'CHK_TEMP_ACCEL.dat'))
+#             else:
+#                 file_path = os.path.join(full_path,'CHK_TEMP_ACCEL.dat')
             
-            mw_file = open(file_path)
-            wall_velo_ND = np.loadtxt(mw_file,comments='#',usecols=1)
-            times = np.loadtxt(mw_file,comments='#',usecols=0)
-            file_times = misc_utils.time_extract(path_to_folder,abs_path)
-            print(wall_velo_ND)
-            def _interp(velo,times, file_times):
-                wall_velo = np.zeros_like(file_times)
-                for j,timef in enumerate(file_times):
-                    for i, time in enumerate(times):
-                        if time > timef:
-                            grad = (velo[i]-velo[i-1])/(times[i] - times[i-1])
-                            wall_velo[j] = velo[i-1] + grad*(timef-times[i-1])
-                            break
+#             mw_file = open(file_path)
+#             wall_velo_ND = np.loadtxt(mw_file,comments='#',usecols=1)
+#             times = np.loadtxt(mw_file,comments='#',usecols=0)
+#             file_times = misc_utils.time_extract(path_to_folder,abs_path)
+#             print(wall_velo_ND)
+#             def _interp(velo,times, file_times):
+#                 wall_velo = np.zeros_like(file_times)
+#                 for j,timef in enumerate(file_times):
+#                     for i, time in enumerate(times):
+#                         if time > timef:
+#                             grad = (velo[i]-velo[i-1])/(times[i] - times[i-1])
+#                             wall_velo[j] = velo[i-1] + grad*(timef-times[i-1])
+#                             break
                 
-                return wall_velo
+#                 return wall_velo
 
-            wall_velo = _interp(wall_velo_ND,times,file_times)
+#             wall_velo = _interp(wall_velo_ND,times,file_times)
 
-            mw_file.close()
-        return wall_velo
+#             mw_file.close()
+#         return wall_velo
 
-    def save_hdf(self,file_name,write_mode,key=None):
-        if key is None:
-            key = self.__class__.__name__
+    # def save_hdf(self,file_name,write_mode,key=None):
+    #     if key is None:
+    #         key = self.__class__.__name__
 
-        super().save_hdf(file_name,write_mode,key)
-        hdf_file = h5py.File(file_name,'a')
-        hdf_file[key].create_dataset("moving_wall",data=self.__moving_wall)
-        hdf_file.close()
+    #     super().save_hdf(file_name,write_mode,key)
+    #     hdf_file = h5py.File(file_name,'a')
+    #     hdf_file[key].create_dataset("moving_wall",data=self.__moving_wall)
+    #     hdf_file.close()
 
-    @property
-    def wall_velocity(self):
-        return self.__moving_wall
+    # @property
+    # def wall_velocity(self):
+    #     return self.__moving_wall
 
-class CHAPSim_AVG_moving_wall(CHAPSim_AVG_tg):
-    def __init__(self,*args,**kwargs):
-        if self._module._meta_class != CHAPSim_meta_moving_wall:
-            msg = ("This module can only be used if _meta_class is"
-                    " set to CHAPSim_meta_moving_wall")
-            raise ValueError(msg)
+# class CHAPSim_AVG_moving_wall(CHAPSim_AVG_tg):
+#     def __init__(self,*args,**kwargs):
+#         if self._module._meta_class != CHAPSim_meta_moving_wall:
+#             msg = ("This module can only be used if _meta_class is"
+#                     " set to CHAPSim_meta_moving_wall")
+#             raise ValueError(msg)
 
-        super().__init__(*args,**kwargs)
+#         super().__init__(*args,**kwargs)
         
-    def accel_param_calc(self):
-        U_mean = self.flow_AVGDF[None,'u']
-        U_infty = U_mean[int(self.NCL[1]*0.5)]
-        wall_velo = self._meta_data.wall_velocity
-        times = self._return_xaxis()
-        dudt = np.gradient(U_infty-wall_velo,times,edge_order=2)
-        REN = self._metaDF['REN']
+#     def accel_param_calc(self):
+#         U_mean = self.flow_AVGDF[None,'u']
+#         U_infty = U_mean[int(self.NCL[1]*0.5)]
+#         wall_velo = self._meta_data.wall_velocity
+#         times = self._return_xaxis()
+#         dudt = np.gradient(U_infty-wall_velo,times,edge_order=2)
+#         REN = self.metaDF['REN']
 
-        accel_param = (1/(REN*U_infty**3))*dudt
-        return accel_param
-    def _tau_calc(self,PhyTime):
+#         accel_param = (1/(REN*U_infty**3))*dudindext
+#         return accel_param
+#     def _tau_calc(self,PhyTime):
 
-        u_velo = self.flow_AVGDF[PhyTime,'u']
-        ycoords = self.CoordDF['y']
+#         u_velo = self.flow_AVGDF[PhyTime,'u']
+#         ycoords = self.CoordDF['y']
         
-        wall_velo = self._meta_data.wall_velocity
+#         wall_velo = self._meta_data.wall_velocity
         
-        tau_star = np.zeros_like(u_velo[1])
-        mu_star = 1.0
-        for i in range(self.shape[1]):
-            tau_star[i] = mu_star*(u_velo[0,i]-wall_velo[i])/(ycoords[0]--1.0)#*(-1*u_velo[1,i] + 4*u_velo[0,i] - 3*wall_velo[i])/(0.5*ycoords[1]-1.5*(-1.0)+y_coords[0])
+#         tau_star = np.zeros_like(u_velo[1])
+#         mu_star = 1.0
+#         for i in range(self.shape[1]):
+#             tau_star[i] = mu_star*(u_velo[0,i]-wall_velo[i])/(ycoords[0]--1.0)#*(-1*u_velo[1,i] + 4*u_velo[0,i] - 3*wall_velo[i])/(0.5*ycoords[1]-1.5*(-1.0)+y_coords[0])
     
-        return tau_star
-    def _bulk_velo_calc(self,PhyTime):
+#         return tau_star
+#     def _bulk_velo_calc(self,PhyTime):
 
-        u_velo = self.flow_AVGDF[PhyTime,'u'].copy()
-        ycoords = self.CoordDF['y']
-        wall_velo = self._meta_data.wall_velocity
+#         u_velo = self.flow_AVGDF[PhyTime,'u'].copy()
+#         ycoords = self.CoordDF['y']
+#         wall_velo = self._meta_data.wall_velocity
         
-        u_velo = u_velo - wall_velo
-        bulk_velo = 0.5*integrate.simps(u_velo,ycoords,axis=0)
+#         u_velo = u_velo - wall_velo
+#         bulk_velo = 0.5*integrate.simps(u_velo,ycoords,axis=0)
             
-        return bulk_velo
+#         return bulk_velo
 
-    def plot_bulk_velocity(self,relative=False,fig=None,ax=None,line_kw=None,**kwargs):
+#     def plot_bulk_velocity(self,relative=False,fig=None,ax=None,line_kw=None,**kwargs):
         
-        if relative:
-            bulk_velo = self._bulk_velo_calc(None)
-        else:
-            bulk_velo = super()._bulk_velo_calc(None)
+#         if relative:
+#             bulk_velo = self._bulk_velo_calc(None)
+#         else:
+#             bulk_velo = super()._bulk_velo_calc(None)
 
-        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
-        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
+#         kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+#         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
-        xaxis = self._return_xaxis()
+#         xaxis = self._return_xaxis()
 
-        line_kw = cplt.update_line_kw(line_kw,label=r"$U_{b0}$")
+#         line_kw = cplt.update_line_kw(line_kw,label=r"$U_{b0}$")
 
-        ax.cplot(xaxis,bulk_velo,**line_kw)
-        ax.set_ylabel(r"$U_b^*$")
-        ax.set_xlabel(r"$t^*$")
-        return fig, ax
+#         ax.cplot(xaxis,bulk_velo,**line_kw)
+#         ax.set_ylabel(r"$U_b^*$")
+#         ax.set_xlabel(r"$t^*$")
+#         return fig, ax
 
-    def _int_thickness_calc(self,PhyTime):
+#     def _int_thickness_calc(self,PhyTime):
 
-        U_mean = self.flow_AVGDF[PhyTime,'u'].copy()
-        y_coords = self.CoordDF['y']
+#         U_mean = self.flow_AVGDF[PhyTime,'u'].copy()
+#         y_coords = self.CoordDF['y']
 
-        wall_velo = self._meta_data.wall_velocity
-        U_mean = U_mean - wall_velo
-        U0 = U_mean[-1]
-        theta_integrand = np.zeros_like(U_mean)
-        delta_integrand = np.zeros_like(U_mean)
+#         wall_velo = self._meta_data.wall_velocity
+#         U_mean = U_mean - wall_velo
+#         U0 = U_mean[-1]
+#         theta_integrand = np.zeros_like(U_mean)
+#         delta_integrand = np.zeros_like(U_mean)
 
-        for i, _ in enumerate(theta_integrand):
-            theta_integrand[i] = (U_mean[i]/U0)*(1 - U_mean[i]/U0)
-            delta_integrand[i] = 1 - U_mean[i]/U0
+#         for i, _ in enumerate(theta_integrand):
+#             theta_integrand[i] = (U_mean[i]/U0)*(1 - U_mean[i]/U0)
+#             delta_integrand[i] = 1 - U_mean[i]/U0
 
-        mom_thickness = integrate.simps(theta_integrand,y_coords,axis=0)
-        disp_thickness = integrate.simps(delta_integrand,y_coords,axis=0)
-        shape_factor = disp_thickness/mom_thickness
+#         mom_thickness = integrate.simps(theta_integrand,y_coords,axis=0)
+#         disp_thickness = integrate.simps(delta_integrand,y_coords,axis=0)
+#         shape_factor = disp_thickness/mom_thickness
         
-        return disp_thickness, mom_thickness, shape_factor
+#         return disp_thickness, mom_thickness, shape_factor
 
-    def plot_mean_flow(self,times,*args,relative=False,fig=None,ax=None,**kwargs):
-        if not relative:
-            return super().plot_mean_flow(times,*args,fig=fig,ax=ax,**kwargs)
-        else:
-            fig, ax = super().plot_mean_flow(times,*args,fig=fig,ax=ax,**kwargs)
-            t_indices = self._return_index(times)
-            moving_wall = self._meta_data.moving_wall_calc()[t_indices]
-            for line, val in zip(ax.get_lines(),moving_wall):
-                ydata = line.get_ydata().copy()
-                ydata-=val
-                line.set_ydata(ydata)
-            ax.relim()
-            ax.autoscale_view()
-            return fig, ax
+#     def plot_mean_flow(self,times,*args,relative=False,fig=None,ax=None,**kwargs):
+#         if not relative:
+#             return super().plot_mean_flow(times,*args,fig=fig,ax=ax,**kwargs)
+#         else:
+#             fig, ax = super().plot_mean_flow(times,*args,fig=fig,ax=ax,**kwargs)
+#             t_indices = self._return_index(times)
+#             moving_wall = self._meta_data.wall_velocity[t_indices]
+#             for line, val in zip(ax.get_lines(),moving_wall):
+#                 ydata = line.get_ydata().copy()
+#                 ydata-=val
+#                 line.set_ydata(ydata)
+#             ax.relim()
+#             ax.autoscale_view()
+#             return fig, ax
 class CHAPSim_fluct_tg(cp.CHAPSim_fluct_tg):
     pass
 _fluct_tg_class = CHAPSim_fluct_tg
@@ -609,7 +609,6 @@ class CHAPSim_momentum_budget_tg(cp.CHAPSim_Momentum_budget_tg):
 
         otherBudgetDF =  super()._budget_extract(PhyTime, comp)
         budgetDF.concat(otherBudgetDF)
-        print(budgetDF.values.shape,budgetDF.index)
         return budgetDF
         # array_concat.insert(0,transient)
         # budget_index.insert(0,'transient')
@@ -643,7 +642,7 @@ class CHAPSim_momentum_budget_tg(cp.CHAPSim_Momentum_budget_tg):
         U_mean = self.avg_data.flow_AVGDF[PhyTime,'u']
         times = self.avg_data._return_xaxis()
 
-        REN = self.avg_data._metaDF['REN']
+        REN = self.avg_data.metaDF['REN']
         d2u_dy2 = self.Domain.Grad_calc(self.avg_data.CoordDF,
                     self.Domain.Grad_calc(self.avg_data.CoordDF,U_mean,'y'),'y')
         

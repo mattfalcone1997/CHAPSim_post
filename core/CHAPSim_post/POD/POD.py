@@ -9,7 +9,7 @@ import matplotlib as mpl
 
 from CHAPSim_post import rcParams
 from CHAPSim_post.utils import misc_utils,indexing
-from CHAPSim_post.post._common import common3D, Common
+from CHAPSim_post.post._common import Common
 
 _avg_class = cp.CHAPSim_AVG_io
 _fluct_class = cp.CHAPSim_fluct_io
@@ -26,24 +26,26 @@ class _PODbase:
     def save_hdf(self,file_name,write_mode,key=None):
         if key is None:
             key = self.__class__.__name__
-        hdf_file = h5py.File(file_name,write_mode)
-        group = hdf_file.create_group(key)
-        group.create_dataset("eig_values",data=self._eig_values)
-        hdf_file.close()
+
+        hdf_obj = cd.hdfHandler(file_name,write_mode,key=key)
+        hdf_obj.set_type_id(self.__class__)
+        hdf_obj.create_dataset("eig_values",data=self._eig_values)
+
         self.POD_modesDF.to_hdf(file_name,key = key+"/POD_modesDF",mode='a')
         self.avg_data.save_hdf(file_name,'a',key+"/avg_data")
 
     def _hdf_extract(self,file_name,key=None):
         if key is None:
             key = "POD"
-        hdf_file = h5py.File(file_name,'r')
-        self._eig_values = hdf_file[key+"/eig_values"][:]
-        hdf_file.close()
+
+        hdf_obj = cd.hdfHandler(file_name,'r',key=key)
+        hdf_obj.check_type_id(self.__class__)
+
+        self._eig_values = hdf_obj["/eig_values"][:]
 
         self.POD_modesDF = cd.datastruct.from_hdf(file_name,key=key+'/POD_modesDF')
         self.avg_data = self._module._avg_class.from_hdf(file_name,key=key+"/avg_data")
-        self.CoordDF = self.avg_data.CoordDF
-        self.meta_data = self.avg_data._meta_data
+        self._meta_data = self.avg_data._meta_data
 
     @classmethod
     def from_hdf(cls,file_name,key=None):
@@ -179,9 +181,8 @@ class POD2D(_PODbase,Common):
 
         super()._hdf_extract(file_name,key)
 
-        hdf_file = h5py.File(file_name,'r')
-        self._plane = hdf_file[key].attrs['plane'].decode('utf-8')
-        hdf_file.close()
+        hdf_obj = cd.hdfHandler(file_name,'r',key=None)
+        self._plane = hdf_obj.attrs['plane'].decode('utf-8')
     
     def save_hdf(self, file_name, write_mode, key):
         if key is None:
@@ -189,9 +190,8 @@ class POD2D(_PODbase,Common):
 
         super().save_hdf(file_name, write_mode, key=key)
 
-        hdf_file = h5py.File(file_name,'a')
-        hdf_file[key].attrs["plane"] = self._plane.encode('utf-8')
-        hdf_file.close()
+        hdf_obj = cd.hdfHandler(file_name,'a',key)
+        hdf_obj.attrs["plane"] = self._plane.encode('utf-8')
 
     def _get_fluct_array(self,time,comp,path_to_folder,abs_path,avg_data,y_mode,plane,location):
             fluct_data = self._module._fluct_class(time,avg_data,path_to_folder,abs_path)
@@ -239,30 +239,19 @@ class POD2D(_PODbase,Common):
 class POD3D(_PODbase,Common):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        Common.__init__(self,self.meta_data)
+        Common.__init__(self,self._meta_data)
 
-    def save_hdf(self, file_name, write_mode,key=None):
-        if key is None:
-            key = self.__class__.__name__
-        
-        super().save_hdf(file_name, write_mode, key=key)
-        self.CoordDF.to_hdf(file_name,key = key+"/CoordDF",mode='a')
-    
-    def _hdf_extract(self, file_name, key=None):
-        if key is None:
-            key = self.__class__.__name__
-
-        super()._hdf_extract(file_name, key=key)
-        self.CoordDF = cd.coordstruct.from_hdf(file_name,key=key+"/CoordDF")
 
     def _POD_extract(self,comp,path_to_folder='.',method='svd',low_memory=True,abs_path=True,time0=None,subdomain=None,nsnapshots=100,nmodes=10):
         max_time = misc_utils.max_time_calc(path_to_folder,abs_path)
         self.avg_data = self._module._avg_class(max_time,path_to_folder=path_to_folder,
                                             abs_path=abs_path,time0=time0)
-        self.CoordDF = cd.coordstruct(self.avg_data.CoordDF._data)
+        
+        
         if subdomain is not None:
-            self.CoordDF= self.CoordDF.create_subdomain(**subdomain)
-        self.meta_data = self.avg_data._meta_data
+            self._coorddata.create_subdomain(**subdomain)
+        
+        self._meta_data = self.avg_data._meta_data
 
         times = misc_utils.time_extract(path_to_folder,abs_path)
 
@@ -324,7 +313,7 @@ class POD3D(_PODbase,Common):
         for i,mode in enumerate(modes):
 
             PODmodes = self.POD_modesDF.values[:,:,:,:,mode]
-            POD_modeDF = cd.flowstruct3D(self.CoordDF,PODmodes,Domain=self.Domain,index=self.POD_modesDF.index)
+            POD_modeDF = cd.flowstruct3D(self._coorddata,PODmodes,index=self.POD_modesDF.index)
             plane, coord = POD_modeDF.CoordDF.check_plane(plane)
 
             if coord == 'y':

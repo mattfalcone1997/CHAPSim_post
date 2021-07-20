@@ -39,11 +39,18 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
         else:
             self._hdf_extract(*args,**kwargs)
 
+    @property
+    def shape(self):
+        return self._avg_data.shape
+        
     def save_hdf(self,file_name,write_mode,key=None):
         if key is None:
-            key = 'CHAPSim_Quad_Anal'
+            key = self.__class__.__name__
 
-        self._meta_data.save_hdf(file_name,write_mode,key+'/meta_data')
+        hdf_obj = cd.hdfHandler(file_name,write_mode,key=key)
+        hdf_obj.set_type_id(self.__class__)
+
+        self._meta_data.save_hdf(file_name,'a',key+'/meta_data')
         self._avg_data.save_hdf(file_name,'a',key+'/avg_data')
         self.QuadAnalDF.to_hdf(file_name,key=key+'/QuadAnalDF',mode='a')
 
@@ -186,13 +193,23 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
 
     def _hdf_extract(self,file_name,key=None):
         if key is None:
-            key = 'CHAPSim_Quad_Anal'
-        self._meta_data = self._module.CHAPSim_meta.from_hdf(file_name,key+'/meta_data')
-        self.NCL= self._meta_data.NCL
-        self._avg_data = self._module._avg_io_class.from_hdf(file_name,key+'/avg_data')
-        self.shape = (self.NCL[1],self.NCL[0])
+            key = self.__class__.__name__#'CHAPSim_Quad_Anal'
+
         
-        self.QuadAnalDF = cd.datastruct.from_hdf(file_name,shapes=self.shape,key=key+'/QuadAnalDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
+        try:
+            hdf_obj = cd.hdfHandler(file_name,'r',key=key)
+        except KeyError:
+            msg = f"Using legacy default key for class {key}"
+            warnings.warn(msg)
+            key = 'CHAPSim_Quad_Anal'
+            hdf_obj = cd.hdfHandler(file_name,'r',key=key)
+        
+        hdf_obj.check_type_id(self.__class__)
+
+        self._meta_data = self._module.CHAPSim_meta.from_hdf(file_name,key+'/meta_data')
+        self._avg_data = self._module._avg_io_class.from_hdf(file_name,key+'/avg_data')
+        
+        self.QuadAnalDF = cd.datastruct.from_hdf(file_name,key=key+'/QuadAnalDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
                 
     def _quad_calc(self,avg_data,fluct_uv,quadrant_array,NCL,h_list,PhyTime):
         if type(PhyTime) == float: #Convert float to string to be compatible with dataframe
@@ -213,7 +230,7 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
                 quad_array=quadrant_array == i
                 fluct_array = np.abs(quad_array*fluct_uv) > h*u_rms*v_rms
                 uv_q[i-1]=np.mean(fluct_uv*fluct_array,axis=0)
-            if cp.rcParams['SymmetryAVG'] and self._meta_data.metaDF['iCase'] ==1:
+            if cp.rcParams['SymmetryAVG'] and self.metaDF['iCase'] ==1:
                 symmetry_map = {1: 4,2:3,4:1,3:2}
                 for i in range(1,4):
                     uv_q[i-1] = 0.5*(uv_q[i-1] - uv_q[symmetry_map[i]-1,::-1])

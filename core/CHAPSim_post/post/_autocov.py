@@ -47,6 +47,10 @@ class CHAPSim_autocov_base(Common,ABC):
         else:
             self._hdf_extract(*args,**kwargs)
 
+    @property
+    def shape(self):
+        raise NotImplementedError
+
     @abstractmethod
     def _autocov_extract(self,*args,**kwargs):
         raise NotImplementedError
@@ -57,13 +61,14 @@ class CHAPSim_autocov_base(Common,ABC):
 
     def save_hdf(self,file_name,write_mode,key=None):
         if key is None:
-            key =  'CHAPSim_autocov'
-        hdf_file = h5py.File(file_name,write_mode)
-        group = hdf_file.create_group(key)
-        group.attrs['shape_x'] = np.array(self.shape_x)
-        group.attrs['shape_z'] = np.array(self.shape_z)
-        group.attrs['comp'] = np.array([np.string_(x) for x in self.comp])
-        hdf_file.close()
+            key =  self.__class__.__name__
+
+        hdf_obj = cd.hdfHandler(file_name,write_mode,key=key)
+        hdf_obj.set_type_id(self.__class__)
+
+        # hdf_obj.attrs['shape_x'] = np.array(self.shape_x)
+        # hdf_obj.attrs['shape_z'] = np.array(self.shape_z)
+        hdf_obj.attrs['comp'] = np.array([np.string_(x) for x in self.comp])
 
         self._meta_data.save_hdf(file_name,'a',key+'/meta_data')
         self._avg_data.save_hdf(file_name,'a',key+'/avg_data')
@@ -354,7 +359,6 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
             
         self._meta_data = self._module._meta_class(path_to_folder)
         self.comp=(comp1,comp2)
-        self.NCL = self._meta_data.NCL
 
         try:
             self._avg_data = self._module._avg_io_class(max(times),self._meta_data,path_to_folder,time0,abs_path)
@@ -372,8 +376,8 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
         elif max_x_sep>self.NCL[0]:
             raise ValueError("Variable max_x_sep must be less than half NCL3 in readdata file\n")
         
-        self.shape_x = (max_x_sep,self.NCL[1],self.NCL[0]-max_x_sep)
-        self.shape_z = (max_z_sep,self.NCL[1],self.NCL[0])
+        # self.shape_x = (max_x_sep,self.NCL[1],self.NCL[0]-max_x_sep)
+        # self.shape_z = (max_z_sep,self.NCL[1],self.NCL[0])
         
         for i,timing in enumerate(times):
             
@@ -391,7 +395,7 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
                 R_x = R_x*coe3 + local_R_x*coe2
                 R_z = R_z*coe3 + local_R_z*coe2
 
-        if cp.rcParams['SymmetryAVG'] and self._meta_data.metaDF['iCase'] ==1:
+        if cp.rcParams['SymmetryAVG'] and self.metaDF['iCase'] ==1:
             vy_count = comp1.count('v') + comp2.count('v')
             R_x = 0.5*(R_x + R_x[:,::-1]*(-1)**vy_count )
             R_z = 0.5*(R_z + R_z[:,::-1]*(-1)**vy_count )
@@ -402,21 +406,18 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
         if key is None:
             key =  'CHAPSim_autocov_io'
         
-        hdf_file = h5py.File(file_name,'r')
-        self.shape_x = tuple(hdf_file[key].attrs["shape_x"][:])
-        self.shape_z = tuple(hdf_file[key].attrs["shape_z"][:])
-        self.comp = tuple(np.char.decode(hdf_file[key].attrs["comp"][:]))
-        hdf_file.close()       
+        hdf_obj = cd.hdfHandler(file_name,'r',key=key)
+        hdf_obj.check_type_id(self.__class__)
 
-        self.autocorrDF = cd.datastruct.from_hdf(file_name,shapes=(self.shape_x,self.shape_z),key=key+'/autocorrDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
-        self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
-        self.NCL=self._meta_data.NCL
-        self._avg_data = self._module._avg_io_class.from_hdf(file_name,key+'/avg_data')
+        # self.shape_x = tuple(hdf_obj.attrs["shape_x"][:])
+        # self.shape_z = tuple(hdf_obj.attrs["shape_z"][:])
+
+        self.comp = tuple(np.char.decode(hdf_obj.attrs["comp"][:]))
+
+        self.autocorrDF = cd.datastruct.from_hdf(file_name,key=key+'/autocorrDF')
+        self._meta_data = self._module._meta_class.from_hdf(file_name,key=key+'/meta_data')
+        self._avg_data = self._module._avg_io_class.from_hdf(file_name,key=key+'/avg_data')
     
-    def save_hdf(self, file_name, write_mode, key=None):
-        if not key:
-            key = 'CHAPSim_autocov_io'
-        super().save_hdf(file_name, write_mode, key=key)
     
     def _autocov_calc(self,fluct_data,comp1,comp2,PhyTime,max_x_sep,max_z_sep):
         if type(PhyTime) == float:
@@ -476,7 +477,7 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
             if max_z_step >0:
                 for iz0 in prange(max_z_step):
                     for iz in prange(NCL3-max_z_step):
-                        R_z[iz0,:,:] += fluct1[iz,:,:]*fluct2[iz+iz0,:,:]
+                        R_z[iz0,:,:] += self.shape_zfluct1[iz,:,:]*fluct2[iz+iz0,:,:]
             R_z /= (NCL3-max_z_step)
             return R_z
         return numba_method(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step)
@@ -592,8 +593,13 @@ class CHAPSim_autocov_tg(CHAPSim_autocov_base):
             max_x_sep=int(self._NCL[0]/2)
         elif max_x_sep>self.NCL[0]:
             raise ValueError("\033[1;32 Variable max_x_sep must be less than half NCL3 in readdata file\n")
-        self.shape_x = (max_x_sep,self.NCL[1],len(times))
-        self.shape_z = (max_z_sep,self.NCL[1],len(times))
+        
+        # self.shape_x = (max_x_sep,self.NCL[1],len(times))
+        # self.shape_z = (max_z_sep,self.NCL[1],len(times))
+
+        shape_x = (max_x_sep,self.NCL[1],len(times))
+        shape_z = (max_z_sep,self.NCL[1],len(times))
+        
         for timing in times:
             fluct_data = self._module._fluct_tg_class(timing,self._avg_data,path_to_folder=path_to_folder,abs_path=abs_path)
             if 'R_z' not in locals():
@@ -604,8 +610,8 @@ class CHAPSim_autocov_tg(CHAPSim_autocov_base):
                 R_x = np.vstack([R_x,local_R_x])
             gc.collect()
 
-        R_z = R_z.T.reshape(self.shape_z)
-        R_x = R_x.T.reshape(self.shape_x)
+        R_z = R_z.T.reshape(shape_z)
+        R_x = R_x.T.reshape(shape_x)
         
         self.autocorrDF = cd.datastruct({'x':R_x,'z':R_z})
     
@@ -613,21 +619,16 @@ class CHAPSim_autocov_tg(CHAPSim_autocov_base):
         if key is None:
             key =  'CHAPSim_autocov_tg'
         
-        hdf_file = h5py.File(file_name,'r')
-        self.shape_x = tuple(hdf_file[key].attrs["shape_x"][:])
-        self.shape_z = tuple(hdf_file[key].attrs["shape_z"][:])
-        self.comp = tuple(np.char.decode(hdf_file[key].attrs["comp"][:]))
-        hdf_file.close()        
+        hdf_obj = cd.hdfHandler(file_name,'r',key=key)
+        hdf_obj.check_type_id(self.__class__)
 
-        self.autocorrDF = cd.datastruct.from_hdf(file_name,shapes=(self.shape_x,self.shape_z),key=key+'/autocorrDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
+        # self.shape_x = tuple(hdf_obj.attrs["shape_x"][:])
+        # self.shape_z = tuple(hdf_obj.attrs["shape_z"][:])
+        self.comp = tuple(np.char.decode(hdf_obj.attrs["comp"][:]))
+
+        self.autocorrDF = cd.datastruct.from_hdf(file_name,key=key+'/autocorrDF')#pd.read_hdf(file_name,key=base_name+'/autocorrDF').data([shape_x,shape_z])
         self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
-        self.NCL=self._meta_data.NCL
         self._avg_data = self._module._avg_tg_base_class.from_hdf(file_name,key+'/avg_data')
-    
-    def save_hdf(self, file_name, write_mode, key=None):
-        if key is None:
-            key = 'CHAPSim_autocov_tg'
-        super().save_hdf(file_name, write_mode, key=key)
     
     @staticmethod
     def _autocov_calc(fluct_data,comp1,comp2,PhyTime,max_x_sep,max_z_sep):

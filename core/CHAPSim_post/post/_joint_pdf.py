@@ -43,6 +43,11 @@ class CHAPSim_joint_PDF_base(Common,ABC):
         else:
             self._extract_fluct(*args,**kwargs)
 
+    @property
+    def shape(self):
+        pdf_index = self.pdf_arrayDF.index[0]
+        return self.pdf_arrayDF[pdf_index].shape
+
     @abstractmethod
     def _hdf_extract(self,*args,**kwargs):
         raise NotImplementedError
@@ -52,22 +57,26 @@ class CHAPSim_joint_PDF_base(Common,ABC):
         raise NotImplementedError
 
 
-    def save_hdf(self,file_name,mode='a',base_name='CHAPSim_joint_PDF_base'):
-        hdf_file = h5py.File(file_name,mode)
-        group = hdf_file.create_group(base_name)
-        group.attrs["y_mode"] = self._y_mode.encode('utf-8')
-        group.create_dataset("x_loc_norm",data=self._x_loc_norm)
-        hdf_file.close()
-        self.pdf_arrayDF.to_hdf(file_name,key=base_name+'/pdf_arrayDF',mode='a')#,format='fixed',data_columns=True)
-        self.u_arrayDF.to_hdf(file_name,key=base_name+'/u_arrayDF',mode='a')#,format='fixed',data_columns=True)
-        self.v_arrayDF.to_hdf(file_name,key=base_name+'/v_arrayDF',mode='a')#,format='fixed',data_columns=True)     
+    def save_hdf(self,file_name,mode='a',key=None):
+        if key is None:
+            key = self.__class__.__name__
+
+        hdf_obj = cd.hdfHandler(file_name,mode,key=key)
+        hdf_obj.set_type_id(self.__class__)
+
+        hdf_obj.attrs["y_mode"] = self._y_mode.encode('utf-8')
+        hdf_obj.create_dataset("x_loc_norm",data=self._x_loc_norm)
+
+        self.pdf_arrayDF.to_hdf(file_name,key=key+'/pdf_arrayDF',mode='a')#,format='fixed',data_columns=True)
+        self.u_arrayDF.to_hdf(file_name,key=key+'/u_arrayDF',mode='a')#,format='fixed',data_columns=True)
+        self.v_arrayDF.to_hdf(file_name,key=key+'/v_arrayDF',mode='a')#,format='fixed',data_columns=True)     
         
-        self.meta_data.save_hdf(file_name,'a',base_name+"/meta_data")
-        self.avg_data.save_hdf(file_name,'a',base_name+"/avg_data")
+        self._meta_data.save_hdf(file_name,'a',key+"/meta_data")
+        self.avg_data.save_hdf(file_name,'a',key+"/avg_data")
 
     @classmethod
-    def from_hdf(cls,file_name,base_name=None):
-        return cls(file_name,base_name=base_name,fromfile=True)
+    def from_hdf(cls,file_name,key=None):
+        return cls(file_name,key=key,fromfile=True)
 
     def plot_joint_PDF(self, xy_list,contour_kw=None,fig=None, ax=None,**kwargs):
         
@@ -105,14 +114,13 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
             times = list(filter(lambda x: x > time0, times))
         if cp.rcParams['TEST']:
             times.sort(); times= times[-5:]
-        self.meta_data = self._module._meta_class(path_to_folder,abs_path)
-        self.NCL = self.meta_data.NCL
+        self._meta_data = self._module._meta_class(path_to_folder,abs_path)
 
         try:
-            self.avg_data = self._module._avg_io_class(max(times),self.meta_data,path_to_folder,time0,abs_path)
+            self.avg_data = self._module._avg_io_class(max(times),self._meta_data,path_to_folder,time0,abs_path)
         except Exception:
             times.remove(max(times))
-            self.avg_data = self._module._avg_io_class(max(times),self.meta_data,path_to_folder,time0)
+            self.avg_data = self._module._avg_io_class(max(times),self._meta_data,path_to_folder,time0)
 
         
         if xy_inner:
@@ -146,7 +154,7 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
             for i in range(len(y_index)):
                 u_prime_array[i].extend(u_prime_data[:,y_index[i],x_index[i]])
                 v_prime_array[i].extend(v_prime_data[:,y_index[i],x_index[i]])
-                if cp.rcParams['SymmetryAVG'] and self.meta_data.metaDF['iCase'] ==1:
+                if cp.rcParams['SymmetryAVG'] and self.metaDF['iCase'] ==1:
                     y_size = u_prime_data.shape[1]
                     u_prime_array[i].extend(u_prime_data[:,-1-y_index[i],x_index[i]])
                     v_prime_array[i].extend(-1*v_prime_data[:,-1-y_index[i],x_index[i]])
@@ -177,21 +185,19 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
         self.u_arrayDF = cd.datastruct(u_array,index= index)
         self.v_arrayDF = cd.datastruct(v_array,index= index)
 
-    def save_hdf(self,file_name,mode='a',base_name='CHAPSim_joint_PDF_io'):
-        super().save_hdf(file_name,mode,base_name)
+    def _hdf_extract(self, file_name, key=None):
+        if key is None:
+            key = 'CHAPSim_joint_PDF_io' 
 
-    def _hdf_extract(self, file_name, base_name):
-        if base_name is None:
-            base_name = 'CHAPSim_joint_PDF_io' 
+        hdf_obj = cd.hdfHandler(file_name,'r',key=key)
+        hdf_obj.check_type_id(self.__class__)
 
-        hdf_file = h5py.File(file_name,'r')
-        self._y_mode = hdf_file[base_name].attrs['y_mode'].decode('utf-8')
-        self._x_loc_norm = hdf_file[base_name+'/x_loc_norm'][:]
-        hdf_file.close()
-        self.meta_data = self._module._meta_class.from_hdf(file_name,base_name+'/meta_data')
-        self.NCL=self.meta_data.NCL
-        self.avg_data = self._module.CHAPSim_AVG_io.from_hdf(file_name,base_name+'/avg_data')
-        # uv_primeDF = pd.read_hdf(file_name,key=base_name+'/uv_primeDF')
-        self.pdf_arrayDF = cd.datastruct.from_hdf(file_name,key=base_name+'/pdf_arrayDF')
-        self.u_arrayDF = cd.datastruct.from_hdf(file_name,key=base_name+'/u_arrayDF')
-        self.v_arrayDF = cd.datastruct.from_hdf(file_name,key=base_name+'/v_arrayDF')
+        self._y_mode = hdf_obj.attrs['y_mode'].decode('utf-8')
+        self._x_loc_norm = hdf_obj['x_loc_norm'][:]
+        
+        self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
+        self.avg_data = self._module.CHAPSim_AVG_io.from_hdf(file_name,key+'/avg_data')
+
+        self.pdf_arrayDF = cd.datastruct.from_hdf(file_name,key=key+'/pdf_arrayDF')
+        self.u_arrayDF = cd.datastruct.from_hdf(file_name,key=key+'/u_arrayDF')
+        self.v_arrayDF = cd.datastruct.from_hdf(file_name,key=key+'/v_arrayDF')

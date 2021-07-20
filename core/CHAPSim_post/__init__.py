@@ -14,7 +14,8 @@ class Params:
                         "dissipation_correction": False,
                         "gradient_method":"numpy",
                         "gradient_order": 2,
-                        "AVG_Style": "overline"}
+                        "AVG_Style": "overline",
+                        "relax_HDF_type_checks":False}
 
     def __getitem__(self,key):
         if key not in self.__params.keys():

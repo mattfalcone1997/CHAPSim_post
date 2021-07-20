@@ -43,15 +43,20 @@ class CHAPSim_budget_base(Common,ABC):
         else:
             raise Exception
 
-        super().__init__(self.avg_data._meta_data)
-
         if PhyTime is None:
             PhyTime = list(set([x[0] for x in self.avg_data.flow_AVGDF.index]))[0]
         
+        
         self.comp = comp1+comp2
         self.budgetDF = self._budget_extract(PhyTime,comp1,comp2)
-        self.shape = self.avg_data.shape
 
+    @property
+    def _meta_data(self):
+        return self.avg_data._meta_data
+
+    @property
+    def shape(self):
+        return self.avg_data.shape
     # @property
     # def vtk(self):
     #     grid = self._create_vtk2D_grid()
@@ -348,7 +353,7 @@ class CHAPSim_budget_io(CHAPSim_Reynolds_budget_base):
         uu_comp = comp1 + comp2
         u1u2 = self.avg_data.UU_tensorDF[PhyTime,uu_comp]
 
-        REN = self.avg_data._metaDF['REN']
+        REN = self.avg_data.metaDF['REN']
         viscous_diff = (1/REN)*self.Domain.Scalar_laplacian(self.avg_data.CoordDF,u1u2)
         return viscous_diff
 
@@ -393,7 +398,7 @@ class CHAPSim_budget_io(CHAPSim_Reynolds_budget_base):
         du1dxdu2dx = self.avg_data.DUDX2_tensorDF[PhyTime,dU1dxdU2dx_comp]
         du1dydu2dy = self.avg_data.DUDX2_tensorDF[PhyTime,dU1dydU2dy_comp]
 
-        REN = self.avg_data._metaDF['REN']
+        REN = self.avg_data.metaDF['REN']
         dissipation = -(2/REN)*(du1dxdu2dx + du1dydu2dy)
         return dissipation
 
@@ -521,7 +526,7 @@ class CHAPSim_budget_tg(CHAPSim_Reynolds_budget_base):
         uu_comp = comp1 + comp2
         u1u2 = self.avg_data.UU_tensorDF[PhyTime,uu_comp]
 
-        REN = self.avg_data._metaDF['REN']
+        REN = self.avg_data.metaDF['REN']
         viscous_diff = (1/REN)*self.Domain.Scalar_laplacian_tg(self.avg_data.CoordDF,u1u2)
         return viscous_diff#.flatten()
 
@@ -563,7 +568,7 @@ class CHAPSim_budget_tg(CHAPSim_Reynolds_budget_base):
         du1dydu2dy = self.avg_data.DUDX2_tensorDF[PhyTime,dU1dydU2dy_comp]
 
 
-        REN = self.avg_data._metaDF['REN']
+        REN = self.avg_data.metaDF['REN']
         dissipation = -(2/REN)*(du1dxdu2dx + du1dydu2dy)
         return dissipation#.flatten()
 
@@ -613,8 +618,6 @@ class CHAPSim_k_budget_base(ABC):
                 self.avg_data = self._module._avg_class(PhyTime,*args,**kwargs)
             else:
                 raise Exception
-
-            super().__init__(self.avg_data._meta_data)
 
             if PhyTime is None:
                 PhyTime = list(set([x[0] for x in self.avg_data.flow_AVGDF.index]))[0]
@@ -732,7 +735,7 @@ class CHAPSim_Momentum_budget_io(CHAPSim_Momentum_budget_base):
                         self.avg_data.Velo_grad_tensorDF[PhyTime,'v'+dir])
         
         S_comp = np.stack([S_comp_1,S_comp_2],axis=0)
-        REN = self.avg_data._metaDF['REN']
+        REN = self.avg_data.metaDF['REN']
         mu_star = 1.0
         return (mu_star/REN)*self.Domain.Vector_div_io(self.avg_data.CoordDF,S_comp) 
 
@@ -835,7 +838,7 @@ class CHAPSim_Momentum_budget_tg(CHAPSim_Momentum_budget_base):
         S_comp_2 = 0.5*(self.avg_data.Velo_grad_tensorDF[PhyTime,comp+'y'] +\
                         self.avg_data.Velo_grad_tensorDF[PhyTime,'v'+dir])
         
-        REN = self.avg_data._metaDF['REN']
+        REN = self.avg_data.metaDF['REN']
         mu_star = 1.0
         
         return (mu_star/REN)*self.Domain.Grad_calc(self.avg_data.CoordDF,S_comp_2,'y')
@@ -915,8 +918,6 @@ class CHAPSim_FIK_base(CHAPSim_budget_base):
         else:
             raise Exception
 
-        Common.__init__(self,self.avg_data._meta_data)
-
         if PhyTime is None:
             PhyTime = list(set([x[0] for x in self.avg_data.flow_AVGDF.index]))[0]
         
@@ -942,7 +943,7 @@ class CHAPSim_FIK_base(CHAPSim_budget_base):
     def _laminar_extract(self,PhyTime):
 
         rel_bulk = self.avg_data._bulk_velo_calc(PhyTime=PhyTime)
-        REN = self.avg_data._metaDF['REN']
+        REN = self.avg_data.metaDF['REN']
         const = 4.0 if self.Domain.is_cylind else 3.0
         return const/(REN*rel_bulk**2)
 
@@ -1009,7 +1010,7 @@ class CHAPSim_FIK_io(CHAPSim_FIK_base):
         UV = self.avg_data.flow_AVGDF[PhyTime,'u']*self.avg_data.flow_AVGDF[PhyTime,'v']
         d_uv_dy = self.Domain.Grad_calc(self.avg_data.CoordDF,UV,'y')
 
-        REN = self.avg_data._metaDF['REN']
+        REN = self.avg_data.metaDF['REN']
         U_mean = self.avg_data.flow_AVGDF[PhyTime,'u']
         d2u_dx2 = self.Domain.Grad_calc(self.avg_data.CoordDF,
                     self.Domain.Grad_calc(self.avg_data.CoordDF,U_mean,'x'),'x')
@@ -1050,7 +1051,7 @@ class CHAPSim_FIK_tg(CHAPSim_FIK_base):
         U_mean = self.avg_data.flow_AVGDF[PhyTime,'u']
         times = self.avg_data._return_xaxis()
 
-        REN = self.avg_data._metaDF['REN']
+        REN = self.avg_data.metaDF['REN']
         d2u_dy2 = self.Domain.Grad_calc(self.avg_data.CoordDF,
                     self.Domain.Grad_calc(self.avg_data.CoordDF,U_mean,'y'),'y')
         

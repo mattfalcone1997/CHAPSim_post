@@ -72,7 +72,7 @@ else:
 
 ## Printing the case setup
 
-print(avg_data._metaDF)
+print(avg_data.metaDF)
 
 # Setting streamwise processing visualisations
 x_loc_mut1=[6,7,8,10,11,12]

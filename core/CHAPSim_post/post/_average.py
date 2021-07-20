@@ -15,7 +15,7 @@ import warnings
 import gc
 import itertools
 import copy
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractproperty
 
 import CHAPSim_post as cp
 
@@ -39,12 +39,20 @@ class CHAPSim_AVG_base(Common,ABC):
             self._hdf_extract(*args,**kwargs)
         else:
             self._extract_avg(*args,**kwargs)
-        super().__init__(self._meta_data)
 
     @abstractmethod
     def _extract_avg(self,*args,**kwargs):
         raise NotImplementedError
     
+    @property
+    def shape(self):
+        avg_index = self.flow_AVGDF.index[0]
+        return self.flow_AVGDF[avg_index].shape
+
+    @abstractproperty
+    def times(self):
+        pass
+
     def copy(self):
         return copy.deepcopy(self)
 
@@ -69,21 +77,21 @@ class CHAPSim_AVG_base(Common,ABC):
         if key is None:
             key = self.__class__.__name__
 
-        hdf_file = h5py.File(file_name,write_mode)
-        group = hdf_file.create_group(key)
-        group.create_dataset("NCL",data=self.NCL)
-        hdf_file.close()
+        hdf_obj = cd.hdfHandler(file_name,mode=write_mode,key=key)
+        hdf_obj.set_type_id(self.__class__)
+
+        hdf_obj.create_dataset("NCL",data=self.NCL)
 
         self._meta_data.save_hdf(file_name,'a',key=key+'/meta_data')
-        self.flow_AVGDF.to_hdf(file_name,key=key+'/flow_AVGDF',mode='a')#,format='fixed',data_columns=True)
-        self.PU_vectorDF.to_hdf(file_name,key=key+'/PU_vectorDF',mode='a')#,format='fixed',data_columns=True)
-        self.UU_tensorDF.to_hdf(file_name,key=key+'/UU_tensorDF',mode='a')#,format='fixed',data_columns=True)
-        self.UUU_tensorDF.to_hdf(file_name,key=key+'/UUU_tensorDF',mode='a')#,format='fixed',data_columns=True)
-        self.Velo_grad_tensorDF.to_hdf(file_name,key=key+'/Velo_grad_tensorDF',mode='a')#,format='fixed',data_columns=True)
-        self.PR_Velo_grad_tensorDF.to_hdf(file_name,key=key+'/PR_Velo_grad_tensorDF',mode='a')#,format='fixed',data_columns=True)
-        self.DUDX2_tensorDF.to_hdf(file_name,key=key+'/DUDX2_tensorDF',mode='a')#,format='fixed',data_columns=True)
+        self.flow_AVGDF.to_hdf(file_name,key=key+'/flow_AVGDF',mode='a')
+        self.PU_vectorDF.to_hdf(file_name,key=key+'/PU_vectorDF',mode='a')
+        self.UU_tensorDF.to_hdf(file_name,key=key+'/UU_tensorDF',mode='a')
+        self.UUU_tensorDF.to_hdf(file_name,key=key+'/UUU_tensorDF',mode='a')
+        self.Velo_grad_tensorDF.to_hdf(file_name,key=key+'/Velo_grad_tensorDF',mode='a')
+        self.PR_Velo_grad_tensorDF.to_hdf(file_name,key=key+'/PR_Velo_grad_tensorDF',mode='a')
+        self.DUDX2_tensorDF.to_hdf(file_name,key=key+'/DUDX2_tensorDF',mode='a')
 
-    def _hdf_extract(self,file_name,shape=None,key=None):
+    def _hdf_extract(self,file_name,key=None):
         """
         Creates class by extracting data from the hdf5 file
 
@@ -101,32 +109,18 @@ class CHAPSim_AVG_base(Common,ABC):
 
         misc_utils.check_path_exists(file_name,True)
 
+        hdf_obj = cd.hdfHandler(file_name,mode='r',key=key)
+        hdf_obj.check_type_id(self.__class__)
+
         self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
-        self.CoordDF = self._meta_data.CoordDF
-        self._metaDF = self._meta_data.metaDF
-        self.NCL=self._meta_data.NCL
-        if shape == None:
-            shape = (self.NCL[1],self.NCL[0])
-        self.flow_AVGDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/flow_AVGDF')#pd.read_hdf(file_name,key=base_name+'/flow_AVGDF')
-        self.PU_vectorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/PU_vectorDF')
-        self.UU_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/UU_tensorDF')
-        self.UUU_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/UUU_tensorDF')
-        self.Velo_grad_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/Velo_grad_tensorDF')
-        self.PR_Velo_grad_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/PR_Velo_grad_tensorDF')
-        self.DUDX2_tensorDF = cd.datastruct.from_hdf(file_name,shapes=shape,key=key+'/DUDX2_tensorDF')
 
-    # @property
-    # def vtk(self):
-    #     grid = self._create_vtk2D_grid()
-    #     self._set_vtk_cell_array_from_attr(grid,"flow_AVGDF")
-    #     self._set_vtk_cell_array_from_attr(grid,"PU_vectorDF")
-    #     self._set_vtk_cell_array_from_attr(grid,"UU_tensorDF")
-    #     self._set_vtk_cell_array_from_attr(grid,"UUU_tensorDF")
-    #     self._set_vtk_cell_array_from_attr(grid,"Velo_grad_tensorDF")
-    #     self._set_vtk_cell_array_from_attr(grid,"PR_Velo_grad_tensorDF")
-    #     self._set_vtk_cell_array_from_attr(grid,"DUDX2_tensorDF")
-
-    #     return grid
+        self.flow_AVGDF = cd.datastruct.from_hdf(file_name,key=key+'/flow_AVGDF')
+        self.PU_vectorDF = cd.datastruct.from_hdf(file_name,key=key+'/PU_vectorDF')
+        self.UU_tensorDF = cd.datastruct.from_hdf(file_name,key=key+'/UU_tensorDF')
+        self.UUU_tensorDF = cd.datastruct.from_hdf(file_name,key=key+'/UUU_tensorDF')
+        self.Velo_grad_tensorDF = cd.datastruct.from_hdf(file_name,key=key+'/Velo_grad_tensorDF')
+        self.PR_Velo_grad_tensorDF = cd.datastruct.from_hdf(file_name,key=key+'/PR_Velo_grad_tensorDF')
+        self.DUDX2_tensorDF = cd.datastruct.from_hdf(file_name,key=key+'/DUDX2_tensorDF')
 
     def _Reverse_decomp(self,flow_AVGDF,PU_vectorDF,UU_tensorDF,
                         UUU_tensorDF,Velo_grad_tensorDF,
@@ -196,7 +190,7 @@ class CHAPSim_AVG_base(Common,ABC):
         rho_star = 1.0
         nu_star = mu_star/rho_star
 
-        REN = self._metaDF['REN']
+        REN = self.metaDF['REN']
         
         tau_w = self._tau_calc(PhyTime)
     
@@ -326,7 +320,7 @@ class CHAPSim_AVG_base(Common,ABC):
         u_tau_star, _ = self._wall_unit_calc(PhyTime)
         y_plus = self._y_plus_calc(PhyTime)
         
-        Y_extent = int(self.shape[0]*0.5) if self._metaDF['iCase'] != 5\
+        Y_extent = int(self.shape[0]*0.5) if self.metaDF['iCase'] != 5\
                         else self.shape[0]
 
         for line,x_val in zip(lines,x_vals):
@@ -350,9 +344,9 @@ class CHAPSim_AVG_base(Common,ABC):
 
     def plot_Reynolds(self,comp_uu,x_val,PhyTime,norm=None,Y_plus=True,fig=None,ax=None,line_kw=None,**kwargs):
 
-        if not self.check_comp(self.UU_tensorDF,comp_uu):
+        if comp_uu not in self.UU_tensorDF.inner_index:
             comp_uu = comp_uu[::-1]
-            if not self.check_comp(self.UU_tensorDF,comp_uu):
+            if not comp_uu not in self.UU_tensorDF.inner_index:
                 msg = "Reynolds stress component %s not found"%comp_uu
                 raise ValueError(msg)   
         
@@ -413,9 +407,9 @@ class CHAPSim_AVG_base(Common,ABC):
 
     def plot_Reynolds_x(self,comp_uu,y_vals_list,Y_plus=True,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
 
-        if not self.check_comp(self.UU_tensorDF,comp_uu):
+        if comp_uu not in self.UU_tensorDF.inner_index:
             comp_uu = comp_uu[::-1]
-            if not self.check_comp(self.UU_tensorDF,comp_uu):
+            if not comp_uu not in self.UU_tensorDF.inner_index:
                 msg = "Reynolds stress component %s not found"%comp_uu
                 raise ValueError(msg)   
         
@@ -475,7 +469,6 @@ class CHAPSim_AVG_base(Common,ABC):
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
         xaxis = self._return_xaxis()
-
         line_kw = cplt.update_line_kw(line_kw,label=r"$U_{b0}$")
 
         ax.cplot(xaxis,bulk_velo,**line_kw)
@@ -497,7 +490,7 @@ class CHAPSim_AVG_base(Common,ABC):
     def plot_skin_friction(self,PhyTime,fig=None,ax=None,line_kw=None,**kwargs):
 
         rho_star = 1.0
-        REN = self._metaDF['REN']
+        REN = self.metaDF['REN']
         tau_star = self._tau_calc(PhyTime)
         bulk_velo = self._bulk_velo_calc(PhyTime)
         
@@ -523,7 +516,7 @@ class CHAPSim_AVG_base(Common,ABC):
         uv = self.UU_tensorDF[PhyTime,'uv']
         dUdy = self.Velo_grad_tensorDF[PhyTime,'uy']
         dVdx = self.Velo_grad_tensorDF[PhyTime,'vx']
-        REN = self._metaDF['REN']
+        REN = self.metaDF['REN']
 
         mu_t = -uv*REN/(dUdy + dVdx)
         y_coord = self._meta_data.CoordDF['y']
@@ -581,13 +574,8 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         if meta_data is None:
             meta_data = self._module._meta_class(path_to_folder,abs_path,False)
 
-        self._meta_data = meta_data
-        self.CoordDF = meta_data.CoordDF
-        self._metaDF = meta_data.metaDF
-        self.NCL = meta_data.NCL
-
+        self._meta_data = meta_data.copy()
         time = misc_utils.check_list_vals(time)
-
 
         for PhyTime in time:
             if 'DF_list' not in locals():
@@ -608,15 +596,11 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         
 
         self._times = list(set([x[0] for x in self.flow_AVGDF.index]))
-        self.shape = (self.NCL[1],self.NCL[0])
     
-    @docstring.inherit
-    def _hdf_extract(self,file_name,key=None):
-        
-        super()._hdf_extract(file_name,key=key)
-        self.shape = (self.NCL[1],self.NCL[0])
-        self.times = list(set([x[0] for x in self.flow_AVGDF.index]))
-     
+    @property
+    def times(self):
+        return list(set([x[0] for x in self.flow_AVGDF.index]))
+
     def _AVG_extract(self,Time_input,time0,path_to_folder,abs_path):
 
         AVG_info, NSTATIS1, PhyTime, NCL = self._extract_file(Time_input,path_to_folder,abs_path)
@@ -679,7 +663,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         PR_Velo_grad_tensorDF = cd.datastruct(Pr_Velo_grad_tensor,index=tensor_2_index,copy=False) 
         DUDX2_tensorDF = cd.datastruct(DUDX2_tensor,index=tensor_4_index,copy=False) 
 
-        if cp.rcParams["SymmetryAVG"] and self._metaDF['iCase'] == 1:
+        if cp.rcParams["SymmetryAVG"] and self.metaDF['iCase'] == 1:
             flow_AVGDF = 0.5*(flow_AVGDF + \
                             flow_AVGDF.symmetrify(dim=0))
             PU_vectorDF = 0.5*(PU_vectorDF +\
@@ -757,7 +741,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         warn_msg = f"PhyTime invalid ({PhyTime}), variable being set to only PhyTime present in datastruct"
         err_msg = "PhyTime provided is not in the CHAPSim_AVG datastruct, recovery impossible"
         
-        return self._check_outer(self.flow_AVGDF,PhyTime,err_msg,warn_msg)
+        return self.flow_AVGDF.check_outer(PhyTime,err_msg,warn_msg)
 
     @docstring.sub
     def int_thickness_calc(self, PhyTime=None):
@@ -1298,21 +1282,17 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         if meta_data is None:
             meta_data = self._module._meta_class(path_to_folder,abs_path,tgpost=True)
         self._meta_data = meta_data
-        self.CoordDF = meta_data.CoordDF
-        self._metaDF = meta_data.metaDF
-        self.NCL = meta_data.NCL
 
         times = ['%.9g' % time for time in PhyTimes]
         for PhyTime in PhyTimes:
             if 'DF_list' not in locals():
-                DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,self._metaDF,time0)
+                DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,self.metaDF,time0)
             else:
-                local_DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,self._metaDF,time0)
+                local_DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,self.metaDF,time0)
                 for i, _ in enumerate(DF_list):
                     DF_list[i].append(local_DF_list[i],axis=0)            
        
         self._times=times
-        self.shape =[self.NCL[1],len(PhyTimes)]
 
         for i,_ in enumerate(DF_list):
             for key, _ in DF_list[i]:
@@ -1360,7 +1340,9 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         for index in self.DUDX2_tensorDF.index:
             self.DUDX2_tensorDF[index] = self.DUDX2_tensorDF[index][:,index_list]
 
-        self.shape=(self.shape[0],len(self._times))
+    @property
+    def times(self):
+        return self._times
 
     def __mul__(self,val):
         if isinstance(val,(float,int)):
@@ -1442,7 +1424,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         AVG_info, NSTATIS1 = self._extract_file(PhyTime,path_to_folder,abs_path)
         
         factor = metaDF['NCL1_tg']*metaDF['NCL3'] if cp.rcParams["dissipation_correction"] else 1.0
-        ioflowflg = self._metaDF['iDomain'] in [2,3]
+        ioflowflg = self.metaDF['iDomain'] in [2,3]
 
         if ioflowflg and time0:
             AVG_info0, NSTATIS0 = self._extract_file(time0,path_to_folder,abs_path)
@@ -1487,17 +1469,18 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
     @docstring.inherit
     def _hdf_extract(self,file_name,key=None):
         if key is None:
-            key = 'CHAPSim_AVG_tg'
+            key = self.__class__.__name__
         
         misc_utils.check_path_exists(file_name,True)
 
+        hdf_obj = cd.hdfHandler(file_name,mode='r',key=key)
+        hdf_obj.check_type_id(self.__class__)
+        self._times = list(np.char.decode(hdf_obj.attrs["times"]))
 
-        hdf_file = h5py.File(file_name,'r')
-        self.shape = tuple(hdf_file[key].attrs["shape"][:])
-        self._times = list(np.char.decode(hdf_file[key].attrs["times"][:]))
-        hdf_file.close()
+        super()._hdf_extract(file_name,key=key)
 
-        super()._hdf_extract(file_name,shape=self.shape,key=key)
+
+
 
     @docstring.inherit
     def save_hdf(self,file_name,write_mode,key=None):
@@ -1506,11 +1489,8 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
 
         super().save_hdf(file_name,write_mode,key)
 
-        hdf_file = h5py.File(file_name,'a')
-        group = hdf_file[key]
-        group.attrs['shape'] = np.array(self.shape)
-        group.attrs['times'] = np.array([np.string_(x) for x in self.get_times()])
-        hdf_file.close()
+        hdf_obj = cd.hdfHandler(file_name,'a',key=key)
+        hdf_obj.attrs['times'] = np.array([np.string_(x) for x in self.times])
 
 
     def _return_index(self,PhyTime):
