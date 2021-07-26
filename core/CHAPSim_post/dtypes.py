@@ -24,7 +24,7 @@ import weakref
 from functools import wraps
 import CHAPSim_post as cp
 import sys
-
+import copy
 from pyvista import StructuredGrid
 import vtk
 
@@ -244,7 +244,13 @@ class structIndexer:
             raise KeyError(msg)
 
         return key
-        
+
+    def __getstate__(self):
+        d = self.__dict__
+        print(d)
+        d['_structIndexer__parent_dstruct'] = d['_structIndexer__parent_dstruct']()
+        return d
+
 class hdfHandler:
 
     _available_ext = ['.h5','.hdf5']
@@ -878,7 +884,11 @@ class VTKstruct:
                 f"of VTKstruct, {self._grid.__class__},"
                 f" or {self._flowstruct.__class__}")
             raise AttributeError(msg)
-
+    def __deepcopy__(self,memo):
+        new_flow_struct = self._flowstruct.copy()
+        return self.__class__(new_flow_struct)
+    def copy(self):
+        return copy.deepcopy(self)
     @property
     def flowstruct(self):
         return self._flowstruct
@@ -943,7 +953,7 @@ class VTKstruct:
         for k in keys:
 
             data = self._flowstruct[k]
-            if len(outer_list) < 2:
+            if len(set(outer_list)) < 2:
                 k = k[1]
             return_grid.cell_arrays[np.str_(k)] = data.flatten()
         return return_grid

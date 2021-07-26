@@ -10,8 +10,8 @@ import sys
 import os
 import warnings
 import gc
-
-from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
+import copy
+from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils, parallel
 from CHAPSim_post import rcParams
 import CHAPSim_post.plot as cplt
 import CHAPSim_post.dtypes as cd
@@ -101,7 +101,9 @@ class CHAPSim_Inst(Common):
     def shape(self):
         inst_index = self.InstDF.index[0]
         return self.InstDF[inst_index].shape
-
+    
+    def copy(self):
+        return copy.deepcopy(self)
     def save_hdf(self,file_name,write_mode,key=None):
         """
         Saves the instance of the class to hdf5 file
@@ -127,27 +129,7 @@ class CHAPSim_Inst(Common):
         self._meta_data.save_hdf(file_name,'a',key=key+'/meta_data')
         self.InstDF.to_hdf(file_name,key=key+'/InstDF',mode='a')
 
-    def _flow_extract(self,Time_input,path_to_folder,abs_path,tgpost):
-        """ Extract velocity and pressure from the instantanous files """
-        instant = "%0.9E" % Time_input
-        file_folder = "1_instant_D"
-        if tgpost:
-            file_string = "DNS_perixz_INSTANT_T" + instant
-        else:
-            file_string = "DNS_perioz_INSTANT_T" + instant
-        veloVector = ["_U","_V","_W","_P"]
-        file_ext = ".D"
-        
-        full_path = misc_utils.check_paths(path_to_folder,'1_instant_rawdata',
-                                                            '1_instant_D')
-
-        file_list=[]
-        for velo in veloVector:
-            if not abs_path:
-                file_list.append(os.path.abspath(os.path.join(full_path, file_string + velo + file_ext)))
-            else:
-                file_list.append(os.path.join(full_path, file_string + velo + file_ext))
-        
+    def _file_extract(self,file_list):
         #A list of all the relevant files for this timestep                           
         open_list =[]
         #opening all the relevant files and placing them in a list
@@ -174,11 +156,80 @@ class CHAPSim_Inst(Common):
 
         flow_info=np.zeros((4,dummy_size))
 
-        i=0
+        # i=0
         #Extracting flow information
-        for file in open_list:
-            flow_info[i]=np.fromfile(file,dtype='float64',count=dummy_size)
-            i+=1
+        # for file in open_list:
+        #     flow_info[i]=np.fromfile(file,dtype='float64',count=dummy_size)
+        parallelExec = parallel.ParallelConcurrent()
+
+        parallelExec.set_func(np.fromfile)
+
+        kwargs_list = [{'dtype':'float64','count': dummy_size}]*len(open_list)
+        parallelExec.set_args_lists(open_list,kwargs_list)
+
+        result = parallelExec()
+        
+        for open_file in open_list:
+            open_file.close()
+
+        return np.stack(result), NCL1, NCL2, NCL3, PhyTime
+
+
+
+    def _flow_extract(self,Time_input,path_to_folder,abs_path,tgpost):
+        """ Extract velocity and pressure from the instantanous files """
+        instant = "%0.9E" % Time_input
+        file_folder = "1_instant_D"
+        if tgpost:
+            file_string = "DNS_perixz_INSTANT_T" + instant
+        else:
+            file_string = "DNS_perioz_INSTANT_T" + instant
+        veloVector = ["_U","_V","_W","_P"]
+        file_ext = ".D"
+        
+        full_path = misc_utils.check_paths(path_to_folder,'1_instant_rawdata',
+                                                            '1_instant_D')
+
+        file_list=[]
+        for velo in veloVector:
+            if not abs_path:
+                file_list.append(os.path.abspath(os.path.join(full_path, file_string + velo + file_ext)))
+            else:
+                file_list.append(os.path.join(full_path, file_string + velo + file_ext))
+        
+        # #A list of all the relevant files for this timestep                           
+        # open_list =[]
+        # #opening all the relevant files and placing them in a list
+        # for file in file_list:
+        #     file_temp = open(file,'rb')
+        #     open_list.append(file_temp)
+        # #allocating arrays
+        # int_info=np.zeros((4,4))
+        # r_info = np.zeros((4,3))
+
+        # i=0
+        # #reading metadata from file
+        # for file in open_list:
+        #     int_info[i]=np.fromfile(file,dtype='int32',count=4)
+        #     r_info[i]=np.fromfile(file,dtype='float64',count=3)
+        #     i+=1
+
+        # PhyTime=r_info[0,0]
+        # NCL1=int(int_info[0,0])
+        # NCL2=int(int_info[0,1])
+        # NCL3=int(int_info[0,2])
+
+        # dummy_size=NCL1*NCL2*NCL3
+
+        # flow_info=np.zeros((4,dummy_size))
+
+        # i=0
+        # #Extracting flow information
+        # for file in open_list:
+        #     flow_info[i]=np.fromfile(file,dtype='float64',count=dummy_size)
+        #     i+=1
+
+        flow_info, NCL1, NCL2, NCL3, PhyTime = self._file_extract(file_list)
         #Reshaping and interpolating flow data so that it is centred
         flow_info=flow_info.reshape((4,NCL3,NCL2,NCL1))
         flow_info = self.__velo_interp(flow_info,NCL3,NCL2,NCL1)
@@ -192,8 +243,8 @@ class CHAPSim_Inst(Common):
         # creating datastruct so that data can be easily accessible elsewhere
         Instant_DF = cd.flowstruct3D(self._coorddata,flow_info,index=index,copy=False)# pd.DataFrame(flow_info1,index=index)
 
-        for file in open_list:
-            file.close()
+        # for file in open_list:
+        #     file.close()
             
         return Instant_DF
     def __velo_interp(self,flow_info,NCL3, NCL2, NCL1):

@@ -11,6 +11,8 @@ import sympy
 
 import CHAPSim_post as cp
 
+import CHAPSim_post.post._cy_ext32_base as cy_ext32_base
+import CHAPSim_post.post._cy_ext64_base as cy_ext64_base
 __all__ = ["Grad_calc",'Scalar_grad_io',"Vector_div_io",
             "Scalar_laplacian_io","Scalar_laplacian_tg"]
 
@@ -35,6 +37,9 @@ class Gradient():
             msg = f"For this method only gradient order 2 can be used not {cp.rcParams['gradient_order']}"
             warnings.warn(msg)
         self.grad_calc_method = self.grad_calc_numpy
+
+    def setup_cython_method(self,coordDF):
+        self.grad_calc_method = self.grad_calc_cy
 
     def setup_symbolic_stored_method(self,coordDF):
         msg = "This methods have not been implemented yet"
@@ -71,7 +76,58 @@ class Gradient():
                     " does not match")
             raise ValueError(msg)
         return np.gradient(flow_array,coord_array,edge_order=2,axis=dim)
+    
+    def grad_calc_cy(self,CoordDF,flow_array,comp):
+        
+        if flow_array.ndim == 3:
+            dim = ord('z') - ord(comp)
+        elif flow_array.ndim == 2:
+            dim = ord('y') - ord(comp)
+            if comp == 'z':
+                msg = "gradients in the z direction can only be calculated on 3-d arrays"
+                raise Exception(msg)
+        else:
+            msg = "This method can only be used on two and three dimensional arrays"
+            raise TypeError(msg)
 
+        coord_array = CoordDF[comp]
+        if coord_array.size != flow_array.shape[dim]:
+            msg = (f"The coordinate array size ({coord_array.size})"
+                    f" and flow array size in dimension ({flow_array.shape[dim]})"
+                    " does not match")
+            raise ValueError(msg)
+        
+        return self._grad_calc_cy_work(flow_array,coord_array,dim)
+    
+    def _grad_calc_cy_work(self,flow_array,coord_array,dim):
+        if cp.rcParams['dtype'] == np.float32:
+            cy_ext_base = cy_ext32_base
+        elif cp.rcParams['dtype'] == np.float64:
+            cy_ext_base = cy_ext64_base
+        else:
+            msg = "To use this method the dtype has to f4 or f8"
+            raise TypeError(msg)
+
+        dx_array = np.diff(coord_array)
+        dx = None
+
+        if np.allclose(dx_array,[dx_array[0]]):
+            dx = dx_array[0]
+            if flow_array.ndim ==2:
+                return cy_ext_base.cy_gradient_calc2D_dx(flow_array,dx,dim)
+            else:
+                return cy_ext_base.cy_gradient_calc3D_dx(flow_array,dx,dim)
+        else:
+            dx = dx_array[0]
+            if flow_array.ndim ==2:
+                return cy_ext_base.cy_gradient_calc2D_var_x(flow_array,dx_array,dim)
+            else:
+                return cy_ext_base.cy_gradient_calc3D_var_x(flow_array,dx_array,dim)
+        
+        
+    def grad_calc_sparse(self,CoordDF,flow_array,comp):
+        pass
+    
     def Grad_calc(self,coordDF,flow_array,comp):
         self.setup(coordDF)
         return self.grad_calc_method(coordDF,flow_array,comp)

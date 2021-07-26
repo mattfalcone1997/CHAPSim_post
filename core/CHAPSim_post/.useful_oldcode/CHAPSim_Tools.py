@@ -6,7 +6,7 @@ of CHAPSim_post.
 
 import numpy as np
 # import CHAPSim_parallel as cpar
-from . import CHAPSim_post as cp
+# from . import CHAPSim_post as cp
 # import CHAPSim_post_v2 as cp2
 
 import warnings

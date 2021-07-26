@@ -15,7 +15,8 @@ class Params:
                         "gradient_method":"numpy",
                         "gradient_order": 2,
                         "AVG_Style": "overline",
-                        "relax_HDF_type_checks":False}
+                        "relax_HDF_type_checks":False,
+                        "use_parallel":True}
 
     def __getitem__(self,key):
         if key not in self.__params.keys():
@@ -35,12 +36,12 @@ class Params:
             elif not isinstance(value,np.dtype):
                 msg = f"For key {key}, the value must be of type {str} or {np.dtype}"
                 raise TypeError(msg)
-
-        if not isinstance(value,type(self.__params[key])):
-            msg = f"Parameter {key} requires arguments of type {type(self.__params[key])}"
-            raise TypeError(msg)
         else:
-            self.__params[key] = value
+            if not isinstance(value,type(self.__params[key])):
+                msg = f"Parameter {key} requires arguments of type {type(self.__params[key])}"
+                raise TypeError(msg)
+
+        self.__params[key] = value
 
 rcParams = Params()
 
