@@ -8,7 +8,13 @@ developing flow from the acceleration.
 import h5py
 import numpy as np
 import os
-from scipy import integrate
+
+import scipy
+if scipy.__version__ >= '1.6':
+    from scipy.integrate import simpson as integrate_simps
+else:
+    from scipy.integrate import simps as integrate_simps
+
 import sys
 
 from . import post as cp
@@ -49,7 +55,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         for i in range(self.NCL[1]):
             u_velo[i,:]=u_velo[i,:] - wall_velo
         for i in range(self.shape[1]):
-            bulk_velo[i] = 0.5*integrate.simps(u_velo[:,i],ycoords)
+            bulk_velo[i] = 0.5*integrate_simps(u_velo[:,i],ycoords)
         
         return bulk_velo
 
@@ -136,8 +142,8 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
             theta_integrand[i] = (np.divide(U_mean[i],U0))*(1 - np.divide(U_mean[i],U0))
             delta_integrand[i] = (1 - np.divide(U_mean[i],U0))
         for j in range(self.shape[1]):
-            mom_thickness[j] = integrate.simps(theta_integrand[:,j],y_coords[:U0_index])
-            disp_thickness[j] = integrate.simps(delta_integrand[:,j],y_coords[:U0_index])
+            mom_thickness[j] = integrate_simps(theta_integrand[:,j],y_coords[:U0_index])
+            disp_thickness[j] = integrate_simps(delta_integrand[:,j],y_coords[:U0_index])
         shape_factor = np.divide(disp_thickness,mom_thickness)
         
         return disp_thickness, mom_thickness, shape_factor
@@ -203,7 +209,7 @@ class CHAPSim_perturb():
         tau_w = self.__avg_data.tau_calc(PhyTime)
         return tau_w - tau_w[0]
 
-    def mean_velo_peturb_calc(self,comp,PhyTime):
+    def mean_velo_perturb_calc(self,comp,PhyTime):
         U_velo_mean = self.__avg_data.flow_AVGDF[PhyTime,comp].copy()
         wall_velo = self._meta_data.wall_velocity
         for i in range(self.__avg_data.shape[0]):
@@ -256,7 +262,7 @@ class CHAPSim_perturb():
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
-    def plot_peturb_cf(self,PhyTime=None,wall_units=False,fig=None,ax=None,**kwargs):
+    def plot_perturb_cf(self,PhyTime=None,wall_units=False,fig=None,ax=None,**kwargs):
         PhyTime = self.__avg_data.check_PhyTime(PhyTime)
         tau_du = self.tau_du_calc(PhyTime)
         bulkvelo = self.__avg_data._bulk_velo_calc(PhyTime)
@@ -297,8 +303,8 @@ class CHAPSim_perturb():
         theta_integrand = mean_velo[:U0_index]*(1-mean_velo[:U0_index])
         delta_integrand = 1-mean_velo[:U0_index]
         for j in range(self.__avg_data.shape[1]-x_loc):
-            mom_thickness[j] = integrate.simps(theta_integrand[:,j],y_coords[:U0_index])
-            disp_thickness[j] = integrate.simps(delta_integrand[:,j],y_coords[:U0_index])
+            mom_thickness[j] = integrate_simps(theta_integrand[:,j],y_coords[:U0_index])
+            disp_thickness[j] = integrate_simps(delta_integrand[:,j],y_coords[:U0_index])
         shape_factor = np.divide(disp_thickness,mom_thickness)
 
         

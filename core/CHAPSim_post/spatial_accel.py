@@ -2,7 +2,13 @@
 import h5py
 import numpy as np
 import os
-from scipy import integrate
+
+import scipy
+if scipy.__version__ >= '1.6':
+    from scipy.integrate import simpson as integrate_simps
+else:
+    from scipy.integrate import simps as integrate_simps
+
 import sys
 
 from . import post as cp
@@ -33,8 +39,8 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
             delta_integrand[i] = 1 - U_mean[i]/U0
 
         for j in range(self.shape[1]):
-            mom_thickness[j] = integrate.simps(theta_integrand[:,j],y_coords)
-            disp_thickness[j] = integrate.simps(delta_integrand[:,j],y_coords)
+            mom_thickness[j] = integrate_simps(theta_integrand[:,j],y_coords)
+            disp_thickness[j] = integrate_simps(delta_integrand[:,j],y_coords)
         shape_factor = disp_thickness/mom_thickness
         
         return disp_thickness, mom_thickness, shape_factor

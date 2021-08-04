@@ -11,7 +11,13 @@ from .utils import misc_utils, indexing
 import sys
 import warnings
 import numpy as np
-from scipy import integrate
+
+import scipy
+if scipy.__version__ >= '1.6':
+    from scipy.integrate import simpson as integrate_simps
+else:
+    from scipy.integrate import simps as integrate_simps
+
 import h5py
 import os
 
@@ -62,7 +68,7 @@ class CHAPSim_AVG_custom_t(cp.CHAPSim_AVG_tg_base):
         start_distance = bulk_velo[0]*(accel_start - time0)
         conv_distance = np.zeros_like(bulk_velo)
         for i , _ in enumerate(bulk_velo):
-            conv_distance[i] = integrate.simps(bulk_velo[:(i+1)],times[:(i+1)])
+            conv_distance[i] = integrate_simps(bulk_velo[:(i+1)],times[:(i+1)])
         return conv_distance - start_distance
 
     # @staticmethod
@@ -254,8 +260,8 @@ class CHAPSim_AVG_tg_conv(CHAPSim_AVG_tg):
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
-
-class CHAPSim_perturb():
+from CHAPSim_post.post._common import Common
+class CHAPSim_perturb(Common):
     def __init__(self,avg_data=None, meta_data=None,path_to_folder='.',time0=None,abs_path=True):
         if avg_data is not None:
             if not isinstance(avg_data,cp.CHAPSim_AVG_tg_base):
@@ -268,10 +274,18 @@ class CHAPSim_perturb():
             meta_data = self.__avg_data._meta_data
         self._meta_data = meta_data
         self.start  = self.metaDF['temp_start_end'][0]
+
+    @property
+    def shape(self):
+        time_0_index = self.__avg_data._return_index(self.start) -1
+        shape = (self.__avg_data.shape[0],self.__avg_data.shape[1]-time_0_index)
+        return shape
+
     def tau_du_calc(self):
         
         tau_w = self.__avg_data.tau_calc()
-        return tau_w - tau_w[0]
+        start_index = self.__avg_data._return_index(self.start)-1
+        return tau_w - tau_w[start_index]
 
     def mean_velo_peturb_calc(self,comp):
         U_velo_mean = self.__avg_data.flow_AVGDF[None,comp].copy()
@@ -321,11 +335,10 @@ class CHAPSim_perturb():
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
-    def plot_peturb_cf(self,wall_units=False,fig=None,ax=None,**kwargs):
+    def plot_perturb_cf(self,wall_units=False,fig=None,ax=None,**kwargs):
 
         tau_du = self.tau_du_calc()
         bulkvelo = self.__avg_data._bulk_velo_calc(None)
-
         x_loc = self.__avg_data._return_index(self.start)+1
 
         REN = self.metaDF['REN']
@@ -334,7 +347,7 @@ class CHAPSim_perturb():
         
         
         times = self.__avg_data._return_xaxis()[x_loc:] - self.start
-        
+
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
             
@@ -358,8 +371,8 @@ class CHAPSim_perturb():
         delta_integrand = 1-mean_velo[:U0_index]
 
         for j in range(self.__avg_data.shape[1]-x_loc):
-            mom_thickness[j] = integrate.simps(theta_integrand[:,j],y_coords[:U0_index])
-            disp_thickness[j] = integrate.simps(delta_integrand[:,j],y_coords[:U0_index])
+            mom_thickness[j] = integrate_simps(theta_integrand[:,j],y_coords[:U0_index])
+            disp_thickness[j] = integrate_simps(delta_integrand[:,j],y_coords[:U0_index])
         shape_factor = np.divide(disp_thickness,mom_thickness)
 
         
@@ -531,7 +544,7 @@ _meta_class = CHAPSim_meta
 #         wall_velo = self._meta_data.wall_velocity
         
 #         u_velo = u_velo - wall_velo
-#         bulk_velo = 0.5*integrate.simps(u_velo,ycoords,axis=0)
+#         bulk_velo = 0.5*integrate_simps(u_velo,ycoords,axis=0)
             
 #         return bulk_velo
 
@@ -569,8 +582,8 @@ _meta_class = CHAPSim_meta
 #             theta_integrand[i] = (U_mean[i]/U0)*(1 - U_mean[i]/U0)
 #             delta_integrand[i] = 1 - U_mean[i]/U0
 
-#         mom_thickness = integrate.simps(theta_integrand,y_coords,axis=0)
-#         disp_thickness = integrate.simps(delta_integrand,y_coords,axis=0)
+#         mom_thickness = integrate_simps(theta_integrand,y_coords,axis=0)
+#         disp_thickness = integrate_simps(delta_integrand,y_coords,axis=0)
 #         shape_factor = disp_thickness/mom_thickness
         
 #         return disp_thickness, mom_thickness, shape_factor

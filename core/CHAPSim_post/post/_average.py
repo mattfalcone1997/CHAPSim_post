@@ -5,13 +5,14 @@ averaged results from the CHAPSim DNS solver
 """
 
 import numpy as np
-import matplotlib as mpl
-import h5py
-from scipy import integrate
 
-import sys
+import scipy
+if scipy.__version__ >= '1.6':
+    from scipy.integrate import simpson as integrate_simps
+else:
+    from scipy.integrate import simps as integrate_simps
+
 import os
-import warnings
 import gc
 import itertools
 import copy
@@ -19,7 +20,7 @@ from abc import ABC, abstractmethod, abstractproperty
 
 import CHAPSim_post as cp
 
-from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
+from CHAPSim_post.utils import docstring, indexing, misc_utils
 
 import CHAPSim_post.plot as cplt
 import CHAPSim_post.dtypes as cd
@@ -40,6 +41,77 @@ class CHAPSim_AVG_base(Common,ABC):
         else:
             self._extract_avg(*args,**kwargs)
 
+    def _extract_file_io(self,PhyTime,path_to_folder,abs_path):
+        instant = "%0.9E" % PhyTime
+
+        full_path = misc_utils.check_paths(path_to_folder,'2_averaged_rawdata',
+                                                            '2_averagd_D')
+
+        file_string = "DNS_perioz_AVERAGD_T" + instant + "_FLOW.D"
+        
+        if not abs_path:
+            file_path = os.path.abspath(os.path.join(full_path, file_string))
+        else:
+            file_path = os.path.join(full_path, file_string)
+                
+        file = open(file_path,'rb')
+        
+        int_info = np.zeros(4)
+        r_info = np.zeros(3)
+
+        int_info = np.fromfile(file,dtype='int32',count=4)    
+        
+        NCL1 = int_info[0]
+        NCL2 = int_info[1]
+        NSTATIS = int_info[3]
+        
+        dummy_size = NCL1*NCL2*50*21
+        r_info = np.fromfile(file,dtype='float64',count=3)
+        PhyTime = r_info[0]
+
+        AVG_info = np.zeros(dummy_size)
+        AVG_info = np.fromfile(file,dtype='float64',count=dummy_size)
+
+        file.close()
+        return AVG_info, NSTATIS, PhyTime, [NCL1,NCL2]
+
+
+    def _extract_file_tg(self,PhyTime,path_to_folder,abs_path):
+        instant = "%0.9E" % PhyTime
+        
+        full_path = misc_utils.check_paths(path_to_folder,'2_averaged_rawdata',
+                                                            '2_averagd_D')
+
+
+        file_string = "DNS_perixz_AVERAGD_T" + instant + "_FLOW.D"
+        
+        if not abs_path:
+            file_path = os.path.abspath(os.path.join(full_path, file_string))
+        else:
+            file_path = os.path.join(full_path, file_string)
+                
+        file = open(file_path,'rb')
+        
+        int_info = np.zeros(4)
+        r_info = np.zeros(3)
+        int_info = np.fromfile(file,dtype='int32',count=4)    
+        
+        NCL2 = int_info[0]
+        NSZ = int_info[1]
+        ITERG = int_info[2]
+        NSTATIS = int_info[3]
+        dummy_size = NCL2*NSZ
+        r_info = np.fromfile(file,dtype='float64',count=3)
+        
+        PhyTime = r_info[0]
+        AVG_info = np.zeros(dummy_size)
+        AVG_info = np.fromfile(file,dtype='float64',count=dummy_size)
+
+        AVG_info = AVG_info.reshape(NSZ,NCL2)
+
+        file.close()
+        
+        return AVG_info, NSTATIS, PhyTime, NCL2
     @abstractmethod
     def _extract_avg(self,*args,**kwargs):
         raise NotImplementedError
@@ -181,8 +253,6 @@ class CHAPSim_AVG_base(Common,ABC):
     def _return_xaxis(self,*args,**kwargs):
         raise NotImplementedError
 
-    def get_times(self):
-        return self._times
 
     def _wall_unit_calc(self,PhyTime):
         
@@ -225,8 +295,8 @@ class CHAPSim_AVG_base(Common,ABC):
             delta_integrand[i] = 1 - U_mean[i]/U0
 
         for j in range(self.shape[1]):
-            mom_thickness[j] = 0.5*integrate.simps(theta_integrand[:,j],y_coords)
-            disp_thickness[j] = 0.5*integrate.simps(delta_integrand[:,j],y_coords)
+            mom_thickness[j] = 0.5*integrate_simps(theta_integrand[:,j],y_coords)
+            disp_thickness[j] = 0.5*integrate_simps(delta_integrand[:,j],y_coords)
         shape_factor = disp_thickness/mom_thickness
         
         return disp_thickness, mom_thickness, shape_factor
@@ -457,7 +527,7 @@ class CHAPSim_AVG_base(Common,ABC):
         u_velo = self.flow_AVGDF[PhyTime,'u'].squeeze()
         ycoords = self.CoordDF['y']
 
-        bulk_velo = 0.5*integrate.simps(u_velo,ycoords,axis=0)
+        bulk_velo = 0.5*integrate_simps(u_velo,ycoords,axis=0)
             
         return bulk_velo
 
@@ -603,10 +673,10 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
     def _AVG_extract(self,Time_input,time0,path_to_folder,abs_path):
 
-        AVG_info, NSTATIS1, PhyTime, NCL = self._extract_file(Time_input,path_to_folder,abs_path)
+        AVG_info, NSTATIS1, PhyTime, NCL = self._extract_file_io(Time_input,path_to_folder,abs_path)
 
         if time0 is not None:
-            AVG_info0, NSTATIS0,_,_ = self._extract_file(time0,path_to_folder,abs_path)
+            AVG_info0, NSTATIS0,_,_ = self._extract_file_io(time0,path_to_folder,abs_path)
             AVG_info = (AVG_info*NSTATIS1 - AVG_info0*NSTATIS0)/(NSTATIS1-NSTATIS0)
             del AVG_info0
 
@@ -681,40 +751,6 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         
         return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
                     Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
-    
-    def _extract_file(self,PhyTime,path_to_folder,abs_path):
-        instant = "%0.9E" % PhyTime
-
-        full_path = misc_utils.check_paths(path_to_folder,'2_averaged_rawdata',
-                                                            '2_averagd_D')
-
-        file_string = "DNS_perioz_AVERAGD_T" + instant + "_FLOW.D"
-        
-        if not abs_path:
-            file_path = os.path.abspath(os.path.join(full_path, file_string))
-        else:
-            file_path = os.path.join(full_path, file_string)
-                
-        file = open(file_path,'rb')
-        
-        int_info = np.zeros(4)
-        r_info = np.zeros(3)
-
-        int_info = np.fromfile(file,dtype='int32',count=4)    
-        
-        NCL1 = int_info[0]
-        NCL2 = int_info[1]
-        NSTATIS = int_info[3]
-        
-        dummy_size = NCL1*NCL2*50*21
-        r_info = np.fromfile(file,dtype='float64',count=3)
-        PhyTime = r_info[0]
-
-        AVG_info = np.zeros(dummy_size)
-        AVG_info = np.fromfile(file,dtype='float64',count=dummy_size)
-
-        file.close()
-        return AVG_info, NSTATIS, PhyTime, [NCL1,NCL2]
 
     def _return_index(self,x_val):
         return indexing.coord_index_calc(self.CoordDF,'x',x_val)
@@ -1282,16 +1318,17 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         if meta_data is None:
             meta_data = self._module._meta_class(path_to_folder,abs_path,tgpost=True)
         self._meta_data = meta_data
-
+    
         times = ['%.9g' % time for time in PhyTimes]
         for PhyTime in PhyTimes:
             if 'DF_list' not in locals():
                 DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,self.metaDF,time0)
+                
             else:
                 local_DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,self.metaDF,time0)
                 for i, _ in enumerate(DF_list):
                     DF_list[i].append(local_DF_list[i],axis=0)            
-       
+
         self._times=times
 
         for i,_ in enumerate(DF_list):
@@ -1317,7 +1354,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         # time_list = ["%.9g"%x for x in time_list]
         index_list = [self._return_index(x) for x in time_list]
         
-        self._times = time_list
+        self._times = ["%.9g"% time for time in time_list]
 
         for index in self.flow_AVGDF.index:
             self.flow_AVGDF[index] = self.flow_AVGDF[index][:,index_list]
@@ -1342,6 +1379,12 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
 
     @property
     def times(self):
+        print(self._times)
+        times = [float(time) for time in self._times]
+        return np.array(times)
+
+    def get_times(self):
+        self._times = ["%.9g"%float(time) for time in self._times]
         return self._times
 
     def __mul__(self,val):
@@ -1383,51 +1426,15 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
             msg = f"This class can only be added to other {self.__class__} not {type(other_avg_tg)}"
             raise TypeError(msg)
 
-    def _extract_file(self,PhyTime,path_to_folder,abs_path):
-        instant = "%0.9E" % PhyTime
-        
-        full_path = misc_utils.check_paths(path_to_folder,'2_averaged_rawdata',
-                                                            '2_averagd_D')
-
-
-        file_string = "DNS_perixz_AVERAGD_T" + instant + "_FLOW.D"
-        
-        if not abs_path:
-            file_path = os.path.abspath(os.path.join(full_path, file_string))
-        else:
-            file_path = os.path.join(full_path, file_string)
-                
-        file = open(file_path,'rb')
-        
-        int_info = np.zeros(4)
-        r_info = np.zeros(3)
-        int_info = np.fromfile(file,dtype='int32',count=4)    
-        
-        NCL2 = int_info[0]
-        NSZ = int_info[1]
-        ITERG = int_info[2]
-        NSTATIS = int_info[3]
-        dummy_size = NCL2*NSZ
-        r_info = np.fromfile(file,dtype='float64',count=3)
-        
-        PhyTime = r_info[0]
-        AVG_info = np.zeros(dummy_size)
-        AVG_info = np.fromfile(file,dtype='float64',count=dummy_size)
-
-        AVG_info = AVG_info.reshape(NSZ,NCL2)
-
-        file.close()
-        
-        return AVG_info, NSTATIS
     def _AVG_extract(self,PhyTime,path_to_folder,abs_path,metaDF,time0):
 
-        AVG_info, NSTATIS1 = self._extract_file(PhyTime,path_to_folder,abs_path)
+        AVG_info, NSTATIS1, _, _ = self._extract_file_tg(PhyTime,path_to_folder,abs_path)
         
         factor = metaDF['NCL1_tg']*metaDF['NCL3'] if cp.rcParams["dissipation_correction"] else 1.0
         ioflowflg = self.metaDF['iDomain'] in [2,3]
 
         if ioflowflg and time0:
-            AVG_info0, NSTATIS0 = self._extract_file(time0,path_to_folder,abs_path)
+            AVG_info0, NSTATIS0, _, _ = self._extract_file_tg(time0,path_to_folder,abs_path)
             AVG_info = (AVG_info*NSTATIS1 - AVG_info0*NSTATIS0)/(NSTATIS1-NSTATIS0)
 
         flow_AVG = AVG_info[:4]
@@ -1490,8 +1497,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         super().save_hdf(file_name,write_mode,key)
 
         hdf_obj = cd.hdfHandler(file_name,'a',key=key)
-        hdf_obj.attrs['times'] = np.array([np.string_(x) for x in self.times])
-
+        hdf_obj.attrs['times'] = np.array([np.string_(x) for x in self._times])
 
     def _return_index(self,PhyTime):
         if not isinstance(PhyTime,str):
@@ -1504,7 +1510,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
                 return i
 
     def _return_xaxis(self):
-        return np.array([float(time) for time in self.get_times()])
+        return self.times
 
     @docstring.sub
     def wall_unit_calc(self):
@@ -1877,3 +1883,40 @@ class CHAPSim_AVG():
             return cls(tgpost=tgpost,fromfile=True,*args,**kwargs)
         else:
             return cls(fromfile=True,*args,**kwargs)
+
+# class CHAPSim_AVG_tg_new(CHAPSim_AVG_base):
+#     def _extract_avg(self,time,meta_data=None,path_to_folder=".",time0=None,abs_path=True):
+#         if meta_data is None:
+#             meta_data = self._module._meta_class(path_to_folder,abs_path,False)
+
+#         self._meta_data = meta_data.copy()
+#         time = misc_utils.check_list_vals(time)
+
+#         for PhyTime in time:
+#             if 'DF_list' not in locals():
+#                 DF_list = self._AVG_extract(PhyTime,time0,path_to_folder,abs_path)
+#             else:
+#                 DF_temp=[]
+#                 local_DF_list = self._AVG_extract(PhyTime,time0,path_to_folder,abs_path)
+#                 for i, local_DF in enumerate(DF_list):
+#                     DF_list[i].concat(local_DF_list[i])
+
+#         DF_list=self._Reverse_decomp(*DF_list)
+
+
+#         self.flow_AVGDF,self.PU_vectorDF,\
+#         self.UU_tensorDF,self.UUU_tensorDF,\
+#         self.Velo_grad_tensorDF, self.PR_Velo_grad_tensorDF,\
+#         self.DUDX2_tensorDF = DF_list
+        
+
+#         self._times = list(set([x[0] for x in self.flow_AVGDF.index]))
+
+#         def _AVG_extract(self,Time_input,time0,path_to_folder,abs_path):
+
+#             AVG_info, NSTATIS1, PhyTime, NCL2 = self._extract_file_tg(Time_input,path_to_folder,abs_path)
+
+#             if time0 is not None:
+#                 AVG_info0, NSTATIS0,_,_ = self._extract_file_io(time0,path_to_folder,abs_path)
+#                 AVG_info = (AVG_info*NSTATIS1 - AVG_info0*NSTATIS0)/(NSTATIS1-NSTATIS0)
+#                 del AVG_info0

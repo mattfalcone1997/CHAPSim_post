@@ -284,7 +284,6 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
 
     def _fluctDF_calc(self, inst_data, avg_data):
         
-        fluct = np.zeros((len(inst_data.InstDF.index),*inst_data.shape[:]))
         avg_time = list(set([x[0] for x in avg_data.flow_AVGDF.index]))
         
         assert len(avg_time) == 1, "In this context therecan only be one time in avg_data"
@@ -327,7 +326,7 @@ class CHAPSim_fluct_tg(CHAPSim_fluct_base):
         self._meta_data = avg_data._meta_data
     
     def _fluctDF_calc(self, inst_data, avg_data):
-        avg_times = avg_data.get_times()
+        avg_times = avg_data.times
         inst_times = list(set([x[0] for x in inst_data.InstDF.index]))
         u_comp = [x[1] for x in avg_data.flow_AVGDF.index]
         indices = inst_data.InstDF.index

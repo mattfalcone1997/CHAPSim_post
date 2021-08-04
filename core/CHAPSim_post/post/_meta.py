@@ -77,7 +77,7 @@ class CHAPSim_meta():
         # self.path_to_folder = hdf_file[key].attrs['path_to_folder'].decode('utf-8')
         # self._abs_path = bool(hdf_file[key].attrs['abs_path'])
         # hdf_file.close()
-   
+    
     def save_hdf(self,file_name,write_mode,key=None):
         if key is None:
             key = self.__class__.__name__
@@ -123,7 +123,7 @@ class CHAPSim_meta():
 
         meta_DF = cd.metastruct(meta_list,index=key_list)
         return meta_DF
-
+    
     def _coord_extract(self,path_to_folder,abs_path,tgpost,ioflg):
         if os.path.isdir(os.path.join(path_to_folder,'0_log_monitors')):
             return self._coord_extract_new(path_to_folder,abs_path,tgpost,ioflg)
@@ -450,8 +450,8 @@ class coorddata:
 
 
     def _copy_extract(self,other_coorddata):
-        self.coord_centered = other_coorddata.centered
-        self.coord_staggered = other_coorddata.staggered
+        self.coord_centered = other_coorddata.centered.copy()
+        self.coord_staggered = other_coorddata.staggered.copy()
         self._domain_handler = other_coorddata._domain_handler
 
 

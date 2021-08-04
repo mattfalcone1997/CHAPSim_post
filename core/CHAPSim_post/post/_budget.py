@@ -7,18 +7,17 @@ CHAPSim_AVG classes
 
 import numpy as np
 import matplotlib as mpl
-from scipy import integrate
+import scipy
 
-import sys
-import os
-import warnings
-import gc
+if scipy.__version__ >= '1.6':
+    from scipy.integrate import simpson as integrate_simps
+else:
+    from scipy.integrate import simps as integrate_simps
+
 import itertools
 from abc import ABC, abstractmethod
 
-import CHAPSim_post as cp
-
-from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
+from CHAPSim_post.utils import indexing, misc_utils
 
 import CHAPSim_post.plot as cplt
 import CHAPSim_post.dtypes as cd
@@ -170,7 +169,7 @@ class CHAPSim_budget_base(Common,ABC):
             integral_budget = np.zeros(self.avg_data.shape[1])
             budget_term = self.budgetDF[PhyTime,comp].copy()
             for i in range(self.avg_data.shape[1]):
-                integral_budget[i] = 0.5*integrate.simps(budget_term[:,i],y_coords)
+                integral_budget[i] = 0.5*integrate_simps(budget_term[:,i],y_coords)
                 if wall_units:
                     delta_star=1.0
                     integral_budget[i] /=(delta_star*u_tau_star[i]**3/delta_v_star[i])
@@ -698,8 +697,8 @@ class CHAPSim_Momentum_budget_base(CHAPSim_budget_base):
                 
                 y = -1*self.avg_data.CoordDF['y'][middle_index:middle_index-i-1:-1]
                 integrand = val[middle_index:middle_index-i-1:-1]
-                budget[middle_index-i-1,:] = integrate.simps(integrand,y,axis=0)
-                budget[middle_index+i,:] = integrate.simps(integrand,y,axis=0)
+                budget[middle_index-i-1,:] = integrate_simps(integrand,y,axis=0)
+                budget[middle_index+i,:] = integrate_simps(integrand,y,axis=0)
             self.budgetDF[index] = budget
 
         fig, ax = super()._budget_plot(PhyTime,x_list,budget_terms,False,fig,ax,**kwargs)
@@ -912,9 +911,9 @@ class CHAPSim_FIK_base(CHAPSim_budget_base):
     def __init__(self,avg_data=None,PhyTime=None,*args,**kwargs):
 
         if avg_data is not None:
-            self.avg_data = avg_data
+            self.avg_data = avg_data.copy()
         elif PhyTime is not None:
-            self.avg_data = self._module._avg_class(PhyTime,*args,**kwargs)
+            avg_data = self._module._avg_class(PhyTime,*args,**kwargs)
         else:
             raise Exception
 
@@ -922,7 +921,52 @@ class CHAPSim_FIK_base(CHAPSim_budget_base):
             PhyTime = list(set([x[0] for x in self.avg_data.flow_AVGDF.index]))[0]
         
         self.budgetDF = self._budget_extract(PhyTime)
-        self.shape = self.avg_data.shape    
+
+    def _modify_avg(self,avg_data):
+        new_avg_data = avg_data.copy()
+        new_shape = list(avg_data.shape)    
+        new_shape[0] = new_shape[0] +2
+
+        flow_AVG = np.zeros((4,*new_shape))
+        UU_tensor = np.zeros((6,*new_shape))
+        
+        flow_AVG[:,1:-1,:] = avg_data.flow_AVGDF.values
+        UU_tensor[:,1:-1,:] = avg_data.UU_tensorDF.values
+
+
+        flow_AVG[:3,0,:] = 0.0
+        flow_AVG[:3,-1,:] = 0.0
+
+        UU_tensor[:,0,:] = 0.0
+        UU_tensor[:,-1,:] = 0.0
+
+        flow_AVG[3,0,:] = flow_AVG[3,1,:]
+        flow_AVG[3,-1,:] = flow_AVG[3,-2,:]
+
+        flow_index = new_avg_data.flow_AVGDF.index
+        uu_index = new_avg_data.UU_tensorDF.index
+        new_avg_data.flow_AVGDF = cd.datastruct(flow_AVG,index = flow_index)
+        new_avg_data.UU_tensorDF = cd.datastruct(UU_tensor,index=uu_index)
+
+        y_coords = np.zeros(new_shape[0])
+
+        y_coords[1:-1] = new_avg_data.CoordDF['y']
+        y_coords[0] = new_avg_data._meta_data.Coord_ND_DF['y'][0]
+        y_coords[-1] = new_avg_data._meta_data.Coord_ND_DF['y'][-1]
+        new_avg_data.CoordDF['y'] = y_coords
+
+
+
+        delattr(new_avg_data,'UUU_tensorDF')
+        delattr(new_avg_data,'PU_vectorDF')
+        delattr(new_avg_data,'Velo_grad_tensorDF')
+        delattr(new_avg_data,'PR_Velo_grad_tensorDF')
+        delattr(new_avg_data,'DUDX2_tensorDF')
+
+        return new_avg_data
+
+
+
 
     def _budget_extract(self,PhyTime):
         laminar = self._laminar_extract(PhyTime)
@@ -944,8 +988,8 @@ class CHAPSim_FIK_base(CHAPSim_budget_base):
 
         rel_bulk = self.avg_data._bulk_velo_calc(PhyTime=PhyTime)
         REN = self.avg_data.metaDF['REN']
-        const = 4.0 if self.Domain.is_cylind else 3.0
-        return const/(REN*rel_bulk**2)
+        const = 4.0 if self.Domain.is_cylind else 6.0
+        return const/(REN*rel_bulk)
 
     def _turbulent_extract(self,PhyTime):
 
@@ -961,7 +1005,7 @@ class CHAPSim_FIK_base(CHAPSim_budget_base):
             turbulent[i] =    6*y*uv[i,:]
 
 
-        return integrate.simps(turbulent,y_coords[:limit]+1,axis=0)/bulk**2
+        return integrate_simps(turbulent,y_coords[:limit]+1,axis=0)/bulk**2
 
     @abstractmethod
     def _inertia_extract(self,PhyTime):
@@ -1000,7 +1044,7 @@ class CHAPSim_FIK_io(CHAPSim_FIK_base):
         pressure = self.avg_data.flow_AVGDF[PhyTime,'P']
         pressure_grad_x = self.Domain.Grad_calc(self.avg_data.CoordDF,pressure,'x')
 
-        p_prime2 = pressure_grad_x - 0.5*integrate.simps(pressure_grad_x,y_coords,axis=0)
+        p_prime2 = pressure_grad_x - 0.5*integrate_simps(pressure_grad_x,y_coords,axis=0)
 
         u_mean2 = self.avg_data.flow_AVGDF[PhyTime,'u']**2
         uu = self.avg_data.UU_tensorDF[PhyTime,'uu']
@@ -1017,16 +1061,16 @@ class CHAPSim_FIK_io(CHAPSim_FIK_base):
 
         I_x = d_UU_dx + d_uv_dy - (1/REN)*d2u_dx2
 
-        I_x_prime  = I_x - 0.5*integrate.simps(I_x,y_coords,axis=0)
+        I_x_prime  = I_x - 0.5*integrate_simps(I_x,y_coords,axis=0)
 
         limit = int(0.5*y_coords.size)
-        limit = int(0.5*y_coords.size)
+
         out = np.zeros_like(U_mean[:limit])
         for i,y in enumerate(y_coords[:limit]):
             out[i] = (p_prime2 + I_x_prime)[i,:]*y**2
 
 
-        return -3.0*integrate.simps(out,y_coords[:limit]+1,axis=0)/(bulk**2)
+        return -3.0*integrate_simps(out,y_coords[:limit]+1,axis=0)/(bulk**2)
 
     def plot(self,*args,**kwargs):
         fig, ax = super().plot(*args,**kwargs)
@@ -1061,12 +1105,12 @@ class CHAPSim_FIK_tg(CHAPSim_FIK_base):
 
         dpdx = (1/REN)*d2u_dy2 - duv_dy  - dudt
 
-        dp_prime_dx = dpdx - 0.5*integrate.simps((1/REN)*d2u_dy2 - duv_dy,y_coords,axis=0) 
+        dp_prime_dx = dpdx - 0.5*integrate_simps((1/REN)*d2u_dy2 - duv_dy,y_coords,axis=0) 
 
         UV = self.avg_data.flow_AVGDF[PhyTime,'u']*self.avg_data.flow_AVGDF[PhyTime,'v']
         I_x = self.Domain.Grad_calc(self.avg_data.CoordDF,UV,'y')
 
-        I_x_prime = I_x - 0.5*integrate.simps(I_x,y_coords,axis=0)
+        I_x_prime = I_x - 0.5*integrate_simps(I_x,y_coords,axis=0)
 
         limit = int(0.5*U_mean.shape[0])
         out = np.zeros((limit,U_mean.shape[1]))
@@ -1074,7 +1118,7 @@ class CHAPSim_FIK_tg(CHAPSim_FIK_base):
             out[i] = (I_x_prime + dp_prime_dx + dudt)[i,:]*y**2
     
 
-        return -3.0*integrate.simps(out,1+y_coords[:limit],axis=0)/(bulk**2)
+        return -3.0*integrate_simps(out,1+y_coords[:limit],axis=0)/(bulk**2)
 
     def plot(self,budget_terms=None,*args,**kwargs):
         fig, ax = super().plot(budget_terms,PhyTime=None,*args,**kwargs)

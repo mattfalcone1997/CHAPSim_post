@@ -8,7 +8,7 @@ import warnings
 import sys
 from CHAPSim_post import rcParams
 import copy 
-
+from functools import wraps 
 class ParallelConcurrent():
     def __init__(self,*args,**kwargs):
         self._executor = concurrent.futures.ThreadPoolExecutor(*args,**kwargs)
@@ -82,6 +82,17 @@ class processCallable:
     def __setstate__(self,state):
         self.__dict__ = state
 
+
+def processWrap(func):
+    module = sys.modules[__name__]
+    setattr(module,func.__name__,func)
+
+    @wraps(func)
+    def wrapper(*args,**kwargs):
+        return func(*args,**kwargs)
+
+    return wrapper
+
 class ParallelOverlap:
     def __init__(self,*args,thread=True,**kwargs):
         if thread:
@@ -98,6 +109,7 @@ class ParallelOverlap:
             self._funcs.append(func)
         else:
             module = sys.modules[func.__module__]
+            setattr(module,func.__name__,func)
             self._funcs.append(getattr(module,func.__name__))
         
         self._args.append(args)

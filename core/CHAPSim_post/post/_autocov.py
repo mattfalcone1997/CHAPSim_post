@@ -17,7 +17,7 @@ import time
 from abc import ABC, abstractmethod
 
 import CHAPSim_post as cp
-from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
+from CHAPSim_post.utils import parallel, indexing, misc_utils
 
 import CHAPSim_post.plot as cplt
 import CHAPSim_post.dtypes as cd
@@ -378,22 +378,55 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
         
         # self.shape_x = (max_x_sep,self.NCL[1],self.NCL[0]-max_x_sep)
         # self.shape_z = (max_z_sep,self.NCL[1],self.NCL[0])
-        
-        for i,timing in enumerate(times):
-            
-            fluct_data = self._module._fluct_io_class(timing,self._avg_data,time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
-            coe3 = i/(i+1)
-            coe2 = 1/(i+1)
 
-            if i==0:
-                R_x, R_z = self._autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
+        def _extract_data(time):
+            return self._module._fluct_io_class(time,self._avg_data,time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
+    
+        def _autocorr_calc(R_x,R_z,time,index,fluct_data):
+            coe3 = index/(index+1)
+            coe2 = 1/(index+1)
+
+            if index==0:
+                R_x, R_z = self._autocov_calc(fluct_data,comp1,comp2,time,max_x_sep,max_z_sep)
             else:
-                local_R_x, local_R_z = self._autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
+                local_R_x, local_R_z = self._autocov_calc(fluct_data,comp1,comp2,time,max_x_sep,max_z_sep)
                 if R_x.shape != local_R_x.shape or R_z.shape != local_R_z.shape:
                     msg = "There is a problem. the shapes of the local and averaged array are different"
                     raise ValueError(msg)
                 R_x = R_x*coe3 + local_R_x*coe2
                 R_z = R_z*coe3 + local_R_z*coe2
+
+            return R_x, R_z
+
+        R_x = None; R_z = None
+        for i,timing in enumerate(times):
+            
+            if i == 0:
+                fluct_data = _extract_data(timing)
+                continue
+
+            parallelExec = parallel.ParallelOverlap(thread=True)
+
+            parallelExec.register_func(_autocorr_calc,R_x,R_z,timing,i-1,fluct_data)
+            parallelExec.register_func(_extract_data,timing)
+
+            (R_x, R_z), fluct_data = parallelExec()
+            if timing == times[-1]:
+                R_x, R_z = _autocorr_calc(R_x,R_z,timing,i-1,fluct_data)
+
+            # fluct_data = self._module._fluct_io_class(timing,self._avg_data,time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
+            # coe3 = i/(i+1)
+            # coe2 = 1/(i+1)
+
+            # if i==0:
+            #     R_x, R_z = self._autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
+            # else:
+            #     local_R_x, local_R_z = self._autocov_calc(fluct_data,comp1,comp2,timing,max_x_sep,max_z_sep)
+            #     if R_x.shape != local_R_x.shape or R_z.shape != local_R_z.shape:
+            #         msg = "There is a problem. the shapes of the local and averaged array are different"
+            #         raise ValueError(msg)
+            #     R_x = R_x*coe3 + local_R_x*coe2
+            #     R_z = R_z*coe3 + local_R_z*coe2
 
         if cp.rcParams['SymmetryAVG'] and self.metaDF['iCase'] ==1:
             vy_count = comp1.count('v') + comp2.count('v')
@@ -441,7 +474,11 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
                 from ._f90_ext_base import autocov_calc_z
                 R_z = np.zeros((max_z_step,NCL2,NCL1),order='F')
             else:
-                from ._cy_ext_base import autocov_calc_z
+                if cp.rcParams['dtype'] == np.float64:
+                    from ._cy_ext64_base import autocov_calc_z
+                elif cp.rcParams['dtype'] == np.float32:
+                    from ._cy_ext32_base import autocov_calc_z
+
                 R_z = np.zeros((max_z_step,NCL2,NCL1))
 
             if max_z_step >0:
@@ -490,7 +527,11 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
                 from ._f90_ext_base import autocov_calc_x
                 R_x = np.zeros((max_x_step,NCL2,NCL1-max_x_step),order='F')
             else:
-                from ._cy_ext_base import autocov_calc_x
+                if cp.rcParams['dtype'] == np.float64:
+                    from ._cy_ext64_base import autocov_calc_x
+                elif cp.rcParams['dtype'] == np.float32:
+                    from ._cy_ext32_base import autocov_calc_x
+
                 R_x = np.zeros((max_x_step,NCL2,NCL1-max_x_step))
 
             if max_x_step >0:

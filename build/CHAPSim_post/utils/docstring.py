@@ -18,8 +18,8 @@ copy = docstring.copy
 
 short_name={
     "ndarray": np.ndarray.__name__,
-    "fig" : cplt.CHAPSimFigure.__name__,
-    "ax" : cplt.AxesCHAPSim.__name__
+    "ax" : cplt.AxesCHAPSim.__name__,
+    "fig" : cplt.CHAPSimFigure.__name__
 }
 handle.update(**short_name)
 
