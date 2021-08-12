@@ -226,7 +226,7 @@ class CHAPSim_perturb():
         return mean_velo_peturb
 
     def plot_perturb_velo(self,x_vals,PhyTime=None,comp='u',Y_plus=False,Y_plus_max=100,fig=None,ax =None,**kwargs):
-        velo_peturb = self.mean_velo_peturb_calc(comp,PhyTime)
+        velo_peturb = self.mean_velo_perturb_calc(comp,PhyTime)
 
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
         fig,ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
@@ -288,7 +288,7 @@ class CHAPSim_perturb():
         
         PhyTime  = self.__avg_data.check_PhyTime(PhyTime)
 
-        mean_velo = self.mean_velo_peturb_calc('u',PhyTime)
+        mean_velo = self.mean_velo_perturb_calc('u',PhyTime)
 
         start = self._meta_data.metaDF['location_start_end'][0]
         x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)[0]+1

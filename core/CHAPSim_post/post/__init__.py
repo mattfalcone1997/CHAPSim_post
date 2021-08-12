@@ -12,6 +12,8 @@ from ._average import CHAPSim_AVG_tg
 from ._average import CHAPSim_AVG
 
 from ._meta import CHAPSim_meta
+from ._meta import OutputFileStore_io
+from ._meta import OutputFileStore_tg
 
 from ._fluct import CHAPSim_fluct_io
 from ._fluct import CHAPSim_fluct_tg

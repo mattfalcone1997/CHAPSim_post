@@ -644,14 +644,11 @@ class CHAPSim_Momentum_budget_base(CHAPSim_budget_base):
         else:
             raise Exception
 
-        Common.__init__(self,self.avg_data._meta_data)
-
         if PhyTime is None:
             PhyTime = list(set([x[0] for x in self.avg_data.flow_AVGDF.index]))[0]
         
         self.comp=comp
         self.budgetDF = self._budget_extract(PhyTime,comp)
-        self.shape = self.avg_data.shape
 
     def _budget_extract(self,PhyTime,comp):
             
@@ -736,7 +733,7 @@ class CHAPSim_Momentum_budget_io(CHAPSim_Momentum_budget_base):
         S_comp = np.stack([S_comp_1,S_comp_2],axis=0)
         REN = self.avg_data.metaDF['REN']
         mu_star = 1.0
-        return (mu_star/REN)*self.Domain.Vector_div_io(self.avg_data.CoordDF,S_comp) 
+        return (mu_star/REN)*self.Domain.Vector_div_io(self.avg_data.CoordDF,2*S_comp) 
 
     def _turb_transport(self, PhyTime, comp):
 

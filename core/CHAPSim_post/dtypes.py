@@ -263,13 +263,18 @@ class hdfHandler:
     
     def __init__(self,filename,mode='r',key=None):
         
-        self._check_h5_file_name(filename,mode)
+        filename = self._check_h5_file_name(filename,mode)
 
         self._hdf_file = h5py.File(filename,mode=mode)
 
         self._hdf_data = self._check_h5_key(self._hdf_file,key,mode=mode)
 
     def __getattr__(self,attr):
+        if attr == '_hdf_data':
+            msg = ("The __getattr__ special method for this function can only be"
+                    " called after member _hdf_data has been set")
+            raise AttributeError(msg)
+
         if hasattr(self._hdf_data,attr):
             return getattr(self._hdf_data,attr)
         else:
@@ -299,7 +304,11 @@ class hdfHandler:
     def _check_h5_file_name(self,filename,mode):
 
         ext = os.path.splitext(filename)[-1]
-        
+
+        if ext == '':
+            ext = '.h5'
+            filename = filename + ext
+
         if ext not in self._available_ext:
             msg = "The file extention for HDF5 files must be %s not %s"%(self._available_ext,ext)
             raise ValueError(msg)
@@ -308,6 +317,8 @@ class hdfHandler:
             if not os.path.isfile(filename):
                 msg = f"Using file mode {mode} requires the file to exist"
                 raise ValueError(msg)
+
+        return filename
 
     def _write_allowed(self,mode):
         return bool(set(self._write_modes).intersection(mode))
@@ -349,6 +360,8 @@ class hdfHandler:
     def _generate_type_id(self,class_obj):
         if not isinstance(class_obj,type):
             msg = "class needs to be of instance type to generate type id"
+            raise TypeError(msg)
+
         module = class_obj.__module__
         class_name = class_obj.__name__
         return np.string_("/".join([module,class_name]))
@@ -410,7 +423,8 @@ class hdfHandler:
         return keys_list
 
     def __del__(self):
-        self._hdf_file.close()
+        if hasattr(self,'_hdf_file'):
+            self._hdf_file.close()
 
 class datastruct:
 

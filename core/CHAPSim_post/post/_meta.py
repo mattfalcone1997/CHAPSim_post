@@ -4,15 +4,13 @@ Class containing the meta data and coordinate arrays for the package
 """
 
 import numpy as np
-import h5py
 
-import sys
 import os
 import warnings
-import gc
 import copy
 import types
-
+import pandas as pd
+import itertools
 from pyvista import StructuredGrid
 
 import CHAPSim_post.dtypes as cd
@@ -30,7 +28,18 @@ class CHAPSim_meta():
     def __extract_meta(self,path_to_folder='.',abs_path=True,tgpost=False):
         self.metaDF = self._readdata_extract(path_to_folder,abs_path)
         ioflg = self.metaDF['iDomain'] in [2,3]
-       
+        tgflg = self.metaDF['iDomain'] == 1
+
+        # if ioflg and tgpost:
+        #     self._output_info_tg = OutputFileStore_tg(path_to_folder)
+        #     self._output_info_io = None
+        # elif ioflg and not tgpost:
+        #     self._output_info_io = OutputFileStore_io(path_to_folder)
+        #     self._output_info_tg = None
+        # else:
+        #     self._output_info_tg = OutputFileStore_tg(path_to_folder)
+        #     self._output_info_io = None
+        
         iCase = self.metaDF['iCase']
         self._coorddata = coorddata(iCase,self.metaDF,path_to_folder,abs_path,tgpost,ioflg)     
 
@@ -69,7 +78,17 @@ class CHAPSim_meta():
 
         self.metaDF = cd.metastruct.from_hdf(file_name,key=key+'/metaDF')#pd.read_hdf(file_name,key=base_name+'/metaDF')
 
-        self._coorddata = coorddata.from_hdf(file_name,key=key+"/coorddata")        
+        self._coorddata = coorddata.from_hdf(file_name,key=key+"/coorddata") 
+
+        # if 'output_info_tg' in hdf_obj.keys():
+        #     self._output_info_tg = OutputFileStore_tg.from_hdf(file_name,key=key+'/output_info_tg')
+        # else:
+        #     self._output_info_tg = None
+
+        # if 'output_info_io' in hdf_obj.keys():
+        #     self._output_info_io = OutputFileStore_io.from_hdf(file_name,key=key+'/output_info_io')
+        # else:
+        #     self._output_info_io = None
         #h5py.File(file_name,'r')
 
 
@@ -90,7 +109,10 @@ class CHAPSim_meta():
 
         self.metaDF.to_hdf(file_name,key=key+'/metaDF',mode='a')
         self._coorddata.to_hdf(file_name,key=key+'/coorddata',mode='a')
-
+        # if self._output_info_tg is not None:
+        #     self._output_info_tg.to_hdf(file_name,key=key+"/output_info_tg")
+        # if self._output_info_io is not None:
+        #     self._output_info_io.to_hdf(file_name,key=key+"/output_info_io")
     def _readdata_extract(self,path_to_folder,abs_path):
         
         if not abs_path:
@@ -123,154 +145,116 @@ class CHAPSim_meta():
 
         meta_DF = cd.metastruct(meta_list,index=key_list)
         return meta_DF
-    
-    def _coord_extract(self,path_to_folder,abs_path,tgpost,ioflg):
-        if os.path.isdir(os.path.join(path_to_folder,'0_log_monitors')):
-            return self._coord_extract_new(path_to_folder,abs_path,tgpost,ioflg)
+
+class OutputFileStore_base:
+    def __init__(self,*args,from_file=False,**kwargs):
+        if from_file:
+            self._hdf_extract(*args,**kwargs)
         else:
-            return self._coord_extract_old(path_to_folder,abs_path,tgpost,ioflg)
+            self._out_extract(*args,**kwargs)
 
-    def _coord_extract_new(self,path_to_folder,abs_path,tgpost,ioflg):
-        full_path = misc_utils.check_paths(path_to_folder,'0_log_monitors',
-                                                            '.')
+    def _out_extract(self,path_to_folder):
 
-        if not abs_path:
-            x_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_XND.dat'))
-            y_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_YND.dat'))
-            z_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_ZND.dat'))
+        if not '0_log_monitors' in os.listdir(path_to_folder):
+            path = path_to_folder
+            files = [os.path.join(path,x) for x in os.listdir(path_to_folder)\
+                 if self._monitor_old in x]
+            new = False
         else:
-            x_coord_file = os.path.join(full_path,'CHK_COORD_XND.dat')
-            y_coord_file = os.path.join(full_path,'CHK_COORD_YND.dat')
-            z_coord_file = os.path.join(full_path,'CHK_COORD_ZND.dat')
-    #===================================================================
-        #Extracting XND from the .dat file
-    
-        file=open(x_coord_file,'rb')
-        x_coord=np.loadtxt(file,comments='#',usecols=1)
+            path = os.path.join(path_to_folder,'0_log_monitors')
+            files = [os.path.join(path,x) for x in os.listdir(path) if self._monitor_new in x]
+            new = True
+
+        dframe_list = []
+        for file in sorted(files):
+            dframe = self.get_dataframe(file,new=new)
+            # print(dframe)
+            if dframe is None or dframe.empty:
+                continue
+
+            dframe_list.append(dframe)
+
+        self.output_data = pd.concat(dframe_list).drop_duplicates()
+
+    def _hdf_extract(self,file_name,key=None):
+        if key is None:
+            key = self.__class__.__name__
+
+        self.output_data = pd.read_hdf(file_name,key=key+"/output_data",mode='r')
+
+    def get_dataframe(self,file_name,new=True):
+        if os.path.splitext(file_name)[-1] =='.swp':
+            return None
+
+        f = open(file_name,'r')
+        lines = [ line for line in f.readlines() if line[0] != '#']
+        data = []
+        for line in lines:
+            split_line = line.split(' ')
+            while '' in split_line:
+                split_line.remove('')
+            for i,elem in enumerate(split_line):
+                split_line[i] = elem.replace('\n','')
+
+            try:
+                data.append([float(elem) for elem in split_line])
+            except ValueError:
+                pass
+        if not data:
+            return None
+
+        dframe = pd.DataFrame( np.array(data))
+        columns = self.get_col_names(file_name,new)[:dframe.shape[1]]
+        index = [int(x) for x in dframe[0]]
+
+        dframe.columns = columns
+        dframe.index=index
+        # print(dframe)
+        return dframe
         
-        if tgpost and not ioflg:
-            XND = x_coord[:-1]
+
+    def get_col_names(self,file_name,new=True):
+        f = open(file_name,'rb')
+        def _line_check(line):
+            if os.path.splitext(file_name)[-1] =='.swp':
+                return False
+            line = line.decode('ascii')
+            return '#' in line and 'MYID' not in line
+
+        lines = [line.decode('ascii') for line in f.readlines() if _line_check(line)]
+
+        if not lines:
+            return []
+
+        if new:
+            assert len(lines) == 1, "Just checking"
+            columns =  lines[0].replace('#','').replace('\n','').replace('"','').split(',')
         else:
-            index = int(self.metaDF['NCL1_tg']) + 1 
-            if (tgpost and ioflg):
-                XND = x_coord[:index]
-                XND -= XND[0]
-            elif self.metaDF['iCase'] == 5:
-                index = int(self.metaDF['NCL1_io']) + 1
-                XND = x_coord[:index]
-            else:
-                XND = x_coord[index:]
-        file.close()
-        #===========================================================
+
+            columns = lines[-1].replace('#','').replace('"','').split(',')
+        return columns
+    def to_hdf(self,file_name,mode='a',key=None):
+        if key is None:
+            key = self.__class__.__name__
+
+        self.output_data.to_hdf(file_name,key=key+"/output_data")
+
+    @classmethod
+    def from_hdf(cls,file_name,key=None):
+        return cls(file_name,from_file=True,key=key)
+
+
+
+                
+class OutputFileStore_tg(OutputFileStore_base):
+    _monitor_new = "monitor.tg"
+    _monitor_old = "history.periodicxz."
+
+class OutputFileStore_io(OutputFileStore_base):
+    _monitor_new = "monitor.io"
+    _monitor_old = "OUTPUT_"
+
     
-        #Extracting YCC from the .dat file
-        file=open(y_coord_file,'rb')
-        y_coord=np.loadtxt(file,usecols=1,skiprows=1)
-        index = int(self.metaDF['NCL2']) + 1 
-        YCC=y_coord[index:]
-        YND = y_coord[:index]
-        y_size = YCC.size
-        file.close()
-        #============================================================
-    
-        file=open(z_coord_file,'rb')
-        ZND=np.loadtxt(file,comments='#',usecols=1)
-
-        #============================================================
-        XCC, ZCC = self._coord_interp(XND,ZND)
-
-        z_size = ZCC.size
-        x_size = XCC.size
-        y_size = YCC.size
-        file.close()
-
-        CoordDF = cd.datastruct({'x':XCC,'y':YCC,'z':ZCC})
-        Coord_ND_DF = cd.datastruct({'x':XND,'y':YND,'z':ZND})
-        NCL = [x_size, y_size, z_size]
-        return CoordDF, Coord_ND_DF, NCL
-
-
-    def _coord_extract_old(self,path_to_folder,abs_path,tgpost,ioflg):
-        """ Function to extract the coordinates from their .dat file """
-        
-        full_path = misc_utils.check_paths(path_to_folder,'0_log_monitors',
-                                                            '.')
-
-        if not abs_path:
-            x_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_XND.dat'))
-            y_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_YND.dat'))
-            z_coord_file = os.path.abspath(os.path.join(full_path,'CHK_COORD_ZND.dat'))
-        else:
-            x_coord_file = os.path.join(full_path,'CHK_COORD_XND.dat')
-            y_coord_file = os.path.join(full_path,'CHK_COORD_YND.dat')
-            z_coord_file = os.path.join(full_path,'CHK_COORD_ZND.dat')
-        #===================================================================
-        #Extracting XND from the .dat file
-    
-        file=open(x_coord_file,'rb')
-        x_coord=np.loadtxt(file,comments='#')
-        x_size=  int(x_coord[0])
-        x_coord=np.delete(x_coord,0)
-        
-        if tgpost and not ioflg:
-            XND = x_coord[:-1]
-        else:
-            for i in range(x_size):
-                if x_coord[i] == 0.0:
-                    index=i
-                    break
-            if tgpost and ioflg:
-                XND = x_coord[:index+1]
-                XND -= XND[0]
-            else:
-                XND = x_coord[index+1:]
-        file.close()
-        #===========================================================
-    
-        #Extracting YCC from the .dat file
-        file=open(y_coord_file,'rb')
-        y_coord=np.loadtxt(file,comments='#',usecols=1)
-        y_size = int(y_coord[0])
-        for i in range(y_coord.size):
-            if y_coord[i] == 1.0:
-                index=i
-                break
-        
-        # YCC=np.delete(y_coord,np.arange(index+1))
-        YND = y_coord[:index+1]
-        YCC = y_coord[(index+1):]
-        y_size = YCC.size
-        file.close()
-        #============================================================
-    
-        file=open(z_coord_file,'rb')
-        z_coord=np.loadtxt(file,comments='#')
-        z_size = int(z_coord[0])
-        ZND=np.delete(z_coord,0)
-        #============================================================
-        XCC, ZCC = self._coord_interp(XND,ZND)
-
-        z_size = ZCC.size
-        x_size = XCC.size
-        y_size = YCC.size
-        file.close()
-
-        CoordDF = cd.datastruct({'x':XCC,'y':YCC,'z':ZCC})
-        Coord_ND_DF = cd.datastruct({'x':XND,'y':YND,'z':ZND})
-        NCL = [x_size, y_size, z_size]
-        return CoordDF, Coord_ND_DF, NCL
-        
-    def _coord_interp(self,XND, ZND):
-        """ Interpolate the coordinates to give their cell centre values """
-        XCC=np.zeros(XND.size-1)
-        for i in range(XCC.size):
-            XCC[i] = 0.5*(XND[i+1] + XND[i])
-    
-        ZCC=np.zeros(ZND.size-1)
-        for i in range(ZCC.size):
-            ZCC[i] = 0.5*(ZND[i+1] + ZND[i])
-    
-        return XCC, ZCC
 
 _cart_to_cylind_str = {
     'x' : 'z',

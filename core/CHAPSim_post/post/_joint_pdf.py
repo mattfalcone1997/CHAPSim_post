@@ -89,7 +89,7 @@ class CHAPSim_joint_PDF_base(Common,ABC):
         y_unit = r"y/\delta" if self._y_mode=='half_channel' \
                 else r"\delta_u" if self._y_mode=='disp_thickness' \
                 else r"\theta" if self._y_mode=='mom_thickness' else r"y^+" \
-                if self._y_mode=='wall' and any(self._x_loc_norm!=0) else r"y^{+0}"
+                if self._y_mode=='wall' and any(x!=0 for x in self._x_loc_norm ) else r"y^{+0}"
         
         for xy in xy_list:
             u_array = self.u_arrayDF[xy]
