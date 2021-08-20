@@ -252,7 +252,7 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
                     ax[i-1,j].set_xlabel(r"$%s/\delta$"%prop_dir)# ,fontsize=20)
 
 
-                    ax[i-1,j].set_ylabel(r"$\Delta T_{Q%d}$ (Duration)"%i)# ,fontsize=20)
+                    ax[i-1,j].set_ylabel(r"$\Delta T_{Q%d}$ (Interval)"%i)# ,fontsize=20)
                         
                     ax[i-1,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')# ,fontsize=16)
 
@@ -302,7 +302,7 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
                     ax[i-1,j].set_xlabel(r"$%s/\delta$"%prop_dir)# ,fontsize=20)
 
 
-                    ax[i-1,j].set_ylabel(r"$\Delta T_{Q%d}$ (Interval)"%i)# ,fontsize=20)
+                    ax[i-1,j].set_ylabel(r"$\Delta T_{Q%d}$ (Duration)"%i)# ,fontsize=20)
                         
                     ax[i-1,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')# ,fontsize=16)
 
@@ -378,7 +378,17 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
         del prev_array; del local_quad_anal_array
         gc.collect()
 
+        
+
         total_time = times[-1] - times[0]
+
+        print("total time")
+        print(total_time)
+        print("total event time")
+        print(total_event_times)
+        print('num_events')
+        print(num_array)
+
         total_num_array = np.mean(num_array,axis=1)
         num_array[num_array==0] = 1
         total_mean_dt = np.mean(total_time/num_array,axis=1)
@@ -420,8 +430,8 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
 
     def _event_duration_calc(self,dt,total_event_time,fluct_array, num_events,prev_event):
 
+        
         new_event = np.logical_and(~prev_event,fluct_array)
-
 
         num_events += new_event
 
@@ -461,7 +471,6 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
                 tot_event_q = total_event_times[4*j+i]
 
                 quad_array=quadrant_array == (i+1)
-
                 fluct_array = np.abs(quad_array*fluct_uv) > h*u_rms*v_rms
                 uv_q=np.mean(fluct_uv*fluct_array,axis=0) 
 

@@ -276,29 +276,33 @@ class CHAPSim_perturb(Common):
         self.start  = self.metaDF['temp_start_end'][0]
 
     @property
+    def start_index(self):
+        accel_start = self.metaDF['temp_start_end'][0] + 1
+        return self.__avg_data._return_index(accel_start)
+
+    @property
     def shape(self):
-        time_0_index = self.__avg_data._return_index(self.start) -1
-        shape = (self.__avg_data.shape[0],self.__avg_data.shape[1]-time_0_index)
-        return shape
+        avg_shape = self.avg_data.shape
+        return (avg_shape[0],avg_shape[1]- self.start_index)
 
     def tau_du_calc(self):
         
         tau_w = self.__avg_data.tau_calc()
-        start_index = self.__avg_data._return_index(self.start)-1
-        return tau_w - tau_w[start_index]
+        start_index = self.start_index
+        return tau_w[start_index:] - tau_w[start_index]
 
     def mean_velo_peturb_calc(self,comp):
         U_velo_mean = self.__avg_data.flow_AVGDF[None,comp].copy()
-    
-        time_0_index = self.__avg_data._return_index(self.start) -1
+        time_0_index = self.start_index
 
         centre_index =int(0.5*self.__avg_data.shape[0])
         U_c0 = U_velo_mean[centre_index,time_0_index]
-        mean_velo_peturb = np.zeros((self.__avg_data.shape[0],self.__avg_data.shape[1]-time_0_index))
+        mean_velo_peturb = np.zeros(self.shape)
 
         for i in range(time_0_index,self.__avg_data.shape[1]):
             mean_velo_peturb[:,i-time_0_index] = (U_velo_mean[:,i]-U_velo_mean[:,time_0_index])/(U_velo_mean[centre_index,i]-U_c0)
         return mean_velo_peturb
+
     def plot_perturb_velo(self,times,comp='u',Y_plus=False,Y_plus_max=100,fig=None,ax =None,**kwargs):
         velo_peturb = self.mean_velo_peturb_calc(comp)
         
@@ -315,7 +319,7 @@ class CHAPSim_perturb(Common):
         else:
             y_max= Y_plus_max*delta_v_star[0]-1.0
 
-        time_0_index = self.__avg_data._return_index(self.start)
+        time_0_index = self.start_index
         time_loc = np.array([self.__avg_data._return_index(x) for x in times]) - time_0_index
 
         for x, x_val in zip(time_loc,times):
@@ -339,11 +343,12 @@ class CHAPSim_perturb(Common):
 
         tau_du = self.tau_du_calc()
         bulkvelo = self.__avg_data._bulk_velo_calc(None)
-        x_loc = self.__avg_data._return_index(self.start)+1
+        x_loc = self.start_index
 
         REN = self.metaDF['REN']
         rho_star = 1.0
-        Cf_du = tau_du[x_loc:]/(0.5*REN*rho_star*(bulkvelo[x_loc:]-bulkvelo[0])**2)
+
+        Cf_du = tau_du/(0.5*REN*rho_star*(bulkvelo[x_loc:]-bulkvelo[0])**2)
         
         
         times = self.__avg_data._return_xaxis()[x_loc:] - self.start
@@ -673,11 +678,108 @@ class CHAPSim_Quad_Anl_tg(cp.CHAPSim_Quad_Anl_tg):
 class CHAPSim_FIK_tg_conv(cp.CHAPSim_FIK_tg):
     def plot(self,*args,**kwargs):
         fig, ax = super().plot(*args,**kwargs)
-        
+        conv_distance = self.avg_data.conv_distance_calc()
         for line in ax.set_lines()[-3:]:
             line.set_xdata(conv_distance)
 
         ax.set_xlabel(r"$x_{conv}$")
         return fig, ax
+
 class CHAPSim_FIK_tg(cp.CHAPSim_FIK_tg):
     pass
+
+class CHAPSim_FIK_perturb(CHAPSim_FIK_tg):
+    @property
+    def start_index(self):
+        accel_start = self.metaDF['temp_start_end'][0] + 1
+        return self.avg_data._return_index(accel_start)
+
+    @property
+    def shape(self):
+        avg_shape = self.avg_data.shape
+        return (avg_shape[0],avg_shape[1]- self.start_index)
+
+    def _scale_vel(self,PhyTime):
+        
+        index = self.start_index
+        bulk_velo = self.avg_data.bulk_velo_calc() 
+        return bulk_velo[index:] - bulk_velo[0]
+
+    def _laminar_extract(self,PhyTime):
+        bulk = self._scale_vel(PhyTime)
+        REN = self.avg_data.metaDF['REN']
+        const = 4.0 if self.Domain.is_cylind else 6.0
+        return const/(REN*bulk)
+
+    def _turbulent_extract(self,PhyTime):
+        bulk = self._scale_vel(PhyTime)
+        index = self.start_index
+
+        y_coords = self.avg_data.CoordDF['y']
+        uv = self.avg_data.UU_tensorDF[PhyTime,'uv']
+
+        turbulent = np.zeros(self.shape)
+        for i,y in enumerate(y_coords):
+            turbulent[i] =    6*y*(uv[i,index:] - uv[i,index])
+
+        return self.Domain.Integrate_tot(self.CoordDF,turbulent)/bulk**2
+
+    def _inertia_extract(self,PhyTime):
+        PhyTime=None
+        y_coords = self.avg_data.CoordDF['y']
+
+        bulk = self._scale_vel(PhyTime)
+
+        U_mean = self.avg_data.flow_AVGDF[PhyTime,'u']
+        times = self.avg_data._return_xaxis()
+
+        REN = self.avg_data.metaDF['REN']
+        d2u_dy2 = self.Domain.Grad_calc(self.avg_data.CoordDF,
+                    self.Domain.Grad_calc(self.avg_data.CoordDF,U_mean,'y'),'y')
+        
+        uv = self.avg_data.UU_tensorDF[PhyTime,'uv']
+        duv_dy = self.Domain.Grad_calc(self.avg_data.CoordDF,uv,'y')
+        dudt = np.gradient(U_mean,times,axis=-1,edge_order=2)
+
+        dpdx = (1/REN)*d2u_dy2 - duv_dy  - dudt
+
+        dp_prime_dx = dpdx - self.Domain.Integrate_tot(self.CoordDF,
+                                            (1/REN)*d2u_dy2 - duv_dy) 
+
+        UV = self.avg_data.flow_AVGDF[PhyTime,'u']*self.avg_data.flow_AVGDF[PhyTime,'v']
+        I_x = self.Domain.Grad_calc(self.avg_data.CoordDF,UV,'y')
+
+        I_x_prime = I_x - self.Domain.Integrate_tot(self.CoordDF,I_x)
+
+        index = self.start_index
+
+        temp = dp_prime_dx + I_x_prime + dudt
+        out = np.zeros(self.shape)
+        for i,y in enumerate(y_coords):
+            out[i] = (temp[i,index:] - temp[i,index])*y**2
+
+        return -3.0*self.Domain.Integrate_tot(self.CoordDF,out)/(bulk**2)
+
+    def plot(self,budget_terms=None,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
+
+        budget_terms = self._check_terms(budget_terms)
+        
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
+        fig, ax  = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
+
+        line_kw= cplt.update_line_kw(line_kw)
+        xaxis_vals = self.avg_data.times[self.start_index:] - self.avg_data.times[self.start_index]
+
+
+        for comp in budget_terms:
+            budget_term = self.budgetDF[PhyTime,comp].copy()
+                
+            label = r"%s"%comp.title()
+            ax.cplot(xaxis_vals,budget_term,label=label,**line_kw)
+        ax.cplot(xaxis_vals,np.sum(self.budgetDF.values,axis=0),label="Total",**line_kw)
+
+        ax.set_xlabel(r"$t^*$")
+
+        ncol = cplt.get_legend_ncols(len(budget_terms))
+        ax.clegend(ncol=ncol,vertical=False)
+        return fig, ax

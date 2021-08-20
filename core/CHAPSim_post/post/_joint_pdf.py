@@ -71,8 +71,8 @@ class CHAPSim_joint_PDF_base(Common,ABC):
         self.u_arrayDF.to_hdf(file_name,key=key+'/u_arrayDF',mode='a')#,format='fixed',data_columns=True)
         self.v_arrayDF.to_hdf(file_name,key=key+'/v_arrayDF',mode='a')#,format='fixed',data_columns=True)     
         
-        self._meta_data.save_hdf(file_name,'a',key+"/meta_data")
-        self.avg_data.save_hdf(file_name,'a',key+"/avg_data")
+        self._meta_data.save_hdf(file_name,'a',key=key+"/meta_data")
+        self.avg_data.save_hdf(file_name,'a',key=key+"/avg_data")
 
     @classmethod
     def from_hdf(cls,file_name,key=None):

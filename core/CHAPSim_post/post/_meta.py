@@ -174,7 +174,7 @@ class OutputFileStore_base:
 
             dframe_list.append(dframe)
 
-        self.output_data = pd.concat(dframe_list).drop_duplicates()
+        self.output_data = pd.concat(dframe_list).drop_duplicates(keep='last')
 
     def _hdf_extract(self,file_name,key=None):
         if key is None:
@@ -228,10 +228,10 @@ class OutputFileStore_base:
 
         if new:
             assert len(lines) == 1, "Just checking"
-            columns =  lines[0].replace('#','').replace('\n','').replace('"','').split(',')
+            columns =  lines[0].replace('#','').replace('\n','').replace('"','').lstrip().split(',')
         else:
 
-            columns = lines[-1].replace('#','').replace('"','').split(',')
+            columns = lines[-1].replace('#','').replace('"','').lstrip().split(',')
         return columns
     def to_hdf(self,file_name,mode='a',key=None):
         if key is None:
@@ -383,6 +383,13 @@ class DomainHandler():
                                 factor_out)
         return lap_scalar
 
+    def Integrate_cumult(self,CoordDF,flow_array):
+        channel = not self.is_cylind
+        return gradient.cumIntegrate_y(CoordDF,flow_array,channel=channel)
+
+    def Integrate_tot(self,CoordDF,flow_array):
+        channel = not self.is_cylind
+        return gradient.totIntegrate_y(CoordDF,flow_array,channel=channel)
 class coorddata:
     _modes_available = ['centered', 'staggered']
     def __init__(self,*args,from_file=False,from_copy=False,**kwargs):

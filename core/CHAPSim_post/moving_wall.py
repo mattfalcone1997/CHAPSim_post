@@ -428,6 +428,9 @@ class CHAPSim_meta(cp.CHAPSim_meta):
         return self.__moving_wall
 _meta_class = CHAPSim_meta
 
+class OutputFileStore_io(cp.OutputFileStore_io):
+    pass
+
 class CHAPSim_fluct_io(cp.CHAPSim_fluct_io):
     pass
 _fluct_io_class = CHAPSim_fluct_io
@@ -495,6 +498,15 @@ class CHAPSim_momentum_budget_io(cp.CHAPSim_Momentum_budget_io):
         self.budgetDF[PhyTime,'advection'] = advection
         self.budgetDF[PhyTime,'pressure gradient'] = pressure_grad
 
+
+class CHAPSim_perturb_mom_budget(CHAPSim_momentum_budget_io):
+    def __init__(self,comp,avg_data=None,PhyTime=None,apparent_Re=False,*args,**kwargs):
+        super().__init__(comp,avg_data=avg_data,PhyTime=PhyTime,relative=False,apparent_Re=apparent_Re,*args,**kwargs)
+
+        for index in self.budgetDF.index:
+            self.budgetDF[index] = (self.budgetDF[index].T - self.budgetDF[index][:,0]).T
+
+
 class CHAPSim_autocov_io(cp.CHAPSim_autocov_io):
    pass
 
@@ -519,3 +531,101 @@ class flowReconstruct3D(POD.flowReconstruct3D):
 
 class CHAPSim_FIK_io(cp.CHAPSim_FIK_io):
     pass
+
+class CHAPSim_FIK_perturb(CHAPSim_FIK_io):
+    
+    @property
+    def start_index(self):
+        accel_start = self.metaDF['location_start_end'][0]
+        return self.CoordDF.index_calc('x',accel_start)[0]+1
+
+    @property
+    def shape(self):
+        avg_shape = self.avg_data.shape
+        return (avg_shape[0],avg_shape[1]- self.start_index)
+
+    def _scale_vel(self,PhyTime):
+        
+        index = self.start_index
+        bulk_velo = self.avg_data.bulk_velo_calc(PhyTime) 
+        return bulk_velo[index:] - bulk_velo[0]
+
+    def _laminar_extract(self,PhyTime):
+        bulk = self._scale_vel(PhyTime)
+        REN = self.avg_data.metaDF['REN']
+        const = 4.0 if self.Domain.is_cylind else 6.0
+        return const/(REN*bulk)
+
+    def _turbulent_extract(self,PhyTime):
+        bulk = self._scale_vel(PhyTime)
+        index = self.start_index
+
+        y_coords = self.avg_data.CoordDF['y']
+        uv = self.avg_data.UU_tensorDF[PhyTime,'uv']
+
+        turbulent = np.zeros(self.shape)
+        for i,y in enumerate(y_coords):
+            turbulent[i] =    6*y*(uv[i,index:] - uv[i,0])
+
+        return self.Domain.Integrate_tot(self.CoordDF,turbulent)/bulk**2
+
+    def _inertia_extract(self,PhyTime):
+        y_coords = self.avg_data.CoordDF['y']
+
+        bulk = self._scale_vel(PhyTime)
+        index = self.start_index
+
+        pressure = self.avg_data.flow_AVGDF[PhyTime,'P']
+        pressure_grad_x = self.Domain.Grad_calc(self.avg_data.CoordDF,pressure,'x')
+
+        p_prime2 = pressure_grad_x - self.Domain.Integrate_tot(self.CoordDF,pressure_grad_x)
+
+        u_mean2 = self.avg_data.flow_AVGDF[PhyTime,'u']**2
+        uu = self.avg_data.UU_tensorDF[PhyTime,'uu']
+
+        d_UU_dx = self.Domain.Grad_calc(self.avg_data.CoordDF,
+                                        u_mean2+uu,'x')
+        
+        UV = self.avg_data.flow_AVGDF[PhyTime,'u']*self.avg_data.flow_AVGDF[PhyTime,'v']
+        d_uv_dy = self.Domain.Grad_calc(self.avg_data.CoordDF,UV,'y')
+
+        REN = self.avg_data.metaDF['REN']
+        U_mean = self.avg_data.flow_AVGDF[PhyTime,'u']
+        d2u_dx2 = self.Domain.Grad_calc(self.avg_data.CoordDF,
+                    self.Domain.Grad_calc(self.avg_data.CoordDF,U_mean,'x'),'x')
+
+        I_x = d_UU_dx + d_uv_dy - (1/REN)*d2u_dx2
+
+        I_x_prime  = I_x -  self.Domain.Integrate_tot(self.CoordDF,I_x)
+
+        temp = p_prime2 + I_x_prime
+        out = np.zeros(self.shape)
+        for i,y in enumerate(y_coords):
+            out[i] = (temp[i,index:] - temp[i,0])*y**2
+
+
+        return -3.0*self.Domain.Integrate_tot(self.CoordDF,out)/(bulk**2)
+
+    def plot(self,budget_terms=None,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
+
+        budget_terms = self._check_terms(budget_terms)
+        
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
+        fig, ax  = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
+
+        line_kw= cplt.update_line_kw(line_kw)
+        xaxis_vals = self.CoordDF['x'][self.start_index:] - self.CoordDF['x'][self.start_index]
+
+
+        for comp in budget_terms:
+            budget_term = self.budgetDF[PhyTime,comp].copy()
+                
+            label = r"%s"%comp.title()
+            ax.cplot(xaxis_vals,budget_term,label=label,**line_kw)
+        ax.cplot(xaxis_vals,np.sum(self.budgetDF.values,axis=0),label="Total",**line_kw)
+
+        ax.set_xlabel(r"$x/\delta$")
+
+        ncol = cplt.get_legend_ncols(len(budget_terms))
+        ax.clegend(ncol=ncol,vertical=False)
+        return fig, ax

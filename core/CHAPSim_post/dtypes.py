@@ -1318,7 +1318,7 @@ class metastruct():
     def _file_extract(self,filename,*args,key=None,**kwargs):
         hdf_obj = hdfHandler(filename,mode='r',key=key)
 
-        index = list(hdf_obj.keys())
+        index = list(key for key in hdf_obj.keys() if key != 'meta_str')
         list_vals=[]
         for k in index:
             val = list(hdf_obj[k])

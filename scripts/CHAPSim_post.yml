@@ -1,4 +1,4 @@
-name: CHAPSim_post
+name: CHAPSim_post_new
 channels:
   - defaults
   - conda-forge
@@ -23,12 +23,9 @@ dependencies:
   - paramiko
   - scp
   - seaborn
-  - pip
   - memory_profiler
   - cython
-  - llvmlite
   - pyvista
-  - pyvistaqt
   - sphinx
   - sphinx_rtd_theme
   - scikit-image
