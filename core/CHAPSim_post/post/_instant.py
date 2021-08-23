@@ -746,4 +746,3 @@ class CHAPSim_Inst_tg(CHAPSim_Inst):
         
         if ioflowflg:
             self.NCL[0] -= 1
-        self.shape = (self.NCL[2],self.NCL[1],self.NCL[0])
