@@ -318,12 +318,14 @@ class CHAPSim_fluct_tg(CHAPSim_fluct_base):
                     inst_data += self._module._instant_class(time_inst_data,path_to_folder=path_to_folder,abs_path=abs_path,tgpost=True)
         
         if avg_data is None:
-            times = [float(x[0]) for x in inst_data.InstDF.index]
+            times = list(set([float(x[0]) for x in inst_data.InstDF.index]))
             avg_data = self._module._avg_tg_base_class(times,path_to_folder=path_to_folder,abs_path=abs_path)
-
-        self.fluctDF = self._fluctDF_calc(inst_data,avg_data)
+        
         self.avg_data = avg_data
         self._meta_data = avg_data._meta_data
+
+        self.fluctDF = self._fluctDF_calc(inst_data,avg_data)
+
     
     def _fluctDF_calc(self, inst_data, avg_data):
         avg_times = avg_data.times
@@ -354,7 +356,7 @@ class CHAPSim_fluct_tg(CHAPSim_fluct_base):
         else:
             raise ValueError("avg_data must either be length 1 or the same length as inst_data")
         # DF_shape = (len(indices),np.prod(inst_data.shape))
-        return cd.datastruct(fluct,index=inst_data.InstDF.index)#.data(inst_data.shape)
+        return cd.flowstruct3D(self._coorddata,fluct,index=inst_data.InstDF.index)#.data(inst_data.shape)
     
     # def plot_vector(self,*args,**kwargs):
     #     PhyTime = None

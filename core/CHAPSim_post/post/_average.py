@@ -1324,6 +1324,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
             if 'DF_list' not in locals():
                 DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,self.metaDF,time0)
                 
+
             else:
                 local_DF_list = self._AVG_extract(PhyTime,path_to_folder,abs_path,self.metaDF,time0)
                 for i, _ in enumerate(DF_list):
@@ -1333,7 +1334,10 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
 
         for i,_ in enumerate(DF_list):
             for key, _ in DF_list[i]:
-                DF_list[i][key] = DF_list[i][key].T
+                if len(PhyTimes) == 1:
+                    DF_list[i][key] = DF_list[i][key].reshape((DF_list[i][key].size,1))
+                else:
+                    DF_list[i][key] = DF_list[i][key].T
 
 
         DF_list=self._Reverse_decomp(*DF_list)

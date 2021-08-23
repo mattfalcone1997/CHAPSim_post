@@ -25,8 +25,11 @@ from functools import wraps
 import CHAPSim_post as cp
 import sys
 import copy
-from pyvista import StructuredGrid
-import vtk
+try:
+    from pyvista import StructuredGrid
+    import vtk
+except ImportError:
+    pass
 
 from CHAPSim_post.utils import misc_utils,indexing
 from CHAPSim_post.post._meta import coorddata
