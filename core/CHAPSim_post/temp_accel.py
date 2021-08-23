@@ -282,7 +282,7 @@ class CHAPSim_perturb(Common):
 
     @property
     def shape(self):
-        avg_shape = self.avg_data.shape
+        avg_shape = self.__avg_data.shape
         return (avg_shape[0],avg_shape[1]- self.start_index)
 
     def tau_du_calc(self):

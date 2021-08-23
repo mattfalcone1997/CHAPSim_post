@@ -1470,6 +1470,22 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         PR_Velo_grad_tensorDF = cd.datastruct(Pr_Velo_grad_tensor,index=tensor_2_index)
         DUDX2_tensorDF = cd.datastruct(DUDX2_tensor,index=tensor_4_index)
 
+        if cp.rcParams["SymmetryAVG"] and self.metaDF['iCase'] == 1:
+            flow_AVGDF = 0.5*(flow_AVGDF + \
+                            flow_AVGDF.symmetrify(dim=0))
+            PU_vectorDF = 0.5*(PU_vectorDF +\
+                            PU_vectorDF.symmetrify(dim=0))
+            UU_tensorDF = 0.5*(UU_tensorDF + \
+                            UU_tensorDF.symmetrify(dim=0))
+            UUU_tensorDF = 0.5*(UUU_tensorDF + \
+                            UUU_tensorDF.symmetrify(dim=0))
+            Velo_grad_tensorDF = 0.5*(Velo_grad_tensorDF + \
+                            Velo_grad_tensorDF.symmetrify(dim=0))
+            PR_Velo_grad_tensorDF = 0.5*(PR_Velo_grad_tensorDF + \
+                            PR_Velo_grad_tensorDF.symmetrify(dim=0))
+            DUDX2_tensorDF = 0.5*(DUDX2_tensorDF + \
+                            DUDX2_tensorDF.symmetrify(dim=0))
+
         return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
                     Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
     

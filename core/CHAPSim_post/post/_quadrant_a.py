@@ -437,7 +437,7 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
 
         total_event_time[fluct_array] += dt
 
-        return total_event_time, num_events, fluct_array
+        return total_event_time, num_events, fluct_array.copy()
 
 
 
