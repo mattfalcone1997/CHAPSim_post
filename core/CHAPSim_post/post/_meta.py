@@ -11,7 +11,10 @@ import copy
 import types
 import pandas as pd
 import itertools
-from pyvista import StructuredGrid
+try:
+    from pyvista import StructuredGrid
+except ImportError:
+    pass
 
 import CHAPSim_post.dtypes as cd
 

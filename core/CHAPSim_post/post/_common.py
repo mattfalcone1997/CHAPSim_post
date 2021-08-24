@@ -3,20 +3,10 @@
 A module to create base level visualisation classes 
 providing functionality common to several classes
 """
-import numpy as np
-import matplotlib as mpl
+
+from abc import ABC, abstractproperty
+
 import sys
-import pyvista
-
-import itertools
-from abc import abstractmethod, ABC, abstractproperty
-
-import CHAPSim_post.plot as cplt
-import CHAPSim_post.dtypes as cd
-from CHAPSim_post.utils import indexing, misc_utils,gradient
-from ._meta import CHAPSim_meta, coorddata
-
-  
 class classproperty():
     def __init__(self,func):
         self.f = func
