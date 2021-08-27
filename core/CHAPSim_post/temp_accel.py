@@ -277,8 +277,8 @@ class CHAPSim_perturb(Common):
 
     @property
     def start_index(self):
-        accel_start = self.metaDF['temp_start_end'][0] + 1
-        return self.__avg_data._return_index(accel_start)
+        accel_start = self.metaDF['temp_start_end'][0]
+        return self.__avg_data._return_index(accel_start)+ 1
 
     @property
     def shape(self):

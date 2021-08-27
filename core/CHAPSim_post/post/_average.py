@@ -1383,7 +1383,6 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
 
     @property
     def times(self):
-        print(self._times)
         times = [float(time) for time in self._times]
         return np.array(times)
 

@@ -66,10 +66,11 @@ def update_prop_cycle(**kwargs):
         cycler_dict[key] = list(val)*int(cycle_length/len(val))
     mpl.rcParams['axes.prop_cycle'] = cycler(**cycler_dict)
 
-def reset_prop_cycler():
+def reset_prop_cycler(**kwargs):
     update_prop_cycle(linestyle=['-','--','-.',':'],
                 marker=['x','.','v','^','+'],
                 color = 'bgrcmyk')
+    update_prop_cycle(**kwargs)
 
 reset_prop_cycler()
 
@@ -382,7 +383,7 @@ class AxesCHAPSim(mpl.axes.Axes):
 
     def shift_legend_val(self,val,comp=None):
         leg = self.get_legend()
-        leg_text = leg.texts
+        leg_text = leg.get_texts()
         for text in leg_text:
             string = self._shift_text(text.get_text(),val,comp)
             text.set_text(string)

@@ -180,7 +180,7 @@ def totIntegrate_y_1D(CoordDF,flow_array,channel=True):
         if coord_array.size % 2 !=0:
             initial = flow_array[middle_index]
         else:
-            interp = interpolate.interp1d(coord_array,flow_array)
+            interp = interpolate.interp1d(coord_array,flow_array,kind='cubic')
             initial = interp([0.0])[0]
             coord_sub1 = np.insert(coord_sub1,0,0.)
             coord_sub2 = np.insert(coord_sub2,-1,0.)
@@ -220,6 +220,32 @@ def cumIntegrate_y(CoordDF,flow_array,channel=True):
                 int_array[j,:,i] = cumIntegrate_y_1D(CoordDF,flow_array[j,:,i],channel=channel)
     return int_array
 
+# def _cum_integrator(f_array,x_array):
+#     # return cumtrapz(f_array,x_array)
+#     int_array = np.zeros(x_array.size-1)
+#     for i in range(int_array.size):
+#         int_array[i] = _array_integrator(f_array[:i+2],x_array[:i+2])
+    
+#     return int_array
+
+def _refine_input(input,density):
+    kind = 'linear' if len(input) < 4 else 'cubic'
+
+    indices = np.arange(input.size)
+    f_interp = interpolate.interp1d(indices,input,kind=kind)
+
+    size = input.size + 1/density -1
+    new_indices = np.arange(0,size,1/density)
+
+    return f_interp(new_indices)
+# def _array_integrator(f_array,x_array,point_density=1):
+#     assert f_array.size == x_array.size
+#     kind = 'linear' if len(x_array) < 4 else 'cubic'
+        
+#     f_interp = interpolate.interp1d(x_array,f_array,kind=kind,fill_value='extrapolate')
+
+#     return scipy.integrate.quadrature(f_interp,min(x_array),max(x_array),rtol=0.0001,maxiter=10)[0]
+
 def cumIntegrate_y_1D(CoordDF,flow_array,channel=True):
     coord_array = CoordDF['y']
     
@@ -239,17 +265,26 @@ def cumIntegrate_y_1D(CoordDF,flow_array,channel=True):
         if coord_array.size % 2 !=0:
             initial = flow_array[middle_index]
         else:
-            interp = interpolate.interp1d(coord_array,flow_array)
+            interp = interpolate.interp1d(coord_array,flow_array,kind='cubic')
             initial = interp([0.0])[0]
-            coord_sub1 = np.insert(coord_sub1,0,0.)
-            coord_sub2 = np.insert(coord_sub2,-1,0.)
-            flow_sub1 = np.insert(flow_sub1,0,initial)
-            flow_sub2 = np.insert(flow_sub2,-1,initial)
 
+            coord1 = np.insert(coord_sub1,0,0.)
+            coord2 = np.insert(coord_sub2,-1,0.)
+            flow1 = np.insert(flow_sub1,0,initial)
+            flow2 = np.insert(flow_sub2,-1,initial)            
 
+            # def _int_creator(coord,flow):
+            #     interp = interpolate.interp1d(coord,flow,fill_value='extrapolate',kind='cubic')
+            #     coord_new= _refine_input(coord,2)
+            #     flow_new = interp(coord_new)
 
-        flow_inty1 = cumtrapz(flow_sub1,coord_sub1)
-        flow_inty2 = cumtrapz(flow_sub2[::-1],coord_sub2[::-1])[::-1]
+            #     return coord_new, flow_new
+
+            # flow_sub1,coord_sub1  = _int_creator(coord1,flow1)
+            # flow_sub2,coord_sub2  = _int_creator(coord2,flow2)
+
+        flow_inty1 = cumtrapz(flow1,coord1)
+        flow_inty2 = cumtrapz(flow2[::-1],coord2[::-1])[::-1]
 
         flow_inty = np.concatenate([flow_inty2,flow_inty1])
 

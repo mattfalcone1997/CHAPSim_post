@@ -389,6 +389,9 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
         print('num_events')
         print(num_array)
 
+        print("divided")
+        print(total_event_times/num_array)
+
         total_num_array = np.mean(num_array,axis=1)
         num_array[num_array==0] = 1
         total_mean_dt = np.mean(total_time/num_array,axis=1)
@@ -432,8 +435,12 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
 
         
         new_event = np.logical_and(~prev_event,fluct_array)
+        # check1 = np.logical_and(new_event,fluct_array)
+        # check2 = np.logical_and(~new_event,~fluct_array)
 
-        num_events += new_event
+        # print(np.logical_or(check1,check2))
+
+        num_events += new_event.astype(int)
 
         total_event_time[fluct_array] += dt
 
@@ -474,7 +481,7 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
                 fluct_array = np.abs(quad_array*fluct_uv) > h*u_rms*v_rms
                 uv_q=np.mean(fluct_uv*fluct_array,axis=0) 
 
-                tot_event_q, num_q, prev_q = self._event_duration_calc(dt,tot_event_q,fluct_array,num_q,prev_q)
+                total_event_times[4*j+i], num_array[4*j+i], prev_array[4*j+i] = self._event_duration_calc(dt,tot_event_q,fluct_array,num_q,prev_q)
 
             # if cp.rcParams['SymmetryAVG'] and self.metaDF['iCase'] ==1:
             #     symmetry_map = {1: 4,2:3,4:1,3:2}

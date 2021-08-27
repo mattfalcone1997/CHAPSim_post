@@ -423,11 +423,11 @@ class CHAPSim_budget_io(CHAPSim_Reynolds_budget_base):
         
         return fig, ax
 
-    def plot_integral_budget(self,comp=None, PhyTime=None, wall_units=True, fig=None, ax=None, **kwargs):
+    def plot_integral_budget(self,budget_terms=None, PhyTime=None, wall_units=True, fig=None, ax=None, **kwargs):
         
         PhyTime = self.avg_data.check_PhyTime(PhyTime)
 
-        fig, ax = super()._plot_integral_budget(comp,PhyTime, wall_units=wall_units, fig=fig, ax=ax, **kwargs)
+        fig, ax = super()._plot_integral_budget(PhyTime=PhyTime, budget_terms=budget_terms,wall_units=wall_units, fig=fig, ax=ax, **kwargs)
         
         x_label = self.Domain.in_to_out(r"$x/\delta$")
         ax.set_xlabel(x_label)
