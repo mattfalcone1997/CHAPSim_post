@@ -102,12 +102,8 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
 
         return fluct_uv, quadrant_array 
 
-    def plot_line(self,h_list,coord_list,prop_dir,x_vals=0,y_mode='half_channel',norm=False,fig=None,ax=None,line_kw=None,**kwargs):
-        assert x_vals is None or not hasattr(x_vals,'__iter__')
-
-        kwargs = cplt.update_subplots_kw(kwargs,figsize=[12,5*len(coord_list)])
-        fig, ax = cplt.create_fig_ax_without_squeeze(4,len(coord_list),fig=fig,ax=ax,**kwargs)
-        ax = ax.reshape((4,len(coord_list)))
+    def plot_line(self,h_list,coord_list,prop_dir,Quadrants=None,x_vals=0,y_mode='half_channel',norm=False,fig=None,ax=None,line_kw=None,**kwargs):
+        x_vals = misc_utils.check_list_vals(x_vals) 
 
         if prop_dir =='y':
             index = [self._avg_data._return_index(x) for x in coord_list]
@@ -118,9 +114,23 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
                 index=list(itertools.chain(*index))
         else:
             raise ValueError("The propagation direction of the quadrant analysis must be `x' or `y'")
+        
         if norm: 
             avg_time = list(set([x[0] for x in self._avg_data.UU_tensorDF.index]))[0]
             uv=self._avg_data.UU_tensorDF[avg_time,'uv']
+
+        if Quadrants is None:
+            Quadrants = [1,2,3,4]
+        else:
+            Quadrants = misc_utils.check_list_vals(Quadrants)
+            if not all(quad in [1,2,3,4] for quad in Quadrants):
+                msg = "The quadrants provided must be in 1 2 3 4"
+                raise ValueError(msg)
+
+        quad_num = len(Quadrants)
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[12,5*len(coord_list)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(quad_num,len(coord_list),fig=fig,ax=ax,**kwargs)
+        ax = ax.reshape((quad_num,len(coord_list)))
 
         coords = self._meta_data.CoordDF[prop_dir]
 
@@ -130,9 +140,9 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
                 if x_vals is None or x_vals!=0 else r"y^{+0}"
         
         line_kw=cplt.update_line_kw(line_kw)
-        for i in range(1,5):
+        for i, quad  in enumerate(Quadrants):
             for h in h_list:
-                quad_anal = self.QuadAnalDF[h,i].copy()
+                quad_anal = self.QuadAnalDF[h,quad].copy()
                 if norm:
                     quad_anal/=uv
                 for j in range(len(coord_list)):
@@ -142,10 +152,11 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
                             quad_anal_index[k]=quad_anal[index[k][j],k]
                     else:
                         quad_anal_index=quad_anal[index[j],:] if prop_dir == 'x' else quad_anal[:,index[j]].T
-                    ax[i-1,j].cplot(coords,quad_anal_index.squeeze(),label=r"$h=%.5g$"%h,**line_kw)
-                    ax[i-1,j].set_xlabel(r"$%s/\delta$"%prop_dir)# ,fontsize=20)
-                    ax[i-1,j].set_ylabel(r"$Q%d$"%i)# ,fontsize=20)
-                    ax[i-1,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')# ,fontsize=16)
+                    
+                    ax[i,j].cplot(coords,quad_anal_index.squeeze(),label=r"$h=%.5g$"%h,**line_kw)
+                    ax[i,j].set_xlabel(r"$%s/\delta$"%prop_dir)# ,fontsize=20)
+                    ax[i,j].set_ylabel(r"$Q%d$"%quad)# ,fontsize=20)
+                    ax[i,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')# ,fontsize=16)
 
         ncol = 4 if len(h_list)>3 else len(h_list)
         ax[0,0].clegend(vertical=False,ncol=ncol)
@@ -154,12 +165,8 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
         fig.tight_layout()
         return fig, ax
 
-    def plot_events(self,h_list,coord_list,prop_dir,x_vals=0,y_mode='half_channel',norm=False,fig=None,ax=None,line_kw=None,**kwargs):
-        assert x_vals is None or not hasattr(x_vals,'__iter__')
-
-        kwargs = cplt.update_subplots_kw(kwargs,figsize=[12,5*len(coord_list)])
-        fig, ax = cplt.create_fig_ax_without_squeeze(4,len(coord_list),fig=fig,ax=ax,**kwargs)
-        ax = ax.reshape((4,len(coord_list)))
+    def plot_events(self,h_list,coord_list,prop_dir,Quadrants=None,x_vals=0,y_mode='half_channel',norm=False,fig=None,ax=None,line_kw=None,**kwargs):
+        x_vals = misc_utils.check_list_vals(x_vals) 
 
         if prop_dir =='y':
             index = [self._avg_data._return_index(x) for x in coord_list]
@@ -173,6 +180,18 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
         if norm: 
             avg_time = list(set([x[0] for x in self._avg_data.UU_tensorDF.index]))[0]
             
+        if Quadrants is None:
+            Quadrants = [1,2,3,4]
+        else:
+            Quadrants = misc_utils.check_list_vals(Quadrants)
+            if not all(quad in [1,2,3,4] for quad in Quadrants):
+                msg = "The quadrants provided must be in 1 2 3 4"
+                raise ValueError(msg)
+
+        quad_num = len(Quadrants)
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[12,5*len(coord_list)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(quad_num,len(coord_list),fig=fig,ax=ax,**kwargs)
+        ax = ax.reshape((quad_num,len(coord_list)))
 
         coords = self._meta_data.CoordDF[prop_dir]
 
@@ -182,13 +201,12 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
                 if x_vals is None or x_vals!=0 else r"y^{+0}"
         
         line_kw=cplt.update_line_kw(line_kw)
-        for i in range(1,5):
+        for i, quad in enumerate(Quadrants):
             for h in h_list:
-                quad_anal = self.QuadNumDF[h,i].copy()
+                quad_anal = self.QuadNumDF[h,quad].copy()
                 if norm:
                     total_events = np.sum([ self.QuadNumDF[h,k] for k in range(1,5)])
                     quad_anal/=total_events
-
                 for j in range(len(coord_list)):
                     if x_vals is None and prop_dir=='x':
                         quad_anal_index= np.zeros(self.shape[1])
@@ -196,15 +214,15 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
                             quad_anal_index[k]=quad_anal[index[k][j],k]
                     else:
                         quad_anal_index=quad_anal[index[j],:] if prop_dir == 'x' else quad_anal[:,index[j]].T
-                    ax[i-1,j].cplot(coords,quad_anal_index.squeeze(),label=r"$h=%.5g$"%h,**line_kw)
-                    ax[i-1,j].set_xlabel(r"$%s/\delta$"%prop_dir)# ,fontsize=20)
+                    ax[i,j].cplot(coords,quad_anal_index.squeeze(),label=r"$h=%.5g$"%h,**line_kw)
+                    ax[i,j].set_xlabel(r"$%s/\delta$"%prop_dir)# ,fontsize=20)
 
                     if norm:
-                        ax[i-1,j].set_ylabel(r"$Q%d$(Proportion of events)"%i)
+                        ax[i,j].set_ylabel(r"$Q%d$(Proportion of events)"%quad)
                     else:
-                        ax[i-1,j].set_ylabel(r"$Q%d$(Number of events)"%i)# ,fontsize=20)
+                        ax[i,j].set_ylabel(r"$Q%d$(Number of events)"%quad)# ,fontsize=20)
 
-                    ax[i-1,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')# ,fontsize=16)
+                    ax[i,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')# ,fontsize=16)
 
         ncol = 4 if len(h_list)>3 else len(h_list)
         ax[0,0].clegend(vertical=False,ncol=ncol)
@@ -213,12 +231,9 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
         fig.tight_layout()
         return fig, ax
 
-    def plot_event_interval(self,h_list,coord_list,prop_dir,x_vals=0,y_mode='half_channel',fig=None,ax=None,line_kw=None,**kwargs):
-        assert x_vals is None or not hasattr(x_vals,'__iter__')
-
-        kwargs = cplt.update_subplots_kw(kwargs,figsize=[12,5*len(coord_list)])
-        fig, ax = cplt.create_fig_ax_without_squeeze(4,len(coord_list),fig=fig,ax=ax,**kwargs)
-        ax = ax.reshape((4,len(coord_list)))
+    def plot_event_interval(self,h_list,coord_list,prop_dir,Quadrants=None,x_vals=0,y_mode='half_channel',fig=None,ax=None,line_kw=None,**kwargs):
+        
+        x_vals = misc_utils.check_list_vals(x_vals) 
 
         if prop_dir =='y':
             index = [self._avg_data._return_index(x) for x in coord_list]
@@ -230,6 +245,19 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
         else:
             raise ValueError("The propagation direction of the quadrant analysis must be `x' or `y'")            
 
+        if Quadrants is None:
+            Quadrants = [1,2,3,4]
+        else:
+            Quadrants = misc_utils.check_list_vals(Quadrants)
+            if not all(quad in [1,2,3,4] for quad in Quadrants):
+                msg = "The quadrants provided must be in 1 2 3 4"
+                raise ValueError(msg)
+
+        quad_num = len(Quadrants)
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[12,5*len(coord_list)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(quad_num,len(coord_list),fig=fig,ax=ax,**kwargs)
+        ax = ax.reshape((quad_num,len(coord_list)))
+
         coords = self._meta_data.CoordDF[prop_dir]
 
         unit=r"x/\delta"if prop_dir =='y' else r"y/\delta" if y_mode=='half_channel' \
@@ -238,9 +266,9 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
                 if x_vals is None or x_vals!=0 else r"y^{+0}"
         
         line_kw=cplt.update_line_kw(line_kw)
-        for i in range(1,5):
+        for i, quad in enumerate(Quadrants):
             for h in h_list:
-                quad_anal = self.QuadDTDF[h,i].copy()
+                quad_anal = self.QuadDTDF[h,quad].copy()
                 for j in range(len(coord_list)):
                     if x_vals is None and prop_dir=='x':
                         quad_anal_index= np.zeros(self.shape[1])
@@ -248,13 +276,11 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
                             quad_anal_index[k]=quad_anal[index[k][j],k]
                     else:
                         quad_anal_index=quad_anal[index[j],:] if prop_dir == 'x' else quad_anal[:,index[j]].T
-                    ax[i-1,j].cplot(coords,quad_anal_index.squeeze(),label=r"$h=%.5g$"%h,**line_kw)
-                    ax[i-1,j].set_xlabel(r"$%s/\delta$"%prop_dir)# ,fontsize=20)
 
-
-                    ax[i-1,j].set_ylabel(r"$\Delta T_{Q%d}$ (Interval)"%i)# ,fontsize=20)
-                        
-                    ax[i-1,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')# ,fontsize=16)
+                    ax[i,j].cplot(coords,quad_anal_index.squeeze(),label=r"$h=%.5g$"%h,**line_kw)
+                    ax[i,j].set_xlabel(r"$%s/\delta$"%prop_dir)# ,fontsize=20)
+                    ax[i,j].set_ylabel(r"$\Delta T_{Q%d}$ (Interval)"%quad)# ,fontsize=20)
+                    ax[i,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')# ,fontsize=16)
 
         ncol = 4 if len(h_list)>3 else len(h_list)
         ax[0,0].clegend(vertical=False,ncol=ncol)
@@ -263,12 +289,8 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
         fig.tight_layout()
         return fig, ax
 
-    def plot_event_duration(self,h_list,coord_list,prop_dir,x_vals=0,y_mode='half_channel',fig=None,ax=None,line_kw=None,**kwargs):
-        assert x_vals is None or not hasattr(x_vals,'__iter__')
-
-        kwargs = cplt.update_subplots_kw(kwargs,figsize=[12,5*len(coord_list)])
-        fig, ax = cplt.create_fig_ax_without_squeeze(4,len(coord_list),fig=fig,ax=ax,**kwargs)
-        ax = ax.reshape((4,len(coord_list)))
+    def plot_event_duration(self,h_list,coord_list,prop_dir,Quadrants=None,x_vals=0,y_mode='half_channel',fig=None,ax=None,line_kw=None,**kwargs):
+        x_vals = misc_utils.check_list_vals(x_vals) 
 
         if prop_dir =='y':
             index = [self._avg_data._return_index(x) for x in coord_list]
@@ -280,6 +302,19 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
         else:
             raise ValueError("The propagation direction of the quadrant analysis must be `x' or `y'")            
 
+        if Quadrants is None:
+            Quadrants = [1,2,3,4]
+        else:
+            Quadrants = misc_utils.check_list_vals(Quadrants)
+            if not all(quad in [1,2,3,4] for quad in Quadrants):
+                msg = "The quadrants provided must be in 1 2 3 4"
+                raise ValueError(msg)
+
+        quad_num = len(Quadrants)
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[12,5*len(coord_list)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(quad_num,len(coord_list),fig=fig,ax=ax,**kwargs)
+        ax = ax.reshape((quad_num,len(coord_list)))
+
         coords = self._meta_data.CoordDF[prop_dir]
 
         unit=r"x/\delta"if prop_dir =='y' else r"y/\delta" if y_mode=='half_channel' \
@@ -288,9 +323,9 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
                 if x_vals is None or x_vals!=0 else r"y^{+0}"
         
         line_kw=cplt.update_line_kw(line_kw)
-        for i in range(1,5):
+        for i, quad in enumerate(Quadrants):
             for h in h_list:
-                quad_anal = self.QuadDurDF[h,i].copy()
+                quad_anal = self.QuadDurDF[h,quad].copy()
                 for j in range(len(coord_list)):
                     if x_vals is None and prop_dir=='x':
                         quad_anal_index= np.zeros(self.shape[1])
@@ -298,13 +333,13 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
                             quad_anal_index[k]=quad_anal[index[k][j],k]
                     else:
                         quad_anal_index=quad_anal[index[j],:] if prop_dir == 'x' else quad_anal[:,index[j]].T
-                    ax[i-1,j].cplot(coords,quad_anal_index.squeeze(),label=r"$h=%.5g$"%h,**line_kw)
-                    ax[i-1,j].set_xlabel(r"$%s/\delta$"%prop_dir)# ,fontsize=20)
+                    ax[i,j].cplot(coords,quad_anal_index.squeeze(),label=r"$h=%.5g$"%h,**line_kw)
+                    ax[i,j].set_xlabel(r"$%s/\delta$"%prop_dir)# ,fontsize=20)
 
 
-                    ax[i-1,j].set_ylabel(r"$\Delta T_{Q%d}$ (Duration)"%i)# ,fontsize=20)
+                    ax[i,j].set_ylabel(r"$\Delta T_{Q%d}$ (Duration)"%quad)# ,fontsize=20)
                         
-                    ax[i-1,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')# ,fontsize=16)
+                    ax[i,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')# ,fontsize=16)
 
         ncol = 4 if len(h_list)>3 else len(h_list)
         ax[0,0].clegend(vertical=False,ncol=ncol)
@@ -382,15 +417,15 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
 
         total_time = times[-1] - times[0]
 
-        print("total time")
-        print(total_time)
-        print("total event time")
-        print(total_event_times)
-        print('num_events')
-        print(num_array)
+        # print("total time")
+        # print(total_time)
+        # print("total event time")
+        # print(total_event_times)
+        # print('num_events')
+        # print(num_array)
 
-        print("divided")
-        print(total_event_times/num_array)
+        # print("divided")
+        # print(total_event_times/num_array)
 
         total_num_array = np.mean(num_array,axis=1)
         num_array[num_array==0] = 1
