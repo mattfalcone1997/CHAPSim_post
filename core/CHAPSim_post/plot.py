@@ -30,6 +30,25 @@ if which('lualatex') is not None:
     mpl.rcParams['pgf.texsystem'] = 'lualatex'
     mpl.rcParams['text.latex.preamble'] =r'\usepackage{amsmath}'
 
+def _linekw_alias(**kwargs):
+    alias_dict = {'aa':'antialiased',
+                'c' : 'color',
+                'ds':'drawstyle',
+                'ls':'linestyle',
+                'lw':'linewidth',
+                'mec' : 'markeredgecolor',
+                'mew' : 'markeredgewidth',
+                'mfc' : 'markerfacecolor',
+                'mfcalt' : 'markerfacecoloralt',
+                'ms' : 'markersize'}
+    
+    new_dict = {}
+    for key, val in kwargs.items():
+        if key in alias_dict.keys():
+            key = alias_dict[key]
+        new_dict[key] = val
+    return new_dict
+
 def update_prop_cycle(**kwargs):
     avail_keys = [x[4:] for x in mpl.lines.Line2D.__dict__.keys() if x[0:3]=='get']
 
@@ -37,16 +56,7 @@ def update_prop_cycle(**kwargs):
         msg = "The key is invalid for the matplotlib property cycler"
         raise ValueError(msg)
 
-    alias_dict = {'aa':'antialiased',
-                  'c' : 'color',
-                  'ds':'drawstyle',
-                  'ls':'linestyle',
-                  'lw':'linewidth',
-                  'mec' : 'markeredgecolor',
-                  'mew' : 'markeredgewidth',
-                  'mfc' : 'markerfacecolor',
-                  'mfcalt' : 'markerfacecoloralt',
-                  'ms' : 'markersize'}
+    kwargs = _linekw_alias(**kwargs)
     
     cycler_dict = mpl.rcParams['axes.prop_cycle'].by_key()
     for key, item in kwargs.items():
@@ -55,8 +65,6 @@ def update_prop_cycle(**kwargs):
         elif isinstance(item,str):
             if item == "" :
                 item = [item]
-        if key in alias_dict.keys():
-            key = alias_dict[key]
         cycler_dict[key] = item
 
     item_length = [ len(item) for _,item in cycler_dict.items()]
@@ -66,10 +74,12 @@ def update_prop_cycle(**kwargs):
         cycler_dict[key] = list(val)*int(cycle_length/len(val))
     mpl.rcParams['axes.prop_cycle'] = cycler(**cycler_dict)
 
+default_prop_dict = dict(linestyle=['-','--','-.',':'],
+                        marker=['x','.','v','^','+'],
+                        color = 'bgrcmyk')
+
 def reset_prop_cycler(**kwargs):
-    update_prop_cycle(linestyle=['-','--','-.',':'],
-                marker=['x','.','v','^','+'],
-                color = 'bgrcmyk')
+    update_prop_cycle(**default_prop_dict)
     update_prop_cycle(**kwargs)
 
 reset_prop_cycler()
@@ -141,8 +151,11 @@ class AxesCHAPSim(mpl.axes.Axes):
         plot_kw = {}
         for key,val in mpl.rcParams['axes.prop_cycle'].by_key().items():
             plot_kw[key] = val[counter%len(val)]
+        
+        kwargs = _linekw_alias(**kwargs)
         for key,val in kwargs.items():
             plot_kw[key] = val
+
         if 'markevery' not in plot_kw:
             plot_kw['markevery'] = 10
         return super().plot(*args,**plot_kw)
@@ -658,7 +671,7 @@ def get_legend_ncols(line_no):
 def close(*args,**kwargs):
     plt.close(*args,**kwargs)
 
-def create_general_video(fig,path_to_folder,abs_path,func,func_args=None,func_kw=None,time_range=None):
+def create_general_video(fig,path_to_folder,abs_path,func,func_args=None,func_kw=None,time_range=None,**kwargs):
 
     times= misc_utils.time_extract(path_to_folder,abs_path)
     if time_range is not None:
@@ -679,5 +692,5 @@ def create_general_video(fig,path_to_folder,abs_path,func,func_args=None,func_kw
     def animate(time):
         return func(fig,time,*func_args,**func_kw)
 
-    return mpl.animation.FuncAnimation(fig,animate,frames=times)
+    return mpl.animation.FuncAnimation(fig,animate,frames=times,**kwargs)
 

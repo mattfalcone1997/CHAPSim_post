@@ -1068,7 +1068,6 @@ class CHAPSim_FIK_tg(CHAPSim_FIK_base):
 
         
         out = np.zeros(U_mean.shape)
-        print(U_mean.shape,out.shape)
         for i,y in enumerate(y_coords):
             out[i] = (I_x_prime + dp_prime_dx + dudt)[i,:]*y**2
 

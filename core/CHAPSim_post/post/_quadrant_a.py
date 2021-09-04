@@ -162,7 +162,6 @@ class CHAPSim_Quad_Anl_base(Common,ABC):
         ax[0,0].clegend(vertical=False,ncol=ncol)
         ax[0,0].get_gridspec().tight_layout(fig)
 
-        fig.tight_layout()
         return fig, ax
 
     def plot_events(self,h_list,coord_list,prop_dir,Quadrants=None,x_vals=0,y_mode='half_channel',norm=False,fig=None,ax=None,line_kw=None,**kwargs):

@@ -800,7 +800,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
         """
 
         PhyTime = self.check_PhyTime(PhyTime)
-        return super()._int_thickness_calc(PhyTime)
+        return self._int_thickness_calc(PhyTime)
 
     @docstring.sub
     def wall_unit_calc(self,PhyTime=None):
