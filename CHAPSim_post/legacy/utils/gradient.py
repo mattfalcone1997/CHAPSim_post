@@ -11,7 +11,8 @@ import sympy
 
 import CHAPSim_post as cp
 
-from CHAPSim_post._libs import gradient_parallel
+from CHAPSim_post.legacy._libs import autocorr_parallel32 as cy_ext32_base
+from CHAPSim_post.legacy._libs import autocorr_parallel64 as cy_ext64_base
 
 from scipy import interpolate
 import scipy
@@ -74,14 +75,9 @@ class Gradient():
             dim = ord('y') - ord(comp)
             if comp == 'z':
                 msg = "gradients in the z direction can only be calculated on 3-d arrays"
-                raise ValueError(msg)
-        elif flow_array.ndim == 1:
-            dim = 0
-            if comp != 'y':
-                msg = "For 1D flow arrays only y can be used"
-                raise ValueError(msg)
+                raise Exception(msg)
         else:
-            msg = "This method can only be used on one, two and three dimensional arrays"
+            msg = "This method can only be used on two and three dimensional arrays"
             raise TypeError(msg)
 
         coord_array = CoordDF[comp]
@@ -90,7 +86,6 @@ class Gradient():
                     f" and flow array size in dimension ({flow_array.shape[dim]})"
                     " does not match")
             raise ValueError(msg)
-            
         return np.gradient(flow_array,coord_array,edge_order=2,axis=dim)
     
     def grad_calc_cy(self,CoordDF,flow_array,comp):
@@ -116,7 +111,13 @@ class Gradient():
         return self._grad_calc_cy_work(flow_array,coord_array,dim)
     
     def _grad_calc_cy_work(self,flow_array,coord_array,dim):
-
+        if cp.rcParams['dtype'] == np.float32:
+            cy_ext_base = cy_ext32_base
+        elif cp.rcParams['dtype'] == np.float64:
+            cy_ext_base = cy_ext64_base
+        else:
+            msg = "To use this method the dtype has to f4 or f8"
+            raise TypeError(msg)
 
         dx_array = np.diff(coord_array)
         dx = None
@@ -124,15 +125,15 @@ class Gradient():
         if np.allclose(dx_array,[dx_array[0]]):
             dx = dx_array[0]
             if flow_array.ndim ==2:
-                return gradient_parallel.cy_gradient_calc2D_dx(flow_array.astype('f8'),dx,dim)
+                return cy_ext_base.cy_gradient_calc2D_dx(flow_array,dx,dim)
             else:
-                return gradient_parallel.cy_gradient_calc3D_dx(flow_array.astype('f8'),dx,dim)
+                return cy_ext_base.cy_gradient_calc3D_dx(flow_array,dx,dim)
         else:
             dx = dx_array[0]
             if flow_array.ndim ==2:
-                return gradient_parallel.cy_gradient_calc2D_var_x(flow_array.astype('f8'),dx_array,dim)
+                return cy_ext_base.cy_gradient_calc2D_var_x(flow_array,dx_array,dim)
             else:
-                return gradient_parallel.cy_gradient_calc3D_var_x(flow_array.astype('f8'),dx_array,dim)
+                return cy_ext_base.cy_gradient_calc3D_var_x(flow_array,dx_array,dim)
         
         
     def grad_calc_sparse(self,CoordDF,flow_array,comp):
@@ -287,6 +288,7 @@ def cumIntegrate_y_1D(CoordDF,flow_array,channel=True):
         flow_inty = (1./coord_sub)*cumtrapz(flow_sub*coord_sub,coord_sub)
 
     return flow_inty
+            
 
 def Scalar_grad_io(coordDF,flow_array):
 
