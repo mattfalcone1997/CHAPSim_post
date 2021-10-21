@@ -3,7 +3,7 @@ appdirs @ file:///home/conda/feedstock_root/build_artifacts/appdirs_160310839579
 astor==0.8.1
 attrs==20.3.0
 autoflake==1.4
-Babel==2.9.0
+Babel==2.9.1
 backcall @ file:///home/conda/feedstock_root/build_artifacts/backcall_1592338393461/work
 backports.functools-lru-cache==1.6.1
 bandit==1.7.0
