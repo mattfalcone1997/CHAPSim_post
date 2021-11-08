@@ -437,7 +437,7 @@ class CHAPSim_Quad_Anl_io(CHAPSim_Quad_Anl_base):
             old_dt_array = total_mean_dt.copy()
             old_dur_array = total_mean_dur.copy()
             
-            middle_index = int(0.5*old_dur_array.shape[1])
+            middle_index = old_dur_array.shape[1] // 2
             symmetry_map = {1: 4,2:3,4:1,3:2}
             for j,h in enumerate(h_list):
                 for i in range(4):

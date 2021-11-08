@@ -308,8 +308,8 @@ class flowReconstruct3D(flowReconstructBase,Common):
         for i, val in enumerate(int_vals):
             fig, ax[i] = FluctDF.plot_vector(plane,val,time=None,spacing=spacing,scaling=scaling,
                                                     fig=fig,ax=ax[i],quiver_kw=quiver_kw)
-            ax[i].axes.set_xlabel(r"$%s/\delta$"%slice[0])
-            ax[i].axes.set_ylabel(r"$%s/\delta$"%slice[1])
+            ax[i].axes.set_xlabel(r"$%s/\delta$"%plane[0])
+            ax[i].axes.set_ylabel(r"$%s/\delta$"%plane[1])
             ax[i].axes.set_title(r"$%s = %.2g$"%(title_symbol,axis_vals[i]),loc='right')
 
         if axes_output:

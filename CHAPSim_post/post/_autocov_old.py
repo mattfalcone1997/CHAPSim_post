@@ -319,7 +319,7 @@ class CHAPSim_autocov_base(Common,ABC):
         pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
 
         for i in range(len(axis_vals)):
-            wavenumber_spectra = np.zeros((int(0.5*shape[0])+1,shape[2]),dtype=np.complex128)
+            wavenumber_spectra = np.zeros((shape[0]//2+1,shape[2]),dtype=np.complex128)
             for j in range(shape[2]):
                 wavenumber_spectra[:,j]=fft.rfft(Ruu[:,i,j])
             comp_size= shape[0]

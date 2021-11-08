@@ -64,7 +64,7 @@ class _AVG_base(Common,ABC):
 
     @property
     def times(self):
-        return self.flow_AVGDF.times
+        return np.array(self.flow_AVGDF.times)
 
     def get_times(self):
         return ["%.9g"%x for x in self.times]
@@ -828,15 +828,16 @@ class CHAPSim_AVG_io(_AVG_developing):
         uu_label = self.Domain.create_label(r"%s'%s'"%tuple(comp))
 
         line_kw = cplt.update_line_kw(line_kw)
+        avg_label = cp.styleParams.AVGStyle(uu_label)
         if y_vals_list == 'max':
-            line_kw['label'] = r"$%s_{max}$"%cp.styleParams.AVGStyle(uu_label)
+            line_kw['label'] = r"$%s_{max}$"%avg_label
             
             fig, ax = self.UU_tensorDF.plot_line_max(comp,'x',time=PhyTime,fig=fig,ax=ax,line_kw=line_kw,**kwargs)
         else:
             msg = "This method needs to be reimplemented only max can currently be used"
             raise NotImplementedError(msg)
 
-        ax.set_ylabel(cp.styleParams.AVGStyle(uu_label))
+        ax.set_ylabel(r"$%s$"%avg_label)
 
         x_label = self.Domain.create_label(r"$x$")
         ax.set_xlabel(x_label)
@@ -1962,7 +1963,7 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg):
             msg = "This method needs to be reimplemented only max can currently be used"
             raise NotImplementedError(msg)
 
-        ax.set_ylabel(avg_label)
+        ax.set_ylabel(r"$%s$"%avg_label)
 
             
         time_label = cp.styleParams.timeStyle

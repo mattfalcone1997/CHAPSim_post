@@ -40,7 +40,7 @@ class _budget_base(Common,ABC):
     
     def _check_terms(self,comp):
         
-        budget_terms = tuple([x[1] for x in self.budgetDF.index])
+        budget_terms = sorted(self.budgetDF.inner_index)
 
         if comp is None:
             comp_list = budget_terms
@@ -56,6 +56,21 @@ class _budget_base(Common,ABC):
 
         return comp_list
 
+    @property
+    def Balance(self):
+        times = list(self.avg_data.times)
+        total_balance = []
+        for time in times:
+            balance = []
+            for term in self.budgetDF.inner_index:
+                balance.append(self.budgetDF[time,term])
+            total_balance.append(np.array(balance).sum(axis=0))
+
+        index = [times,['balance']*len(times)]
+        return self._flowstruct_class(self._coorddata,
+                                        np.array(total_balance),
+                                        index=index)
+            
     def __str__(self):
         return self.budgetDF.__str__()
 
@@ -72,6 +87,12 @@ class _budget_base(Common,ABC):
         fig, ax, _ = cplt.create_fig_ax_without_squeeze(*ax_size,fig=fig,ax=ax,**kwargs)
         return fig, ax.flatten()
 
+    def title_with_math(self,string):
+        math_split = string.split('$')
+        for i, split in enumerate(math_split):
+            if i%2 == 0:
+                math_split[i] = math_split[i].title()
+        return "$".join(math_split)
 class ReynoldsBudget_base(ABC):
     def _budget_extract(self,PhyTime,comp):
             
@@ -294,7 +315,7 @@ class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
             y_plus, budget_scale = self._wallunit_generator(x,PhyTime,wall_units)
             for comp in budget_terms:
                 
-                line_kw['label'] = comp
+                line_kw['label'] = self.title_with_math(comp)
                 fig, ax[i] = self.budgetDF.plot_line(comp,'y',x_loc,time=PhyTime,channel_half=True,
                                                     transform_xdata=y_plus,
                                                     transform_ydata=budget_scale,
@@ -529,7 +550,7 @@ class CHAPSim_budget_tg(ReynoldsBudget_base):
 
         for comp in budget_terms:
                 
-            line_kw['label'] = comp
+            line_kw['label'] = self.title_with_math(comp)
             fig, ax = self.budgetDF.plot_line(comp,time=PhyTime,
                                                 transform_xdata=y_plus,
                                                 transform_ydata=budget_scale,
@@ -753,7 +774,7 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
 
         for i,x_loc in enumerate(x_list):
             for comp in budget_terms:
-                line_kw['label'] = comp
+                line_kw['label'] = self.title_with_math(comp)
                 fig, ax[i] = self.budgetDF.plot_line(comp,'y',x_loc,time=PhyTime,channel_half=True,
                                                     fig=fig,ax=ax[i],line_kw=line_kw)
             
@@ -867,8 +888,8 @@ class CHAPSim_momentum_budget_tg(_momentum_budget_base,_budget_base):
 
         for comp in budget_terms:
                 
-            line_kw['label'] = comp
-            fig, ax = self.budgetDF.plot_line(comp,time=PhyTime,
+            line_kw['label'] = self.title_with_math(comp)
+            fig, ax = self.budgetDF.plot_line(comp,time=PhyTime,channel_half=True,
                                             fig=fig,ax=ax,line_kw=line_kw)
 
         if mpl.rcParams['text.usetex'] == True:
@@ -890,7 +911,6 @@ class CHAPSim_momentum_budget_tg(_momentum_budget_base,_budget_base):
         y_coords = self.CoordDF['y']
 
         for comp in budget_terms:
-                
             line_kw['label'] = comp
             budget = self.budgetDF[PhyTime,comp]
 
@@ -959,7 +979,7 @@ class CHAPSim_momentum_budget_temp(CHAPSim_momentum_budget_tg,_budget_base):
         fig, ax = self._create_budget_axes(times_list,fig,ax,**kwargs)
         for i,time in enumerate(times_list):
             fig, ax[i] = super().plot_integrated_budget(PhyTime=time,budget_terms=budget_terms,fig=fig,ax=ax[i],line_kw=line_kw)
-            ax[i].get_legend().remove
+            ax[i].get_legend().remove()
 
             time_label = cp.styleParams.timeStyle
             ax[i].set_title(r"$%s = %.3g$"%(time_label,time),loc='right')
@@ -975,7 +995,7 @@ class CHAPSim_momentum_budget_temp(CHAPSim_momentum_budget_tg,_budget_base):
         return fig, ax
 
 class _FIK_developing_base(_budget_base):
-        
+
     def _budget_extract(self,PhyTime):
         laminar = self._laminar_extract(PhyTime)
         turbulent = self._turbulent_extract(PhyTime)
@@ -1019,7 +1039,7 @@ class _FIK_developing_base(_budget_base):
         pass  
 
     @abstractmethod
-    def plot(self,budget_terms=None,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
+    def plot(self,budget_terms=None,plot_total=True,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
 
         budget_terms = self._check_terms(budget_terms)
         
@@ -1032,9 +1052,10 @@ class _FIK_developing_base(_budget_base):
         for comp in budget_terms:
             budget_term = self.budgetDF[PhyTime,comp].copy()
                 
-            label = r"%s"%comp.title()
+            label = self.title_with_math(comp)
             ax.cplot(xaxis_vals,budget_term,label=label,**line_kw)
-        ax.cplot(xaxis_vals,np.sum(self.budgetDF.values,axis=0),label="Total",**line_kw)
+        if plot_total:
+            ax.cplot(xaxis_vals,np.sum(self.budgetDF.values,axis=0),label="Total",**line_kw)
         ncol = cplt.get_legend_ncols(len(budget_terms))
         ax.clegend(ncol=ncol,vertical=False)
         return fig, ax

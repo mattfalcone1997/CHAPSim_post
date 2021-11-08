@@ -24,6 +24,7 @@ from pandas._libs.index import ObjectEngine
 from pandas.core.indexes.multi import MultiIndexPyIntEngine, MultiIndexUIntEngine
 from abc import abstractmethod, abstractproperty, ABC
 
+from CHAPSim_post.post._meta import coorddata
 class IndexBase(ABC):
     @abstractproperty
     def is_MultiIndex(self):
@@ -66,6 +67,25 @@ class IndexBase(ABC):
     @abstractmethod
     def get_inner_index(self):
         pass
+    
+    @abstractmethod
+    def _update_internals(self):
+        pass
+
+    def update_key(self,old_key,new_key):
+        old_key = self._item_handler(old_key)
+        new_key = self._item_handler(new_key)
+
+        if old_key not in self:
+            msg = f"The key {old_key} must be an existing key in the indexer"
+            raise KeyError(msg)
+
+        for i, x in enumerate(self._index):
+            if old_key == x:
+                self._index[i] = new_key
+                break
+
+        self._update_internals()
 
     def get_index(self):
         return self._index
@@ -199,6 +219,7 @@ class Index(IndexBase):
     def _mapping(self):
         return self.__engine
 
+    @property
     def is_MultiIndex(self):
         return False
 
@@ -226,6 +247,30 @@ class MultiIndex(IndexBase):
 
         self.__engine = self._create_mapping() 
     
+    def update_inner_key(self,old_key,new_key):
+        old_key = self._item_handler(old_key)
+        new_key = self._item_handler(new_key)
+
+        for x in self._index:
+            if x[1] == old_key:
+                new_total_key = (x[0],new_key)
+                self.update_key(x,new_total_key)
+                break
+
+        self._update_internals()
+
+    def update_outer_key(self,old_key,new_key):
+        old_key = self._item_handler(old_key)
+        new_key = self._item_handler(new_key)
+
+        for x in self._index:
+            if x[0] == old_key:
+                new_total_key = (new_key,x[1])
+                self.update_key(x,new_total_key)
+                break
+
+        self._update_internals()
+
     def __contains__(self, key):
         levels = self._levels
         return key[0] in levels[0] and key[1] in levels[1]
@@ -249,6 +294,14 @@ class MultiIndex(IndexBase):
         inner_code = [inner_code_map[x] for x in inner_index]
 
         return [outer_code, inner_code]
+
+    @property
+    def outer_index(self):
+        return self._outer_index
+
+    @property
+    def inner_index(self):
+        return self._inner_index
 
     def to_array(self,string=True):
         type = np.string_ if string else object
@@ -292,6 +345,7 @@ class MultiIndex(IndexBase):
     def _mapping(self):
         return self.__engine
 
+    @property
     def is_MultiIndex(self):
         return True
 
@@ -309,7 +363,7 @@ class structIndexer:
         if len(index) != 2:
             return False
 
-        if not all(isinstance(ind,list) for ind in index):
+        if not all(isinstance(ind,(list,Index)) for ind in index):
             return False
 
         if len(index[0]) != len(index[1]):
@@ -483,7 +537,6 @@ class hdfHandler:
             mode = self._hdf_file.mode
 
         avail_keys = self._get_key_recursive(h5_obj,groups_only)
-
         if self._check_key_recursive(h5_obj,key,groups_only):
             return h5_obj[key]
         else:
@@ -497,6 +550,9 @@ class hdfHandler:
                 raise KeyError(msg)
 
     def _check_key_recursive(self,h5_obj,key,groups_only=True):
+        if key is None:
+            return False
+
         avail_keys = self._get_key_recursive(h5_obj,groups_only)
 
         key = os.path.join(h5_obj.name,key)
@@ -566,13 +622,15 @@ class datastruct:
     def __init__(self,*args,from_hdf=False,**kwargs):
 
         from_array=False; from_dict = False; from_dstruct=False
-        if isinstance(args[0],np.ndarray):
+
+        test_arg = self._get_test_arg(*args,**kwargs)
+        if isinstance(test_arg,np.ndarray):
             from_array=True
 
-        elif isinstance(args[0],dict):
+        elif isinstance(test_arg,dict):
             from_dict=True
 
-        elif isinstance(args[0],datastruct):
+        elif isinstance(test_arg,datastruct):
             from_dstruct=True
             
         elif not from_hdf:
@@ -582,16 +640,18 @@ class datastruct:
 
         if from_array:
             self._array_ini(*args,**kwargs)
+
         elif from_dict:
             self._dict_ini(*args,**kwargs)
+
         elif from_dstruct:
-            d_args = [args[0].to_dict()] if len(args) == 1 else  [args[0].to_dict(),*args[1:]] 
-            self._dict_ini(*d_args,**kwargs)
+            self._dstruct_ini(*args,**kwargs)
 
         elif from_hdf:
             self._file_extract(*args,**kwargs)
 
-        
+    def _get_test_arg(self,*args,**kwargs):
+        return args[1] if isinstance(args[0],coorddata) else args[0]
     @classmethod
     def from_hdf(cls,*args,**kwargs):
         return cls(*args,from_hdf=True,**kwargs)
@@ -634,11 +694,13 @@ class datastruct:
 
         self._indexer = structIndexer(index)
 
+    def _dstruct_ini(self,dstruct,copy=False):
+        return self._dict_ini(dstruct.to_dict(),copy=copy)
+
     def _file_extract(self,filename,key=None):
         hdf_obj = hdfHandler(filename,mode='r',key=key)
 
         hdf_obj.check_type_id(self.__class__)
-        
         data_array = list(hdf_obj['data'][:].astype(cp.rcParams['dtype']))
         index_array = hdf_obj.contruct_index_from_hdfkey('index')
         shapes_array = hdf_obj['shapes'][:]
@@ -648,8 +710,9 @@ class datastruct:
             self._data[i] = data[~np.isnan(data)].reshape(shape).squeeze()
 
         self._indexer = structIndexer(index_array)
+        return hdf_obj
 
-    def to_hdf(self,filepath,key=None,mode='a'):
+    def to_hdf(self,filepath,mode='a',key=None):
         hdf_obj =hdfHandler(filepath,mode=mode,key=key)
 
         hdf_array = self._construct_data_array()
@@ -659,6 +722,8 @@ class datastruct:
         hdf_obj.create_dataset('data',data=hdf_array)
         hdf_obj.create_dataset('shapes',data=hdf_shapes)
         hdf_obj.create_dataset('index',data=hdf_indices)
+
+        return hdf_obj
 
     def to_dict(self):
         return dict(self)
@@ -772,8 +837,11 @@ class datastruct:
         try:
             return self.get_key(key)
         except KeyError:
-            outer_key = self.check_outer(None,err)
-            return self.get_key((outer_key,key))
+            if self.index.is_MultiIndex:
+                outer_key = self.check_outer(None,err)
+                return self.get_key((outer_key,key))
+            else:
+                raise KeyError(err_msg) from None
 
     def _getitem_process_list(self,key):
         key_list = self._indexer._getitem_process_list(key)
@@ -825,6 +893,22 @@ class datastruct:
 
         self._data.pop(loc)
         self._indexer.remove(key)
+
+    def delete_inner_key(self,inner_key):
+        if not inner_key in self.inner_index:
+            msg = "Only inner keys in the inner index can be removed"
+            raise KeyError(msg)
+        outer_indices =  self.outer_index
+        for outer in outer_indices:
+            del self[outer,inner_key]
+
+    def delete_outer_key(self,outer_key):
+        if not outer_key in self.outer_index:
+            msg = "Only outer keys in the outer index can be removed"
+            raise KeyError(msg)
+        inner_indices =  self.inner_index
+        for inner in inner_indices:
+            del self[outer_key,inner]
 
     def __iter__(self):
         for key, val in zip(self._indexer,self._data):

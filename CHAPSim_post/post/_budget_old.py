@@ -680,7 +680,7 @@ class CHAPSim_Momentum_budget_base(CHAPSim_budget_base):
 
     def plot_integrated_budget(self, x_list,budget_terms=None,PhyTime=None, fig=None, ax =None,**kwargs):
         local_budgetDF = self.budgetDF.copy()
-        middle_index = int(0.5*self.shape[0])
+        middle_index = self.shape[0] // 2
         for index, val in self.budgetDF:
             budget = np.zeros_like(val)
             for i in range(len(budget)//2):
@@ -987,7 +987,7 @@ class CHAPSim_FIK_base(CHAPSim_budget_base):
 
 
         y_coords = self.avg_data.CoordDF['y']
-        limit = int(0.5*y_coords.size)
+        limit = y_coords.size // 2
         uv = self.avg_data.UU_tensorDF[PhyTime,'uv'][:limit]
 
         turbulent = np.zeros_like(uv)
@@ -1053,7 +1053,7 @@ class CHAPSim_FIK_io(CHAPSim_FIK_base):
 
         I_x_prime  = I_x - 0.5*integrate_simps(I_x,y_coords,axis=0)
 
-        limit = int(0.5*y_coords.size)
+        limit = y_coords.size // 2
 
         out = np.zeros_like(U_mean[:limit])
         for i,y in enumerate(y_coords[:limit]):
@@ -1102,7 +1102,7 @@ class CHAPSim_FIK_tg(CHAPSim_FIK_base):
 
         I_x_prime = I_x - 0.5*integrate_simps(I_x,y_coords,axis=0)
 
-        limit = int(0.5*U_mean.shape[0])
+        limit = U_mean.shape[0] //2
         out = np.zeros((limit,U_mean.shape[1]))
         for i,y in enumerate(y_coords[:limit]):
             out[i] = (I_x_prime + dp_prime_dx + dudt)[i,:]*y**2

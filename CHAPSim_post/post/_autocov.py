@@ -4,7 +4,7 @@ import time
 from abc import ABC, abstractmethod
 
 import CHAPSim_post as cp
-from CHAPSim_post.utils import parallel, misc_utils
+from CHAPSim_post.utils import parallel, misc_utils, indexing
 
 import CHAPSim_post.plot as cplt
 import CHAPSim_post.dtypes as cd
@@ -24,7 +24,7 @@ _fluct_temp_class = CHAPSim_fluct_temp
 from ._common import Common
 
 
-from ._meta import CHAPSim_meta
+from ._meta import CHAPSim_meta, coorddata
 _meta_class = CHAPSim_meta
 
 from CHAPSim_post._libs import autocorr_parallel
@@ -58,7 +58,8 @@ class _autocov_base(Common,ABC):
 
         self._meta_data.save_hdf(file_name,'a',key+'/meta_data')
         self._avg_data.save_hdf(file_name,'a',key+'/avg_data')
-        self.autocorrDF.to_hdf(file_name,key=key+'/autocorrDF',mode='a')#,format='fixed',data_columns=True)
+        self.Rx_DF.to_hdf(file_name,key=key+'/Rx_DF',mode='a')#,format='fixed',data_columns=True)
+        self.Rz_DF.to_hdf(file_name,key=key+'/Rz_DF',mode='a')
 
     @abstractmethod
     def _autocov_extract(self,*args,**kwargs):
@@ -98,6 +99,8 @@ class CHAPSim_autocov_io(_autocov_base):
             coe3 = i/(i+1)
             coe2 = 1/(i+1)
 
+            time2 = time.time()
+
             if i==0:
                 R_x, R_z = self._autocov_calc(fluct_data,comp,timing,max_x_sep,max_z_sep)
             else:
@@ -107,7 +110,7 @@ class CHAPSim_autocov_io(_autocov_base):
                     raise ValueError(msg)
                 R_x = R_x*coe3 + local_R_x*coe2
                 R_z = R_z*coe3 + local_R_z*coe2
-            print(time.time() - time1,flush=True)
+            print(i, timing, time.time() - time2,time2-time1,flush=True)
 
         if cp.rcParams['SymmetryAVG'] and self.metaDF['iCase'] ==1:
             vy_count = comp.count('v')
@@ -115,7 +118,62 @@ class CHAPSim_autocov_io(_autocov_base):
             R_x = 0.5*(R_x + R_x[:,::-1]*(-1)**vy_count )
             R_z = 0.5*(R_z + R_z[:,::-1]*(-1)**vy_count )
 
-        self.autocorrDF = cd.datastruct({'x':R_x,'z':R_z})
+        coorddata_z, coorddata_x, = self._get_coorddata(R_x,R_z)
+        self.Rx_DF = cd.FlowStructND(coorddata_x,
+                                    {(None,'x'):R_x},
+                                    data_layout = ['delta x','y','x'],
+                                    polar_plane=None,
+                                    wall_normal_line='y')
+        self.Rz_DF = cd.FlowStructND(coorddata_z,{(None,'z'):R_z},
+                                    data_layout = ['delta z','y','x'],
+                                    polar_plane=None,
+                                    wall_normal_line='y')
+
+    def _get_coorddata(self,R_x,R_z):
+
+        x_coords_z = self.CoordDF['x']
+        x_coords_x = self.CoordDF['x'][:R_x.shape[-1]]
+
+        sep_coords_z = self.CoordDF['z'][:R_z.shape[0]]
+        sep_coords_x = self.CoordDF['x'][:R_x.shape[0]]
+
+        y_coords = self.CoordDF['y']
+
+        x_coords_z_nd = self.Coord_ND_DF['x']
+        x_coords_x_nd = self.Coord_ND_DF['x'][:R_x.shape[-1]+1]
+
+        sep_coords_z_nd = self.Coord_ND_DF['z'][:R_z.shape[0]+1]
+        sep_coords_x_nd = self.Coord_ND_DF['x'][:R_x.shape[0]+1]
+
+        y_coord_nd = self.Coord_ND_DF['y']
+
+        coord_z = cd.coordstruct({'delta z' : sep_coords_z, 
+                                    'y' : y_coords,
+                                    'x' : x_coords_z})
+
+        coord_z_nd = cd.coordstruct({'delta z' : sep_coords_z_nd, 
+                            'y' : y_coord_nd,
+                            'x' : x_coords_z_nd})
+
+        coord_x = cd.coordstruct({'delta x' : sep_coords_x, 
+                            'y' : y_coords,
+                            'x' : x_coords_x})
+
+        coord_x_nd = cd.coordstruct({'delta x' : sep_coords_x_nd, 
+                            'y' : y_coord_nd,
+                            'x' : x_coords_x_nd})
+        
+        coordstruct_x = coorddata.from_coordstructs(self.Domain,
+                                                    coord_x,
+                                                    coord_x_nd)
+
+        coordstruct_z = coorddata.from_coordstructs(self.Domain,
+                                                    coord_z,
+                                                    coord_z_nd)
+
+        return coordstruct_z, coordstruct_x
+
+
 
     def _hdf_extract(self,file_name, key=None):
         if key is None:
@@ -126,7 +184,8 @@ class CHAPSim_autocov_io(_autocov_base):
 
         self.comp = tuple(np.char.decode(hdf_obj.attrs["comp"][:]))
 
-        self.autocorrDF = cd.datastruct.from_hdf(file_name,key=key+'/autocorrDF')
+        self.Rx_DF = cd.FlowStructND.from_hdf(file_name,key=key+'/Rx_DF')
+        self.Rz_DF = cd.FlowStructND.from_hdf(file_name,key=key+'/Rz_DF')
         self._meta_data = self._module._meta_class.from_hdf(file_name,key=key+'/meta_data')
         self._avg_data = self._module._avg_io_class.from_hdf(file_name,key=key+'/avg_data')
 
@@ -141,6 +200,49 @@ class CHAPSim_autocov_io(_autocov_base):
         
         return R_x, R_z
 
+    def plot_line(self,comp,x_vals,y_vals,y_mode='half_channel',norm=True,line_kw=None,fig=None,ax=None,**kwargs):
+        if not comp in ('x','z'):
+            msg = f"comp must be the string 'x' or 'z' not {comp} "
+            raise ValueError(msg)
+
+        y_vals = misc_utils.check_list_vals(y_vals)
+        x_vals = indexing.true_coords_from_coords(self.CoordDF,'x',x_vals)
+
+        if comp == 'x':
+            Ruu_DF = self.Rx_DF.copy()
+        else:
+            Ruu_DF = self.Rz_DF.copy()
+
+        line_kw = cplt.update_line_kw(line_kw)
+
+        if norm:
+            Ruu_0=Ruu_DF[comp][0]
+            Ruu_DF/=Ruu_0[:,np.newaxis]
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5*len(y_vals)])
+        fig, ax, single_output = cplt.create_fig_ax_without_squeeze(len(y_vals),fig=fig,ax=ax,**kwargs)
+        
+        y_vals = self._avg_data.ycoords_from_coords(y_vals,mode=y_mode)[0]
+        y_vals_int = self._avg_data.ycoords_from_norm_coords(y_vals,mode=y_mode)[0]
+
+        title_symbol = misc_utils.get_title_symbol('y',y_mode,local=False)
+        labels = [self.Domain.create_label(r"$x = %.3g$"%x) for x in x_vals]
+
+        for j,y in enumerate(y_vals_int):
+            for i, x in enumerate(x_vals):
+                fig, ax[j] = Ruu_DF.slice[:,y,x].plot_line(comp,
+                                                            label=labels[i],
+                                                            fig=fig,
+                                                            ax=ax[j],
+                                                            line_kw=line_kw)
+
+
+                ax[j].set_ylabel(r"$R_{%s%s}$"%self.comp)
+                xlabel = self.Domain.create_label(r"$\Delta %s/\delta$"%comp)
+                ax[j].set_xlabel(xlabel)
+                ax[j].set_title(r"$%s=%.3g$"%(title_symbol,y_vals[j]),loc='right')
+        
+        return fig, ax
 class CHAPSim_autocov_tg(_autocov_base):
     _tgpost = True
     def _autocov_extract(self,comp,path_to_folder=".",time0=None,ntimes=None,abs_path=True,max_x_sep=None,max_z_sep=None):
@@ -191,8 +293,52 @@ class CHAPSim_autocov_tg(_autocov_base):
 
             R_x = 0.5*(R_x + R_x[:,::-1]*pow(-1,vy_count))
             R_z = 0.5*(R_z + R_z[:,::-1]*pow(-1,vy_count))
+        
+        coorddata_z, coorddata_x = self._get_coorddata(R_x,R_z)
+        self.Rx_DF = cd.FlowStructND(coorddata_x,
+                                    {(None,'x'):R_x},
+                                    data_layout = ['delta x','y'],
+                                    polar_plane=None,
+                                    wall_normal_line='y')
 
-        self.autocorrDF = cd.datastruct({'x':R_x,'z':R_z})
+        self.Rz_DF = cd.FlowStructND(coorddata_z,{(None,'z'):R_z},
+                                    data_layout = ['delta z','y'],
+                                    polar_plane=None,
+                                    wall_normal_line='y')
+
+    def _get_coorddata(self,R_x,R_z):
+
+        sep_coords_z = self.CoordDF['z'][:R_z.shape[0]]
+        sep_coords_x = self.CoordDF['x'][:R_x.shape[0]]
+
+        y_coords = self.CoordDF['y']
+
+        sep_coords_z_nd = self.Coord_ND_DF['z'][:R_z.shape[0]+1]
+        sep_coords_x_nd = self.Coord_ND_DF['x'][:R_x.shape[0]+1]
+
+        y_coord_nd = self.Coord_ND_DF['y']
+
+        coord_z = cd.coordstruct({'delta z' : sep_coords_z, 
+                                    'y' : y_coords})
+
+        coord_z_nd = cd.coordstruct({'delta z' : sep_coords_z_nd, 
+                            'y' : y_coord_nd})
+
+        coord_x = cd.coordstruct({'delta x' : sep_coords_x, 
+                            'y' : y_coords})
+
+        coord_x_nd = cd.coordstruct({'delta x' : sep_coords_x_nd, 
+                            'y' : y_coord_nd})
+        
+        coorddata_x = coorddata.from_coordstructs(self.Domain,
+                                                    coord_x,
+                                                    coord_x_nd)
+
+        coorddata_z = coorddata.from_coordstructs(self.Domain,
+                                                    coord_z,
+                                                    coord_z_nd)
+
+        return coorddata_z, coorddata_x
 
     def _hdf_extract(self,file_name, key=None):
         if key is None:
@@ -203,7 +349,8 @@ class CHAPSim_autocov_tg(_autocov_base):
 
         self.comp = tuple(np.char.decode(hdf_obj.attrs["comp"][:]))
 
-        self.autocorrDF = cd.datastruct.from_hdf(file_name,key=key+'/autocorrDF')
+        self.Rx_DF = cd.FlowStructND.from_hdf(file_name,key=key+'/Rx_DF')
+        self.Rz_DF = cd.FlowStructND.from_hdf(file_name,key=key+'/Rz_DF')
         self._meta_data = self._module._meta_class.from_hdf(file_name,key=key+'/meta_data')
         self._avg_data = self._module._avg_tg_class.from_hdf(file_name,key=key+'/avg_data')
 
@@ -220,33 +367,6 @@ class CHAPSim_autocov_tg(_autocov_base):
         R_z = autocorr_parallel.autocov_calc_tg_z(fluct_vals1,fluct_vals2,max_z_sep)
         
         return R_x, R_z
-    def autocov_calc_tg_x_np(self,fluct_vals1,fluct_vals2):
-        NCL1 = fluct_vals1.shape[2]
-        NCL2 = fluct_vals1.shape[1]
-        NCL3 = fluct_vals1.shape[0]
-
-        R_x_temp = np.zeros((NCL1,NCL2,NCL3))
-        for j in range(NCL3):
-            for i in range(NCL2):
-                R_x_temp[:,i,j] = np.correlate(fluct_vals1[j,i,:],fluct_vals2[j,i,:],mode='same')/NCL1
-        
-        mid = int(NCL1*0.5)
-        R_x = R_x_temp.mean(axis=-1)
-        return R_x
-
-    def autocov_calc_tg_z_np(self,fluct_vals1,fluct_vals2):
-        NCL1 = fluct_vals1.shape[2]
-        NCL2 = fluct_vals1.shape[1]
-        NCL3 = fluct_vals1.shape[0]
-
-        R_z_temp = np.zeros((NCL3,NCL2,NCL1))
-        for i in range(NCL2):
-            for j in range(NCL1):
-                R_z_temp[:,i,j] = np.correlate(fluct_vals1[:,i,j],fluct_vals2[:,i,j],mode='same')/NCL3
-        
-        mid = int(NCL3*0.5)
-        R_z = R_z_temp.mean(axis=-1)
-        return 0.5*(R_z[mid:] + R_z[:mid][::-1])
 
     def plot_line(self,comp,y_vals,y_mode='half_channel',norm=True,line_kw=None,fig=None,ax=None,**kwargs):
         if not comp in ('x','z'):
@@ -254,26 +374,30 @@ class CHAPSim_autocov_tg(_autocov_base):
             raise ValueError(msg)
 
         y_vals = misc_utils.check_list_vals(y_vals)
-        Ruu = self.autocorrDF[comp].copy()
+        if comp == 'x':
+            Ruu_DF = self.Rx_DF.copy()
+        else:
+            Ruu_DF = self.Rz_DF.copy()
 
         line_kw = cplt.update_line_kw(line_kw)
 
         if norm:
-            Ruu_0=Ruu[0].copy()
-            for i in range(Ruu.shape[0]):
-                Ruu[i]/=Ruu_0
+            Ruu_0=Ruu_DF[comp][0]
+            Ruu_DF/=Ruu_0
         
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5*len(y_vals)])
         fig, ax,single_output = cplt.create_fig_ax_without_squeeze(len(y_vals),fig=fig,ax=ax,**kwargs)
         
         y_vals = self._avg_data.ycoords_from_coords(y_vals,mode=y_mode)[0]
-        y_index_axis_vals = self._avg_data.y_coord_index_norm(y_vals,mode=y_mode)[0]
-        
-        coord = self._meta_data.CoordDF[comp][:Ruu.shape[0]]
+        y_vals_int = self._avg_data.ycoords_from_norm_coords(y_vals,mode=y_mode)[0]
+
 
         title_symbol = misc_utils.get_title_symbol('y',y_mode,local=False)
-        for j,_ in enumerate(y_vals):
-            ax[j].cplot(coord,Ruu[:,y_index_axis_vals[j]],**line_kw)
+        for j,y in enumerate(y_vals_int):
+            fig, ax[j] = Ruu_DF.slice[:,y].plot_line(comp,
+                                                        fig=fig,
+                                                        ax=ax[j],
+                                                        line_kw=line_kw)
             ax[j].set_ylabel(r"$R_{%s%s}$"%self.comp)
             ax[j].set_xlabel(r"$\Delta %s/\delta$"%comp)
             ax[j].set_title(r"$%s=%.3g$"%(title_symbol,y_vals[j]),loc='right')
@@ -295,7 +419,7 @@ class CHAPSim_autocov_temp(CHAPSim_autocov_tg):
         self._meta_data = self._module._meta_class(path_to_folder,tgpost=True)
         self.comp=tuple(comp)
 
-        self._avg_data = self._module._avg_temp_class(path_to_folder,time0,abs_path,PhyTimes=max(times))
+        self._avg_data = self._module._avg_temp_class(path_to_folder,time0,abs_path,PhyTimes=times)
 
         if max_z_sep is None:
             max_z_sep=int(self.NCL[2]*0.5)
@@ -306,27 +430,77 @@ class CHAPSim_autocov_temp(CHAPSim_autocov_tg):
             max_x_sep=int(self.NCL[0]*0.5)
         elif max_x_sep>self.NCL[0]:
             raise ValueError("Variable max_x_sep must be less than half NCL3 in readdata file\n")
-        R_x = np.array((max_x_sep,self.NCL[1],len(times)))
-        R_z = np.array((max_z_sep,self.NCL[1],len(times)))
-
+        R_x = np.zeros((len(times),max_x_sep,self.NCL[1]))
+        R_z = np.zeros((len(times),max_z_sep,self.NCL[1]))
+        print(R_x.shape, R_z.shape)
         for i,timing in enumerate(times):
             time1 = time.time()
             fluct_data = self._module._fluct_temp_class(timing,self._avg_data,time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
-
+            time2 = time.time()
             R_x_single_t, R_z_single_t = self._autocov_calc(fluct_data,comp,timing,max_x_sep,max_z_sep)
-            
-            R_x[:,:,i] = R_x_single_t
-            R_z[:,:,i] = R_z_single_t
 
-            print(time.time() - time1,flush=True)
+            R_x[i,:,:] = R_x_single_t
+            R_z[i,:,:] = R_z_single_t
+
+            print(i, timing, time.time() - time2,time2-time1,flush=True)
 
         if cp.rcParams['SymmetryAVG'] and self.metaDF['iCase'] ==1:
             vy_count = comp.count('v')
 
-            R_x = 0.5*(R_x + R_x[:,::-1]*(-1)**vy_count )
-            R_z = 0.5*(R_z + R_z[:,::-1]*(-1)**vy_count )
+            R_x = 0.5*(R_x + R_x[:,:,::-1]*(-1)**vy_count )
+            R_z = 0.5*(R_z + R_z[:,:,::-1]*(-1)**vy_count )
 
-        self.autocorrDF = cd.datastruct({'x':R_x,'z':R_z})
+        coorddata_z, coorddata_x, = self._get_coorddata(R_x,R_z)
+        index_x = [times,['R_x']*len(times)]
+        index_z = [times,['R_z']*len(times)]
+        
+        self.Rx_DF = cd.FlowStructND_time(coorddata_x,
+                                          R_x,
+                                          index = index_x,
+                                          data_layout = ['delta x','y'],
+                                          polar_plane=None,
+                                          wall_normal_line='y')
+        
+        self.Rz_DF = cd.FlowStructND_time(coorddata_z,
+                                          R_z,
+                                          index = index_z,
+                                          data_layout = ['delta z','y'],
+                                          polar_plane=None,
+                                          wall_normal_line='y')
+
+    def _get_coorddata(self, R_x, R_z):
+        
+
+        sep_coords_z = self.CoordDF['z'][:R_z.shape[1]]
+        sep_coords_x = self.CoordDF['x'][:R_x.shape[1]]
+
+        y_coords = self.CoordDF['y']
+
+        sep_coords_z_nd = self.Coord_ND_DF['z'][:R_z.shape[1]+1]
+        sep_coords_x_nd = self.Coord_ND_DF['x'][:R_x.shape[1]+1]
+
+        y_coord_nd = self.Coord_ND_DF['y']
+
+        coord_z = cd.coordstruct({'delta z' : sep_coords_z, 
+                                    'y' : y_coords})
+
+        coord_z_nd = cd.coordstruct({'delta z' : sep_coords_z_nd, 
+                            'y' : y_coord_nd})
+
+        coord_x = cd.coordstruct({'delta x' : sep_coords_x, 
+                            'y' : y_coords})
+
+        coord_x_nd = cd.coordstruct({'delta x' : sep_coords_x_nd, 
+                            'y' : y_coord_nd})
+        
+        coordstruct_x = coorddata.from_coordstructs(self.Domain,
+                                                    coord_x,
+                                                    coord_x_nd)
+
+        coordstruct_z = coorddata.from_coordstructs(self.Domain,
+                                                    coord_z,
+                                                    coord_z_nd)
+        return coordstruct_z, coordstruct_x
 
     def _hdf_extract(self,file_name, key=None):
         if key is None:
@@ -337,6 +511,52 @@ class CHAPSim_autocov_temp(CHAPSim_autocov_tg):
 
         self.comp = tuple(np.char.decode(hdf_obj.attrs["comp"][:]))
 
-        self.autocorrDF = cd.datastruct.from_hdf(file_name,key=key+'/autocorrDF')
+        self.Rx_DF = cd.FlowStructND.from_hdf(file_name,key=key+'/Rx_DF')
+        self.Rz_DF = cd.FlowStructND.from_hdf(file_name,key=key+'/Rz_DF')
         self._meta_data = self._module._meta_class.from_hdf(file_name,key=key+'/meta_data')
         self._avg_data = self._module._avg_temp_class.from_hdf(file_name,key=key+'/avg_data')
+
+    def plot_line(self,comp,times,y_vals,y_mode='half_channel',norm=True,line_kw=None,fig=None,ax=None,**kwargs):
+        if not comp in ('x','z'):
+            msg = f"comp must be the string 'x' or 'z' not {comp} "
+            raise ValueError(msg)
+
+        times = misc_utils.check_list_vals(times)
+        y_vals = misc_utils.check_list_vals(y_vals)
+
+        if comp == 'x':
+            Ruu_DF = self.Rx_DF.copy()
+        else:
+            Ruu_DF = self.Rz_DF.copy()
+
+        line_kw = cplt.update_line_kw(line_kw)
+
+        if norm:
+            Ruu_0=Ruu_DF[comp][0]
+            Ruu_DF/=Ruu_0[:,np.newaxis]
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5*len(y_vals)])
+        fig, ax, single_output = cplt.create_fig_ax_without_squeeze(len(y_vals),fig=fig,ax=ax,**kwargs)
+        
+        y_vals = self._avg_data.ycoords_from_coords(y_vals,mode=y_mode)[0]
+        y_vals_int = self._avg_data.ycoords_from_norm_coords(y_vals,mode=y_mode)[0]
+
+        title_symbol = misc_utils.get_title_symbol('y',y_mode,local=False)
+        labels = [self.Domain.create_label(r"$t = %.3g$"%x) for x in times]
+
+        for j,y in enumerate(y_vals_int):
+            for i, time in enumerate(times):
+                fig, ax[j] = Ruu_DF.slice[:,y].plot_line(comp,
+                                                         time = time,
+                                                         label=labels[i],
+                                                         fig=fig,
+                                                         ax=ax[j],
+                                                         line_kw=line_kw)
+
+
+                ax[j].set_ylabel(r"$R_{%s%s}$"%self.comp)
+                xlabel = self.Domain.create_label(r"$\Delta %s/\delta$"%comp)
+                ax[j].set_xlabel(xlabel)
+                ax[j].set_title(r"$%s=%.3g$"%(title_symbol,y_vals[j]),loc='right')
+
+        return fig, ax

@@ -687,7 +687,7 @@ class CHAPSim_Momentum_budget_base(CHAPSim_budget_base):
 
     def plot_integrated_budget(self, x_list,budget_terms=None,PhyTime=None, fig=None, ax =None,**kwargs):
         local_budgetDF = self.budgetDF.copy()
-        middle_index = int(0.5*self.shape[0])
+        middle_index = self.shape[0] // 2
         for index, val in self.budgetDF:
             budget = np.zeros_like(val)
             for i in range(len(budget)//2):

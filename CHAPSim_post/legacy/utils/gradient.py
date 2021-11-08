@@ -171,7 +171,7 @@ def totIntegrate_y_1D(CoordDF,flow_array,channel=True):
         raise ValueError(msg)
 
     if channel:
-        middle_index = int(0.5*(coord_array.size+1))
+        middle_index = (coord_array.size+1) // 2
         coord_sub1 = coord_array[middle_index:]
         flow_sub1 = flow_array[middle_index:]
         coord_sub2 = coord_array[:middle_index]
@@ -244,7 +244,7 @@ def cumIntegrate_y_1D(CoordDF,flow_array,channel=True):
         raise ValueError(msg)
 
     if channel:
-        middle_index = int(0.5*(coord_array.size+1))
+        middle_index = (coord_array.size+1) // 2
         coord_sub1 = coord_array[middle_index:]
         flow_sub1 = flow_array[middle_index:]
         coord_sub2 = coord_array[:middle_index]

@@ -217,7 +217,7 @@ class CHAPSim_perturb():
         start = self._meta_data.metaDF['location_start_end'][0]
         x_loc = indexing.coord_index_calc(self.__avg_data.CoordDF,'x',start)[0]
         
-        centre_index =int(0.5*self.__avg_data.shape[0])
+        centre_index = self.__avg_data.shape[0] // 2
         U_c0 = U_velo_mean[centre_index,0]
         mean_velo_peturb = np.zeros((self.__avg_data.shape[0],self.__avg_data.shape[1]-x_loc))
         for i in range(x_loc,self.__avg_data.shape[1]):
@@ -439,7 +439,7 @@ class CHAPSim_budget_io(cp.CHAPSim_budget_io):
     pass
 
 class CHAPSim_momentum_budget_io(cp.CHAPSim_momentum_budget_io):
-    def __init__(self,comp,avg_data,PhyTime=None,relative=True,apparent_Re=False):
+    def __init__(self,comp,avg_data,PhyTime=None,relative=False,apparent_Re=False):
         
         super().__init__(comp,avg_data,PhyTime)
 
@@ -453,7 +453,7 @@ class CHAPSim_momentum_budget_io(cp.CHAPSim_momentum_budget_io):
 
     def _create_uniform(self,PhyTime):
         advection = self.budgetDF[PhyTime,'advection']
-        centre_index = int(0.5*advection.shape[0])
+        centre_index = advection.shape[0]// 2
         advection_centre = advection[centre_index]
 
         uniform_bf = self.budgetDF[PhyTime,'pressure gradient'] + advection_centre
@@ -474,29 +474,30 @@ class CHAPSim_momentum_budget_io(cp.CHAPSim_momentum_budget_io):
 
 
     def _update_relative_budget(self,comp,PhyTime):
+        if comp != 'u':
+            return
+
         wall_velo = self.avg_data._meta_data.wall_velocity
+        u = self.avg_data.flow_AVGDF[PhyTime,comp]
+
+        u_rel = u - wall_velo
+        rel_advection = u_rel*self.Domain.Grad_calc(self.avg_data.CoordDF,
+                                                u_rel,
+                                                'x')
         x_coords = self.avg_data.CoordDF['x']
+        d_uw_dx = np.gradient(wall_velo,x_coords)
+        wall_term = wall_velo*d_uw_dx
+        cross_term = self.Domain.Grad_calc(self.avg_data.CoordDF, u_rel,'x')*wall_velo +\
+                        u_rel*d_uw_dx
+                    
+        remainder = self.avg_data.flow_AVGDF[PhyTime,'v']*self.Domain.Grad_calc(self.avg_data.CoordDF,u_rel,'y')
+        
+        self.budgetDF[PhyTime,'relative advection'] = -rel_advection
+        self.budgetDF[PhyTime,'wall term'] = -np.ones(self.shape[0])[:,np.newaxis]*wall_term
+        self.budgetDF[PhyTime,'cross term'] = -cross_term
+        self.budgetDF[PhyTime,'remaining term'] = -remainder
 
-        U_w_grad = np.gradient(wall_velo,x_coords)
-        advection = self.budgetDF[PhyTime,'advection']
-        pressure_grad = self.budgetDF[PhyTime,'pressure gradient']
-
-        U_comp = self.avg_data.flow_AVGDF[PhyTime,comp]
-        U_comp_grad = self.Domain.Grad_calc(self.avg_data.CoordDF,U_comp,'x')
-        advection += U_comp_grad*wall_velo
-        pressure_grad -= U_comp_grad*wall_velo
-
-        if comp == 'u':
-            U = self.avg_data.flow_AVGDF[PhyTime,'u']
-            advection += U*U_w_grad
-            advection -= wall_velo*U_w_grad
-
-
-            pressure_grad -= U*U_w_grad
-            pressure_grad += wall_velo*U_w_grad
-
-        self.budgetDF[PhyTime,'advection'] = advection
-        self.budgetDF[PhyTime,'pressure gradient'] = pressure_grad
+        del self.budgetDF[PhyTime,'advection']
 
 class CHAPSim_autocov_io(cp.CHAPSim_autocov_io):
    pass

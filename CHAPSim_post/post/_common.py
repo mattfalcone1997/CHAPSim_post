@@ -22,13 +22,24 @@ class classproperty():
         self.f = func
     def __get__(self,obj,cls):
         return self.f(cls)
+
+class _classfinder:
+    def __init__(self,cls):
+        self._cls = cls
     
+    def __getattr__(self,attr):
+        if hasattr(self._cls,attr):
+            return getattr(self._cls,attr)
+        else:
+            module = sys.modules[self._cls.__module__]
+            return getattr(module,attr)
 
 class Common(ABC):
 
     @classproperty
     def _module(cls):
-        return sys.modules[cls.__module__]
+        return _classfinder(cls)
+    
     @property
     def _coorddata(self):
         return self._meta_data.coord_data

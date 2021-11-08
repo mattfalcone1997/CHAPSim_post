@@ -41,7 +41,7 @@ class _Inst_base(Common,ABC):
         else:
             self._hdf_extract(*args,**kwargs)
 
-    def _inst_extract(self,time,meta_data=None,path_to_folder='.',abs_path = True, time0=None):
+    def _inst_extract(self,time,path_to_folder='.',avg_data=None,abs_path = True, time0=None):
         """
         Instantiates CHAPSim_Inst by extracting data from the 
         CHAPSim rawdata results folder
@@ -62,10 +62,9 @@ class _Inst_base(Common,ABC):
 
         """
 
-        if meta_data is None:
-            meta_data = self._module._meta_class(path_to_folder,abs_path,self._tgpost)
+        
+        self._meta_data = self._module._meta_class(path_to_folder,abs_path,self._tgpost)
 
-        self._meta_data = meta_data
 
         time = misc_utils.check_list_vals(time)
 
@@ -77,7 +76,7 @@ class _Inst_base(Common,ABC):
                 # concat_DF = [self.InstDF,local_DF]
                 self.InstDF.concat(local_DF)
 
-        self._avg_data = self._create_avg_data(path_to_folder,abs_path,time0)
+        self._avg_data = self._create_avg_data(path_to_folder,abs_path,time0,avg_data=avg_data)
 
     @abstractmethod
     def _create_avg_data(self,path_to_folder,abs_path,time0):
@@ -707,15 +706,30 @@ class _Inst_base(Common,ABC):
 class CHAPSim_Inst_io(_Inst_base):
     _tgpost = False 
         
-    def _create_avg_data(self,path_to_folder,abs_path,time0):
+    def _create_avg_data(self,path_to_folder,abs_path,time0,avg_data=None):
         time = misc_utils.max_time_calc(path_to_folder,abs_path)
+        if avg_data is not None:
+            if time in avg_data.times:
+                return avg_data
+            else:
+                msg = ("The averaged data does not contain the required times. Re-extracting average data.\n"
+                        f"Required times: {time}. Times present: {avg_data.times}")
+                warnings.warn(msg)
         return self._module._avg_io_class(time,path_to_folder=path_to_folder,abs_path=abs_path,time0=time0)
 
 class CHAPSim_Inst_tg(_Inst_base):
     _tgpost = True
         
-    def _create_avg_data(self,path_to_folder,abs_path,time0):
+    def _create_avg_data(self,path_to_folder,abs_path,time0,avg_data=None):
         time = misc_utils.max_time_calc(path_to_folder,abs_path)
+        if avg_data is not None:
+            if time in avg_data.times:
+                return avg_data
+            else:
+                msg = ("The averaged data does not contain the required times. Re-extracting average data.\n"
+                        f"Required times: {time}. Times present: {avg_data.times}")
+                warnings.warn(msg)
+
         return self._module._avg_tg_class(time,path_to_folder=path_to_folder,abs_path=abs_path,time0=time0)
     def _velo_interp(self, flow_info, NCL3, NCL2, NCL1):
         io_flg = self.metaDF['iDomain'] == 3 
@@ -732,7 +746,15 @@ class CHAPSim_Inst_tg(_Inst_base):
 class CHAPSim_Inst_temp(_Inst_base):
     _tgpost = True
     
-    def _create_avg_data(self,path_to_folder,abs_path,time0):
+    def _create_avg_data(self,path_to_folder,abs_path,time0,avg_data=None):
         times = self.InstDF.times
+        print(zip(times,avg_data.times))
+        if avg_data is not None:
+            if all(time in avg_data.times for time in times):
+                return avg_data
+            else:
+                msg = ("The averaged data does not contain the "
+                        "required times. Re-extracting average data.")
+                warnings.warn(msg)
         return self._module._avg_tg_class(path_to_folder=path_to_folder,abs_path=abs_path,PhyTimes=times)
 

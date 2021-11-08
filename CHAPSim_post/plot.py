@@ -25,10 +25,9 @@ from scipy.interpolate import interpn,interp1d
 from skimage import measure
 
 
-if which('lualatex') is not None:
+if which('pdflatex') is not None:
     mpl.rcParams['text.usetex'] = True
-    mpl.rcParams['pgf.texsystem'] = 'lualatex'
-    mpl.rcParams['text.latex.preamble'] =r'\usepackage{amsmath}'
+    mpl.rcParams['text.latex.preamble'] ='\\usepackage{amsmath}\n'
 
 def _linekw_alias(**kwargs):
     alias_dict = {'aa':'antialiased',

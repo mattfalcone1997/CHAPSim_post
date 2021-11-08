@@ -44,6 +44,25 @@ _inst_temp_class = CHAPSim_Inst_temp
 
 
 class CHAPSim_fluct_base(Common):
+
+    def __init__(self,*args,from_hdf=False,**kwargs):
+        if from_hdf:
+            self._hdf_extract(*args,**kwargs)
+        else:
+            self._fluct_extract(*args,**kwargs)
+
+    @abstractmethod
+    def _hdf_extract(self,*args,**kwargs):
+        pass
+
+    @abstractmethod
+    def _fluct_extract(self,*args,**kwargs):
+        pass
+
+    @classmethod
+    def from_hdf(cls,file_name,key=None):
+        return cls(file_name,from_hdf=True,key=key)
+
     def save_hdf(self,file_name,write_mode,key=None):
         if key is None:
             key= self.__class__.__name__
@@ -51,8 +70,10 @@ class CHAPSim_fluct_base(Common):
         hdf_obj = cd.hdfHandler(file_name,write_mode,key=key)
         hdf_obj.set_type_id(self.__class__)
 
+        self.avg_data.save_hdf(file_name,'a',key+'/avg_data')
         self._meta_data.save_hdf(file_name,'a',key+'/meta_data')
         self.fluctDF.to_hdf(file_name,key=key+'/fluctDF',mode='a')
+
 
     @property
     def shape(self):
@@ -257,7 +278,7 @@ class CHAPSim_fluct_base(Common):
         return self.fluctDF.__str__()
 
 class CHAPSim_fluct_io(CHAPSim_fluct_base):
-    def __init__(self,time_inst_data_list,avg_data=None,path_to_folder='.',abs_path=True,*args,**kwargs):
+    def _fluct_extract(self,time_inst_data_list,avg_data=None,path_to_folder='.',abs_path=True,*args,**kwargs):
                 
         if not isinstance(time_inst_data_list,(list,tuple)):
             time_inst_data_list = [time_inst_data_list]
@@ -270,18 +291,22 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
                     inst_data += time_inst_data
             else:
                 if 'inst_data' not in locals():
-                    inst_data = self._module._inst_io_class(time_inst_data,path_to_folder=path_to_folder,abs_path=abs_path)
+                    inst_data = self._module._inst_io_class(time_inst_data,path_to_folder=path_to_folder,avg_data=avg_data,abs_path=abs_path)
                 else:
-                    inst_data += self._module._inst_io_class(time_inst_data,path_to_folder=path_to_folder,abs_path=abs_path)
+                    inst_data += self._module._inst_io_class(time_inst_data,path_to_folder=path_to_folder,avg_data=avg_data,abs_path=abs_path)
         
-        if avg_data is None:
-            avg_data = inst_data._avg_data
-        
-        self.avg_data = avg_data
+        self.avg_data = inst_data._avg_data
         self._meta_data = inst_data._meta_data
 
-        self.fluctDF = self._fluctDF_calc(inst_data,avg_data)
+        self.fluctDF = self._fluctDF_calc(inst_data,self.avg_data)
 
+    def _hdf_extract(self, filename,key=None):
+        if key is None:
+            key= self.__class__.__name__
+
+        self.avg_data = self._module._avg_io_class.from_hdf(filename,key=key+"/avg_data")
+        self._avg_data = self._module._meta_class.from_hdf(filename,key=key+"/meta_data")
+        self.fluctDF = cd.FlowStruct3D.from_hdf(filename,key=key+'/fluctDF')
 
     def _fluctDF_calc(self, inst_data, avg_data):
         
@@ -302,7 +327,7 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
         return cd.FlowStruct3D(self._coorddata,fluct,index=inst_data.InstDF.index.copy())
     
 class CHAPSim_fluct_tg(CHAPSim_fluct_base):
-    def __init__(self,time_inst_data_list,avg_data=None,path_to_folder='.',abs_path=True,*args,**kwargs):
+    def _fluct_extract(self,time_inst_data_list,avg_data=None,path_to_folder='.',abs_path=True,*args,**kwargs):
         if not hasattr(time_inst_data_list,'__iter__'):
             time_inst_data_list = [time_inst_data_list]
         for time_inst_data in time_inst_data_list:
@@ -313,19 +338,25 @@ class CHAPSim_fluct_tg(CHAPSim_fluct_base):
                     inst_data += time_inst_data
             else:
                 if 'inst_data' not in locals():
-                    inst_data = self._module._inst_tg_class(time_inst_data,path_to_folder=path_to_folder,abs_path=abs_path)
+                    inst_data = self._module._inst_tg_class(time_inst_data,path_to_folder=path_to_folder,avg_data=avg_data,abs_path=abs_path)
                 else:
-                    inst_data += self._module._inst_tg_class(time_inst_data,path_to_folder=path_to_folder,abs_path=abs_path)
-        
-        if avg_data is None:
-            avg_data = inst_data._avg_data
+                    inst_data += self._module._inst_tg_class(time_inst_data,path_to_folder=path_to_folder,avg_data=avg_data,abs_path=abs_path)
+    
 
-        self.avg_data = avg_data
+        self.avg_data = inst_data._avg_data
         self._meta_data = inst_data._meta_data
 
-        self.fluctDF = self._fluctDF_calc(inst_data,avg_data)
+        self.fluctDF = self._fluctDF_calc(inst_data,inst_data._avg_data)
 
-    
+    def _hdf_extract(self, filename,key=None):
+        if key is None:
+            key= self.__class__.__name__
+
+        self.avg_data = self._module._avg_tg_class.from_hdf(filename,key=key+"/avg_data")
+        self._avg_data = self._module._meta_class.from_hdf(filename,key=key+"/meta_data")
+        self.fluctDF = cd.FlowStruct3D.from_hdf(filename,key=key+'/fluctDF')
+
+
     def _fluctDF_calc(self, inst_data, avg_data):
         avg_time = max(avg_data.times)
 
@@ -343,7 +374,7 @@ class CHAPSim_fluct_tg(CHAPSim_fluct_base):
         return cd.FlowStruct3D(self._coorddata,fluct,index=inst_data.InstDF.index)#.data(inst_data.shape)
 
 class CHAPSim_fluct_temp(CHAPSim_fluct_base):
-    def __init__(self,time_inst_data_list,avg_data=None,path_to_folder='.',abs_path=True,*args,**kwargs):
+    def _fluct_extract(self,time_inst_data_list,avg_data=None,path_to_folder='.',abs_path=True,*args,**kwargs):
         if not hasattr(time_inst_data_list,'__iter__'):
             time_inst_data_list = [time_inst_data_list]
         for time_inst_data in time_inst_data_list:
@@ -354,23 +385,26 @@ class CHAPSim_fluct_temp(CHAPSim_fluct_base):
                     inst_data += time_inst_data
             else:
                 if 'inst_data' not in locals():
-                    inst_data = self._module._inst_temp_class(time_inst_data,path_to_folder=path_to_folder,abs_path=abs_path)
+                    inst_data = self._module._inst_temp_class(time_inst_data,path_to_folder=path_to_folder,avg_data=avg_data,abs_path=abs_path)
                 else:
-                    inst_data += self._module._inst_temp_class(time_inst_data,path_to_folder=path_to_folder,abs_path=abs_path)
-        
-        if avg_data is None:
-            avg_data = inst_data._avg_data
+                    inst_data += self._module._inst_temp_class(time_inst_data,path_to_folder=path_to_folder,avg_data=avg_data,abs_path=abs_path)
 
-        self.avg_data = avg_data
+        self.avg_data = inst_data._avg_data
         self._meta_data = inst_data._meta_data
-        self.fluctDF = self._fluctDF_calc(inst_data,avg_data)
+        self.fluctDF = self._fluctDF_calc(inst_data,inst_data._avg_data)
 
-    
+    def _hdf_extract(self, filename,key=None):
+        if key is None:
+            key= self.__class__.__name__
+
+        self.avg_data = self._module._avg_temp_class.from_hdf(filename,key=key+"/avg_data")
+        self._avg_data = self._module._meta_class.from_hdf(filename,key=key+"/meta_data")
+        self.fluctDF = cd.FlowStruct3D.from_hdf(filename,key=key+'/fluctDF')
+
+
     def _fluctDF_calc(self, inst_data, avg_data):
         avg_times = avg_data.times
         inst_times = inst_data.InstDF.times
-        
-        u_comp = avg_data.flow_AVGDF.inner_index
 
         indices = inst_data.InstDF.index
         fluct = np.zeros((len(indices),*inst_data.shape))

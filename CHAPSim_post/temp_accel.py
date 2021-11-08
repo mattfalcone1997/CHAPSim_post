@@ -266,7 +266,7 @@ class CHAPSim_perturb(Common):
     
         time_0_index = self.__avg_data._return_index(self.start) -1
 
-        centre_index =int(0.5*self.__avg_data.shape[0])
+        centre_index =self.__avg_data.shape[0] // 2
         U_c0 = U_velo_mean[centre_index,time_0_index]
         mean_velo_peturb = np.zeros((self.__avg_data.shape[0],self.__avg_data._shape_devel[1]-time_0_index))
 
@@ -576,9 +576,9 @@ _meta_class = CHAPSim_meta
 #             ax.relim()
 #             ax.autoscale_view()
 #             return fig, ax
-class CHAPSim_fluct_tg(cp.CHAPSim_fluct_tg):
+class CHAPSim_fluct_temp(cp.CHAPSim_fluct_temp):
     pass
-_fluct_tg_class = CHAPSim_fluct_tg
+_fluct_temp_class = CHAPSim_fluct_temp
 
 class CHAPSim_budget_temp(cp.CHAPSim_budget_temp):
     pass
@@ -603,7 +603,7 @@ class CHAPSim_momentum_budget_temp(cp.CHAPSim_momentum_budget_temp):
 
     def _create_uniform(self,PhyTime):
         advection = self.budgetDF[PhyTime,'transient']
-        centre_index = int(0.5*advection.shape[0])
+        centre_index = advection.shape[0] // 2
         advection_centre = advection[centre_index]
 
         uniform_bf = self.budgetDF[PhyTime,'pressure gradient'] + advection_centre
