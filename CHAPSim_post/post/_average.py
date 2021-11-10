@@ -931,7 +931,7 @@ class CHAPSim_AVG_tg(_AVG_base):
         PhyTimes = misc_utils.check_list_vals(PhyTimes)
 
         if cp.rcParams['TEST']:
-            PhyTimes=PhyTimes[-3:]
+            PhyTimes=PhyTimes[-5:]
         PhyTimes.sort()
 
         self._meta_data = self._module._meta_class(path_to_folder,abs_path,tgpost=True)

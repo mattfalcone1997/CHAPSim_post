@@ -289,7 +289,7 @@ class _FlowStruct_slicer:
         if self._ref()._dim == 1:
             key = (key)
         
-        flow_struct = self._ref()
+        flow_struct = self._ref().copy()
         output_slice, output_slice_nd = self._get_index_slice(key)
 
         new_coorddata, data_layout,\
@@ -299,9 +299,10 @@ class _FlowStruct_slicer:
         new_array = []
         for array in flow_struct._data:
             new_array.append(array[output_slice].squeeze())
-
+        new_array = np.stack(new_array,axis=0)
+        
         return FlowStructND(new_coorddata,
-                            np.array(new_array),
+                            new_array,
                             data_layout = data_layout,
                             wall_normal_line = wall_normal_line,
                             polar_plane = polar_plane,
@@ -870,7 +871,15 @@ class FlowStructND_time(FlowStructND):
 
             for i,index in enumerate(indices):
                 super().set_value(index,value[:,i])
+                
+    def from_internal(self, *args, **kwargs):
+        kwarg_dict = dict(data_layout=self._data_layout,
+                            wall_normal_line = self._wall_normal_line,
+                            polar_plane = self._polar_plane)
 
+        kwargs.update(kwarg_dict)
+        return FlowStructND_time(self._coorddata,*args,**kwargs)
+    
 class FlowStruct3D(FlowStructND):    
     def _array_ini(self, coorddata,array, index=None,  copy=False):
         data_layout = 'zyx'
@@ -1248,6 +1257,7 @@ class FlowStruct1D_time(FlowStruct1D,FlowStructND_time):
 
         return fig, ax
 
+        
     # def plot_line_time_data_max(self,data,transform_ydata=None, transform_xdata=None, fig=None,ax=None,line_kw=None,**kwargs):
 
     #     fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)

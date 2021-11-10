@@ -294,7 +294,6 @@ class hdfHandler:
     def _check_h5_file_name(self,filename,mode):
 
         ext = os.path.splitext(filename)[-1]
-        print(ext)
         if ext == '':
             ext = '.h5'
             filename = os.path.join(filename,ext)

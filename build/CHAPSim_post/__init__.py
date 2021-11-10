@@ -18,7 +18,7 @@ Param_dict = {"TEST":False,
             "gradient_order": 2,
             "AVG_Style": "overline",
             "relax_HDF_type_checks":False,
-            "use_parallel":True}
+            "use_parallel": 'thread'}
 
 rcParams = Params()
 rcParams.update(Param_dict)

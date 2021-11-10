@@ -748,7 +748,7 @@ class CHAPSim_Inst_temp(_Inst_base):
     
     def _create_avg_data(self,path_to_folder,abs_path,time0,avg_data=None):
         times = self.InstDF.times
-        print(zip(times,avg_data.times))
+
         if avg_data is not None:
             if all(time in avg_data.times for time in times):
                 return avg_data
@@ -756,5 +756,5 @@ class CHAPSim_Inst_temp(_Inst_base):
                 msg = ("The averaged data does not contain the "
                         "required times. Re-extracting average data.")
                 warnings.warn(msg)
-        return self._module._avg_tg_class(path_to_folder=path_to_folder,abs_path=abs_path,PhyTimes=times)
+        return self._module._avg_temp_class(path_to_folder=path_to_folder,abs_path=abs_path,PhyTimes=times)
 

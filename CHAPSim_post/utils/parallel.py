@@ -12,10 +12,24 @@ from functools import wraps
 
 class ParallelConcurrent():
     def __init__(self,*args,**kwargs):
-        if rcParams['use_parallel']:   
+        
+        if self.check_parallel('thread'):   
             self._executor = concurrent.futures.ThreadPoolExecutor(*args,**kwargs)
+        elif self.check_parallel('process'):
+            self._executor = concurrent.futures.ProcessPoolExecutor(*args,**kwargs)
         else:
             self._executor = None
+    
+    @staticmethod
+    def check_parallel(mode):
+        options = ['off','thread','process']
+        if rcParams['use_parallel'] not in options:
+            msg = (f"Invalid parallel setting {rcParams['use_parallel']}.\n"
+                   f"Must be one of {options}")
+            raise ValueError(msg)
+        
+        return rcParams['use_parallel'] == mode
+    
     def set_func(self,func):
         self._func = func
 
@@ -36,13 +50,13 @@ class ParallelConcurrent():
         self._kwargs_list = kwargs_list
 
     def __call__(self):
-        if rcParams['use_parallel']:
-            return self._run_parallel()
-        else:
+        if self.check_parallel('off'):
             return self._run_sequential()
+        else:
+            return self._run_parallel()
     
     def map_async(self,func,iterable,*args,**kwargs):
-        if not rcParams['use_parallel']:
+        if self.check_parallel('off'):
             return [func(it,*args,**kwargs) for it in iterable]
 
         data_order=[]

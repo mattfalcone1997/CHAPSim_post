@@ -124,7 +124,8 @@ class CHAPSim_autocov_io(_autocov_base):
                                     data_layout = ['delta x','y','x'],
                                     polar_plane=None,
                                     wall_normal_line='y')
-        self.Rz_DF = cd.FlowStructND(coorddata_z,{(None,'z'):R_z},
+        self.Rz_DF = cd.FlowStructND(coorddata_z,
+                                     {(None,'z'):R_z},
                                     data_layout = ['delta z','y','x'],
                                     polar_plane=None,
                                     wall_normal_line='y')
@@ -207,7 +208,7 @@ class CHAPSim_autocov_io(_autocov_base):
 
         y_vals = misc_utils.check_list_vals(y_vals)
         x_vals = indexing.true_coords_from_coords(self.CoordDF,'x',x_vals)
-
+        
         if comp == 'x':
             Ruu_DF = self.Rx_DF.copy()
         else:
@@ -216,8 +217,8 @@ class CHAPSim_autocov_io(_autocov_base):
         line_kw = cplt.update_line_kw(line_kw)
 
         if norm:
-            Ruu_0=Ruu_DF[comp][0]
-            Ruu_DF/=Ruu_0[:,np.newaxis]
+            Ruu_0=Ruu_DF[None,comp][0]
+            Ruu_DF[None,comp]/=Ruu_0
 
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5*len(y_vals)])
         fig, ax, single_output = cplt.create_fig_ax_without_squeeze(len(y_vals),fig=fig,ax=ax,**kwargs)
@@ -238,7 +239,7 @@ class CHAPSim_autocov_io(_autocov_base):
 
 
                 ax[j].set_ylabel(r"$R_{%s%s}$"%self.comp)
-                xlabel = self.Domain.create_label(r"$\Delta %s/\delta$"%comp)
+                xlabel = self.Domain.create_label(r"$\Delta %s$"%comp)
                 ax[j].set_xlabel(xlabel)
                 ax[j].set_title(r"$%s=%.3g$"%(title_symbol,y_vals[j]),loc='right')
         
@@ -382,8 +383,8 @@ class CHAPSim_autocov_tg(_autocov_base):
         line_kw = cplt.update_line_kw(line_kw)
 
         if norm:
-            Ruu_0=Ruu_DF[comp][0]
-            Ruu_DF/=Ruu_0
+            Ruu_0=Ruu_DF[None,comp][0]
+            Ruu_DF[None,comp]/=Ruu_0
         
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5*len(y_vals)])
         fig, ax,single_output = cplt.create_fig_ax_without_squeeze(len(y_vals),fig=fig,ax=ax,**kwargs)
@@ -432,7 +433,7 @@ class CHAPSim_autocov_temp(CHAPSim_autocov_tg):
             raise ValueError("Variable max_x_sep must be less than half NCL3 in readdata file\n")
         R_x = np.zeros((len(times),max_x_sep,self.NCL[1]))
         R_z = np.zeros((len(times),max_z_sep,self.NCL[1]))
-        print(R_x.shape, R_z.shape)
+
         for i,timing in enumerate(times):
             time1 = time.time()
             fluct_data = self._module._fluct_temp_class(timing,self._avg_data,time0=time0,path_to_folder=path_to_folder,abs_path=abs_path)
@@ -451,8 +452,8 @@ class CHAPSim_autocov_temp(CHAPSim_autocov_tg):
             R_z = 0.5*(R_z + R_z[:,:,::-1]*(-1)**vy_count )
 
         coorddata_z, coorddata_x, = self._get_coorddata(R_x,R_z)
-        index_x = [times,['R_x']*len(times)]
-        index_z = [times,['R_z']*len(times)]
+        index_x = [times,['x']*len(times)]
+        index_z = [times,['z']*len(times)]
         
         self.Rx_DF = cd.FlowStructND_time(coorddata_x,
                                           R_x,
@@ -530,10 +531,10 @@ class CHAPSim_autocov_temp(CHAPSim_autocov_tg):
             Ruu_DF = self.Rz_DF.copy()
 
         line_kw = cplt.update_line_kw(line_kw)
-
         if norm:
-            Ruu_0=Ruu_DF[comp][0]
-            Ruu_DF/=Ruu_0[:,np.newaxis]
+            for timing in Ruu_DF.times:
+                Ruu_0=Ruu_DF[timing,comp][0]
+                Ruu_DF[timing,comp]/=Ruu_0
 
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5*len(y_vals)])
         fig, ax, single_output = cplt.create_fig_ax_without_squeeze(len(y_vals),fig=fig,ax=ax,**kwargs)

@@ -87,7 +87,8 @@ class _budget_base(Common,ABC):
         fig, ax, _ = cplt.create_fig_ax_without_squeeze(*ax_size,fig=fig,ax=ax,**kwargs)
         return fig, ax.flatten()
 
-    def title_with_math(self,string):
+    @staticmethod
+    def title_with_math(string):
         math_split = string.split('$')
         for i, split in enumerate(math_split):
             if i%2 == 0:
@@ -813,12 +814,11 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
         for i,x_loc in enumerate(x_indices):
             for comp in budget_terms:
                 
-                line_kw['label'] = comp
+                line_kw['label'] = self.title_with_math(comp)
                 budget = self.budgetDF[PhyTime,comp]
 
                 int_budget = self.Domain.Integrate_cumult(self.CoordDF,budget)
-                label = comp.title()
-                ax.cplot(y_coords,int_budget[:,x_loc],label=label,**line_kw)
+                ax[i].cplot(y_coords,int_budget[:,x_loc],**line_kw)
 
 
             if mpl.rcParams['text.usetex'] == True:
@@ -911,19 +911,18 @@ class CHAPSim_momentum_budget_tg(_momentum_budget_base,_budget_base):
         y_coords = self.CoordDF['y']
 
         for comp in budget_terms:
-            line_kw['label'] = comp
+            line_kw['label'] = self.title_with_math(comp)
             budget = self.budgetDF[PhyTime,comp]
 
             int_budget = self.Domain.Integrate_cumult(self.CoordDF,budget)
-            label = comp.title()
-            ax.cplot(y_coords,int_budget,label=label,**line_kw)
+            ax.cplot(y_coords,int_budget,**line_kw)
 
         if mpl.rcParams['text.usetex'] == True:
             ax.set_ylabel(r"Loss\ \ \ \ \ \ \ \ Gain")
         else:
             ax.set_ylabel(r"Loss        Gain")
 
-        x_label = self.Domain.create_symbol(r"$y$")
+        x_label = self.Domain.create_label(r"$y$")
         ax.set_xlabel(x_label)
 
 

@@ -164,11 +164,12 @@ class IndexBase(ABC):
 
     def _check_indices(self,indices):
         indices = list(indices)
-
+        
         def _is_unique(lst):
             seen = set()
             return  not any(i in seen or seen.add(i) for i in lst)
-        if not _is_unique(indices):
+        
+        if not _is_unique(indices) and len(indices) > 1:
             msg = "Indices must be unique"
             raise ValueError(msg)
 
