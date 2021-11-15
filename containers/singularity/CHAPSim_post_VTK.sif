@@ -84,7 +84,7 @@ From: ubuntu:20.04
     
 %runscript
     echo "Creating virtual display"
-    Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+    Xvfb :99 -screen 0 1968x1080x24 > /dev/null 2>&1 &
     sleep 3
     echo "Executing: python3 $*"
     python3 $*
