@@ -125,8 +125,6 @@ class CHAPSim_AVG_base(Common,ABC):
     def times(self):
         pass
 
-    def copy(self):
-        return copy.deepcopy(self)
 
     @classmethod
     @docstring.copy_fromattr("_hdf_extract")

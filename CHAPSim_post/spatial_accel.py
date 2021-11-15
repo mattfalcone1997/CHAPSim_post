@@ -18,9 +18,9 @@ from . import plot as cplt
 from CHAPSim_post.utils import misc_utils,indexing
 from CHAPSim_post import POD
 
-class CHAPSim_Inst(cp.CHAPSim_Inst):
+class CHAPSim_Inst_io(cp.CHAPSim_Inst_io):
     pass
-_instant_class = CHAPSim_Inst
+_instant_class = CHAPSim_Inst_io
 
 class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
     def _int_thickness_calc(self,PhyTime):

@@ -7,7 +7,11 @@ if __name__ == "__main__":
     from Cython.Build import cythonize
 
     sources = ["CHAPSim_post/_libs/autocorr_parallel.pyx",
-                "CHAPSim_post/_libs/gradient_parallel.pyx"]
+                "CHAPSim_post/_libs/gradient_parallel.pyx",
+                "CHAPSim_post/_libs/file_handler.pyx",
+                "CHAPSim_post/_libs/post.pyx",
+                "CHAPSim_post/_libs/integrate.pyx"]
+    
     cy_parallel = []
     cy_parallel_legacy = []
 

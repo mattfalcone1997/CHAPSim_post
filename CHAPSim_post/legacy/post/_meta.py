@@ -53,9 +53,6 @@ class CHAPSim_meta():
     def from_hdf(cls,*args,**kwargs):
         return cls(from_file=True,*args,**kwargs)
 
-    def copy(self):
-        return copy.deepcopy(self)
-
     @property
     def NCL(self):
         return self._coorddata.NCL

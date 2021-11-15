@@ -56,9 +56,6 @@ class CHAPSim_meta():
     def from_hdf(cls,*args,**kwargs):
         return cls(from_file=True,*args,**kwargs)
 
-    def copy(self):
-        return copy.deepcopy(self)
-
     @property
     def NCL(self):
         return self._coorddata.NCL
@@ -286,6 +283,9 @@ class CHAPSim_meta():
             ZCC[i] = 0.5*(ZND[i+1] + ZND[i])
     
         return XCC, ZCC
+    
+    def copy(self):
+        return copy.deepcopy(self)
 
 
 class OutputFileStore_base:
@@ -393,41 +393,14 @@ class OutputFileStore_io(OutputFileStore_base):
     _monitor_new = "monitor.io"
     _monitor_old = "OUTPUT_"
 
-class DomainHandler():
+class DomainHandler(cd.GeomHandler):
 
-    def __init__(self,iCase_or_metadata):
-
-        if isinstance(iCase_or_metadata,CHAPSim_meta):
-            iCase = iCase_or_metadata.metaDF['iCase']
-        else:
-            iCase = iCase_or_metadata
-
+    def __init__(self,polar):
+        if not isinstance(polar,bool):
+            polar = self.check_polar_from_icase(polar)
             
-        if iCase in [1,4,5]:
-            self.coord_sys = 'cart'
-        elif iCase in [2,3]:
-            self.coord_sys = 'cylind'
-        else:
-            msg = "CHAPSim case type invalid"
-            raise ValueError(msg)
-
-        self.Grad_calc = gradient.Grad_calc
-
-    @property
-    def is_cylind(self):
-        return self.coord_sys == 'cylind'
-
-    def __str__(self):
-        if self.coord_sys == 'cart':
-            coord = "cartesian"
-        else:
-            coord = "cylindrical"
-
-        return f"{self.__class__.__name__} with %s coordinate system"%coord
-
-    def __repr__(self):
-        return self.__str__()
-
+        super().__init__(polar)
+        
     def _alter_item(self,char,to_out=True):
         convert_dict = styleParams.cart_to_polar if to_out else styleParams.polar_to_cart
         if self.coord_sys == 'cylind' and char in convert_dict.keys():
@@ -601,101 +574,66 @@ class DomainHandler():
         channel = not self.is_cylind
         return gradient.totIntegrate_y(CoordDF,flow_array,channel=channel)
 
-class coorddata:
-    _modes_available = ['centered', 'staggered']
-    def __init__(self,*args,from_file=False,from_copy=False,from_coordstruct=False,**kwargs):
-        if from_file:
-            self._hdf_extract(*args,**kwargs)
-        elif from_copy:
-            self._copy_extract(*args,**kwargs)
-        elif from_coordstruct:
-            self._coordstruct_extract(*args,**kwargs)
+class coorddata(cd.AxisData):
+    _domain_handler_class = DomainHandler
+    
+    def __init__(self,*args,from_file=False,from_coordstruct=False,**kwargs):
+        if from_file or from_coordstruct:
+            super().__init__(*args,from_file=from_file,**kwargs)
         else:
             self._coord_extract(*args,**kwargs)
-
-        self._mode = "centered"
-
-        self._check_integrity()
-
-    def _check_integrity(self):
-        if self.coord_staggered is None:
-            return
-
-        if self.coord_staggered.index != self.coord_centered.index:
-            msg = "Indeices of coordstructs must be the same"
-            raise ValueError(msg)
-
-        for x in self.coord_centered.index:
-            size = self.coord_centered[x].size
-            if self.coord_staggered[x].size != size + 1:
-                msg = ("The shape of the staggered data if given must be"
-                        " one greater than centered in each dimension")
-                raise ValueError(msg)
-
-            msg = "The staggered and centered coordinates must be interleaved"
-            for i in range(size):
-                if self.coord_centered[x][i] < self.coord_staggered[x][i]:
-                    raise ValueError(msg)
-                if self.coord_centered[x][i] > self.coord_staggered[x][i+1]:
-                    raise ValueError(msg)
-
-            
+            self._check_integrity()
+         
 
 
 
-    def create_subdomain(self,*args,**kwargs):
-        out_coorddata = self.copy()
-        out_coorddata.coord_centered = out_coorddata.coord_centered.create_subdomain(*args,**kwargs)
-        out_coorddata.coord_staggered = out_coorddata.coord_staggered.create_subdomain(*args,**kwargs)
+    # def create_subdomain(self,*args,**kwargs):
+    #     out_coorddata = self.copy()
+    #     out_coorddata.coord_centered = out_coorddata.coord_centered.create_subdomain(*args,**kwargs)
+    #     out_coorddata.coord_staggered = out_coorddata.coord_staggered.create_subdomain(*args,**kwargs)
 
-        return out_coorddata
+    #     return out_coorddata
 
-    def __getattr__(self,attr):
-        # print(attr,flush=True)
-        # raise Exception
-        msg = "The coorddata cannot use the attribute %s"%attr
-        if attr == 'coord_centered' or attr == 'coord_staggered':
-            raise AttributeError(msg)
+    # def __getattr__(self,attr):
+    #     # print(attr,flush=True)
+    #     # raise Exception
+    #     msg = "The coorddata cannot use the attribute %s"%attr
+    #     if attr == 'coord_centered' or attr == 'coord_staggered':
+    #         raise AttributeError(msg)
     
-        obj_c = getattr(self.coord_centered,attr)
-        if self.contains_staggered:
-            obj_s = getattr(self.coord_staggered,attr)
+    #     obj_c = getattr(self.coord_centered,attr)
+    #     if self.contains_staggered:
+    #         obj_s = getattr(self.coord_staggered,attr)
 
-        def _apply_method(*args,**kwargs):
-            out_c = obj_c(*args,**kwargs)
-            if self.contains_staggered:
-                out_s = obj_s(*args,**kwargs)
+    #     def _apply_method(*args,**kwargs):
+    #         out_c = obj_c(*args,**kwargs)
+    #         if self.contains_staggered:
+    #             out_s = obj_s(*args,**kwargs)
 
-            if not all(isinstance(x,cd.coordstruct) for x in [out_c,out_s]):
-                raise AttributeError(msg)
+    #         if not all(isinstance(x,cd.coordstruct) for x in [out_c,out_s]):
+    #             raise AttributeError(msg)
 
-            out_coorddata = self.copy()
+    #         out_coorddata = self.copy()
 
-            out_coorddata.coord_centered = out_c
-            out_coorddata.coord_staggered = None
-            return out_coorddata
+    #         out_coorddata.coord_centered = out_c
+    #         out_coorddata.coord_staggered = None
+    #         return out_coorddata
 
-        if all(isinstance(x,types.MethodType) for x in [obj_c,obj_s]):
-            return _apply_method
-        else:
-            raise AttributeError(msg)
+    #     if all(isinstance(x,types.MethodType) for x in [obj_c,obj_s]):
+    #         return _apply_method
+    #     else:
+    #         raise AttributeError(msg)
 
 
-    def _copy_extract(self,other_coorddata):
-        self.coord_centered = other_coorddata.centered.copy()
+    # def _copy_extract(self,other_coorddata):
+    #     self.coord_centered = other_coorddata.centered.copy()
         
-        if other_coorddata.contains_staggered:           
-            self.coord_staggered = other_coorddata.staggered.copy()
-        else:
-            self.coord_staggered = None
+    #     if other_coorddata.contains_staggered:           
+    #         self.coord_staggered = other_coorddata.staggered.copy()
+    #     else:
+    #         self.coord_staggered = None
             
-        self._domain_handler = other_coorddata._domain_handler
-
-
-    def _coordstruct_extract(self,Domain,coord,coord_nd):
-        self._domain_handler = Domain
-        self.coord_staggered = coord_nd
-        self.coord_centered = coord
+    #     self._domain_handler = other_coorddata._domain_handler
 
     def _coord_extract(self,iCase,metaDF,path_to_folder,abs_path,tgpost,ioflg):
         if os.path.isdir(os.path.join(path_to_folder,'0_log_monitors')):
@@ -706,32 +644,29 @@ class coorddata:
         self.coord_centered = cd.coordstruct(coord_dict)
         self.coord_staggered = cd.coordstruct(coord_nd_dict)
 
-        self._domain_handler = DomainHandler(iCase)
+        self._domain_handler = self._domain_handler_class(iCase)
 
-    @classmethod
-    def from_hdf(cls,*args,**kwargs):
-        return cls(*args,from_file=True,**kwargs)
 
     @classmethod
     def from_coordstructs(cls,Domain,coord,coord_nd):
         return cls(Domain,coord,coord_nd,from_coordstruct=True)
     
-    def _hdf_extract(self,filename,key=None):
-        if key is None:
-            key = self.__class__.__name__
+    # def _hdf_extract(self,filename,key=None):
+    #     if key is None:
+    #         key = self.__class__.__name__
         
 
-        hdf_obj = cd.hdfHandler(filename,mode='r',key=key)
-        hdf_obj.check_type_id(self.__class__)
+    #     hdf_obj = cd.hdfHandler(filename,mode='r',key=key)
+    #     hdf_obj.check_type_id(self.__class__)
 
-        iCase = 1 if hdf_obj.attrs['cart_mode'] else 2
-        self._domain_handler = DomainHandler(iCase)
+    #     iCase = True if hdf_obj.attrs['cart_mode'] else False
+    #     self._domain_handler = self._domain_handler_class(iCase)
 
-        self.coord_centered = cd.coordstruct.from_hdf(filename,key=key+"/coord_centered")
-        if 'coord_staggered' in hdf_obj.keys():
-            self.coord_staggered = cd.coordstruct.from_hdf(filename,key=key+"/coord_staggered")
-        else:
-            self.coord_staggered = None            
+    #     self.coord_centered = cd.coordstruct.from_hdf(filename,key=key+"/coord_centered")
+    #     if 'coord_staggered' in hdf_obj.keys():
+    #         self.coord_staggered = cd.coordstruct.from_hdf(filename,key=key+"/coord_staggered")
+    #     else:
+    #         self.coord_staggered = None            
     
     def to_hdf(self,filename,mode,key=None):
         if key is None:
@@ -748,60 +683,60 @@ class coorddata:
 
         
     
-    def _legacy_mode(self,filename, key):
+    # def _legacy_mode(self,filename, key):
 
-        key_split = key.split("/")
-        parent_key = os.path.join(*key_split[:-1])
-        end_key = key_split[-1]
+    #     key_split = key.split("/")
+    #     parent_key = os.path.join(*key_split[:-1])
+    #     end_key = key_split[-1]
 
-        hdf_obj = cd.hdfHandler(filename,mode='r',key=parent_key)
+    #     hdf_obj = cd.hdfHandler(filename,mode='r',key=parent_key)
 
-        lower_keys = ["coord_centered","coord_staggered"]
+    #     lower_keys = ["coord_centered","coord_staggered"]
 
-        if not hdf_obj.check_key(end_key):
-            return True
+    #     if not hdf_obj.check_key(end_key):
+    #         return True
         
-        lower_keys_present = all([lkey in hdf_obj[end_key].keys() for lkey in lower_keys])
-        if not lower_keys_present:
-            return True
+    #     lower_keys_present = all([lkey in hdf_obj[end_key].keys() for lkey in lower_keys])
+    #     if not lower_keys_present:
+    #         return True
 
-        return False
+    #     return False
 
-    def _create_staggered_legacy(self,coord):
-        XCC = coord['x']
-        YCC = coord['y']
-        ZCC = coord['z']
+    # def _create_staggered_legacy(self,coord):
+    #     XCC = coord['x']
+    #     YCC = coord['y']
+    #     ZCC = coord['z']
 
-        XND = np.zeros(XCC.size+1) 
-        YND = np.zeros(YCC.size+1)
-        ZND = np.zeros(ZCC.size+1)
+    #     XND = np.zeros(XCC.size+1) 
+    #     YND = np.zeros(YCC.size+1)
+    #     ZND = np.zeros(ZCC.size+1)
 
-        XND[0] = 0.0
-        YND[0] = 0 if self._domain_handler.is_cylind else -1.0
-        ZND[0] = 0.0
+    #     XND[0] = 0.0
+    #     YND[0] = 0 if self._domain_handler.is_cylind else -1.0
+    #     ZND[0] = 0.0
 
-        for i in  range(1,XND.size):
-            XND[i] = XND[i-1] + 2*(XCC[i-1]-XND[i-1])
+    #     for i in  range(1,XND.size):
+    #         XND[i] = XND[i-1] + 2*(XCC[i-1]-XND[i-1])
         
-        for i in  range(1,YND.size):
-            YND[i] = YND[i-1] + 2*(YCC[i-1]-YND[i-1])
+    #     for i in  range(1,YND.size):
+    #         YND[i] = YND[i-1] + 2*(YCC[i-1]-YND[i-1])
 
-        for i in  range(1,ZND.size):
-            ZND[i] = ZND[i-1] + 2*(ZCC[i-1]-ZND[i-1])
+    #     for i in  range(1,ZND.size):
+    #         ZND[i] = ZND[i-1] + 2*(ZCC[i-1]-ZND[i-1])
 
-        return cd.coordstruct({'x':XND,'y':YND,'z':ZND})
+    #     return cd.coordstruct({'x':XND,'y':YND,'z':ZND})
 
-    @property
-    def Mode(self):
-        return self._mode
+    # @property
+    # def Mode(self):
+    #     return self._mode
 
-    @Mode.setter
-    def Mode(self,new_mode):
-        if new_mode not in self._modes_available:
-            msg = "Mode selected must be in %s"% self._modes_available
-            raise ValueError(msg)
+    # @Mode.setter
+    # def Mode(self,new_mode):
+    #     if new_mode not in self._modes_available:
+    #         msg = "Mode selected must be in %s"% self._modes_available
+    #         raise ValueError(msg)
 
-        self._mode = new_mode
+    #     self._mode = new_mode
 
     @property
     def staggered(self):
@@ -983,10 +918,10 @@ class coorddata:
 
 
     def copy(self):
-        return self.__class__(self,from_copy=True)
+        return copy.deepcopy(self)
 
-    def __deepcopy__(self,memo):
-        return self.copy()
+    # def __deepcopy__(self,memo):
+    #     return self.copy()
 
     def __eq__(self,other_obj):
         if not isinstance(other_obj,self.__class__):

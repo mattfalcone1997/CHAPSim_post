@@ -16,6 +16,9 @@ from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils, parall
 from CHAPSim_post import rcParams
 import CHAPSim_post.plot as cplt
 import CHAPSim_post.dtypes as cd
+
+from CHAPSim_post._libs import file_handler, post
+
 from functools import partial
 from ._average import CHAPSim_AVG_io,CHAPSim_AVG_temp, CHAPSim_AVG_tg
 from ._common import Common
@@ -114,9 +117,6 @@ class _Inst_base(Common,ABC):
     def shape(self):
         inst_index = self.InstDF.index[0]
         return self.InstDF[inst_index].shape
-    
-    def copy(self):
-        return copy.deepcopy(self)
 
     def save_hdf(self,file_name,write_mode,key=None):
         """
@@ -168,15 +168,17 @@ class _Inst_base(Common,ABC):
 
         dummy_size=NCL1*NCL2*NCL3
 
-
-        parallelExec = parallel.ParallelConcurrent()
-        offset = 4*4+3*8
-        result = parallelExec.map_async(np.fromfile,file_list,dtype = 'float64',offset=offset,count=dummy_size)
+        parallel_file = file_handler.ReadParallel(file_list,'rb')
         
+        # parallelExec = parallel.ParallelConcurrent()
+        offset = 4*4+3*8
+        result = parallel_file.read_parallel_float64(dummy_size,offset)
+        # result = parallelExec.map_async(np.fromfile,file_list,dtype = 'float64',offset=offset,count=dummy_size)
+
         for open_file in open_list:
             open_file.close()
 
-        return np.stack(result), NCL1, NCL2, NCL3, PhyTime
+        return result, NCL1, NCL2, NCL3, PhyTime
 
 
 
@@ -230,18 +232,23 @@ class _Inst_base(Common,ABC):
         #interpolation reduces u extent, therefore to maintain size, V, W reduced by 1
         
         flow_interp = np.zeros((4,NCL3,NCL2,NCL1-1))
-        for i in range(NCL1-1): #U velocity
-            flow_interp[0,:,:,i] = 0.5*(flow_info[0,:,:,i] + flow_info[0,:,:,i+1])
-        for i in range(NCL2): #V velocity
-            if i != NCL2-1:
-                flow_interp[1,:,i,:] = 0.5*(flow_info[1,:,i,:-1] + flow_info[1,:,i+1,:-1])
-            else: #Interpolate with the top wall
-                flow_interp[1,:,i,:] = 0.5*(flow_info[1,:,i,:-1] + flow_info[1,:,0,:-1])
-        for i in range(NCL3): #W velocity
-            if i != NCL3-1:
-                flow_interp[2,i,:,:] = 0.5*(flow_info[2,i,:,:-1] + flow_info[2,i+1,:,:-1])
-            else: #interpolation with first cell due to z periodicity BC
-                flow_interp[2,i,:,:] = 0.5*(flow_info[2,i,:,:-1] + flow_info[2,0,:,:-1])
+        
+        flow_interp[0] = post.velo_interp3D(flow_info[0],NCL1,NCL2,NCL3,2)
+        flow_interp[1] = post.velo_interp3D(flow_info[1],NCL1,NCL2,NCL3,1)
+        flow_interp[2] = post.velo_interp3D(flow_info[2],NCL1,NCL2,NCL3,0)
+
+        # for i in range(NCL1-1): #U velocity
+        #     flow_interp[0,:,:,i] = 0.5*(flow_info[0,:,:,i] + flow_info[0,:,:,i+1])
+        # for i in range(NCL2): #V velocity
+        #     if i != NCL2-1:
+        #         flow_interp[1,:,i,:] = 0.5*(flow_info[1,:,i,:-1] + flow_info[1,:,i+1,:-1])
+        #     else: #Interpolate with the top wall
+        #         flow_interp[1,:,i,:] = 0.5*(flow_info[1,:,i,:-1] + flow_info[1,:,0,:-1])
+        # for i in range(NCL3): #W velocity
+        #     if i != NCL3-1:
+        #         flow_interp[2,i,:,:] = 0.5*(flow_info[2,i,:,:-1] + flow_info[2,i+1,:,:-1])
+        #     else: #interpolation with first cell due to z periodicity BC
+        #         flow_interp[2,i,:,:] = 0.5*(flow_info[2,i,:,:-1] + flow_info[2,0,:,:-1])
         
         flow_interp[3,:,:,:] = flow_info[3,:,:,:-1] #Removing final pressure value 
         return flow_interp

@@ -44,10 +44,10 @@ From: ubuntu:20.04
       -DVTK_WHEEL_BUILD=ON \
       -DVTK_PYTHON_VERSION=3 \
       -DVTK_WRAP_PYTHON=ON \
-      -DVTK_OPENGL_HAS_OSMESA=True \
-      -DVTK_OPENGL_HAS_EGL=False \
+      -DVTK_OPENGL_HAS_OSMESA=ON \
+      -DVTK_OPENGL_HAS_EGL=OFF \
       -DOSMESA_ROOT=$LIB_PATH \
-      -DVTK_USE_X=False \
+      -DVTK_USE_X=OFF \
       -DPython3_EXECUTABLE=$PYBIN \
       -DCMAKE_INSTALL_LIBDIR=${PWD} \
       -S ../ -B .

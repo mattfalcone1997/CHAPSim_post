@@ -1,23 +1,82 @@
 from abc import abstractproperty
-from scipy import interpolate
-
+from .dtypes import *
+from . import utils
+import vtk
+from CHAPSim_post.post._meta import coorddata
 import CHAPSim_post.plot as cplt
-# from CHAPSim_post.post._meta import coorddata
-from CHAPSim_post.utils import misc_utils
+from pyvista import StructuredGrid
+from CHAPSim_post.utils import misc_utils, indexing
 
-from .vtk import VTKstruct2D, VTKstruct3D
-from .coords import coordstruct, AxisData
-from .core import *
+import CHAPSim_post as cp
+from scipy import interpolate
+class coordstruct(datastruct):
+    
+    def set_domain_handler(self,GeomHandler):
+        self._domain_handler = GeomHandler
 
+    @property
+    def DomainHandler(self):
+        if hasattr(self,"_domain_handler"):
+            return self._domain_handler
+        else: 
+            return None
+
+    def _get_subdomain_lims(self,xmin=None,xmax=None,ymin=None,ymax=None,zmin=None,zmax=None):
+        if xmin is None:
+            xmin = np.amin(self['x'])
+        if xmax is None:
+            xmax = np.amax(self['x'])
+        if ymin is None:
+            ymin = np.amin(self['y'])
+        if ymax is None:
+            ymax = np.amax(self['y'])
+        if zmin is None:
+            zmin = np.amin(self['z'])
+        if zmax is None:
+            zmax = np.amax(self['z'])
+            
+        xmin_index, xmax_index = (self.index_calc('x',xmin)[0],
+                                    self.index_calc('x',xmax)[0])
+        ymin_index, ymax_index = (self.index_calc('y',ymin)[0],
+                                    self.index_calc('y',ymax)[0])
+        zmin_index, zmax_index = (self.index_calc('z',zmin)[0],
+                                    self.index_calc('z',zmax)[0])
+        return xmin_index,xmax_index,ymin_index,ymax_index,zmin_index,zmax_index
+
+    def create_subdomain(self,xmin=None,xmax=None,ymin=None,ymax=None,zmin=None,zmax=None):
+        (xmin_index,xmax_index,
+        ymin_index,ymax_index,
+        zmin_index,zmax_index) = self._get_subdomain_lims(xmin,xmax,ymin,ymax,zmin,zmax)
+
+        xcoords = self['x'][xmin_index:xmax_index]
+        ycoords = self['y'][ymin_index:ymax_index]
+        zcoords = self['z'][zmin_index:zmax_index]
+
+        return self.__class__({'x':xcoords, 'y':ycoords,'z':zcoords})
+
+    def index_calc(self,comp,vals):
+        return indexing.coord_index_calc(self,comp,vals)
+    
+    def check_plane(self,plane):
+        if plane not in ['xy','zy','xz']:
+            plane = plane[::-1]
+            if plane not in ['xy','zy','xz']:
+                msg = "The contour slice must be either %s"%['xy','yz','xz']
+                raise KeyError(msg)
+        slice_set = set(plane)
+        coord_set = set(list('xyz'))
+        coord = "".join(coord_set.difference(slice_set))
+        return plane, coord
+
+    def check_line(self,line):
+        if line not in self.index:
+            msg = f"The line must be in {self.index}"
+            raise KeyError(msg)
+
+        return line
 
 class FlowStruct_base(datastruct):
     def __init__(self,*args,from_hdf=False,**kwargs):
-        
-        self._set_coorddata(args[0],**kwargs)
-            
-        if isinstance(args[0],AxisData):
-            args = args[1:]
-            
         
         super().__init__(*args,from_hdf=from_hdf,**kwargs)
         
@@ -96,7 +155,7 @@ class FlowStruct_base(datastruct):
         self._dict_ini(coorddata, dstruct.to_dict(), copy=copy)
 
     def _set_coorddata(self,file_or_coorddata,**kwargs):
-        if isinstance(file_or_coorddata,AxisData):
+        if isinstance(file_or_coorddata,coorddata):
             self._coorddata = file_or_coorddata.copy()
         else:
             path = os.fspath(file_or_coorddata)
@@ -106,7 +165,7 @@ class FlowStruct_base(datastruct):
             else:
                 coord_key = os.path.join(key,'coorddata')
 
-            self._coorddata = AxisData.from_hdf(path,key=coord_key)
+            self._coorddata = coorddata.from_hdf(path,key=coord_key)
 
     def check_times(self,key,err=None,warn=None):
         if err is None:
@@ -226,10 +285,6 @@ class _FlowStruct_slicer:
     def __init__(self,flowstruct_obj):
         self._ref = weakref.ref(flowstruct_obj)
 
-    def get_slicer(self,key):
-        output_slice, _ = self._get_index_slice(key)
-        return output_slice
-    
     def __getitem__(self,key):
         if self._ref()._dim == 1:
             key = (key)
@@ -323,23 +378,25 @@ class _FlowStruct_slicer:
         
         new_CoordDF = coordstruct(new_dict)
         new_Coord_ND_DF = coordstruct(new_nd_dict)
-        new_coorddata = AxisData(flow_struct.Domain,new_CoordDF,new_Coord_ND_DF)
+        new_coorddata = coorddata.from_coordstructs(flow_struct.Domain,new_CoordDF,new_Coord_ND_DF)
 
         return new_coorddata, data_layout, wall_normal_line, polar_plane
                  
 
 class FlowStructND(FlowStruct_base):
 
-    def _array_ini(self, array, index=None,data_layout=None,wall_normal_line=None,polar_plane= None, copy=False):
+    def _array_ini(self, coorddata, array, index=None,data_layout=None,wall_normal_line=None,polar_plane= None, copy=False):
+        self._set_coorddata(coorddata)
         super()._array_ini(array, index=index, copy=copy)
         self._set_data_layout(data_layout, wall_normal_line, polar_plane)
 
-    def _dict_ini(self, dict_data, data_layout=None,wall_normal_line=None,polar_plane= None, copy=False):
+    def _dict_ini(self, coorddata, dict_data, data_layout=None,wall_normal_line=None,polar_plane= None, copy=False):
+        self._set_coorddata(coorddata)
         super()._dict_ini(dict_data, copy=copy)
         self._set_data_layout(data_layout, wall_normal_line, polar_plane)
 
-    def _dstruct_ini(self, dstruct, data_layout=None,wall_normal_line=None,polar_plane= None, copy=False):
-        self._dict_ini( dstruct.to_dict(),
+    def _dstruct_ini(self, coorddata, dstruct, data_layout=None,wall_normal_line=None,polar_plane= None, copy=False):
+        self._dict_ini(coorddata, dstruct.to_dict(),
                         data_layout=data_layout,
                         wall_normal_line=wall_normal_line,
                         polar_plane= polar_plane, 
@@ -443,10 +500,14 @@ class FlowStructND(FlowStruct_base):
 
         self._check_dim(1)
 
+        input_kw = cplt.update_line_kw(line_kw).copy()
+        if label is not None:
+            input_kw['label'] = label
+
         data = self[time,comp].squeeze()
 
-        fig, ax = self.plot_line_data(data,label=label,channel_half=channel_half,transform_ydata=transform_ydata,
-                                         transform_xdata=transform_xdata, fig=fig,ax=ax,line_kw=line_kw,**kwargs)
+        fig, ax = self.plot_line_data(data,channel_half=channel_half,transform_ydata=transform_ydata,
+                                         transform_xdata=transform_xdata, fig=fig,ax=ax,line_kw=input_kw,**kwargs)
 
         return fig, ax
 
@@ -490,9 +551,8 @@ class FlowStructND(FlowStruct_base):
         else:
             polar_plane = None
 
-        new_coorddata = AxisData(self.Domain,
-                                new_coord,
-                                new_coord_nd)
+        new_coorddata = coorddata.from_coordstructs(self.Domain,new_coord,
+                                                    new_coord_nd)
         new_data = []
         for data in self._data:
             new_data.append(numpy_op(data,axis=array_axis))
@@ -505,7 +565,7 @@ class FlowStructND(FlowStruct_base):
                             wall_normal_line=wall_normal_line,
                             polar_plane=polar_plane)
 
-    def plot_line_data(self,data,label=None,channel_half=False,transform_ydata=None, transform_xdata=None, fig=None,ax=None,line_kw=None,**kwargs):
+    def plot_line_data(self,data,channel_half=False,transform_ydata=None, transform_xdata=None, fig=None,ax=None,line_kw=None,**kwargs):
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
         line_kw = cplt.update_line_kw(line_kw)
 
@@ -519,9 +579,6 @@ class FlowStructND(FlowStruct_base):
             mid_index = coord_data.size // 2
             coord_data = coord_data[:mid_index]
             data = data[:mid_index]
-            
-        if label is not None:
-            line_kw['label'] = label
 
         ax.cplot(transform_xdata(coord_data),transform_ydata(data),**line_kw)
 
@@ -656,10 +713,9 @@ class FlowStructND(FlowStruct_base):
 
         interp = interpolate.interp1d(coord_nd_indices,Coord_ND_DF[axis])
         CoordDF[axis] = interp(coord_indices)
-        new_coorddata = AxisData(self.Domain,
-                                CoordDF,
-                                Coord_ND_DF)
-        
+        new_coorddata = coorddata.from_coordstructs(self.Domain,
+                                                    CoordDF,
+                                                    Coord_ND_DF)
         fstruct_copy = self.copy()
         for index , val in fstruct_copy:
             fstruct_copy[index] = np.apply_along_axis(data_transform,dim,val)
@@ -719,7 +775,7 @@ class FlowStructND(FlowStruct_base):
         coord[new_axis] = np.array(axis_vals)
         coord_nd[new_axis] = np.array(cls._estimate_grid_from_points(axis_vals))
 
-        new_coorddata = AxisData(flowstructs[0].Domain,
+        new_coorddata = coorddata.from_coordstructs(flowstructs[0].Domain,
                                                     coord,
                                                     coord_nd)
         new_data = [None]*len(flowstructs[0]._data)
@@ -761,7 +817,7 @@ class FlowStructND_time(FlowStructND):
         coordstruct_c = self._coorddata.coord_centered.copy()
         coordstruct_c['t'] = np.array(self.times)
         
-        new_coorddata = AxisData(self.Domain,
+        new_coorddata = coorddata.from_coordstructs(self.Domain,
                                                     coordstruct_c,
                                                     None)
         return FlowStructND(new_coorddata,
@@ -825,30 +881,28 @@ class FlowStructND_time(FlowStructND):
         return FlowStructND_time(self._coorddata,*args,**kwargs)
     
 class FlowStruct3D(FlowStructND):    
-    def _array_ini(self,array, index=None,  copy=False):
+    def _array_ini(self, coorddata,array, index=None,  copy=False):
         data_layout = 'zyx'
         wall_normal_line = 'y'
-        
-        if self._coorddata._domain_handler.is_cylind:
+        if coorddata._domain_handler.is_cylind:
             polar_plane = 'zy'
         else:
             polar_plane = None
 
-        super()._array_ini(array, index=index, data_layout=data_layout, wall_normal_line=wall_normal_line, polar_plane=polar_plane, copy=copy)
+        super()._array_ini(coorddata,array, index=index, data_layout=data_layout, wall_normal_line=wall_normal_line, polar_plane=polar_plane, copy=copy)
 
-    def _dict_ini(self, dict_data, copy=False):
+    def _dict_ini(self,coorddata, dict_data, copy=False):
         data_layout = 'zyx'
         wall_normal_line = 'y'
-        
-        if self._coorddata._domain_handler.is_cylind:
+        if coorddata._domain_handler.is_cylind:
             polar_plane = 'zy'
         else:
             polar_plane = None
 
-        super()._dict_ini(dict_data, data_layout=data_layout, wall_normal_line=wall_normal_line, polar_plane=polar_plane, copy=copy)
+        super()._dict_ini(coorddata, dict_data, data_layout=data_layout, wall_normal_line=wall_normal_line, polar_plane=polar_plane, copy=copy)
 
-    def _dstruct_ini(self, dstruct,copy=False):
-        self._dict_ini( dstruct.to_dict(), copy=copy)
+    def _dstruct_ini(self, coorddata, dstruct,copy=False):
+        self._dict_ini(coorddata, dstruct.to_dict(), copy=copy)
 
     def from_internal(self, *args, **kwargs):
         return self.__class__(self._coorddata,
@@ -948,26 +1002,57 @@ class FlowStruct3D(FlowStructND):
                                     **kwargs)
 
 class FlowStruct2D(FlowStructND):
-    def _array_ini(self, array, index=None,  copy=False):
+    def _array_ini(self, coorddata, array, index=None,  copy=False):
         data_layout = 'yx'
         wall_normal_line = 'y'
         polar_plane = None
 
-        super()._array_ini(array, index=index, data_layout=data_layout, wall_normal_line=wall_normal_line, polar_plane=polar_plane, copy=copy)
+        super()._array_ini(coorddata, array, index=index, data_layout=data_layout, wall_normal_line=wall_normal_line, polar_plane=polar_plane, copy=copy)
 
-    def _dict_ini(self, dict_data, copy=False):
+    def _dict_ini(self,coorddata,  dict_data, copy=False):
         data_layout = 'yx'
         wall_normal_line = 'y'
         polar_plane = None
 
-        super()._dict_ini( dict_data, data_layout=data_layout, wall_normal_line=wall_normal_line, polar_plane=polar_plane, copy=copy)
+        super()._dict_ini(coorddata, dict_data, data_layout=data_layout, wall_normal_line=wall_normal_line, polar_plane=polar_plane, copy=copy)
 
-    def _dstruct_ini(self,  dstruct,copy=False):
-        self._dict_ini(dstruct.to_dict(), copy=copy)
+    def _dstruct_ini(self, coorddata, dstruct,copy=False):
+        self._dict_ini(coorddata, dstruct.to_dict(), copy=copy)
 
     def from_internal(self, *args, **kwargs):
         return self.__class__(self._coorddata,
                                 *args,**kwargs)
+
+    # def to_hdf(self,filepath,key=None,mode='a'):
+        
+    #     super().to_hdf(filepath,key=key,mode=mode)
+
+    #     hdf_obj = hdfHandler(filepath,mode='a',key=key)
+
+    #     hdf_obj.attrs['plane'] = self._plane.encode('utf-8')
+    #     if self._location is not None:
+    #         hdf_obj.attrs['location'] = self._location.encode('utf-8')
+    #     hdf_obj.attrs['data_layout'] = self._data_layout.encode('utf-8')
+
+        
+
+    # @classmethod
+    # def from_hdf(cls,filename,key=None):
+
+    #     hdf_obj = hdfHandler(filename,mode='r',key=key)
+    #     plane = hdf_obj.attrs['plane']
+    #     data_layout = hdf_obj.attrs['data_layout']
+
+    #     if 'location' in hdf_obj.attrs.keys():
+    #         location = hdf_obj.attrs['location'][0]
+    #     else:
+    #         location = None
+
+    #     return  cls(filename,key=key,plane=plane,location=location,data_layout=data_layout,from_hdf=True)
+
+
+
+
 
     def _calculate_line(self,line,axis_val):
         if line == 'y':
@@ -999,28 +1084,6 @@ class FlowStruct2D(FlowStructND):
                                           line_kw=line_kw,
                                           **kwargs)  
 
-        return fig, ax
-    
-    def plot_line_data(self,data,axis,coords,time=None,labels=None,transform_ydata=None, transform_xdata=None, channel_half=False,fig=None,ax=None,line_kw=None,**kwargs):
-        coords = misc_utils.check_list_vals(coords)
-        if labels is None:
-            labels = [None]*len(coords)
-        for coord,label in zip(coords,labels):
-            slicer = self._calculate_line(axis,coord)  
-
-            flowstruct = self.slice[slicer]
-            
-            slice_data = data[self.slice.get_slicer(slicer)]
-            
-            fig, ax = flowstruct.plot_line_data(slice_data,time=time,
-                                                label=label,
-                                                transform_xdata=transform_xdata,
-                                                transform_ydata=transform_ydata,
-                                                channel_half = channel_half,
-                                                fig=fig,ax=ax,
-                                                line_kw=line_kw,
-                                                **kwargs)  
-        
         return fig, ax
     
     def plot_line_max(self,comp,axis,transform_ydata=None, transform_xdata=None, time=None,fig=None,ax=None,line_kw=None,**kwargs):
@@ -1077,22 +1140,21 @@ class FlowStruct2D(FlowStructND):
                                     **kwargs)
 
 class FlowStruct1D(FlowStructND):
-    def _array_ini(self, array, index=None,  copy=False):
+    def _array_ini(self, coorddata, array, index=None,  copy=False):
         data_layout = 'y'
         wall_normal_line = 'y'
         polar_plane = None
 
-        super()._array_ini(array, index=index, data_layout=data_layout, wall_normal_line=wall_normal_line, polar_plane=polar_plane, copy=copy)
+        super()._array_ini(coorddata, array, index=index, data_layout=data_layout, wall_normal_line=wall_normal_line, polar_plane=polar_plane, copy=copy)
 
-    def _dict_ini(self, dict_data, copy=False):
+    def _dict_ini(self, coorddata, dict_data, copy=False):
         data_layout = 'y'
         wall_normal_line = 'y'
         polar_plane = None
 
-        super()._dict_ini(dict_data, data_layout=data_layout, wall_normal_line=wall_normal_line, polar_plane=polar_plane, copy=copy)
-    
-    def _dstruct_ini(self, dstruct,copy=False):
-        self._dict_ini( dstruct.to_dict(), copy=copy)
+        super()._dict_ini(coorddata, dict_data, data_layout=data_layout, wall_normal_line=wall_normal_line, polar_plane=polar_plane, copy=copy)
+    def _dstruct_ini(self, coorddata, dstruct,copy=False):
+        self._dict_ini(coorddata, dstruct.to_dict(), copy=copy)
 
 
     def from_internal(self, *args, **kwargs):
@@ -1211,3 +1273,179 @@ class FlowStruct1D_time(FlowStruct1D,FlowStructND_time):
     #     ax.cplot(transform_xdata(times),transform_ydata(max_data),**line_kw)
 
     #     return fig, ax
+
+class VTKstruct_base:
+    def __getattr__(self,attr):
+        _grid = self._grid
+        if hasattr(_grid,attr):
+            inner_list = self._flowstruct.inner_index
+            outer_list = self._flowstruct.outer_index
+
+
+            grid = self[outer_list,inner_list]
+            return getattr(grid,attr)
+
+        elif hasattr(self._flowstruct, attr):
+            return getattr(self._flowstruct,attr)
+
+        else:
+            msg = ("Method must be either an attribute "
+                f"of VTKstruct, {self._grid.__class__},"
+                f" or {self._flowstruct.__class__}")
+            raise AttributeError(msg)
+    
+    @abstractproperty
+    def _grid(self):
+        pass
+
+    def __deepcopy__(self,memo):
+        new_flow_struct = self._flowstruct.copy()
+        return self.__class__(new_flow_struct)
+
+    def copy(self):
+        return copy.deepcopy(self)
+    
+    def to_vtk(self,file_name):
+        file_base, file_ext = os.path.splitext(file_name)
+        if file_ext == ".vtk":
+            writer = vtk.vtkStructuredGridWriter()
+        elif file_ext == ".vts":
+            writer = vtk.vtkXMLStructuredGridWriter()
+        elif file_ext == "":
+            file_name = file_base +".vts"
+            writer = vtk.vtkXMLStructuredGridWriter()
+        else:
+            msg = "This function can only use the vtk or vts file extension not %s"%file_ext
+            raise ValueError(msg)
+
+        times = self._flowstruct.times
+        if times is None:
+            times = [None]
+        for i,time in enumerate(times):
+
+            grid = self._grid
+            if len(times) > 1:
+                num_zeros = int(np.log10(len(self._flowstruct.times)))+1
+                ext = str(i).zfill(num_zeros)
+                file_name = os.path.join(file_name,".%s"%ext)
+
+            if self._use_cell_data:
+                for comp in self._flowstruct.comp:
+                    grid.cell_data[np.str_(comp)] = self._flowstruct[time,comp].flatten()
+            else:
+                for comp in self._flowstruct.comp:
+                    grid.point_data[np.str_(comp)] = self._flowstruct[time,comp].flatten()
+            
+            writer.SetFileName(file_name)
+
+            if vtk.vtkVersion().GetVTKMajorVersion() <= 5:
+                grid.Update()
+                writer.SetInput(grid)
+            else:
+                writer.SetInputData(grid)
+                
+            writer.Write()
+            
+    @property
+    def flowstruct(self):
+        return self._flowstruct
+
+    def __getitem__(self,key):
+        return_grid = self._grid.copy()
+
+        if not self._flowstruct._indexer.is_listkey(key):
+            if not self._flowstruct._indexer.is_multikey(key):
+                key = [key]
+            else:
+                key = ([k] for k in key)
+
+        new_flowstruct = self._flowstruct[key]
+
+        for k, array in new_flowstruct:
+
+            if len(new_flowstruct.outer_index) < 2:
+                k = k[1]
+            return_grid.cell_arrays[np.str_(k)] = array.flatten()
+        return return_grid
+
+    def __iadd__(self,other_VTKstruct):
+        if not isinstance(other_VTKstruct,self.__class__):
+            msg = "This operation can only be used with other VTKstruct's"
+            raise TypeError(msg)
+        
+        if not np.allclose(self._grid.points,other_VTKstruct._grid.points):
+            msg = "The grids of the VTKstruct's must be allclose"
+            raise ValueError(msg)
+
+        self._flowstruct.concat(other_VTKstruct._flowstruct)
+
+        return self
+
+class VTKstruct3D(VTKstruct_base):
+    def __init__(self,flowstruct_obj,cell_data=True):
+        if flowstruct_obj._dim != 3 :
+            msg = "This class can only be used on objects of type FlowStruct3D"
+            raise TypeError(msg)
+
+        self._flowstruct = flowstruct_obj
+        self._use_cell_data = cell_data
+
+    @property
+    def _grid(self):
+        self._flowstruct._coorddata.create_vtkStructuredGrid(self._use_cell_data)
+
+
+    def __iadd__(self,other_VTKstruct):
+        if not isinstance(other_VTKstruct,self.__class__):
+            msg = "This operation can only be used with other VTKstruct's"
+            raise TypeError(msg)
+        
+        if not np.allclose(self._grid.points,other_VTKstruct._grid.points):
+            msg = "The grids of the VTKstruct's must be allclose"
+            raise ValueError(msg)
+
+        self._flowstruct.concat(other_VTKstruct._flowstruct)
+
+        return self
+
+
+class VTKstruct2D(VTKstruct_base):
+    def __init__(self,flowstruct_obj,cell_data=True):
+        if flowstruct_obj._dim != 2 :
+            msg = "This class can only be used on objects of type FlowStruct2D"
+            raise TypeError(msg)
+
+        self._flowstruct = flowstruct_obj
+        self._use_cell_data = cell_data
+        
+    @property
+    def _grid(self):
+        plane = self._flowstruct._data_layout
+        if self._use_cell_data:
+            coord_1 = self._flowstruct.Coord_ND_DF[plane[0]]
+            coord_2 = self._flowstruct.Coord_ND_DF[plane[1]]
+        else:
+            coord_1 = self._flowstruct.CoordDF[plane[0]]
+            coord_2 = self._flowstruct.CoordDF[plane[1]]
+
+        location = self._flowstruct.location
+        coord_3 = [location]
+
+        Y,X,Z = np.meshgrid(coord_1,coord_2,coord_3)
+
+        grid = StructuredGrid(X,Z,Y)
+        return grid
+
+
+    def __iadd__(self,other_VTKstruct):
+        if not isinstance(other_VTKstruct,self.__class__):
+            msg = "This operation can only be used with other VTKstruct's"
+            raise TypeError(msg)
+        
+        if not np.allclose(self._grid.points,other_VTKstruct._grid.points):
+            msg = "The grids of the VTKstruct's must be allclose"
+            raise ValueError(msg)
+
+        self._flowstruct.concat(other_VTKstruct._flowstruct)
+
+        return self

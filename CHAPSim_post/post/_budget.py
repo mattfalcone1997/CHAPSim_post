@@ -92,7 +92,8 @@ class _budget_base(Common,ABC):
         math_split = string.split('$')
         for i, split in enumerate(math_split):
             if i%2 == 0:
-                math_split[i] = math_split[i].title()
+                if math_split[i] != math_split[i].upper():
+                    math_split[i] = math_split[i].title()
         return "$".join(math_split)
 class ReynoldsBudget_base(ABC):
     def _budget_extract(self,PhyTime,comp):

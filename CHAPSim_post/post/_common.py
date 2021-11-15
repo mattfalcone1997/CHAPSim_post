@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib as mpl
 import sys
 import pyvista
-
+import copy
 import itertools
 from abc import abstractmethod, ABC, abstractproperty
 
@@ -75,6 +75,9 @@ class Common(ABC):
     @abstractproperty
     def shape(self):
         pass
+    
+    def copy(self):
+        return copy.deepcopy(self)
 
 
 class postArray(ABC):

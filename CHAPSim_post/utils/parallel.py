@@ -54,14 +54,37 @@ class ParallelConcurrent():
             return self._run_sequential()
         else:
             return self._run_parallel()
+        
+    def _check_deepcopy(self,*args,**kwargs):
+        try:
+            copy.deepcopy(args)
+            copy.deepcopy(kwargs)
+        except copy.Error:
+            msg = "Methods passed cannot be copied, running in serial"
+            warnings.warn(msg)
+            return False
+        else:
+            return True
+            
+    @staticmethod
+    def _args_copy(*args):
+        return copy.deepcopy(args)
+    
+    @staticmethod
+    def _kwargs_copy(**kwargs):
+        return copy.deepcopy(kwargs)
     
     def map_async(self,func,iterable,*args,**kwargs):
-        if self.check_parallel('off'):
+        
+        valid_args = self._check_deepcopy(*args,**kwargs)
+        if self.check_parallel('off') or not valid_args:
             return [func(it,*args,**kwargs) for it in iterable]
 
         data_order=[]
-        parallel_list = {self._executor.submit(func,it,*args,**kwargs): i\
-                             for i,it in enumerate(iterable)}
+        parallel_list = {self._executor.submit(func,it,
+                                    *self._args_copy(*args),
+                                    **self._kwargs_copy(**kwargs)): i\
+                                    for i,it in enumerate(iterable)}
 
         for future in concurrent.futures.as_completed(parallel_list):
             data_order.append((future.result(),parallel_list[future]))

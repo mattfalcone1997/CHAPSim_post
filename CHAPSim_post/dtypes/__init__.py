@@ -1,2 +1,4 @@
 from .flowstruct import *
-from .dtypes import datastruct, metastruct, hdfHandler
+from .vtk import *
+from .coords import *
+from .core import datastruct, metastruct, hdfHandler

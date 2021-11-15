@@ -31,6 +31,8 @@ import CHAPSim_post.dtypes as cd
 from ._meta import CHAPSim_meta
 from ._common import Common, postArray
 
+from CHAPSim_post._libs import file_handler
+
 _meta_class = CHAPSim_meta
 
 class _AVG_base(Common,ABC):
@@ -68,9 +70,6 @@ class _AVG_base(Common,ABC):
 
     def get_times(self):
         return ["%.9g"%x for x in self.times]
-
-    def copy(self):
-        return copy.deepcopy(self)
 
     @classmethod
     def from_hdf(cls,*args,**kwargs):
@@ -275,18 +274,38 @@ class _AVG_developing(_AVG_base):
         return mu_t
 
 class CHAPSim_AVG_io(_AVG_developing):
-    def _extract_file_io(self,PhyTime,path_to_folder,abs_path):
-        instant = "%0.9E" % PhyTime
+    def _extract_file_io(self,PhyTime,path_to_folder,abs_path,time0=None):
 
         full_path = misc_utils.check_paths(path_to_folder,'2_averaged_rawdata',
                                                             '2_averagd_D')
 
+        file, NSTATIS,PhyTime, NCL1, NCL2 = self._get_io_file_boilerplate(full_path,PhyTime,abs_path)
+        
+        offset = 4*4 + 3*8
+        dummy_size = NCL1*NCL2*50*21
+        
+        if time0 is None:
+            
+            AVG_info = np.fromfile(file,dtype='float64',offset=offset,count=dummy_size)
+        else:
+            file0, NSTATIS0,_, _, _ = self._get_io_file_boilerplate(full_path,time0,abs_path)
+            
+            parallel_file = file_handler.ReadParallel([file,file0],'rb')
+            AVG_info, AVG_info0 = parallel_file.read_parallel_float64(dummy_size,offset)
+            
+            AVG_info = (AVG_info*NSTATIS - AVG_info0*NSTATIS0)/(NSTATIS - NSTATIS0)
+        
+        return AVG_info, PhyTime, NCL1, NCL2
+
+    def _get_io_file_boilerplate(self,path, PhyTime,abs_path):
+        instant = "%0.9E" % PhyTime
+        
         file_string = "DNS_perioz_AVERAGD_T" + instant + "_FLOW.D"
         
         if not abs_path:
-            file_path = os.path.abspath(os.path.join(full_path, file_string))
+            file_path = os.path.abspath(os.path.join(path, file_string))
         else:
-            file_path = os.path.join(full_path, file_string)
+            file_path = os.path.join(path, file_string)
                 
         file = open(file_path,'rb')
         
@@ -302,13 +321,10 @@ class CHAPSim_AVG_io(_AVG_developing):
         dummy_size = NCL1*NCL2*50*21
         r_info = np.fromfile(file,dtype='float64',count=3)
         PhyTime = r_info[0]
-
-        AVG_info = np.zeros(dummy_size)
-        AVG_info = np.fromfile(file,dtype='float64',count=dummy_size)
-
+        
         file.close()
-        return AVG_info, NSTATIS, PhyTime, [NCL1,NCL2]
-
+        return file_path, NSTATIS, PhyTime, NCL1, NCL2
+        
     def _extract_avg(self,time,path_to_folder=".",time0=None,abs_path=True):
         """
         Instantiates an instance of the CHPSim_AVG_io class from the result data
@@ -383,21 +399,12 @@ class CHAPSim_AVG_io(_AVG_developing):
 
     def _AVG_extract(self,Time_input,time0,path_to_folder,abs_path):
 
-        if time0 is None:
-            AVG_info, NSTATIS1, PhyTime, NCL = self._extract_file_io(Time_input,path_to_folder,abs_path)
-        else:
-            parallelExec = parallel.ParallelConcurrent()
+        
+        AVG_info, PhyTime, NCL1, NCL2 = self._extract_file_io(Time_input,
+                                                       path_to_folder,
+                                                       abs_path,
+                                                       time0)
 
-            result = parallelExec.map_async(self._extract_file_io,[Time_input,time0],path_to_folder,abs_path)
-            
-            result, result0 = result
-            AVG_info, NSTATIS1, PhyTime, NCL = result
-            AVG_info0, NSTATIS0, _, _ = result0
-
-            AVG_info = (AVG_info*NSTATIS1 - AVG_info0*NSTATIS0)/(NSTATIS1-NSTATIS0)
-            del AVG_info0
-
-        (NCL1, NCL2) = NCL
         AVG_info = AVG_info.reshape(21,50,NCL2,NCL1)
             
         #Velo_AVG = np.zeros((3,NCL2,NCL1))
@@ -891,7 +898,6 @@ class CHAPSim_AVG_io(_AVG_developing):
 
         labels = [self.Domain.create_label(r"$x = %.3g$"%x) for x in x_vals]
 
-
         fig, ax = self.UU_tensorDF.plot_line_data(mu_t,'y',x_vals,labels=labels,
                                 fig=fig,ax=ax,line_kw=line_kw,**kwargs)
 
@@ -981,15 +987,10 @@ class CHAPSim_AVG_tg(_AVG_base):
 
     def _AVG_array_extract(self,PhyTime,path_to_folder,abs_path,metaDF,time0):
 
-        AVG_info, NSTATIS1, _, _ = self._extract_file_tg(PhyTime,path_to_folder,abs_path)
+        AVG_info = self._extract_file_tg(PhyTime,path_to_folder,abs_path,time0)
         
         factor = metaDF['NCL1_tg']*metaDF['NCL3'] if cp.rcParams["dissipation_correction"] else 1.0
-        ioflowflg = self.metaDF['iDomain'] in [2,3]
-
-        if ioflowflg and time0:
-            AVG_info0, NSTATIS0, _, _ = self._extract_file_tg(time0,path_to_folder,abs_path)
-            AVG_info = (AVG_info*NSTATIS1 - AVG_info0*NSTATIS0)/(NSTATIS1-NSTATIS0)
-
+        
         flow_AVG = AVG_info[:4]
         PU_vector = AVG_info[4:7]
         UU_tensor = AVG_info[7:13]
@@ -1069,26 +1070,21 @@ class CHAPSim_AVG_tg(_AVG_base):
         return [flow_AVGDF, PU_vectorDF, UU_tensorDF, UUU_tensorDF,\
                     Velo_grad_tensorDF, PR_Velo_grad_tensorDF,DUDX2_tensorDF]
 
-
-    def _extract_file_tg(self,PhyTime,path_to_folder,abs_path):
+    def _get_tg_boilerplate(self,path, PhyTime,abs_path):
         instant = "%0.9E" % PhyTime
         
-        full_path = misc_utils.check_paths(path_to_folder,'2_averaged_rawdata',
-                                                            '2_averagd_D')
-
-
         file_string = "DNS_perixz_AVERAGD_T" + instant + "_FLOW.D"
         
         if not abs_path:
-            file_path = os.path.abspath(os.path.join(full_path, file_string))
+            file_path = os.path.abspath(os.path.join(path, file_string))
         else:
-            file_path = os.path.join(full_path, file_string)
+            file_path = os.path.join(path, file_string)
                 
         file = open(file_path,'rb')
         
         int_info = np.zeros(4)
         r_info = np.zeros(3)
-        int_info = np.fromfile(file,dtype='int32',count=4)    
+        int_info = np.fromfile(file,dtype='int32',count=4)  
         
         NCL2 = int_info[0]
         NSZ = int_info[1]
@@ -1098,14 +1094,42 @@ class CHAPSim_AVG_tg(_AVG_base):
         r_info = np.fromfile(file,dtype='float64',count=3)
         
         PhyTime = r_info[0]
-        AVG_info = np.zeros(dummy_size)
-        AVG_info = np.fromfile(file,dtype='float64',count=dummy_size)
+        
+        file.close()
+        return file_path, NSTATIS, PhyTime, NCL2, NSZ
+    
+    def _extract_file_tg(self,PhyTime,path_to_folder,abs_path,time0):
+        
+        full_path = misc_utils.check_paths(path_to_folder,'2_averaged_rawdata',
+                                                            '2_averagd_D')
+
+
+        file, NSTATIS, PhyTime, NCL2, NSZ = self._get_tg_boilerplate(full_path,
+                                                                     PhyTime,
+                                                                     abs_path)
+        
+
+        offset = 4*4 + 3*8
+        dummy_size = NCL2*NSZ
+        
+        ioflowflg = self.metaDF['iDomain'] in [2,3]
+
+        if ioflowflg and time0 is not None:
+            file0, NSTATIS0,_, _, _ = self._get_tg_boilerplate(full_path,
+                                                               time0,
+                                                               abs_path)
+            
+            parallel_file = file_handler.ReadParallel([file,file0],'rb')
+            AVG_info, AVG_info0 = parallel_file.read_parallel_float64(dummy_size,offset)
+            
+            AVG_info = (AVG_info*NSTATIS - AVG_info0*NSTATIS0)/(NSTATIS - NSTATIS0)
+            
+        else:
+            AVG_info = np.fromfile(file,dtype='float64',offset=offset,count=dummy_size)
 
         AVG_info = AVG_info.reshape(NSZ,NCL2)
-
-        file.close()
         
-        return AVG_info, NSTATIS, PhyTime, NCL2
+        return AVG_info
 
     def wall_unit_calc(self,PhyTime=None):
         PhyTime = self.check_PhyTime(PhyTime)

@@ -81,7 +81,7 @@ class CHAPSim_autocov_io(_autocov_base):
         self.comp=tuple(comp)
 
         self._avg_data = self._module._avg_io_class(max(times),path_to_folder,time0,abs_path)
-
+        
         if max_z_sep is None:
             max_z_sep=int(self.NCL[2]*0.5)
         elif max_z_sep>self.NCL[2]:

@@ -23,6 +23,7 @@ from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils
 import CHAPSim_post.plot as cplt
 import CHAPSim_post.dtypes as cd
 
+from CHAPSim_post._libs import post
 
 import CHAPSim_post as cp
 # import CHAPSim_post.CHAPSim_post._utils as utils
@@ -320,9 +321,7 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
             avg_values = avg_data.flow_AVGDF[avg_time[0],comp]
             inst_values = inst_data.InstDF[time,comp]
 
-            for i in range(inst_data.shape[0]):
-                fluct[j,i] = inst_values[i] -avg_values
-            del inst_values
+            fluct[j] = post.fluct_calc_io(inst_values,avg_values)
 
         return cd.FlowStruct3D(self._coorddata,fluct,index=inst_data.InstDF.index.copy())
     
@@ -367,9 +366,8 @@ class CHAPSim_fluct_tg(CHAPSim_fluct_base):
             time = index[0]; comp = index[1]
             avg_values = avg_data.flow_AVGDF[avg_time,comp]
             inst_values = inst_data.InstDF[time,comp]
-            for i in range(inst_data.shape[0]):
-                for k in range(inst_data.shape[2]):
-                    fluct[j,i,:,k] = inst_values[i,:,k] -avg_values
+            
+            fluct[j] = post.fluct_calc_tg(inst_values,avg_values)
 
         return cd.FlowStruct3D(self._coorddata,fluct,index=inst_data.InstDF.index)#.data(inst_data.shape)
 
@@ -417,8 +415,11 @@ class CHAPSim_fluct_temp(CHAPSim_fluct_base):
             time = index[0]; comp = index[1]
             avg_values = avg_data.flow_AVGDF[time,comp]
             inst_values = inst_data.InstDF[time,comp]
-            for i in range(inst_data.shape[0]):
-                for k in range(inst_data.shape[2]):
-                    fluct[j,i,:,k] = inst_values[i,:,k] -avg_values
+            
+            fluct[j] = post.fluct_calc_tg(inst_values,avg_values)
+            
+            # for i in range(inst_data.shape[0]):
+            #     for k in range(inst_data.shape[2]):
+            #         fluct[j,i,:,k] = inst_values[i,:,k] -avg_values
 
         return cd.FlowStruct3D(self._coorddata,fluct,index=inst_data.InstDF.index)
