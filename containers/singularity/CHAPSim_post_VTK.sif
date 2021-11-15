@@ -27,9 +27,16 @@ From: ubuntu:20.04
     export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/opt/VTK_deps/build/install/include
     export MPLCONFIGDIR=/opt/matplotlibdir
     
+    
     PYBIN=/usr/bin/python3
     LIB_PATH=/opt/VTK_deps/build/install
     
+    cd /opt
+    git clone -b new_master https://github.com/mattfalcone1997/CHAPSim_post.git
+    cd CHAPSim_post
+    $PYBIN -m pip install -r requirements.txt
+    $PYBIN -m pip install .
+
     cd /opt
     mkdir VTK && cd VTK 
 
@@ -55,14 +62,6 @@ From: ubuntu:20.04
     ninja
     $PYBIN setup.py bdist_wheel
     $PYBIN -m pip install dist/vtk-*.whl
-
-    $PYBIN -m pip install pyvista --no-deps
-    
-    cd /opt
-    git clone -b new_master https://github.com/mattfalcone1997/CHAPSim_post.git
-    cd CHAPSim_post
-    $PYBIN -m pip install -r requirements.txt
-    $PYBIN -m pip install .
 
     python3 -c "import pyvista"
     python3 -c "import matplotlib"
