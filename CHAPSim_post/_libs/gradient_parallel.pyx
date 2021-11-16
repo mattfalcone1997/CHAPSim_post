@@ -8,6 +8,7 @@ import cython
 ctypedef np.float64_t DTYPE_t
 DTYPE = np.float64
 
+@cython.cdivision(True)
 @cython.boundscheck(False) 
 @cython.wraparound(False) 
 def cy_gradient_calc2D_dx(np.ndarray[DTYPE_t,ndim=2] flow_array,
@@ -44,7 +45,9 @@ def cy_gradient_calc2D_dx(np.ndarray[DTYPE_t,ndim=2] flow_array,
                     grad_array[i,end] = dxi*(flow_array[i,end] - flow_array[i,end])
 
     return grad_array
-
+@cython.cdivision(True)
+@cython.boundscheck(False) 
+@cython.wraparound(False) 
 def cy_gradient_calc3D_dx(np.ndarray[DTYPE_t,ndim=3] flow_array,
                             DTYPE_t dx,
                             np.int32_t dim):
@@ -95,8 +98,9 @@ def cy_gradient_calc3D_dx(np.ndarray[DTYPE_t,ndim=3] flow_array,
                     grad_array[i,j,end] = dxi*(flow_array[i,j,end] - flow_array[i,j,end-1])
     return grad_array
 
+@cython.cdivision(True)
 @cython.boundscheck(False) 
-@cython.wraparound(False) 
+@cython.wraparound(False)  
 def cy_gradient_calc2D_var_x(np.ndarray[DTYPE_t,ndim=2] flow_array,
                         np.ndarray[DTYPE_t,ndim=1] dx_array,
                         np.int32_t dim):
@@ -157,8 +161,9 @@ def cy_gradient_calc2D_var_x(np.ndarray[DTYPE_t,ndim=2] flow_array,
     return grad_array
 
 
+@cython.cdivision(True)
 @cython.boundscheck(False) 
-@cython.wraparound(False) 
+@cython.wraparound(False)  
 def cy_gradient_calc3D_var_x(np.ndarray[DTYPE_t,ndim=3] flow_array,
                         np.ndarray[DTYPE_t,ndim=1] dx_array,
                         np.int32_t dim):

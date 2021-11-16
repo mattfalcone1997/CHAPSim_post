@@ -923,11 +923,6 @@ typedef struct {
 #define __Pyx_FastGIL_Forget()
 #define __Pyx_FastGilFuncInit()
 
-/* ForceInitThreads.proto */
-#ifndef __PYX_FORCE_INIT_THREADS
-  #define __PYX_FORCE_INIT_THREADS 0
-#endif
-
 
 /* "../../../SOFTWARE/anaconda/envs/CHAPSim_post/lib/python3.8/site-packages/numpy/__init__.pxd":690
  * # in Cython to enable them only on the right systems.
@@ -1394,12 +1389,6 @@ static CYTHON_INLINE int __Pyx_TypeTest(PyObject *obj, PyTypeObject *type);
 /* BufferFallbackError.proto */
 static void __Pyx_RaiseBufferFallbackError(void);
 
-/* BufferIndexError.proto */
-static void __Pyx_RaiseBufferIndexError(int axis);
-
-/* BufferIndexErrorNogil.proto */
-static void __Pyx_RaiseBufferIndexErrorNogil(int axis);
-
 #define __Pyx_BufPtrStrided1d(type, buf, i0, s0) (type)((char*)buf + i0 * s0)
 /* PyThreadStateGet.proto */
 #if CYTHON_FAST_THREAD_STATE
@@ -1436,9 +1425,6 @@ static CYTHON_INLINE void __Pyx_ErrFetchInState(PyThreadState *tstate, PyObject 
 #define __Pyx_ErrRestore(type, value, tb)  PyErr_Restore(type, value, tb)
 #define __Pyx_ErrFetch(type, value, tb)  PyErr_Fetch(type, value, tb)
 #endif
-
-/* None.proto */
-static CYTHON_INLINE Py_ssize_t __Pyx_div_Py_ssize_t(Py_ssize_t, Py_ssize_t);
 
 /* PyIntBinop.proto */
 #if !CYTHON_COMPILING_IN_PYPY
@@ -1723,7 +1709,6 @@ static PyTypeObject *__pyx_ptype_5numpy_ufunc = 0;
 /* Module declarations from 'cython' */
 
 /* Module declarations from 'CHAPSim_post._libs.integrate' */
-static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe(PyArrayObject *, PyArrayObject *); /*proto*/
 static __Pyx_TypeInfo __Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t = { "float64_t", NULL, sizeof(__pyx_t_5numpy_float64_t), { 0 }, 0, 'R', 0, 0 };
 #define __Pyx_MODULE_NAME "CHAPSim_post._libs.integrate"
 extern int __pyx_module_is_main_CHAPSim_post___libs__integrate;
@@ -1750,6 +1735,7 @@ static const char __pyx_k_numpy[] = "numpy";
 static const char __pyx_k_range[] = "range";
 static const char __pyx_k_import[] = "__import__";
 static const char __pyx_k_size_x[] = "size_x";
+static const char __pyx_k_size_y[] = "size_y";
 static const char __pyx_k_channel[] = "channel";
 static const char __pyx_k_int_array[] = "int_array";
 static const char __pyx_k_zeros_like[] = "zeros_like";
@@ -1760,6 +1746,7 @@ static const char __pyx_k_cumulativeInt_y1D[] = "cumulativeInt_y1D";
 static const char __pyx_k_cumulativeInt_y2D[] = "cumulativeInt_y2D";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
 static const char __pyx_k_cumulativeInt_y1D_pipe[] = "cumulativeInt_y1D_pipe";
+static const char __pyx_k_cumulativeInt_y2D_pipe[] = "cumulativeInt_y2D_pipe";
 static const char __pyx_k_cumulativeInt_y1D_channel[] = "cumulativeInt_y1D_channel";
 static const char __pyx_k_cumulativeInt_y2D_channel[] = "cumulativeInt_y2D_channel";
 static const char __pyx_k_CHAPSim_post__libs_integrate[] = "CHAPSim_post._libs.integrate";
@@ -1780,6 +1767,7 @@ static PyObject *__pyx_n_s_cumulativeInt_y1D_channel;
 static PyObject *__pyx_n_s_cumulativeInt_y1D_pipe;
 static PyObject *__pyx_n_s_cumulativeInt_y2D;
 static PyObject *__pyx_n_s_cumulativeInt_y2D_channel;
+static PyObject *__pyx_n_s_cumulativeInt_y2D_pipe;
 static PyObject *__pyx_n_s_dx;
 static PyObject *__pyx_n_s_i;
 static PyObject *__pyx_n_s_import;
@@ -1797,6 +1785,7 @@ static PyObject *__pyx_kp_u_numpy_core_umath_failed_to_impor;
 static PyObject *__pyx_n_s_range;
 static PyObject *__pyx_n_s_size;
 static PyObject *__pyx_n_s_size_x;
+static PyObject *__pyx_n_s_size_y;
 static PyObject *__pyx_n_s_staggered_y;
 static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_n_s_ycc;
@@ -1804,8 +1793,9 @@ static PyObject *__pyx_n_s_zeros_like;
 static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pipe(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_array, PyArrayObject *__pyx_v_staggered_y); /* proto */
 static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_channel(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_array, PyArrayObject *__pyx_v_staggered_y); /* proto */
 static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_array, PyArrayObject *__pyx_v_staggered_y, int __pyx_v_channel); /* proto */
-static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_channel(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_array, PyArrayObject *__pyx_v_staggered_y); /* proto */
-static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_array, PyArrayObject *__pyx_v_staggered_y, int __pyx_v_channel); /* proto */
+static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_pipe(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_array, PyArrayObject *__pyx_v_staggered_y); /* proto */
+static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D_channel(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_array, PyArrayObject *__pyx_v_staggered_y); /* proto */
+static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_10cumulativeInt_y2D(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_array, PyArrayObject *__pyx_v_staggered_y, int __pyx_v_channel); /* proto */
 static PyObject *__pyx_int_1;
 static PyObject *__pyx_tuple_;
 static PyObject *__pyx_tuple__2;
@@ -1814,16 +1804,18 @@ static PyObject *__pyx_tuple__5;
 static PyObject *__pyx_tuple__7;
 static PyObject *__pyx_tuple__9;
 static PyObject *__pyx_tuple__11;
+static PyObject *__pyx_tuple__13;
 static PyObject *__pyx_codeobj__4;
 static PyObject *__pyx_codeobj__6;
 static PyObject *__pyx_codeobj__8;
 static PyObject *__pyx_codeobj__10;
 static PyObject *__pyx_codeobj__12;
+static PyObject *__pyx_codeobj__14;
 /* Late includes */
 
-/* "CHAPSim_post/_libs/integrate.pyx":8
- * import cython
- * 
+/* "CHAPSim_post/_libs/integrate.pyx":11
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y1D_pipe(np.ndarray[np.float64_t,ndim=1] array,             # <<<<<<<<<<<<<<
  *                       np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
@@ -1864,11 +1856,11 @@ static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_1cumulativeInt_y1D_pi
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_staggered_y)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y1D_pipe", 1, 2, 2, 1); __PYX_ERR(0, 8, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y1D_pipe", 1, 2, 2, 1); __PYX_ERR(0, 11, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "cumulativeInt_y1D_pipe") < 0)) __PYX_ERR(0, 8, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "cumulativeInt_y1D_pipe") < 0)) __PYX_ERR(0, 11, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -1881,14 +1873,14 @@ static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_1cumulativeInt_y1D_pi
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("cumulativeInt_y1D_pipe", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 8, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("cumulativeInt_y1D_pipe", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 11, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("CHAPSim_post._libs.integrate.cumulativeInt_y1D_pipe", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_array), __pyx_ptype_5numpy_ndarray, 1, "array", 0))) __PYX_ERR(0, 8, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_staggered_y), __pyx_ptype_5numpy_ndarray, 1, "staggered_y", 0))) __PYX_ERR(0, 9, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_array), __pyx_ptype_5numpy_ndarray, 1, "array", 0))) __PYX_ERR(0, 11, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_staggered_y), __pyx_ptype_5numpy_ndarray, 1, "staggered_y", 0))) __PYX_ERR(0, 12, __pyx_L1_error)
   __pyx_r = __pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pipe(__pyx_self, __pyx_v_array, __pyx_v_staggered_y);
 
   /* function exit code */
@@ -1949,38 +1941,38 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pip
   __pyx_pybuffernd_staggered_y.rcbuffer = &__pyx_pybuffer_staggered_y;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 8, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 11, __pyx_L1_error)
   }
   __pyx_pybuffernd_array.diminfo[0].strides = __pyx_pybuffernd_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_array.diminfo[0].shape = __pyx_pybuffernd_array.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_staggered_y.rcbuffer->pybuffer, (PyObject*)__pyx_v_staggered_y, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 8, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_staggered_y.rcbuffer->pybuffer, (PyObject*)__pyx_v_staggered_y, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 11, __pyx_L1_error)
   }
   __pyx_pybuffernd_staggered_y.diminfo[0].strides = __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_staggered_y.diminfo[0].shape = __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.shape[0];
 
-  /* "CHAPSim_post/_libs/integrate.pyx":11
+  /* "CHAPSim_post/_libs/integrate.pyx":14
  *                       np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
  *     cdef Py_ssize_t size = array.size             # <<<<<<<<<<<<<<
  * 
  *     cdef np.ndarray[np.float64_t,ndim=1] int_array
  */
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_array), __pyx_n_s_size); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 11, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_array), __pyx_n_s_size); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyIndex_AsSsize_t(__pyx_t_1); if (unlikely((__pyx_t_2 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 11, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyIndex_AsSsize_t(__pyx_t_1); if (unlikely((__pyx_t_2 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_size = __pyx_t_2;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":14
+  /* "CHAPSim_post/_libs/integrate.pyx":17
  * 
  *     cdef np.ndarray[np.float64_t,ndim=1] int_array
  *     int_array = np.zeros_like(array)             # <<<<<<<<<<<<<<
  * 
  *     cdef Py_ssize_t i, j
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_zeros_like); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_zeros_like); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_t_3 = NULL;
@@ -1995,10 +1987,10 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pip
   }
   __pyx_t_1 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_3, ((PyObject *)__pyx_v_array)) : __Pyx_PyObject_CallOneArg(__pyx_t_4, ((PyObject *)__pyx_v_array));
   __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 14, __pyx_L1_error)
+  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 17, __pyx_L1_error)
   __pyx_t_5 = ((PyArrayObject *)__pyx_t_1);
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
@@ -2015,13 +2007,13 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pip
       __pyx_t_7 = __pyx_t_8 = __pyx_t_9 = 0;
     }
     __pyx_pybuffernd_int_array.diminfo[0].strides = __pyx_pybuffernd_int_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_int_array.diminfo[0].shape = __pyx_pybuffernd_int_array.rcbuffer->pybuffer.shape[0];
-    if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(0, 14, __pyx_L1_error)
+    if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(0, 17, __pyx_L1_error)
   }
   __pyx_t_5 = 0;
   __pyx_v_int_array = ((PyArrayObject *)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":18
+  /* "CHAPSim_post/_libs/integrate.pyx":21
  *     cdef Py_ssize_t i, j
  *     cdef double dx, ycc
  *     for i in prange(size,nogil=True,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -2038,14 +2030,6 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pip
         __pyx_t_2 = __pyx_v_size;
         if ((1 == 0)) abort();
         {
-            double __pyx_parallel_temp0 = ((double)__PYX_NAN());
-            Py_ssize_t __pyx_parallel_temp1 = ((Py_ssize_t)0xbad0bad0);
-            Py_ssize_t __pyx_parallel_temp2 = ((Py_ssize_t)0xbad0bad0);
-            double __pyx_parallel_temp3 = ((double)__PYX_NAN());
-            const char *__pyx_parallel_filename = NULL; int __pyx_parallel_lineno = 0, __pyx_parallel_clineno = 0;
-            PyObject *__pyx_parallel_exc_type = NULL, *__pyx_parallel_exc_value = NULL, *__pyx_parallel_exc_tb = NULL;
-            int __pyx_parallel_why;
-            __pyx_parallel_why = 0;
             #if ((defined(__APPLE__) || defined(__OSX__)) && (defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && (__GNUC_MINOR__ > 95)))))
                 #undef likely
                 #undef unlikely
@@ -2056,20 +2040,13 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pip
             if (__pyx_t_11 > 0)
             {
                 #ifdef _OPENMP
-                #pragma omp parallel private(__pyx_t_12, __pyx_t_13, __pyx_t_14, __pyx_t_15, __pyx_t_16, __pyx_t_6) private(__pyx_filename, __pyx_lineno, __pyx_clineno) shared(__pyx_parallel_why, __pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb)
+                #pragma omp parallel private(__pyx_t_12, __pyx_t_13, __pyx_t_14, __pyx_t_15, __pyx_t_16)
                 #endif /* _OPENMP */
                 {
-                    #ifdef _OPENMP
-                    #ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    Py_BEGIN_ALLOW_THREADS
-                    #endif /* _OPENMP */
                     #ifdef _OPENMP
                     #pragma omp for lastprivate(__pyx_v_dx) firstprivate(__pyx_v_i) lastprivate(__pyx_v_i) lastprivate(__pyx_v_j) lastprivate(__pyx_v_ycc) schedule(dynamic)
                     #endif /* _OPENMP */
                     for (__pyx_t_10 = 0; __pyx_t_10 < __pyx_t_11; __pyx_t_10++){
-                        if (__pyx_parallel_why < 2)
                         {
                             __pyx_v_i = (Py_ssize_t)(0 + 1 * __pyx_t_10);
                             /* Initialize private variables to invalid values */
@@ -2077,7 +2054,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pip
                             __pyx_v_j = ((Py_ssize_t)0xbad0bad0);
                             __pyx_v_ycc = ((double)__PYX_NAN());
 
-                            /* "CHAPSim_post/_libs/integrate.pyx":19
+                            /* "CHAPSim_post/_libs/integrate.pyx":22
  *     cdef double dx, ycc
  *     for i in prange(size,nogil=True,schedule='dynamic'):
  *         for j in range(i+1):             # <<<<<<<<<<<<<<
@@ -2089,7 +2066,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pip
                             for (__pyx_t_14 = 0; __pyx_t_14 < __pyx_t_13; __pyx_t_14+=1) {
                               __pyx_v_j = __pyx_t_14;
 
-                              /* "CHAPSim_post/_libs/integrate.pyx":21
+                              /* "CHAPSim_post/_libs/integrate.pyx":24
  *         for j in range(i+1):
  * 
  *             dx = staggered_y[j+1] - staggered_y[j]             # <<<<<<<<<<<<<<
@@ -2097,28 +2074,10 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pip
  *             int_array[i] += ycc*array[j]*dx
  */
                               __pyx_t_15 = (__pyx_v_j + 1);
-                              __pyx_t_6 = -1;
-                              if (__pyx_t_15 < 0) {
-                                __pyx_t_15 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                if (unlikely(__pyx_t_15 < 0)) __pyx_t_6 = 0;
-                              } else if (unlikely(__pyx_t_15 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_6 = 0;
-                              if (unlikely(__pyx_t_6 != -1)) {
-                                __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                __PYX_ERR(0, 21, __pyx_L8_error)
-                              }
                               __pyx_t_16 = __pyx_v_j;
-                              __pyx_t_6 = -1;
-                              if (__pyx_t_16 < 0) {
-                                __pyx_t_16 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                if (unlikely(__pyx_t_16 < 0)) __pyx_t_6 = 0;
-                              } else if (unlikely(__pyx_t_16 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_6 = 0;
-                              if (unlikely(__pyx_t_6 != -1)) {
-                                __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                __PYX_ERR(0, 21, __pyx_L8_error)
-                              }
                               __pyx_v_dx = ((*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_15, __pyx_pybuffernd_staggered_y.diminfo[0].strides)) - (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_16, __pyx_pybuffernd_staggered_y.diminfo[0].strides)));
 
-                              /* "CHAPSim_post/_libs/integrate.pyx":22
+                              /* "CHAPSim_post/_libs/integrate.pyx":25
  * 
  *             dx = staggered_y[j+1] - staggered_y[j]
  *             ycc = 0.5*(staggered_y[j+1] + staggered_y[j])             # <<<<<<<<<<<<<<
@@ -2126,28 +2085,10 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pip
  *         ycc = 0.5*(staggered_y[i+1] + staggered_y[i])
  */
                               __pyx_t_16 = (__pyx_v_j + 1);
-                              __pyx_t_6 = -1;
-                              if (__pyx_t_16 < 0) {
-                                __pyx_t_16 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                if (unlikely(__pyx_t_16 < 0)) __pyx_t_6 = 0;
-                              } else if (unlikely(__pyx_t_16 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_6 = 0;
-                              if (unlikely(__pyx_t_6 != -1)) {
-                                __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                __PYX_ERR(0, 22, __pyx_L8_error)
-                              }
                               __pyx_t_15 = __pyx_v_j;
-                              __pyx_t_6 = -1;
-                              if (__pyx_t_15 < 0) {
-                                __pyx_t_15 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                if (unlikely(__pyx_t_15 < 0)) __pyx_t_6 = 0;
-                              } else if (unlikely(__pyx_t_15 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_6 = 0;
-                              if (unlikely(__pyx_t_6 != -1)) {
-                                __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                __PYX_ERR(0, 22, __pyx_L8_error)
-                              }
                               __pyx_v_ycc = (0.5 * ((*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_16, __pyx_pybuffernd_staggered_y.diminfo[0].strides)) + (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_15, __pyx_pybuffernd_staggered_y.diminfo[0].strides))));
 
-                              /* "CHAPSim_post/_libs/integrate.pyx":23
+                              /* "CHAPSim_post/_libs/integrate.pyx":26
  *             dx = staggered_y[j+1] - staggered_y[j]
  *             ycc = 0.5*(staggered_y[j+1] + staggered_y[j])
  *             int_array[i] += ycc*array[j]*dx             # <<<<<<<<<<<<<<
@@ -2155,29 +2096,11 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pip
  *         int_array[i] = (1./ycc)*int_array[i]
  */
                               __pyx_t_15 = __pyx_v_j;
-                              __pyx_t_6 = -1;
-                              if (__pyx_t_15 < 0) {
-                                __pyx_t_15 += __pyx_pybuffernd_array.diminfo[0].shape;
-                                if (unlikely(__pyx_t_15 < 0)) __pyx_t_6 = 0;
-                              } else if (unlikely(__pyx_t_15 >= __pyx_pybuffernd_array.diminfo[0].shape)) __pyx_t_6 = 0;
-                              if (unlikely(__pyx_t_6 != -1)) {
-                                __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                __PYX_ERR(0, 23, __pyx_L8_error)
-                              }
                               __pyx_t_16 = __pyx_v_i;
-                              __pyx_t_6 = -1;
-                              if (__pyx_t_16 < 0) {
-                                __pyx_t_16 += __pyx_pybuffernd_int_array.diminfo[0].shape;
-                                if (unlikely(__pyx_t_16 < 0)) __pyx_t_6 = 0;
-                              } else if (unlikely(__pyx_t_16 >= __pyx_pybuffernd_int_array.diminfo[0].shape)) __pyx_t_6 = 0;
-                              if (unlikely(__pyx_t_6 != -1)) {
-                                __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                __PYX_ERR(0, 23, __pyx_L8_error)
-                              }
                               *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_int_array.rcbuffer->pybuffer.buf, __pyx_t_16, __pyx_pybuffernd_int_array.diminfo[0].strides) += ((__pyx_v_ycc * (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_array.rcbuffer->pybuffer.buf, __pyx_t_15, __pyx_pybuffernd_array.diminfo[0].strides))) * __pyx_v_dx);
                             }
 
-                            /* "CHAPSim_post/_libs/integrate.pyx":24
+                            /* "CHAPSim_post/_libs/integrate.pyx":27
  *             ycc = 0.5*(staggered_y[j+1] + staggered_y[j])
  *             int_array[i] += ycc*array[j]*dx
  *         ycc = 0.5*(staggered_y[i+1] + staggered_y[i])             # <<<<<<<<<<<<<<
@@ -2185,142 +2108,22 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pip
  * 
  */
                             __pyx_t_15 = (__pyx_v_i + 1);
-                            __pyx_t_6 = -1;
-                            if (__pyx_t_15 < 0) {
-                              __pyx_t_15 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                              if (unlikely(__pyx_t_15 < 0)) __pyx_t_6 = 0;
-                            } else if (unlikely(__pyx_t_15 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_6 = 0;
-                            if (unlikely(__pyx_t_6 != -1)) {
-                              __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                              __PYX_ERR(0, 24, __pyx_L8_error)
-                            }
                             __pyx_t_16 = __pyx_v_i;
-                            __pyx_t_6 = -1;
-                            if (__pyx_t_16 < 0) {
-                              __pyx_t_16 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                              if (unlikely(__pyx_t_16 < 0)) __pyx_t_6 = 0;
-                            } else if (unlikely(__pyx_t_16 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_6 = 0;
-                            if (unlikely(__pyx_t_6 != -1)) {
-                              __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                              __PYX_ERR(0, 24, __pyx_L8_error)
-                            }
                             __pyx_v_ycc = (0.5 * ((*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_15, __pyx_pybuffernd_staggered_y.diminfo[0].strides)) + (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_16, __pyx_pybuffernd_staggered_y.diminfo[0].strides))));
 
-                            /* "CHAPSim_post/_libs/integrate.pyx":25
+                            /* "CHAPSim_post/_libs/integrate.pyx":28
  *             int_array[i] += ycc*array[j]*dx
  *         ycc = 0.5*(staggered_y[i+1] + staggered_y[i])
  *         int_array[i] = (1./ycc)*int_array[i]             # <<<<<<<<<<<<<<
  * 
  *     return int_array
  */
-                            if (unlikely(__pyx_v_ycc == 0)) {
-                              #ifdef WITH_THREAD
-                              PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                              #endif
-                              PyErr_SetString(PyExc_ZeroDivisionError, "float division");
-                              #ifdef WITH_THREAD
-                              __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                              #endif
-                              __PYX_ERR(0, 25, __pyx_L8_error)
-                            }
                             __pyx_t_16 = __pyx_v_i;
-                            __pyx_t_6 = -1;
-                            if (__pyx_t_16 < 0) {
-                              __pyx_t_16 += __pyx_pybuffernd_int_array.diminfo[0].shape;
-                              if (unlikely(__pyx_t_16 < 0)) __pyx_t_6 = 0;
-                            } else if (unlikely(__pyx_t_16 >= __pyx_pybuffernd_int_array.diminfo[0].shape)) __pyx_t_6 = 0;
-                            if (unlikely(__pyx_t_6 != -1)) {
-                              __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                              __PYX_ERR(0, 25, __pyx_L8_error)
-                            }
                             __pyx_t_15 = __pyx_v_i;
-                            __pyx_t_6 = -1;
-                            if (__pyx_t_15 < 0) {
-                              __pyx_t_15 += __pyx_pybuffernd_int_array.diminfo[0].shape;
-                              if (unlikely(__pyx_t_15 < 0)) __pyx_t_6 = 0;
-                            } else if (unlikely(__pyx_t_15 >= __pyx_pybuffernd_int_array.diminfo[0].shape)) __pyx_t_6 = 0;
-                            if (unlikely(__pyx_t_6 != -1)) {
-                              __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                              __PYX_ERR(0, 25, __pyx_L8_error)
-                            }
                             *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_int_array.rcbuffer->pybuffer.buf, __pyx_t_15, __pyx_pybuffernd_int_array.diminfo[0].strides) = ((1. / __pyx_v_ycc) * (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_int_array.rcbuffer->pybuffer.buf, __pyx_t_16, __pyx_pybuffernd_int_array.diminfo[0].strides)));
-                            goto __pyx_L13;
-                            __pyx_L8_error:;
-                            {
-                                #ifdef WITH_THREAD
-                                PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                #endif
-                                #ifdef _OPENMP
-                                #pragma omp flush(__pyx_parallel_exc_type)
-                                #endif /* _OPENMP */
-                                if (!__pyx_parallel_exc_type) {
-                                  __Pyx_ErrFetchWithState(&__pyx_parallel_exc_type, &__pyx_parallel_exc_value, &__pyx_parallel_exc_tb);
-                                  __pyx_parallel_filename = __pyx_filename; __pyx_parallel_lineno = __pyx_lineno; __pyx_parallel_clineno = __pyx_clineno;
-                                  __Pyx_GOTREF(__pyx_parallel_exc_type);
-                                }
-                                #ifdef WITH_THREAD
-                                __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                #endif
-                            }
-                            __pyx_parallel_why = 4;
-                            goto __pyx_L12;
-                            __pyx_L12:;
-                            #ifdef _OPENMP
-                            #pragma omp critical(__pyx_parallel_lastprivates0)
-                            #endif /* _OPENMP */
-                            {
-                                __pyx_parallel_temp0 = __pyx_v_dx;
-                                __pyx_parallel_temp1 = __pyx_v_i;
-                                __pyx_parallel_temp2 = __pyx_v_j;
-                                __pyx_parallel_temp3 = __pyx_v_ycc;
-                            }
-                            __pyx_L13:;
-                            #ifdef _OPENMP
-                            #pragma omp flush(__pyx_parallel_why)
-                            #endif /* _OPENMP */
                         }
                     }
-                    #ifdef _OPENMP
-                    Py_END_ALLOW_THREADS
-                    #else
-{
-#ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    #endif /* _OPENMP */
-                    /* Clean up any temporaries */
-                    #ifdef WITH_THREAD
-                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                    #endif
-                    #ifndef _OPENMP
-}
-#endif /* _OPENMP */
                 }
-            }
-            if (__pyx_parallel_exc_type) {
-              /* This may have been overridden by a continue, break or return in another thread. Prefer the error. */
-              __pyx_parallel_why = 4;
-            }
-            if (__pyx_parallel_why) {
-              __pyx_v_dx = __pyx_parallel_temp0;
-              __pyx_v_i = __pyx_parallel_temp1;
-              __pyx_v_j = __pyx_parallel_temp2;
-              __pyx_v_ycc = __pyx_parallel_temp3;
-              switch (__pyx_parallel_why) {
-                    case 4:
-                {
-                    #ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    __Pyx_GIVEREF(__pyx_parallel_exc_type);
-                    __Pyx_ErrRestoreWithState(__pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb);
-                    __pyx_filename = __pyx_parallel_filename; __pyx_lineno = __pyx_parallel_lineno; __pyx_clineno = __pyx_parallel_clineno;
-                    #ifdef WITH_THREAD
-                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                    #endif
-                }
-                goto __pyx_L4_error;
-              }
             }
         }
         #if ((defined(__APPLE__) || defined(__OSX__)) && (defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && (__GNUC_MINOR__ > 95)))))
@@ -2331,7 +2134,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pip
         #endif
       }
 
-      /* "CHAPSim_post/_libs/integrate.pyx":18
+      /* "CHAPSim_post/_libs/integrate.pyx":21
  *     cdef Py_ssize_t i, j
  *     cdef double dx, ycc
  *     for i in prange(size,nogil=True,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -2346,32 +2149,25 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pip
           #endif
           goto __pyx_L5;
         }
-        __pyx_L4_error: {
-          #ifdef WITH_THREAD
-          __Pyx_FastGIL_Forget();
-          Py_BLOCK_THREADS
-          #endif
-          goto __pyx_L1_error;
-        }
         __pyx_L5:;
       }
   }
 
-  /* "CHAPSim_post/_libs/integrate.pyx":27
+  /* "CHAPSim_post/_libs/integrate.pyx":30
  *         int_array[i] = (1./ycc)*int_array[i]
  * 
  *     return int_array             # <<<<<<<<<<<<<<
  * 
- * def cumulativeInt_y1D_channel(np.ndarray[np.float64_t,ndim=1] array,
+ * @cython.cdivision(True)
  */
   __Pyx_XDECREF(__pyx_r);
   __Pyx_INCREF(((PyObject *)__pyx_v_int_array));
   __pyx_r = ((PyObject *)__pyx_v_int_array);
   goto __pyx_L0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":8
- * import cython
- * 
+  /* "CHAPSim_post/_libs/integrate.pyx":11
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y1D_pipe(np.ndarray[np.float64_t,ndim=1] array,             # <<<<<<<<<<<<<<
  *                       np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
@@ -2404,9 +2200,9 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y1D_pip
   return __pyx_r;
 }
 
-/* "CHAPSim_post/_libs/integrate.pyx":29
- *     return int_array
- * 
+/* "CHAPSim_post/_libs/integrate.pyx":35
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y1D_channel(np.ndarray[np.float64_t,ndim=1] array,             # <<<<<<<<<<<<<<
  *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  *     cdef Py_ssize_t size = array.size
@@ -2447,11 +2243,11 @@ static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_3cumulativeInt_y1D_ch
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_staggered_y)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y1D_channel", 1, 2, 2, 1); __PYX_ERR(0, 29, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y1D_channel", 1, 2, 2, 1); __PYX_ERR(0, 35, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "cumulativeInt_y1D_channel") < 0)) __PYX_ERR(0, 29, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "cumulativeInt_y1D_channel") < 0)) __PYX_ERR(0, 35, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -2464,14 +2260,14 @@ static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_3cumulativeInt_y1D_ch
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("cumulativeInt_y1D_channel", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 29, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("cumulativeInt_y1D_channel", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 35, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("CHAPSim_post._libs.integrate.cumulativeInt_y1D_channel", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_array), __pyx_ptype_5numpy_ndarray, 1, "array", 0))) __PYX_ERR(0, 29, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_staggered_y), __pyx_ptype_5numpy_ndarray, 1, "staggered_y", 0))) __PYX_ERR(0, 30, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_array), __pyx_ptype_5numpy_ndarray, 1, "array", 0))) __PYX_ERR(0, 35, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_staggered_y), __pyx_ptype_5numpy_ndarray, 1, "staggered_y", 0))) __PYX_ERR(0, 36, __pyx_L1_error)
   __pyx_r = __pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_channel(__pyx_self, __pyx_v_array, __pyx_v_staggered_y);
 
   /* function exit code */
@@ -2533,47 +2329,47 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
   __pyx_pybuffernd_staggered_y.rcbuffer = &__pyx_pybuffer_staggered_y;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 29, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 35, __pyx_L1_error)
   }
   __pyx_pybuffernd_array.diminfo[0].strides = __pyx_pybuffernd_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_array.diminfo[0].shape = __pyx_pybuffernd_array.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_staggered_y.rcbuffer->pybuffer, (PyObject*)__pyx_v_staggered_y, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 29, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_staggered_y.rcbuffer->pybuffer, (PyObject*)__pyx_v_staggered_y, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 35, __pyx_L1_error)
   }
   __pyx_pybuffernd_staggered_y.diminfo[0].strides = __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_staggered_y.diminfo[0].shape = __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.shape[0];
 
-  /* "CHAPSim_post/_libs/integrate.pyx":31
+  /* "CHAPSim_post/_libs/integrate.pyx":37
  * def cumulativeInt_y1D_channel(np.ndarray[np.float64_t,ndim=1] array,
  *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  *     cdef Py_ssize_t size = array.size             # <<<<<<<<<<<<<<
  *     cdef Py_ssize_t mid = size // 2
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_array), __pyx_n_s_size); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 31, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_array), __pyx_n_s_size); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 37, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyIndex_AsSsize_t(__pyx_t_1); if (unlikely((__pyx_t_2 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 31, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyIndex_AsSsize_t(__pyx_t_1); if (unlikely((__pyx_t_2 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 37, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_size = __pyx_t_2;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":32
+  /* "CHAPSim_post/_libs/integrate.pyx":38
  *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  *     cdef Py_ssize_t size = array.size
  *     cdef Py_ssize_t mid = size // 2             # <<<<<<<<<<<<<<
  * 
  *     cdef np.ndarray[np.float64_t,ndim=1] int_array
  */
-  __pyx_v_mid = __Pyx_div_Py_ssize_t(__pyx_v_size, 2);
+  __pyx_v_mid = (__pyx_v_size / 2);
 
-  /* "CHAPSim_post/_libs/integrate.pyx":35
+  /* "CHAPSim_post/_libs/integrate.pyx":41
  * 
  *     cdef np.ndarray[np.float64_t,ndim=1] int_array
  *     int_array = np.zeros_like(array)             # <<<<<<<<<<<<<<
  * 
  *     cdef Py_ssize_t i, j
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 41, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_zeros_like); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_zeros_like); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 41, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_t_3 = NULL;
@@ -2588,10 +2384,10 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
   }
   __pyx_t_1 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_3, ((PyObject *)__pyx_v_array)) : __Pyx_PyObject_CallOneArg(__pyx_t_4, ((PyObject *)__pyx_v_array));
   __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 35, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 41, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 35, __pyx_L1_error)
+  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 41, __pyx_L1_error)
   __pyx_t_5 = ((PyArrayObject *)__pyx_t_1);
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
@@ -2608,13 +2404,13 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
       __pyx_t_7 = __pyx_t_8 = __pyx_t_9 = 0;
     }
     __pyx_pybuffernd_int_array.diminfo[0].strides = __pyx_pybuffernd_int_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_int_array.diminfo[0].shape = __pyx_pybuffernd_int_array.rcbuffer->pybuffer.shape[0];
-    if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(0, 35, __pyx_L1_error)
+    if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(0, 41, __pyx_L1_error)
   }
   __pyx_t_5 = 0;
   __pyx_v_int_array = ((PyArrayObject *)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":40
+  /* "CHAPSim_post/_libs/integrate.pyx":46
  *     cdef double dx
  * 
  *     for i in prange(mid,size,nogil=True,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -2632,13 +2428,6 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
         __pyx_t_10 = __pyx_v_size;
         if ((1 == 0)) abort();
         {
-            double __pyx_parallel_temp0 = ((double)__PYX_NAN());
-            Py_ssize_t __pyx_parallel_temp1 = ((Py_ssize_t)0xbad0bad0);
-            Py_ssize_t __pyx_parallel_temp2 = ((Py_ssize_t)0xbad0bad0);
-            const char *__pyx_parallel_filename = NULL; int __pyx_parallel_lineno = 0, __pyx_parallel_clineno = 0;
-            PyObject *__pyx_parallel_exc_type = NULL, *__pyx_parallel_exc_value = NULL, *__pyx_parallel_exc_tb = NULL;
-            int __pyx_parallel_why;
-            __pyx_parallel_why = 0;
             #if ((defined(__APPLE__) || defined(__OSX__)) && (defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && (__GNUC_MINOR__ > 95)))))
                 #undef likely
                 #undef unlikely
@@ -2649,27 +2438,20 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
             if (__pyx_t_12 > 0)
             {
                 #ifdef _OPENMP
-                #pragma omp parallel private(__pyx_t_13, __pyx_t_14, __pyx_t_15, __pyx_t_16, __pyx_t_17, __pyx_t_6) private(__pyx_filename, __pyx_lineno, __pyx_clineno) shared(__pyx_parallel_why, __pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb)
+                #pragma omp parallel private(__pyx_t_13, __pyx_t_14, __pyx_t_15, __pyx_t_16, __pyx_t_17)
                 #endif /* _OPENMP */
                 {
-                    #ifdef _OPENMP
-                    #ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    Py_BEGIN_ALLOW_THREADS
-                    #endif /* _OPENMP */
                     #ifdef _OPENMP
                     #pragma omp for lastprivate(__pyx_v_dx) firstprivate(__pyx_v_i) lastprivate(__pyx_v_i) lastprivate(__pyx_v_j) schedule(dynamic)
                     #endif /* _OPENMP */
                     for (__pyx_t_11 = 0; __pyx_t_11 < __pyx_t_12; __pyx_t_11++){
-                        if (__pyx_parallel_why < 2)
                         {
                             __pyx_v_i = (Py_ssize_t)(__pyx_t_2 + 1 * __pyx_t_11);
                             /* Initialize private variables to invalid values */
                             __pyx_v_dx = ((double)__PYX_NAN());
                             __pyx_v_j = ((Py_ssize_t)0xbad0bad0);
 
-                            /* "CHAPSim_post/_libs/integrate.pyx":41
+                            /* "CHAPSim_post/_libs/integrate.pyx":47
  * 
  *     for i in prange(mid,size,nogil=True,schedule='dynamic'):
  *         for j in range(mid,i+1):             # <<<<<<<<<<<<<<
@@ -2681,7 +2463,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
                             for (__pyx_t_15 = __pyx_v_mid; __pyx_t_15 < __pyx_t_14; __pyx_t_15+=1) {
                               __pyx_v_j = __pyx_t_15;
 
-                              /* "CHAPSim_post/_libs/integrate.pyx":43
+                              /* "CHAPSim_post/_libs/integrate.pyx":49
  *         for j in range(mid,i+1):
  * 
  *             dx = staggered_y[j+1] - staggered_y[j]             # <<<<<<<<<<<<<<
@@ -2689,28 +2471,10 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
  * 
  */
                               __pyx_t_16 = (__pyx_v_j + 1);
-                              __pyx_t_6 = -1;
-                              if (__pyx_t_16 < 0) {
-                                __pyx_t_16 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                if (unlikely(__pyx_t_16 < 0)) __pyx_t_6 = 0;
-                              } else if (unlikely(__pyx_t_16 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_6 = 0;
-                              if (unlikely(__pyx_t_6 != -1)) {
-                                __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                __PYX_ERR(0, 43, __pyx_L8_error)
-                              }
                               __pyx_t_17 = __pyx_v_j;
-                              __pyx_t_6 = -1;
-                              if (__pyx_t_17 < 0) {
-                                __pyx_t_17 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                if (unlikely(__pyx_t_17 < 0)) __pyx_t_6 = 0;
-                              } else if (unlikely(__pyx_t_17 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_6 = 0;
-                              if (unlikely(__pyx_t_6 != -1)) {
-                                __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                __PYX_ERR(0, 43, __pyx_L8_error)
-                              }
                               __pyx_v_dx = ((*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_16, __pyx_pybuffernd_staggered_y.diminfo[0].strides)) - (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_17, __pyx_pybuffernd_staggered_y.diminfo[0].strides)));
 
-                              /* "CHAPSim_post/_libs/integrate.pyx":44
+                              /* "CHAPSim_post/_libs/integrate.pyx":50
  * 
  *             dx = staggered_y[j+1] - staggered_y[j]
  *             int_array[i] += array[j]*dx             # <<<<<<<<<<<<<<
@@ -2718,102 +2482,12 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
  *     for i in prange(mid,0,-1,nogil=True,schedule='dynamic'):
  */
                               __pyx_t_17 = __pyx_v_j;
-                              __pyx_t_6 = -1;
-                              if (__pyx_t_17 < 0) {
-                                __pyx_t_17 += __pyx_pybuffernd_array.diminfo[0].shape;
-                                if (unlikely(__pyx_t_17 < 0)) __pyx_t_6 = 0;
-                              } else if (unlikely(__pyx_t_17 >= __pyx_pybuffernd_array.diminfo[0].shape)) __pyx_t_6 = 0;
-                              if (unlikely(__pyx_t_6 != -1)) {
-                                __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                __PYX_ERR(0, 44, __pyx_L8_error)
-                              }
                               __pyx_t_16 = __pyx_v_i;
-                              __pyx_t_6 = -1;
-                              if (__pyx_t_16 < 0) {
-                                __pyx_t_16 += __pyx_pybuffernd_int_array.diminfo[0].shape;
-                                if (unlikely(__pyx_t_16 < 0)) __pyx_t_6 = 0;
-                              } else if (unlikely(__pyx_t_16 >= __pyx_pybuffernd_int_array.diminfo[0].shape)) __pyx_t_6 = 0;
-                              if (unlikely(__pyx_t_6 != -1)) {
-                                __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                __PYX_ERR(0, 44, __pyx_L8_error)
-                              }
                               *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_int_array.rcbuffer->pybuffer.buf, __pyx_t_16, __pyx_pybuffernd_int_array.diminfo[0].strides) += ((*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_array.rcbuffer->pybuffer.buf, __pyx_t_17, __pyx_pybuffernd_array.diminfo[0].strides)) * __pyx_v_dx);
                             }
-                            goto __pyx_L13;
-                            __pyx_L8_error:;
-                            {
-                                #ifdef WITH_THREAD
-                                PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                #endif
-                                #ifdef _OPENMP
-                                #pragma omp flush(__pyx_parallel_exc_type)
-                                #endif /* _OPENMP */
-                                if (!__pyx_parallel_exc_type) {
-                                  __Pyx_ErrFetchWithState(&__pyx_parallel_exc_type, &__pyx_parallel_exc_value, &__pyx_parallel_exc_tb);
-                                  __pyx_parallel_filename = __pyx_filename; __pyx_parallel_lineno = __pyx_lineno; __pyx_parallel_clineno = __pyx_clineno;
-                                  __Pyx_GOTREF(__pyx_parallel_exc_type);
-                                }
-                                #ifdef WITH_THREAD
-                                __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                #endif
-                            }
-                            __pyx_parallel_why = 4;
-                            goto __pyx_L12;
-                            __pyx_L12:;
-                            #ifdef _OPENMP
-                            #pragma omp critical(__pyx_parallel_lastprivates1)
-                            #endif /* _OPENMP */
-                            {
-                                __pyx_parallel_temp0 = __pyx_v_dx;
-                                __pyx_parallel_temp1 = __pyx_v_i;
-                                __pyx_parallel_temp2 = __pyx_v_j;
-                            }
-                            __pyx_L13:;
-                            #ifdef _OPENMP
-                            #pragma omp flush(__pyx_parallel_why)
-                            #endif /* _OPENMP */
                         }
                     }
-                    #ifdef _OPENMP
-                    Py_END_ALLOW_THREADS
-                    #else
-{
-#ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    #endif /* _OPENMP */
-                    /* Clean up any temporaries */
-                    #ifdef WITH_THREAD
-                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                    #endif
-                    #ifndef _OPENMP
-}
-#endif /* _OPENMP */
                 }
-            }
-            if (__pyx_parallel_exc_type) {
-              /* This may have been overridden by a continue, break or return in another thread. Prefer the error. */
-              __pyx_parallel_why = 4;
-            }
-            if (__pyx_parallel_why) {
-              __pyx_v_dx = __pyx_parallel_temp0;
-              __pyx_v_i = __pyx_parallel_temp1;
-              __pyx_v_j = __pyx_parallel_temp2;
-              switch (__pyx_parallel_why) {
-                    case 4:
-                {
-                    #ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    __Pyx_GIVEREF(__pyx_parallel_exc_type);
-                    __Pyx_ErrRestoreWithState(__pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb);
-                    __pyx_filename = __pyx_parallel_filename; __pyx_lineno = __pyx_parallel_lineno; __pyx_clineno = __pyx_parallel_clineno;
-                    #ifdef WITH_THREAD
-                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                    #endif
-                }
-                goto __pyx_L4_error;
-              }
             }
         }
         #if ((defined(__APPLE__) || defined(__OSX__)) && (defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && (__GNUC_MINOR__ > 95)))))
@@ -2824,7 +2498,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
         #endif
       }
 
-      /* "CHAPSim_post/_libs/integrate.pyx":40
+      /* "CHAPSim_post/_libs/integrate.pyx":46
  *     cdef double dx
  * 
  *     for i in prange(mid,size,nogil=True,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -2839,18 +2513,11 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
           #endif
           goto __pyx_L5;
         }
-        __pyx_L4_error: {
-          #ifdef WITH_THREAD
-          __Pyx_FastGIL_Forget();
-          Py_BLOCK_THREADS
-          #endif
-          goto __pyx_L1_error;
-        }
         __pyx_L5:;
       }
   }
 
-  /* "CHAPSim_post/_libs/integrate.pyx":46
+  /* "CHAPSim_post/_libs/integrate.pyx":52
  *             int_array[i] += array[j]*dx
  * 
  *     for i in prange(mid,0,-1,nogil=True,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -2867,13 +2534,6 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
         __pyx_t_12 = __pyx_v_mid;
         if ((-1L == 0)) abort();
         {
-            double __pyx_parallel_temp0 = ((double)__PYX_NAN());
-            Py_ssize_t __pyx_parallel_temp1 = ((Py_ssize_t)0xbad0bad0);
-            Py_ssize_t __pyx_parallel_temp2 = ((Py_ssize_t)0xbad0bad0);
-            const char *__pyx_parallel_filename = NULL; int __pyx_parallel_lineno = 0, __pyx_parallel_clineno = 0;
-            PyObject *__pyx_parallel_exc_type = NULL, *__pyx_parallel_exc_value = NULL, *__pyx_parallel_exc_tb = NULL;
-            int __pyx_parallel_why;
-            __pyx_parallel_why = 0;
             #if ((defined(__APPLE__) || defined(__OSX__)) && (defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && (__GNUC_MINOR__ > 95)))))
                 #undef likely
                 #undef unlikely
@@ -2884,27 +2544,20 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
             if (__pyx_t_10 > 0)
             {
                 #ifdef _OPENMP
-                #pragma omp parallel private(__pyx_t_13, __pyx_t_14, __pyx_t_16, __pyx_t_17, __pyx_t_2, __pyx_t_6) private(__pyx_filename, __pyx_lineno, __pyx_clineno) shared(__pyx_parallel_why, __pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb)
+                #pragma omp parallel private(__pyx_t_13, __pyx_t_14, __pyx_t_16, __pyx_t_17, __pyx_t_2)
                 #endif /* _OPENMP */
                 {
-                    #ifdef _OPENMP
-                    #ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    Py_BEGIN_ALLOW_THREADS
-                    #endif /* _OPENMP */
                     #ifdef _OPENMP
                     #pragma omp for lastprivate(__pyx_v_dx) firstprivate(__pyx_v_i) lastprivate(__pyx_v_i) lastprivate(__pyx_v_j) schedule(dynamic)
                     #endif /* _OPENMP */
                     for (__pyx_t_11 = 0; __pyx_t_11 < __pyx_t_10; __pyx_t_11++){
-                        if (__pyx_parallel_why < 2)
                         {
                             __pyx_v_i = (Py_ssize_t)(__pyx_t_12 + -1L * __pyx_t_11);
                             /* Initialize private variables to invalid values */
                             __pyx_v_dx = ((double)__PYX_NAN());
                             __pyx_v_j = ((Py_ssize_t)0xbad0bad0);
 
-                            /* "CHAPSim_post/_libs/integrate.pyx":47
+                            /* "CHAPSim_post/_libs/integrate.pyx":53
  * 
  *     for i in prange(mid,0,-1,nogil=True,schedule='dynamic'):
  *         for j in range(mid,i+1,-1):             # <<<<<<<<<<<<<<
@@ -2916,7 +2569,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
                             for (__pyx_t_14 = __pyx_v_mid; __pyx_t_14 > __pyx_t_13; __pyx_t_14-=1) {
                               __pyx_v_j = __pyx_t_14;
 
-                              /* "CHAPSim_post/_libs/integrate.pyx":49
+                              /* "CHAPSim_post/_libs/integrate.pyx":55
  *         for j in range(mid,i+1,-1):
  * 
  *             dx = staggered_y[j-1] - staggered_y[j]             # <<<<<<<<<<<<<<
@@ -2924,28 +2577,10 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
  * 
  */
                               __pyx_t_17 = (__pyx_v_j - 1);
-                              __pyx_t_6 = -1;
-                              if (__pyx_t_17 < 0) {
-                                __pyx_t_17 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                if (unlikely(__pyx_t_17 < 0)) __pyx_t_6 = 0;
-                              } else if (unlikely(__pyx_t_17 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_6 = 0;
-                              if (unlikely(__pyx_t_6 != -1)) {
-                                __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                __PYX_ERR(0, 49, __pyx_L19_error)
-                              }
                               __pyx_t_16 = __pyx_v_j;
-                              __pyx_t_6 = -1;
-                              if (__pyx_t_16 < 0) {
-                                __pyx_t_16 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                if (unlikely(__pyx_t_16 < 0)) __pyx_t_6 = 0;
-                              } else if (unlikely(__pyx_t_16 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_6 = 0;
-                              if (unlikely(__pyx_t_6 != -1)) {
-                                __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                __PYX_ERR(0, 49, __pyx_L19_error)
-                              }
                               __pyx_v_dx = ((*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_17, __pyx_pybuffernd_staggered_y.diminfo[0].strides)) - (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_16, __pyx_pybuffernd_staggered_y.diminfo[0].strides)));
 
-                              /* "CHAPSim_post/_libs/integrate.pyx":50
+                              /* "CHAPSim_post/_libs/integrate.pyx":56
  * 
  *             dx = staggered_y[j-1] - staggered_y[j]
  *             int_array[i] += array[j]*dx             # <<<<<<<<<<<<<<
@@ -2953,102 +2588,12 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
  *     return int_array
  */
                               __pyx_t_16 = __pyx_v_j;
-                              __pyx_t_6 = -1;
-                              if (__pyx_t_16 < 0) {
-                                __pyx_t_16 += __pyx_pybuffernd_array.diminfo[0].shape;
-                                if (unlikely(__pyx_t_16 < 0)) __pyx_t_6 = 0;
-                              } else if (unlikely(__pyx_t_16 >= __pyx_pybuffernd_array.diminfo[0].shape)) __pyx_t_6 = 0;
-                              if (unlikely(__pyx_t_6 != -1)) {
-                                __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                __PYX_ERR(0, 50, __pyx_L19_error)
-                              }
                               __pyx_t_17 = __pyx_v_i;
-                              __pyx_t_6 = -1;
-                              if (__pyx_t_17 < 0) {
-                                __pyx_t_17 += __pyx_pybuffernd_int_array.diminfo[0].shape;
-                                if (unlikely(__pyx_t_17 < 0)) __pyx_t_6 = 0;
-                              } else if (unlikely(__pyx_t_17 >= __pyx_pybuffernd_int_array.diminfo[0].shape)) __pyx_t_6 = 0;
-                              if (unlikely(__pyx_t_6 != -1)) {
-                                __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                __PYX_ERR(0, 50, __pyx_L19_error)
-                              }
                               *__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_int_array.rcbuffer->pybuffer.buf, __pyx_t_17, __pyx_pybuffernd_int_array.diminfo[0].strides) += ((*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_array.rcbuffer->pybuffer.buf, __pyx_t_16, __pyx_pybuffernd_array.diminfo[0].strides)) * __pyx_v_dx);
                             }
-                            goto __pyx_L24;
-                            __pyx_L19_error:;
-                            {
-                                #ifdef WITH_THREAD
-                                PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                #endif
-                                #ifdef _OPENMP
-                                #pragma omp flush(__pyx_parallel_exc_type)
-                                #endif /* _OPENMP */
-                                if (!__pyx_parallel_exc_type) {
-                                  __Pyx_ErrFetchWithState(&__pyx_parallel_exc_type, &__pyx_parallel_exc_value, &__pyx_parallel_exc_tb);
-                                  __pyx_parallel_filename = __pyx_filename; __pyx_parallel_lineno = __pyx_lineno; __pyx_parallel_clineno = __pyx_clineno;
-                                  __Pyx_GOTREF(__pyx_parallel_exc_type);
-                                }
-                                #ifdef WITH_THREAD
-                                __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                #endif
-                            }
-                            __pyx_parallel_why = 4;
-                            goto __pyx_L23;
-                            __pyx_L23:;
-                            #ifdef _OPENMP
-                            #pragma omp critical(__pyx_parallel_lastprivates2)
-                            #endif /* _OPENMP */
-                            {
-                                __pyx_parallel_temp0 = __pyx_v_dx;
-                                __pyx_parallel_temp1 = __pyx_v_i;
-                                __pyx_parallel_temp2 = __pyx_v_j;
-                            }
-                            __pyx_L24:;
-                            #ifdef _OPENMP
-                            #pragma omp flush(__pyx_parallel_why)
-                            #endif /* _OPENMP */
                         }
                     }
-                    #ifdef _OPENMP
-                    Py_END_ALLOW_THREADS
-                    #else
-{
-#ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    #endif /* _OPENMP */
-                    /* Clean up any temporaries */
-                    #ifdef WITH_THREAD
-                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                    #endif
-                    #ifndef _OPENMP
-}
-#endif /* _OPENMP */
                 }
-            }
-            if (__pyx_parallel_exc_type) {
-              /* This may have been overridden by a continue, break or return in another thread. Prefer the error. */
-              __pyx_parallel_why = 4;
-            }
-            if (__pyx_parallel_why) {
-              __pyx_v_dx = __pyx_parallel_temp0;
-              __pyx_v_i = __pyx_parallel_temp1;
-              __pyx_v_j = __pyx_parallel_temp2;
-              switch (__pyx_parallel_why) {
-                    case 4:
-                {
-                    #ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    __Pyx_GIVEREF(__pyx_parallel_exc_type);
-                    __Pyx_ErrRestoreWithState(__pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb);
-                    __pyx_filename = __pyx_parallel_filename; __pyx_lineno = __pyx_parallel_lineno; __pyx_clineno = __pyx_parallel_clineno;
-                    #ifdef WITH_THREAD
-                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                    #endif
-                }
-                goto __pyx_L15_error;
-              }
             }
         }
         #if ((defined(__APPLE__) || defined(__OSX__)) && (defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && (__GNUC_MINOR__ > 95)))))
@@ -3059,7 +2604,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
         #endif
       }
 
-      /* "CHAPSim_post/_libs/integrate.pyx":46
+      /* "CHAPSim_post/_libs/integrate.pyx":52
  *             int_array[i] += array[j]*dx
  * 
  *     for i in prange(mid,0,-1,nogil=True,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -3074,18 +2619,11 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
           #endif
           goto __pyx_L16;
         }
-        __pyx_L15_error: {
-          #ifdef WITH_THREAD
-          __Pyx_FastGIL_Forget();
-          Py_BLOCK_THREADS
-          #endif
-          goto __pyx_L1_error;
-        }
         __pyx_L16:;
       }
   }
 
-  /* "CHAPSim_post/_libs/integrate.pyx":52
+  /* "CHAPSim_post/_libs/integrate.pyx":58
  *             int_array[i] += array[j]*dx
  * 
  *     return int_array             # <<<<<<<<<<<<<<
@@ -3097,9 +2635,9 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
   __pyx_r = ((PyObject *)__pyx_v_int_array);
   goto __pyx_L0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":29
- *     return int_array
- * 
+  /* "CHAPSim_post/_libs/integrate.pyx":35
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y1D_channel(np.ndarray[np.float64_t,ndim=1] array,             # <<<<<<<<<<<<<<
  *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  *     cdef Py_ssize_t size = array.size
@@ -3132,9 +2670,9 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2cumulativeInt_y1D_ch
   return __pyx_r;
 }
 
-/* "CHAPSim_post/_libs/integrate.pyx":57
- * 
- * 
+/* "CHAPSim_post/_libs/integrate.pyx":65
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y1D(np.ndarray[np.float64_t,ndim=1] array,             # <<<<<<<<<<<<<<
  *                       np.ndarray[np.float64_t,ndim=1] staggered_y,
  *                       int channel):
@@ -3178,17 +2716,17 @@ static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_5cumulativeInt_y1D(Py
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_staggered_y)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y1D", 1, 3, 3, 1); __PYX_ERR(0, 57, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y1D", 1, 3, 3, 1); __PYX_ERR(0, 65, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_channel)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y1D", 1, 3, 3, 2); __PYX_ERR(0, 57, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y1D", 1, 3, 3, 2); __PYX_ERR(0, 65, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "cumulativeInt_y1D") < 0)) __PYX_ERR(0, 57, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "cumulativeInt_y1D") < 0)) __PYX_ERR(0, 65, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -3199,18 +2737,18 @@ static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_5cumulativeInt_y1D(Py
     }
     __pyx_v_array = ((PyArrayObject *)values[0]);
     __pyx_v_staggered_y = ((PyArrayObject *)values[1]);
-    __pyx_v_channel = __Pyx_PyInt_As_int(values[2]); if (unlikely((__pyx_v_channel == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 59, __pyx_L3_error)
+    __pyx_v_channel = __Pyx_PyInt_As_int(values[2]); if (unlikely((__pyx_v_channel == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 67, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("cumulativeInt_y1D", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 57, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("cumulativeInt_y1D", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 65, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("CHAPSim_post._libs.integrate.cumulativeInt_y1D", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_array), __pyx_ptype_5numpy_ndarray, 1, "array", 0))) __PYX_ERR(0, 57, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_staggered_y), __pyx_ptype_5numpy_ndarray, 1, "staggered_y", 0))) __PYX_ERR(0, 58, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_array), __pyx_ptype_5numpy_ndarray, 1, "array", 0))) __PYX_ERR(0, 65, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_staggered_y), __pyx_ptype_5numpy_ndarray, 1, "staggered_y", 0))) __PYX_ERR(0, 66, __pyx_L1_error)
   __pyx_r = __pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(__pyx_self, __pyx_v_array, __pyx_v_staggered_y, __pyx_v_channel);
 
   /* function exit code */
@@ -3250,37 +2788,37 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
   __pyx_pybuffernd_staggered_y.rcbuffer = &__pyx_pybuffer_staggered_y;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 57, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 65, __pyx_L1_error)
   }
   __pyx_pybuffernd_array.diminfo[0].strides = __pyx_pybuffernd_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_array.diminfo[0].shape = __pyx_pybuffernd_array.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_staggered_y.rcbuffer->pybuffer, (PyObject*)__pyx_v_staggered_y, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 57, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_staggered_y.rcbuffer->pybuffer, (PyObject*)__pyx_v_staggered_y, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 65, __pyx_L1_error)
   }
   __pyx_pybuffernd_staggered_y.diminfo[0].strides = __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_staggered_y.diminfo[0].shape = __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.shape[0];
 
-  /* "CHAPSim_post/_libs/integrate.pyx":61
+  /* "CHAPSim_post/_libs/integrate.pyx":69
  *                       int channel):
  * 
  *     if staggered_y.size != array.size + 1:             # <<<<<<<<<<<<<<
  *         msg = ("This integration method must be"
  *                 " called with the staggered data")
  */
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_staggered_y), __pyx_n_s_size); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 61, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_staggered_y), __pyx_n_s_size); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_array), __pyx_n_s_size); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 61, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_array), __pyx_n_s_size); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyInt_AddObjC(__pyx_t_2, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 61, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_AddObjC(__pyx_t_2, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = PyObject_RichCompare(__pyx_t_1, __pyx_t_3, Py_NE); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 61, __pyx_L1_error)
+  __pyx_t_2 = PyObject_RichCompare(__pyx_t_1, __pyx_t_3, Py_NE); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 61, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   if (unlikely(__pyx_t_4)) {
 
-    /* "CHAPSim_post/_libs/integrate.pyx":62
+    /* "CHAPSim_post/_libs/integrate.pyx":70
  * 
  *     if staggered_y.size != array.size + 1:
  *         msg = ("This integration method must be"             # <<<<<<<<<<<<<<
@@ -3290,20 +2828,20 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
     __Pyx_INCREF(__pyx_kp_u_This_integration_method_must_be);
     __pyx_v_msg = __pyx_kp_u_This_integration_method_must_be;
 
-    /* "CHAPSim_post/_libs/integrate.pyx":64
+    /* "CHAPSim_post/_libs/integrate.pyx":72
  *         msg = ("This integration method must be"
  *                 " called with the staggered data")
  *         raise RuntimeError(msg)             # <<<<<<<<<<<<<<
  * 
  *     if channel == 1:
  */
-    __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_builtin_RuntimeError, __pyx_v_msg); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 64, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_builtin_RuntimeError, __pyx_v_msg); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 72, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __PYX_ERR(0, 64, __pyx_L1_error)
+    __PYX_ERR(0, 72, __pyx_L1_error)
 
-    /* "CHAPSim_post/_libs/integrate.pyx":61
+    /* "CHAPSim_post/_libs/integrate.pyx":69
  *                       int channel):
  * 
  *     if staggered_y.size != array.size + 1:             # <<<<<<<<<<<<<<
@@ -3312,7 +2850,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
  */
   }
 
-  /* "CHAPSim_post/_libs/integrate.pyx":66
+  /* "CHAPSim_post/_libs/integrate.pyx":74
  *         raise RuntimeError(msg)
  * 
  *     if channel == 1:             # <<<<<<<<<<<<<<
@@ -3322,7 +2860,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
   __pyx_t_4 = ((__pyx_v_channel == 1) != 0);
   if (__pyx_t_4) {
 
-    /* "CHAPSim_post/_libs/integrate.pyx":67
+    /* "CHAPSim_post/_libs/integrate.pyx":75
  * 
  *     if channel == 1:
  *         return cumulativeInt_y1D_channel(array,staggered_y)             # <<<<<<<<<<<<<<
@@ -3330,7 +2868,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
  *         return cumulativeInt_y1D_pipe(array,staggered_y)
  */
     __Pyx_XDECREF(__pyx_r);
-    __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_cumulativeInt_y1D_channel); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 67, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_cumulativeInt_y1D_channel); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 75, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __pyx_t_1 = NULL;
     __pyx_t_5 = 0;
@@ -3347,7 +2885,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
     #if CYTHON_FAST_PYCALL
     if (PyFunction_Check(__pyx_t_3)) {
       PyObject *__pyx_temp[3] = {__pyx_t_1, ((PyObject *)__pyx_v_array), ((PyObject *)__pyx_v_staggered_y)};
-      __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_3, __pyx_temp+1-__pyx_t_5, 2+__pyx_t_5); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 67, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_3, __pyx_temp+1-__pyx_t_5, 2+__pyx_t_5); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 75, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
       __Pyx_GOTREF(__pyx_t_2);
     } else
@@ -3355,13 +2893,13 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
     #if CYTHON_FAST_PYCCALL
     if (__Pyx_PyFastCFunction_Check(__pyx_t_3)) {
       PyObject *__pyx_temp[3] = {__pyx_t_1, ((PyObject *)__pyx_v_array), ((PyObject *)__pyx_v_staggered_y)};
-      __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_3, __pyx_temp+1-__pyx_t_5, 2+__pyx_t_5); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 67, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_3, __pyx_temp+1-__pyx_t_5, 2+__pyx_t_5); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 75, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
       __Pyx_GOTREF(__pyx_t_2);
     } else
     #endif
     {
-      __pyx_t_6 = PyTuple_New(2+__pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 67, __pyx_L1_error)
+      __pyx_t_6 = PyTuple_New(2+__pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 75, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_6);
       if (__pyx_t_1) {
         __Pyx_GIVEREF(__pyx_t_1); PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_1); __pyx_t_1 = NULL;
@@ -3372,7 +2910,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
       __Pyx_INCREF(((PyObject *)__pyx_v_staggered_y));
       __Pyx_GIVEREF(((PyObject *)__pyx_v_staggered_y));
       PyTuple_SET_ITEM(__pyx_t_6, 1+__pyx_t_5, ((PyObject *)__pyx_v_staggered_y));
-      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_6, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 67, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_6, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 75, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     }
@@ -3381,7 +2919,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
     __pyx_t_2 = 0;
     goto __pyx_L0;
 
-    /* "CHAPSim_post/_libs/integrate.pyx":66
+    /* "CHAPSim_post/_libs/integrate.pyx":74
  *         raise RuntimeError(msg)
  * 
  *     if channel == 1:             # <<<<<<<<<<<<<<
@@ -3390,7 +2928,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
  */
   }
 
-  /* "CHAPSim_post/_libs/integrate.pyx":69
+  /* "CHAPSim_post/_libs/integrate.pyx":77
  *         return cumulativeInt_y1D_channel(array,staggered_y)
  *     else:
  *         return cumulativeInt_y1D_pipe(array,staggered_y)             # <<<<<<<<<<<<<<
@@ -3399,7 +2937,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
  */
   /*else*/ {
     __Pyx_XDECREF(__pyx_r);
-    __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_cumulativeInt_y1D_pipe); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 69, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_cumulativeInt_y1D_pipe); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 77, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __pyx_t_6 = NULL;
     __pyx_t_5 = 0;
@@ -3416,7 +2954,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
     #if CYTHON_FAST_PYCALL
     if (PyFunction_Check(__pyx_t_3)) {
       PyObject *__pyx_temp[3] = {__pyx_t_6, ((PyObject *)__pyx_v_array), ((PyObject *)__pyx_v_staggered_y)};
-      __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_3, __pyx_temp+1-__pyx_t_5, 2+__pyx_t_5); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 69, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_3, __pyx_temp+1-__pyx_t_5, 2+__pyx_t_5); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 77, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
       __Pyx_GOTREF(__pyx_t_2);
     } else
@@ -3424,13 +2962,13 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
     #if CYTHON_FAST_PYCCALL
     if (__Pyx_PyFastCFunction_Check(__pyx_t_3)) {
       PyObject *__pyx_temp[3] = {__pyx_t_6, ((PyObject *)__pyx_v_array), ((PyObject *)__pyx_v_staggered_y)};
-      __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_3, __pyx_temp+1-__pyx_t_5, 2+__pyx_t_5); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 69, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_3, __pyx_temp+1-__pyx_t_5, 2+__pyx_t_5); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 77, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
       __Pyx_GOTREF(__pyx_t_2);
     } else
     #endif
     {
-      __pyx_t_1 = PyTuple_New(2+__pyx_t_5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 69, __pyx_L1_error)
+      __pyx_t_1 = PyTuple_New(2+__pyx_t_5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 77, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (__pyx_t_6) {
         __Pyx_GIVEREF(__pyx_t_6); PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_6); __pyx_t_6 = NULL;
@@ -3441,7 +2979,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
       __Pyx_INCREF(((PyObject *)__pyx_v_staggered_y));
       __Pyx_GIVEREF(((PyObject *)__pyx_v_staggered_y));
       PyTuple_SET_ITEM(__pyx_t_1, 1+__pyx_t_5, ((PyObject *)__pyx_v_staggered_y));
-      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 69, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 77, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     }
@@ -3451,9 +2989,9 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
     goto __pyx_L0;
   }
 
-  /* "CHAPSim_post/_libs/integrate.pyx":57
- * 
- * 
+  /* "CHAPSim_post/_libs/integrate.pyx":65
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y1D(np.ndarray[np.float64_t,ndim=1] array,             # <<<<<<<<<<<<<<
  *                       np.ndarray[np.float64_t,ndim=1] staggered_y,
  *                       int channel):
@@ -3485,7 +3023,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_4cumulativeInt_y1D(CY
   return __pyx_r;
 }
 
-/* "CHAPSim_post/_libs/integrate.pyx":73
+/* "CHAPSim_post/_libs/integrate.pyx":81
  * 
  * 
  * cdef int _get_index(double* array_ptr,             # <<<<<<<<<<<<<<
@@ -3501,7 +3039,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_9integrate__get_index(CYTHON_UNUSED dou
   int __pyx_t_2;
   int __pyx_t_3;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":78
+  /* "CHAPSim_post/_libs/integrate.pyx":86
  *                     int dim ) nogil:
  * 
  *     cdef int return_index =0             # <<<<<<<<<<<<<<
@@ -3510,7 +3048,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_9integrate__get_index(CYTHON_UNUSED dou
  */
   __pyx_v_return_index = 0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":80
+  /* "CHAPSim_post/_libs/integrate.pyx":88
  *     cdef int return_index =0
  *     cdef int i
  *     for i in range(dim):             # <<<<<<<<<<<<<<
@@ -3522,7 +3060,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_9integrate__get_index(CYTHON_UNUSED dou
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "CHAPSim_post/_libs/integrate.pyx":81
+    /* "CHAPSim_post/_libs/integrate.pyx":89
  *     cdef int i
  *     for i in range(dim):
  *         return_index += stride_count[i]*index[i]             # <<<<<<<<<<<<<<
@@ -3532,17 +3070,17 @@ static int __pyx_f_12CHAPSim_post_5_libs_9integrate__get_index(CYTHON_UNUSED dou
     __pyx_v_return_index = (__pyx_v_return_index + ((__pyx_v_stride_count[__pyx_v_i]) * (__pyx_v_index[__pyx_v_i])));
   }
 
-  /* "CHAPSim_post/_libs/integrate.pyx":83
+  /* "CHAPSim_post/_libs/integrate.pyx":91
  *         return_index += stride_count[i]*index[i]
  * 
  *     return return_index             # <<<<<<<<<<<<<<
  * 
- * 
+ * @cython.cdivision(True)
  */
   __pyx_r = __pyx_v_return_index;
   goto __pyx_L0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":73
+  /* "CHAPSim_post/_libs/integrate.pyx":81
  * 
  * 
  * cdef int _get_index(double* array_ptr,             # <<<<<<<<<<<<<<
@@ -3555,15 +3093,86 @@ static int __pyx_f_12CHAPSim_post_5_libs_9integrate__get_index(CYTHON_UNUSED dou
   return __pyx_r;
 }
 
-/* "CHAPSim_post/_libs/integrate.pyx":86
- * 
- * 
- * cdef cumulativeInt_y2D_pipe(np.ndarray[np.float64_t,ndim=2] array,             # <<<<<<<<<<<<<<
+/* "CHAPSim_post/_libs/integrate.pyx":96
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
+ * def cumulativeInt_y2D_pipe(np.ndarray[np.float64_t,ndim=2] array,             # <<<<<<<<<<<<<<
  *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
  */
 
-static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe(PyArrayObject *__pyx_v_array, PyArrayObject *__pyx_v_staggered_y) {
+/* Python wrapper */
+static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_7cumulativeInt_y2D_pipe(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_12CHAPSim_post_5_libs_9integrate_7cumulativeInt_y2D_pipe = {"cumulativeInt_y2D_pipe", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_12CHAPSim_post_5_libs_9integrate_7cumulativeInt_y2D_pipe, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_7cumulativeInt_y2D_pipe(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyArrayObject *__pyx_v_array = 0;
+  PyArrayObject *__pyx_v_staggered_y = 0;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("cumulativeInt_y2D_pipe (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_array,&__pyx_n_s_staggered_y,0};
+    PyObject* values[2] = {0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        CYTHON_FALLTHROUGH;
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_array)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        CYTHON_FALLTHROUGH;
+        case  1:
+        if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_staggered_y)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y2D_pipe", 1, 2, 2, 1); __PYX_ERR(0, 96, __pyx_L3_error)
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "cumulativeInt_y2D_pipe") < 0)) __PYX_ERR(0, 96, __pyx_L3_error)
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+    }
+    __pyx_v_array = ((PyArrayObject *)values[0]);
+    __pyx_v_staggered_y = ((PyArrayObject *)values[1]);
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("cumulativeInt_y2D_pipe", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 96, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("CHAPSim_post._libs.integrate.cumulativeInt_y2D_pipe", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_array), __pyx_ptype_5numpy_ndarray, 1, "array", 0))) __PYX_ERR(0, 96, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_staggered_y), __pyx_ptype_5numpy_ndarray, 1, "staggered_y", 0))) __PYX_ERR(0, 97, __pyx_L1_error)
+  __pyx_r = __pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_pipe(__pyx_self, __pyx_v_array, __pyx_v_staggered_y);
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_pipe(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_array, PyArrayObject *__pyx_v_staggered_y) {
   CYTHON_UNUSED Py_ssize_t __pyx_v_size_y;
   CYTHON_UNUSED Py_ssize_t __pyx_v_size_x;
   PyArrayObject *__pyx_v_int_array = 0;
@@ -3619,16 +3228,16 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
   __pyx_pybuffernd_staggered_y.rcbuffer = &__pyx_pybuffer_staggered_y;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 86, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 96, __pyx_L1_error)
   }
   __pyx_pybuffernd_array.diminfo[0].strides = __pyx_pybuffernd_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_array.diminfo[0].shape = __pyx_pybuffernd_array.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_array.diminfo[1].strides = __pyx_pybuffernd_array.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_array.diminfo[1].shape = __pyx_pybuffernd_array.rcbuffer->pybuffer.shape[1];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_staggered_y.rcbuffer->pybuffer, (PyObject*)__pyx_v_staggered_y, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 86, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_staggered_y.rcbuffer->pybuffer, (PyObject*)__pyx_v_staggered_y, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 96, __pyx_L1_error)
   }
   __pyx_pybuffernd_staggered_y.diminfo[0].strides = __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_staggered_y.diminfo[0].shape = __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.shape[0];
 
-  /* "CHAPSim_post/_libs/integrate.pyx":89
+  /* "CHAPSim_post/_libs/integrate.pyx":99
  *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
  *     cdef Py_ssize_t size_y = array.shape[0]             # <<<<<<<<<<<<<<
@@ -3637,7 +3246,7 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
  */
   __pyx_v_size_y = (__pyx_v_array->dimensions[0]);
 
-  /* "CHAPSim_post/_libs/integrate.pyx":90
+  /* "CHAPSim_post/_libs/integrate.pyx":100
  * 
  *     cdef Py_ssize_t size_y = array.shape[0]
  *     cdef Py_ssize_t size_x = array.shape[1]             # <<<<<<<<<<<<<<
@@ -3646,16 +3255,16 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
  */
   __pyx_v_size_x = (__pyx_v_array->dimensions[1]);
 
-  /* "CHAPSim_post/_libs/integrate.pyx":93
+  /* "CHAPSim_post/_libs/integrate.pyx":103
  * 
  *     cdef np.ndarray[np.float64_t,ndim=2] int_array
  *     int_array = np.zeros_like(array)             # <<<<<<<<<<<<<<
  * 
  *     cdef Py_ssize_t i, k, j
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 93, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 103, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_zeros_like); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 93, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_zeros_like); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 103, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_t_2 = NULL;
@@ -3670,10 +3279,10 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
   }
   __pyx_t_1 = (__pyx_t_2) ? __Pyx_PyObject_Call2Args(__pyx_t_3, __pyx_t_2, ((PyObject *)__pyx_v_array)) : __Pyx_PyObject_CallOneArg(__pyx_t_3, ((PyObject *)__pyx_v_array));
   __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 93, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 103, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 93, __pyx_L1_error)
+  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 103, __pyx_L1_error)
   __pyx_t_4 = ((PyArrayObject *)__pyx_t_1);
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
@@ -3690,13 +3299,13 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
       __pyx_t_6 = __pyx_t_7 = __pyx_t_8 = 0;
     }
     __pyx_pybuffernd_int_array.diminfo[0].strides = __pyx_pybuffernd_int_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_int_array.diminfo[0].shape = __pyx_pybuffernd_int_array.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_int_array.diminfo[1].strides = __pyx_pybuffernd_int_array.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_int_array.diminfo[1].shape = __pyx_pybuffernd_int_array.rcbuffer->pybuffer.shape[1];
-    if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 93, __pyx_L1_error)
+    if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 103, __pyx_L1_error)
   }
   __pyx_t_4 = 0;
   __pyx_v_int_array = ((PyArrayObject *)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":98
+  /* "CHAPSim_post/_libs/integrate.pyx":108
  *     cdef double dx, ycc
  * 
  *     for i in prange(size_y,nogil=True,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -3713,15 +3322,6 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
         __pyx_t_9 = __pyx_v_size_y;
         if ((1 == 0)) abort();
         {
-            double __pyx_parallel_temp0 = ((double)__PYX_NAN());
-            Py_ssize_t __pyx_parallel_temp1 = ((Py_ssize_t)0xbad0bad0);
-            Py_ssize_t __pyx_parallel_temp2 = ((Py_ssize_t)0xbad0bad0);
-            Py_ssize_t __pyx_parallel_temp3 = ((Py_ssize_t)0xbad0bad0);
-            double __pyx_parallel_temp4 = ((double)__PYX_NAN());
-            const char *__pyx_parallel_filename = NULL; int __pyx_parallel_lineno = 0, __pyx_parallel_clineno = 0;
-            PyObject *__pyx_parallel_exc_type = NULL, *__pyx_parallel_exc_value = NULL, *__pyx_parallel_exc_tb = NULL;
-            int __pyx_parallel_why;
-            __pyx_parallel_why = 0;
             #if ((defined(__APPLE__) || defined(__OSX__)) && (defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && (__GNUC_MINOR__ > 95)))))
                 #undef likely
                 #undef unlikely
@@ -3732,20 +3332,13 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
             if (__pyx_t_11 > 0)
             {
                 #ifdef _OPENMP
-                #pragma omp parallel private(__pyx_t_12, __pyx_t_13, __pyx_t_14, __pyx_t_15, __pyx_t_16, __pyx_t_17, __pyx_t_18, __pyx_t_19, __pyx_t_20, __pyx_t_21, __pyx_t_5) private(__pyx_filename, __pyx_lineno, __pyx_clineno) shared(__pyx_parallel_why, __pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb)
+                #pragma omp parallel private(__pyx_t_12, __pyx_t_13, __pyx_t_14, __pyx_t_15, __pyx_t_16, __pyx_t_17, __pyx_t_18, __pyx_t_19, __pyx_t_20, __pyx_t_21)
                 #endif /* _OPENMP */
                 {
-                    #ifdef _OPENMP
-                    #ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    Py_BEGIN_ALLOW_THREADS
-                    #endif /* _OPENMP */
                     #ifdef _OPENMP
                     #pragma omp for lastprivate(__pyx_v_dx) firstprivate(__pyx_v_i) lastprivate(__pyx_v_i) lastprivate(__pyx_v_j) lastprivate(__pyx_v_k) lastprivate(__pyx_v_ycc) schedule(dynamic)
                     #endif /* _OPENMP */
                     for (__pyx_t_10 = 0; __pyx_t_10 < __pyx_t_11; __pyx_t_10++){
-                        if (__pyx_parallel_why < 2)
                         {
                             __pyx_v_i = (Py_ssize_t)(0 + 1 * __pyx_t_10);
                             /* Initialize private variables to invalid values */
@@ -3754,7 +3347,7 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
                             __pyx_v_k = ((Py_ssize_t)0xbad0bad0);
                             __pyx_v_ycc = ((double)__PYX_NAN());
 
-                            /* "CHAPSim_post/_libs/integrate.pyx":99
+                            /* "CHAPSim_post/_libs/integrate.pyx":109
  * 
  *     for i in prange(size_y,nogil=True,schedule='dynamic'):
  *         for k in prange(size_x,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -3764,14 +3357,6 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
                             __pyx_t_12 = __pyx_v_size_x;
                             if ((1 == 0)) abort();
                             {
-                                double __pyx_parallel_temp0 = ((double)__PYX_NAN());
-                                Py_ssize_t __pyx_parallel_temp1 = ((Py_ssize_t)0xbad0bad0);
-                                Py_ssize_t __pyx_parallel_temp2 = ((Py_ssize_t)0xbad0bad0);
-                                double __pyx_parallel_temp3 = ((double)__PYX_NAN());
-                                const char *__pyx_parallel_filename = NULL; int __pyx_parallel_lineno = 0, __pyx_parallel_clineno = 0;
-                                PyObject *__pyx_parallel_exc_type = NULL, *__pyx_parallel_exc_value = NULL, *__pyx_parallel_exc_tb = NULL;
-                                int __pyx_parallel_why;
-                                __pyx_parallel_why = 0;
                                 __pyx_t_14 = (__pyx_t_12 - 0 + 1 - 1/abs(1)) / 1;
                                 if (__pyx_t_14 > 0)
                                 {
@@ -3779,17 +3364,10 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
                                     #pragma omp parallel
                                     #endif /* _OPENMP */
                                     {
-                                        #ifdef _OPENMP
-                                        #ifdef WITH_THREAD
-                                        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                        #endif
-                                        Py_BEGIN_ALLOW_THREADS
-                                        #endif /* _OPENMP */
                                         #if 0
                                         #pragma omp for lastprivate(__pyx_v_dx) lastprivate(__pyx_v_j) firstprivate(__pyx_v_k) lastprivate(__pyx_v_k) lastprivate(__pyx_v_ycc) schedule(dynamic)
                                         #endif /* _OPENMP */
                                         for (__pyx_t_13 = 0; __pyx_t_13 < __pyx_t_14; __pyx_t_13++){
-                                            if (__pyx_parallel_why < 2)
                                             {
                                                 __pyx_v_k = (Py_ssize_t)(0 + 1 * __pyx_t_13);
                                                 /* Initialize private variables to invalid values */
@@ -3797,7 +3375,7 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
                                                 __pyx_v_j = ((Py_ssize_t)0xbad0bad0);
                                                 __pyx_v_ycc = ((double)__PYX_NAN());
 
-                                                /* "CHAPSim_post/_libs/integrate.pyx":100
+                                                /* "CHAPSim_post/_libs/integrate.pyx":110
  *     for i in prange(size_y,nogil=True,schedule='dynamic'):
  *         for k in prange(size_x,schedule='dynamic'):
  *             for j in range(i+1):             # <<<<<<<<<<<<<<
@@ -3809,7 +3387,7 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
                                                 for (__pyx_t_17 = 0; __pyx_t_17 < __pyx_t_16; __pyx_t_17+=1) {
                                                   __pyx_v_j = __pyx_t_17;
 
-                                                  /* "CHAPSim_post/_libs/integrate.pyx":102
+                                                  /* "CHAPSim_post/_libs/integrate.pyx":112
  *             for j in range(i+1):
  * 
  *                 dx = staggered_y[j+1] - staggered_y[j]             # <<<<<<<<<<<<<<
@@ -3817,28 +3395,10 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
  *                 int_array[i,k] += ycc*array[j,k]*dx
  */
                                                   __pyx_t_18 = (__pyx_v_j + 1);
-                                                  __pyx_t_5 = -1;
-                                                  if (__pyx_t_18 < 0) {
-                                                    __pyx_t_18 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                                    if (unlikely(__pyx_t_18 < 0)) __pyx_t_5 = 0;
-                                                  } else if (unlikely(__pyx_t_18 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_5 = 0;
-                                                  if (unlikely(__pyx_t_5 != -1)) {
-                                                    __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_5);
-                                                    __PYX_ERR(0, 102, __pyx_L12_error)
-                                                  }
                                                   __pyx_t_19 = __pyx_v_j;
-                                                  __pyx_t_5 = -1;
-                                                  if (__pyx_t_19 < 0) {
-                                                    __pyx_t_19 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                                    if (unlikely(__pyx_t_19 < 0)) __pyx_t_5 = 0;
-                                                  } else if (unlikely(__pyx_t_19 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_5 = 0;
-                                                  if (unlikely(__pyx_t_5 != -1)) {
-                                                    __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_5);
-                                                    __PYX_ERR(0, 102, __pyx_L12_error)
-                                                  }
                                                   __pyx_v_dx = ((*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_18, __pyx_pybuffernd_staggered_y.diminfo[0].strides)) - (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_19, __pyx_pybuffernd_staggered_y.diminfo[0].strides)));
 
-                                                  /* "CHAPSim_post/_libs/integrate.pyx":103
+                                                  /* "CHAPSim_post/_libs/integrate.pyx":113
  * 
  *                 dx = staggered_y[j+1] - staggered_y[j]
  *                 ycc = 0.5*(staggered_y[j+1] + staggered_y[j])             # <<<<<<<<<<<<<<
@@ -3846,28 +3406,10 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
  * 
  */
                                                   __pyx_t_19 = (__pyx_v_j + 1);
-                                                  __pyx_t_5 = -1;
-                                                  if (__pyx_t_19 < 0) {
-                                                    __pyx_t_19 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                                    if (unlikely(__pyx_t_19 < 0)) __pyx_t_5 = 0;
-                                                  } else if (unlikely(__pyx_t_19 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_5 = 0;
-                                                  if (unlikely(__pyx_t_5 != -1)) {
-                                                    __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_5);
-                                                    __PYX_ERR(0, 103, __pyx_L12_error)
-                                                  }
                                                   __pyx_t_18 = __pyx_v_j;
-                                                  __pyx_t_5 = -1;
-                                                  if (__pyx_t_18 < 0) {
-                                                    __pyx_t_18 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                                    if (unlikely(__pyx_t_18 < 0)) __pyx_t_5 = 0;
-                                                  } else if (unlikely(__pyx_t_18 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_5 = 0;
-                                                  if (unlikely(__pyx_t_5 != -1)) {
-                                                    __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_5);
-                                                    __PYX_ERR(0, 103, __pyx_L12_error)
-                                                  }
                                                   __pyx_v_ycc = (0.5 * ((*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_19, __pyx_pybuffernd_staggered_y.diminfo[0].strides)) + (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_18, __pyx_pybuffernd_staggered_y.diminfo[0].strides))));
 
-                                                  /* "CHAPSim_post/_libs/integrate.pyx":104
+                                                  /* "CHAPSim_post/_libs/integrate.pyx":114
  *                 dx = staggered_y[j+1] - staggered_y[j]
  *                 ycc = 0.5*(staggered_y[j+1] + staggered_y[j])
  *                 int_array[i,k] += ycc*array[j,k]*dx             # <<<<<<<<<<<<<<
@@ -3876,38 +3418,12 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
  */
                                                   __pyx_t_18 = __pyx_v_j;
                                                   __pyx_t_19 = __pyx_v_k;
-                                                  __pyx_t_5 = -1;
-                                                  if (__pyx_t_18 < 0) {
-                                                    __pyx_t_18 += __pyx_pybuffernd_array.diminfo[0].shape;
-                                                    if (unlikely(__pyx_t_18 < 0)) __pyx_t_5 = 0;
-                                                  } else if (unlikely(__pyx_t_18 >= __pyx_pybuffernd_array.diminfo[0].shape)) __pyx_t_5 = 0;
-                                                  if (__pyx_t_19 < 0) {
-                                                    __pyx_t_19 += __pyx_pybuffernd_array.diminfo[1].shape;
-                                                    if (unlikely(__pyx_t_19 < 0)) __pyx_t_5 = 1;
-                                                  } else if (unlikely(__pyx_t_19 >= __pyx_pybuffernd_array.diminfo[1].shape)) __pyx_t_5 = 1;
-                                                  if (unlikely(__pyx_t_5 != -1)) {
-                                                    __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_5);
-                                                    __PYX_ERR(0, 104, __pyx_L12_error)
-                                                  }
                                                   __pyx_t_20 = __pyx_v_i;
                                                   __pyx_t_21 = __pyx_v_k;
-                                                  __pyx_t_5 = -1;
-                                                  if (__pyx_t_20 < 0) {
-                                                    __pyx_t_20 += __pyx_pybuffernd_int_array.diminfo[0].shape;
-                                                    if (unlikely(__pyx_t_20 < 0)) __pyx_t_5 = 0;
-                                                  } else if (unlikely(__pyx_t_20 >= __pyx_pybuffernd_int_array.diminfo[0].shape)) __pyx_t_5 = 0;
-                                                  if (__pyx_t_21 < 0) {
-                                                    __pyx_t_21 += __pyx_pybuffernd_int_array.diminfo[1].shape;
-                                                    if (unlikely(__pyx_t_21 < 0)) __pyx_t_5 = 1;
-                                                  } else if (unlikely(__pyx_t_21 >= __pyx_pybuffernd_int_array.diminfo[1].shape)) __pyx_t_5 = 1;
-                                                  if (unlikely(__pyx_t_5 != -1)) {
-                                                    __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_5);
-                                                    __PYX_ERR(0, 104, __pyx_L12_error)
-                                                  }
                                                   *__Pyx_BufPtrStrided2d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_int_array.rcbuffer->pybuffer.buf, __pyx_t_20, __pyx_pybuffernd_int_array.diminfo[0].strides, __pyx_t_21, __pyx_pybuffernd_int_array.diminfo[1].strides) += ((__pyx_v_ycc * (*__Pyx_BufPtrStrided2d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_array.rcbuffer->pybuffer.buf, __pyx_t_18, __pyx_pybuffernd_array.diminfo[0].strides, __pyx_t_19, __pyx_pybuffernd_array.diminfo[1].strides))) * __pyx_v_dx);
                                                 }
 
-                                                /* "CHAPSim_post/_libs/integrate.pyx":106
+                                                /* "CHAPSim_post/_libs/integrate.pyx":116
  *                 int_array[i,k] += ycc*array[j,k]*dx
  * 
  *             ycc = 0.5*(staggered_y[i+1] + staggered_y[i])             # <<<<<<<<<<<<<<
@@ -3915,232 +3431,29 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
  * 
  */
                                                 __pyx_t_19 = (__pyx_v_i + 1);
-                                                __pyx_t_5 = -1;
-                                                if (__pyx_t_19 < 0) {
-                                                  __pyx_t_19 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                                  if (unlikely(__pyx_t_19 < 0)) __pyx_t_5 = 0;
-                                                } else if (unlikely(__pyx_t_19 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_5 = 0;
-                                                if (unlikely(__pyx_t_5 != -1)) {
-                                                  __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_5);
-                                                  __PYX_ERR(0, 106, __pyx_L12_error)
-                                                }
                                                 __pyx_t_18 = __pyx_v_i;
-                                                __pyx_t_5 = -1;
-                                                if (__pyx_t_18 < 0) {
-                                                  __pyx_t_18 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                                  if (unlikely(__pyx_t_18 < 0)) __pyx_t_5 = 0;
-                                                } else if (unlikely(__pyx_t_18 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_5 = 0;
-                                                if (unlikely(__pyx_t_5 != -1)) {
-                                                  __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_5);
-                                                  __PYX_ERR(0, 106, __pyx_L12_error)
-                                                }
                                                 __pyx_v_ycc = (0.5 * ((*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_19, __pyx_pybuffernd_staggered_y.diminfo[0].strides)) + (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_18, __pyx_pybuffernd_staggered_y.diminfo[0].strides))));
 
-                                                /* "CHAPSim_post/_libs/integrate.pyx":107
+                                                /* "CHAPSim_post/_libs/integrate.pyx":117
  * 
  *             ycc = 0.5*(staggered_y[i+1] + staggered_y[i])
  *             int_array[i,k] = (1./ycc)*int_array[i,k]             # <<<<<<<<<<<<<<
  * 
  *     return int_array
  */
-                                                if (unlikely(__pyx_v_ycc == 0)) {
-                                                  #ifdef WITH_THREAD
-                                                  PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                                  #endif
-                                                  PyErr_SetString(PyExc_ZeroDivisionError, "float division");
-                                                  #ifdef WITH_THREAD
-                                                  __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                                  #endif
-                                                  __PYX_ERR(0, 107, __pyx_L12_error)
-                                                }
                                                 __pyx_t_18 = __pyx_v_i;
                                                 __pyx_t_19 = __pyx_v_k;
-                                                __pyx_t_5 = -1;
-                                                if (__pyx_t_18 < 0) {
-                                                  __pyx_t_18 += __pyx_pybuffernd_int_array.diminfo[0].shape;
-                                                  if (unlikely(__pyx_t_18 < 0)) __pyx_t_5 = 0;
-                                                } else if (unlikely(__pyx_t_18 >= __pyx_pybuffernd_int_array.diminfo[0].shape)) __pyx_t_5 = 0;
-                                                if (__pyx_t_19 < 0) {
-                                                  __pyx_t_19 += __pyx_pybuffernd_int_array.diminfo[1].shape;
-                                                  if (unlikely(__pyx_t_19 < 0)) __pyx_t_5 = 1;
-                                                } else if (unlikely(__pyx_t_19 >= __pyx_pybuffernd_int_array.diminfo[1].shape)) __pyx_t_5 = 1;
-                                                if (unlikely(__pyx_t_5 != -1)) {
-                                                  __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_5);
-                                                  __PYX_ERR(0, 107, __pyx_L12_error)
-                                                }
                                                 __pyx_t_21 = __pyx_v_i;
                                                 __pyx_t_20 = __pyx_v_k;
-                                                __pyx_t_5 = -1;
-                                                if (__pyx_t_21 < 0) {
-                                                  __pyx_t_21 += __pyx_pybuffernd_int_array.diminfo[0].shape;
-                                                  if (unlikely(__pyx_t_21 < 0)) __pyx_t_5 = 0;
-                                                } else if (unlikely(__pyx_t_21 >= __pyx_pybuffernd_int_array.diminfo[0].shape)) __pyx_t_5 = 0;
-                                                if (__pyx_t_20 < 0) {
-                                                  __pyx_t_20 += __pyx_pybuffernd_int_array.diminfo[1].shape;
-                                                  if (unlikely(__pyx_t_20 < 0)) __pyx_t_5 = 1;
-                                                } else if (unlikely(__pyx_t_20 >= __pyx_pybuffernd_int_array.diminfo[1].shape)) __pyx_t_5 = 1;
-                                                if (unlikely(__pyx_t_5 != -1)) {
-                                                  __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_5);
-                                                  __PYX_ERR(0, 107, __pyx_L12_error)
-                                                }
                                                 *__Pyx_BufPtrStrided2d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_int_array.rcbuffer->pybuffer.buf, __pyx_t_21, __pyx_pybuffernd_int_array.diminfo[0].strides, __pyx_t_20, __pyx_pybuffernd_int_array.diminfo[1].strides) = ((1. / __pyx_v_ycc) * (*__Pyx_BufPtrStrided2d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_int_array.rcbuffer->pybuffer.buf, __pyx_t_18, __pyx_pybuffernd_int_array.diminfo[0].strides, __pyx_t_19, __pyx_pybuffernd_int_array.diminfo[1].strides)));
-                                                goto __pyx_L17;
-                                                __pyx_L12_error:;
-                                                {
-                                                    #ifdef WITH_THREAD
-                                                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                                    #endif
-                                                    #ifdef _OPENMP
-                                                    #pragma omp flush(__pyx_parallel_exc_type)
-                                                    #endif /* _OPENMP */
-                                                    if (!__pyx_parallel_exc_type) {
-                                                      __Pyx_ErrFetchWithState(&__pyx_parallel_exc_type, &__pyx_parallel_exc_value, &__pyx_parallel_exc_tb);
-                                                      __pyx_parallel_filename = __pyx_filename; __pyx_parallel_lineno = __pyx_lineno; __pyx_parallel_clineno = __pyx_clineno;
-                                                      __Pyx_GOTREF(__pyx_parallel_exc_type);
-                                                    }
-                                                    #ifdef WITH_THREAD
-                                                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                                    #endif
-                                                }
-                                                __pyx_parallel_why = 4;
-                                                goto __pyx_L16;
-                                                __pyx_L16:;
-                                                #ifdef _OPENMP
-                                                #pragma omp critical(__pyx_parallel_lastprivates3)
-                                                #endif /* _OPENMP */
-                                                {
-                                                    __pyx_parallel_temp0 = __pyx_v_dx;
-                                                    __pyx_parallel_temp1 = __pyx_v_j;
-                                                    __pyx_parallel_temp2 = __pyx_v_k;
-                                                    __pyx_parallel_temp3 = __pyx_v_ycc;
-                                                }
-                                                __pyx_L17:;
-                                                #ifdef _OPENMP
-                                                #pragma omp flush(__pyx_parallel_why)
-                                                #endif /* _OPENMP */
                                             }
                                         }
-                                        #ifdef _OPENMP
-                                        Py_END_ALLOW_THREADS
-                                        #else
-{
-#ifdef WITH_THREAD
-                                        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                        #endif
-                                        #endif /* _OPENMP */
-                                        #ifdef WITH_THREAD
-                                        __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                        #endif
-                                        #ifndef _OPENMP
-}
-#endif /* _OPENMP */
                                     }
                                 }
-                                if (__pyx_parallel_exc_type) {
-                                  /* This may have been overridden by a continue, break or return in another thread. Prefer the error. */
-                                  __pyx_parallel_why = 4;
-                                }
-                                if (__pyx_parallel_why) {
-                                  __pyx_v_dx = __pyx_parallel_temp0;
-                                  __pyx_v_j = __pyx_parallel_temp1;
-                                  __pyx_v_k = __pyx_parallel_temp2;
-                                  __pyx_v_ycc = __pyx_parallel_temp3;
-                                  switch (__pyx_parallel_why) {
-                                        case 4:
-                                    {
-                                        #ifdef WITH_THREAD
-                                        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                        #endif
-                                        __Pyx_GIVEREF(__pyx_parallel_exc_type);
-                                        __Pyx_ErrRestoreWithState(__pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb);
-                                        __pyx_filename = __pyx_parallel_filename; __pyx_lineno = __pyx_parallel_lineno; __pyx_clineno = __pyx_parallel_clineno;
-                                        #ifdef WITH_THREAD
-                                        __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                        #endif
-                                    }
-                                    goto __pyx_L8_error;
-                                  }
-                                }
                             }
-                            goto __pyx_L19;
-                            __pyx_L8_error:;
-                            {
-                                #ifdef WITH_THREAD
-                                PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                #endif
-                                #ifdef _OPENMP
-                                #pragma omp flush(__pyx_parallel_exc_type)
-                                #endif /* _OPENMP */
-                                if (!__pyx_parallel_exc_type) {
-                                  __Pyx_ErrFetchWithState(&__pyx_parallel_exc_type, &__pyx_parallel_exc_value, &__pyx_parallel_exc_tb);
-                                  __pyx_parallel_filename = __pyx_filename; __pyx_parallel_lineno = __pyx_lineno; __pyx_parallel_clineno = __pyx_clineno;
-                                  __Pyx_GOTREF(__pyx_parallel_exc_type);
-                                }
-                                #ifdef WITH_THREAD
-                                __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                #endif
-                            }
-                            __pyx_parallel_why = 4;
-                            goto __pyx_L18;
-                            __pyx_L18:;
-                            #ifdef _OPENMP
-                            #pragma omp critical(__pyx_parallel_lastprivates4)
-                            #endif /* _OPENMP */
-                            {
-                                __pyx_parallel_temp0 = __pyx_v_dx;
-                                __pyx_parallel_temp1 = __pyx_v_i;
-                                __pyx_parallel_temp2 = __pyx_v_j;
-                                __pyx_parallel_temp3 = __pyx_v_k;
-                                __pyx_parallel_temp4 = __pyx_v_ycc;
-                            }
-                            __pyx_L19:;
-                            #ifdef _OPENMP
-                            #pragma omp flush(__pyx_parallel_why)
-                            #endif /* _OPENMP */
                         }
                     }
-                    #ifdef _OPENMP
-                    Py_END_ALLOW_THREADS
-                    #else
-{
-#ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    #endif /* _OPENMP */
-                    /* Clean up any temporaries */
-                    #ifdef WITH_THREAD
-                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                    #endif
-                    #ifndef _OPENMP
-}
-#endif /* _OPENMP */
                 }
-            }
-            if (__pyx_parallel_exc_type) {
-              /* This may have been overridden by a continue, break or return in another thread. Prefer the error. */
-              __pyx_parallel_why = 4;
-            }
-            if (__pyx_parallel_why) {
-              __pyx_v_dx = __pyx_parallel_temp0;
-              __pyx_v_i = __pyx_parallel_temp1;
-              __pyx_v_j = __pyx_parallel_temp2;
-              __pyx_v_k = __pyx_parallel_temp3;
-              __pyx_v_ycc = __pyx_parallel_temp4;
-              switch (__pyx_parallel_why) {
-                    case 4:
-                {
-                    #ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    __Pyx_GIVEREF(__pyx_parallel_exc_type);
-                    __Pyx_ErrRestoreWithState(__pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb);
-                    __pyx_filename = __pyx_parallel_filename; __pyx_lineno = __pyx_parallel_lineno; __pyx_clineno = __pyx_parallel_clineno;
-                    #ifdef WITH_THREAD
-                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                    #endif
-                }
-                goto __pyx_L4_error;
-              }
             }
         }
         #if ((defined(__APPLE__) || defined(__OSX__)) && (defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && (__GNUC_MINOR__ > 95)))))
@@ -4151,7 +3464,7 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
         #endif
       }
 
-      /* "CHAPSim_post/_libs/integrate.pyx":98
+      /* "CHAPSim_post/_libs/integrate.pyx":108
  *     cdef double dx, ycc
  * 
  *     for i in prange(size_y,nogil=True,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -4166,33 +3479,26 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
           #endif
           goto __pyx_L5;
         }
-        __pyx_L4_error: {
-          #ifdef WITH_THREAD
-          __Pyx_FastGIL_Forget();
-          Py_BLOCK_THREADS
-          #endif
-          goto __pyx_L1_error;
-        }
         __pyx_L5:;
       }
   }
 
-  /* "CHAPSim_post/_libs/integrate.pyx":109
+  /* "CHAPSim_post/_libs/integrate.pyx":119
  *             int_array[i,k] = (1./ycc)*int_array[i,k]
  * 
  *     return int_array             # <<<<<<<<<<<<<<
  * 
- * 
+ * @cython.cdivision(True)
  */
   __Pyx_XDECREF(__pyx_r);
   __Pyx_INCREF(((PyObject *)__pyx_v_int_array));
   __pyx_r = ((PyObject *)__pyx_v_int_array);
   goto __pyx_L0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":86
- * 
- * 
- * cdef cumulativeInt_y2D_pipe(np.ndarray[np.float64_t,ndim=2] array,             # <<<<<<<<<<<<<<
+  /* "CHAPSim_post/_libs/integrate.pyx":96
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
+ * def cumulativeInt_y2D_pipe(np.ndarray[np.float64_t,ndim=2] array,             # <<<<<<<<<<<<<<
  *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
  */
@@ -4211,7 +3517,7 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
     __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_staggered_y.rcbuffer->pybuffer);
   __Pyx_ErrRestore(__pyx_type, __pyx_value, __pyx_tb);}
   __Pyx_AddTraceback("CHAPSim_post._libs.integrate.cumulativeInt_y2D_pipe", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = 0;
+  __pyx_r = NULL;
   goto __pyx_L2;
   __pyx_L0:;
   __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_array.rcbuffer->pybuffer);
@@ -4224,18 +3530,18 @@ static PyObject *__pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe
   return __pyx_r;
 }
 
-/* "CHAPSim_post/_libs/integrate.pyx":112
- * 
- * 
+/* "CHAPSim_post/_libs/integrate.pyx":124
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y2D_channel(np.ndarray[np.float64_t,ndim=2] array,             # <<<<<<<<<<<<<<
  *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_7cumulativeInt_y2D_channel(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_12CHAPSim_post_5_libs_9integrate_7cumulativeInt_y2D_channel = {"cumulativeInt_y2D_channel", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_12CHAPSim_post_5_libs_9integrate_7cumulativeInt_y2D_channel, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_7cumulativeInt_y2D_channel(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_9cumulativeInt_y2D_channel(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_12CHAPSim_post_5_libs_9integrate_9cumulativeInt_y2D_channel = {"cumulativeInt_y2D_channel", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_12CHAPSim_post_5_libs_9integrate_9cumulativeInt_y2D_channel, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_9cumulativeInt_y2D_channel(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_array = 0;
   PyArrayObject *__pyx_v_staggered_y = 0;
   int __pyx_lineno = 0;
@@ -4267,11 +3573,11 @@ static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_7cumulativeInt_y2D_ch
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_staggered_y)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y2D_channel", 1, 2, 2, 1); __PYX_ERR(0, 112, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y2D_channel", 1, 2, 2, 1); __PYX_ERR(0, 124, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "cumulativeInt_y2D_channel") < 0)) __PYX_ERR(0, 112, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "cumulativeInt_y2D_channel") < 0)) __PYX_ERR(0, 124, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -4284,15 +3590,15 @@ static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_7cumulativeInt_y2D_ch
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("cumulativeInt_y2D_channel", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 112, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("cumulativeInt_y2D_channel", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 124, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("CHAPSim_post._libs.integrate.cumulativeInt_y2D_channel", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_array), __pyx_ptype_5numpy_ndarray, 1, "array", 0))) __PYX_ERR(0, 112, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_staggered_y), __pyx_ptype_5numpy_ndarray, 1, "staggered_y", 0))) __PYX_ERR(0, 113, __pyx_L1_error)
-  __pyx_r = __pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_channel(__pyx_self, __pyx_v_array, __pyx_v_staggered_y);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_array), __pyx_ptype_5numpy_ndarray, 1, "array", 0))) __PYX_ERR(0, 124, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_staggered_y), __pyx_ptype_5numpy_ndarray, 1, "staggered_y", 0))) __PYX_ERR(0, 125, __pyx_L1_error)
+  __pyx_r = __pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D_channel(__pyx_self, __pyx_v_array, __pyx_v_staggered_y);
 
   /* function exit code */
   goto __pyx_L0;
@@ -4303,7 +3609,7 @@ static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_7cumulativeInt_y2D_ch
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_channel(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_array, PyArrayObject *__pyx_v_staggered_y) {
+static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D_channel(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_array, PyArrayObject *__pyx_v_staggered_y) {
   Py_ssize_t __pyx_v_size;
   Py_ssize_t __pyx_v_mid;
   CYTHON_UNUSED Py_ssize_t __pyx_v_size_x;
@@ -4360,38 +3666,38 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
   __pyx_pybuffernd_staggered_y.rcbuffer = &__pyx_pybuffer_staggered_y;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 112, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 124, __pyx_L1_error)
   }
   __pyx_pybuffernd_array.diminfo[0].strides = __pyx_pybuffernd_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_array.diminfo[0].shape = __pyx_pybuffernd_array.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_array.diminfo[1].strides = __pyx_pybuffernd_array.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_array.diminfo[1].shape = __pyx_pybuffernd_array.rcbuffer->pybuffer.shape[1];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_staggered_y.rcbuffer->pybuffer, (PyObject*)__pyx_v_staggered_y, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 112, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_staggered_y.rcbuffer->pybuffer, (PyObject*)__pyx_v_staggered_y, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 124, __pyx_L1_error)
   }
   __pyx_pybuffernd_staggered_y.diminfo[0].strides = __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_staggered_y.diminfo[0].shape = __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.shape[0];
 
-  /* "CHAPSim_post/_libs/integrate.pyx":115
+  /* "CHAPSim_post/_libs/integrate.pyx":127
  *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
  *     cdef Py_ssize_t size = array.size             # <<<<<<<<<<<<<<
  *     cdef Py_ssize_t mid = size // 2
  *     cdef Py_ssize_t size_x = array.shape[1]
  */
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_array), __pyx_n_s_size); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 115, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_array), __pyx_n_s_size); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 127, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyIndex_AsSsize_t(__pyx_t_1); if (unlikely((__pyx_t_2 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 115, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyIndex_AsSsize_t(__pyx_t_1); if (unlikely((__pyx_t_2 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 127, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_size = __pyx_t_2;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":116
+  /* "CHAPSim_post/_libs/integrate.pyx":128
  * 
  *     cdef Py_ssize_t size = array.size
  *     cdef Py_ssize_t mid = size // 2             # <<<<<<<<<<<<<<
  *     cdef Py_ssize_t size_x = array.shape[1]
  * 
  */
-  __pyx_v_mid = __Pyx_div_Py_ssize_t(__pyx_v_size, 2);
+  __pyx_v_mid = (__pyx_v_size / 2);
 
-  /* "CHAPSim_post/_libs/integrate.pyx":117
+  /* "CHAPSim_post/_libs/integrate.pyx":129
  *     cdef Py_ssize_t size = array.size
  *     cdef Py_ssize_t mid = size // 2
  *     cdef Py_ssize_t size_x = array.shape[1]             # <<<<<<<<<<<<<<
@@ -4400,16 +3706,16 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
  */
   __pyx_v_size_x = (__pyx_v_array->dimensions[1]);
 
-  /* "CHAPSim_post/_libs/integrate.pyx":120
+  /* "CHAPSim_post/_libs/integrate.pyx":132
  * 
  *     cdef np.ndarray[np.float64_t,ndim=2] int_array
  *     int_array = np.zeros_like(array)             # <<<<<<<<<<<<<<
  * 
  *     cdef Py_ssize_t i, j, k
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 120, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 132, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_zeros_like); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 120, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_zeros_like); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 132, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_t_3 = NULL;
@@ -4424,10 +3730,10 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
   }
   __pyx_t_1 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_3, ((PyObject *)__pyx_v_array)) : __Pyx_PyObject_CallOneArg(__pyx_t_4, ((PyObject *)__pyx_v_array));
   __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 120, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 132, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 120, __pyx_L1_error)
+  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 132, __pyx_L1_error)
   __pyx_t_5 = ((PyArrayObject *)__pyx_t_1);
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
@@ -4444,13 +3750,13 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
       __pyx_t_7 = __pyx_t_8 = __pyx_t_9 = 0;
     }
     __pyx_pybuffernd_int_array.diminfo[0].strides = __pyx_pybuffernd_int_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_int_array.diminfo[0].shape = __pyx_pybuffernd_int_array.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_int_array.diminfo[1].strides = __pyx_pybuffernd_int_array.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_int_array.diminfo[1].shape = __pyx_pybuffernd_int_array.rcbuffer->pybuffer.shape[1];
-    if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(0, 120, __pyx_L1_error)
+    if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(0, 132, __pyx_L1_error)
   }
   __pyx_t_5 = 0;
   __pyx_v_int_array = ((PyArrayObject *)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":125
+  /* "CHAPSim_post/_libs/integrate.pyx":137
  *     cdef double dx
  * 
  *     for i in prange(mid,size,nogil=True,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -4468,14 +3774,6 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
         __pyx_t_10 = __pyx_v_size;
         if ((1 == 0)) abort();
         {
-            double __pyx_parallel_temp0 = ((double)__PYX_NAN());
-            Py_ssize_t __pyx_parallel_temp1 = ((Py_ssize_t)0xbad0bad0);
-            Py_ssize_t __pyx_parallel_temp2 = ((Py_ssize_t)0xbad0bad0);
-            Py_ssize_t __pyx_parallel_temp3 = ((Py_ssize_t)0xbad0bad0);
-            const char *__pyx_parallel_filename = NULL; int __pyx_parallel_lineno = 0, __pyx_parallel_clineno = 0;
-            PyObject *__pyx_parallel_exc_type = NULL, *__pyx_parallel_exc_value = NULL, *__pyx_parallel_exc_tb = NULL;
-            int __pyx_parallel_why;
-            __pyx_parallel_why = 0;
             #if ((defined(__APPLE__) || defined(__OSX__)) && (defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && (__GNUC_MINOR__ > 95)))))
                 #undef likely
                 #undef unlikely
@@ -4486,20 +3784,13 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
             if (__pyx_t_12 > 0)
             {
                 #ifdef _OPENMP
-                #pragma omp parallel private(__pyx_t_13, __pyx_t_14, __pyx_t_15, __pyx_t_16, __pyx_t_17, __pyx_t_18, __pyx_t_19, __pyx_t_20, __pyx_t_21, __pyx_t_22, __pyx_t_6) private(__pyx_filename, __pyx_lineno, __pyx_clineno) shared(__pyx_parallel_why, __pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb)
+                #pragma omp parallel private(__pyx_t_13, __pyx_t_14, __pyx_t_15, __pyx_t_16, __pyx_t_17, __pyx_t_18, __pyx_t_19, __pyx_t_20, __pyx_t_21, __pyx_t_22)
                 #endif /* _OPENMP */
                 {
-                    #ifdef _OPENMP
-                    #ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    Py_BEGIN_ALLOW_THREADS
-                    #endif /* _OPENMP */
                     #ifdef _OPENMP
                     #pragma omp for lastprivate(__pyx_v_dx) firstprivate(__pyx_v_i) lastprivate(__pyx_v_i) lastprivate(__pyx_v_j) lastprivate(__pyx_v_k) schedule(dynamic)
                     #endif /* _OPENMP */
                     for (__pyx_t_11 = 0; __pyx_t_11 < __pyx_t_12; __pyx_t_11++){
-                        if (__pyx_parallel_why < 2)
                         {
                             __pyx_v_i = (Py_ssize_t)(__pyx_t_2 + 1 * __pyx_t_11);
                             /* Initialize private variables to invalid values */
@@ -4507,7 +3798,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
                             __pyx_v_j = ((Py_ssize_t)0xbad0bad0);
                             __pyx_v_k = ((Py_ssize_t)0xbad0bad0);
 
-                            /* "CHAPSim_post/_libs/integrate.pyx":126
+                            /* "CHAPSim_post/_libs/integrate.pyx":138
  * 
  *     for i in prange(mid,size,nogil=True,schedule='dynamic'):
  *         for k in prange(size_x,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -4517,13 +3808,6 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
                             __pyx_t_13 = __pyx_v_size_x;
                             if ((1 == 0)) abort();
                             {
-                                double __pyx_parallel_temp0 = ((double)__PYX_NAN());
-                                Py_ssize_t __pyx_parallel_temp1 = ((Py_ssize_t)0xbad0bad0);
-                                Py_ssize_t __pyx_parallel_temp2 = ((Py_ssize_t)0xbad0bad0);
-                                const char *__pyx_parallel_filename = NULL; int __pyx_parallel_lineno = 0, __pyx_parallel_clineno = 0;
-                                PyObject *__pyx_parallel_exc_type = NULL, *__pyx_parallel_exc_value = NULL, *__pyx_parallel_exc_tb = NULL;
-                                int __pyx_parallel_why;
-                                __pyx_parallel_why = 0;
                                 __pyx_t_15 = (__pyx_t_13 - 0 + 1 - 1/abs(1)) / 1;
                                 if (__pyx_t_15 > 0)
                                 {
@@ -4531,24 +3815,17 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
                                     #pragma omp parallel
                                     #endif /* _OPENMP */
                                     {
-                                        #ifdef _OPENMP
-                                        #ifdef WITH_THREAD
-                                        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                        #endif
-                                        Py_BEGIN_ALLOW_THREADS
-                                        #endif /* _OPENMP */
                                         #if 0
                                         #pragma omp for lastprivate(__pyx_v_dx) lastprivate(__pyx_v_j) firstprivate(__pyx_v_k) lastprivate(__pyx_v_k) schedule(dynamic)
                                         #endif /* _OPENMP */
                                         for (__pyx_t_14 = 0; __pyx_t_14 < __pyx_t_15; __pyx_t_14++){
-                                            if (__pyx_parallel_why < 2)
                                             {
                                                 __pyx_v_k = (Py_ssize_t)(0 + 1 * __pyx_t_14);
                                                 /* Initialize private variables to invalid values */
                                                 __pyx_v_dx = ((double)__PYX_NAN());
                                                 __pyx_v_j = ((Py_ssize_t)0xbad0bad0);
 
-                                                /* "CHAPSim_post/_libs/integrate.pyx":127
+                                                /* "CHAPSim_post/_libs/integrate.pyx":139
  *     for i in prange(mid,size,nogil=True,schedule='dynamic'):
  *         for k in prange(size_x,schedule='dynamic'):
  *             for j in range(mid,i+1):             # <<<<<<<<<<<<<<
@@ -4560,7 +3837,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
                                                 for (__pyx_t_18 = __pyx_v_mid; __pyx_t_18 < __pyx_t_17; __pyx_t_18+=1) {
                                                   __pyx_v_j = __pyx_t_18;
 
-                                                  /* "CHAPSim_post/_libs/integrate.pyx":129
+                                                  /* "CHAPSim_post/_libs/integrate.pyx":141
  *             for j in range(mid,i+1):
  * 
  *                 dx = staggered_y[j+1] - staggered_y[j]             # <<<<<<<<<<<<<<
@@ -4568,28 +3845,10 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
  * 
  */
                                                   __pyx_t_19 = (__pyx_v_j + 1);
-                                                  __pyx_t_6 = -1;
-                                                  if (__pyx_t_19 < 0) {
-                                                    __pyx_t_19 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                                    if (unlikely(__pyx_t_19 < 0)) __pyx_t_6 = 0;
-                                                  } else if (unlikely(__pyx_t_19 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_6 = 0;
-                                                  if (unlikely(__pyx_t_6 != -1)) {
-                                                    __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                                    __PYX_ERR(0, 129, __pyx_L12_error)
-                                                  }
                                                   __pyx_t_20 = __pyx_v_j;
-                                                  __pyx_t_6 = -1;
-                                                  if (__pyx_t_20 < 0) {
-                                                    __pyx_t_20 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                                    if (unlikely(__pyx_t_20 < 0)) __pyx_t_6 = 0;
-                                                  } else if (unlikely(__pyx_t_20 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_6 = 0;
-                                                  if (unlikely(__pyx_t_6 != -1)) {
-                                                    __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                                    __PYX_ERR(0, 129, __pyx_L12_error)
-                                                  }
                                                   __pyx_v_dx = ((*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_19, __pyx_pybuffernd_staggered_y.diminfo[0].strides)) - (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_20, __pyx_pybuffernd_staggered_y.diminfo[0].strides)));
 
-                                                  /* "CHAPSim_post/_libs/integrate.pyx":130
+                                                  /* "CHAPSim_post/_libs/integrate.pyx":142
  * 
  *                 dx = staggered_y[j+1] - staggered_y[j]
  *                 int_array[i,k] += array[j,k]*dx             # <<<<<<<<<<<<<<
@@ -4598,189 +3857,18 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
  */
                                                   __pyx_t_20 = __pyx_v_j;
                                                   __pyx_t_19 = __pyx_v_k;
-                                                  __pyx_t_6 = -1;
-                                                  if (__pyx_t_20 < 0) {
-                                                    __pyx_t_20 += __pyx_pybuffernd_array.diminfo[0].shape;
-                                                    if (unlikely(__pyx_t_20 < 0)) __pyx_t_6 = 0;
-                                                  } else if (unlikely(__pyx_t_20 >= __pyx_pybuffernd_array.diminfo[0].shape)) __pyx_t_6 = 0;
-                                                  if (__pyx_t_19 < 0) {
-                                                    __pyx_t_19 += __pyx_pybuffernd_array.diminfo[1].shape;
-                                                    if (unlikely(__pyx_t_19 < 0)) __pyx_t_6 = 1;
-                                                  } else if (unlikely(__pyx_t_19 >= __pyx_pybuffernd_array.diminfo[1].shape)) __pyx_t_6 = 1;
-                                                  if (unlikely(__pyx_t_6 != -1)) {
-                                                    __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                                    __PYX_ERR(0, 130, __pyx_L12_error)
-                                                  }
                                                   __pyx_t_21 = __pyx_v_i;
                                                   __pyx_t_22 = __pyx_v_k;
-                                                  __pyx_t_6 = -1;
-                                                  if (__pyx_t_21 < 0) {
-                                                    __pyx_t_21 += __pyx_pybuffernd_int_array.diminfo[0].shape;
-                                                    if (unlikely(__pyx_t_21 < 0)) __pyx_t_6 = 0;
-                                                  } else if (unlikely(__pyx_t_21 >= __pyx_pybuffernd_int_array.diminfo[0].shape)) __pyx_t_6 = 0;
-                                                  if (__pyx_t_22 < 0) {
-                                                    __pyx_t_22 += __pyx_pybuffernd_int_array.diminfo[1].shape;
-                                                    if (unlikely(__pyx_t_22 < 0)) __pyx_t_6 = 1;
-                                                  } else if (unlikely(__pyx_t_22 >= __pyx_pybuffernd_int_array.diminfo[1].shape)) __pyx_t_6 = 1;
-                                                  if (unlikely(__pyx_t_6 != -1)) {
-                                                    __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                                    __PYX_ERR(0, 130, __pyx_L12_error)
-                                                  }
                                                   *__Pyx_BufPtrStrided2d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_int_array.rcbuffer->pybuffer.buf, __pyx_t_21, __pyx_pybuffernd_int_array.diminfo[0].strides, __pyx_t_22, __pyx_pybuffernd_int_array.diminfo[1].strides) += ((*__Pyx_BufPtrStrided2d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_array.rcbuffer->pybuffer.buf, __pyx_t_20, __pyx_pybuffernd_array.diminfo[0].strides, __pyx_t_19, __pyx_pybuffernd_array.diminfo[1].strides)) * __pyx_v_dx);
                                                 }
-                                                goto __pyx_L17;
-                                                __pyx_L12_error:;
-                                                {
-                                                    #ifdef WITH_THREAD
-                                                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                                    #endif
-                                                    #ifdef _OPENMP
-                                                    #pragma omp flush(__pyx_parallel_exc_type)
-                                                    #endif /* _OPENMP */
-                                                    if (!__pyx_parallel_exc_type) {
-                                                      __Pyx_ErrFetchWithState(&__pyx_parallel_exc_type, &__pyx_parallel_exc_value, &__pyx_parallel_exc_tb);
-                                                      __pyx_parallel_filename = __pyx_filename; __pyx_parallel_lineno = __pyx_lineno; __pyx_parallel_clineno = __pyx_clineno;
-                                                      __Pyx_GOTREF(__pyx_parallel_exc_type);
-                                                    }
-                                                    #ifdef WITH_THREAD
-                                                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                                    #endif
-                                                }
-                                                __pyx_parallel_why = 4;
-                                                goto __pyx_L16;
-                                                __pyx_L16:;
-                                                #ifdef _OPENMP
-                                                #pragma omp critical(__pyx_parallel_lastprivates5)
-                                                #endif /* _OPENMP */
-                                                {
-                                                    __pyx_parallel_temp0 = __pyx_v_dx;
-                                                    __pyx_parallel_temp1 = __pyx_v_j;
-                                                    __pyx_parallel_temp2 = __pyx_v_k;
-                                                }
-                                                __pyx_L17:;
-                                                #ifdef _OPENMP
-                                                #pragma omp flush(__pyx_parallel_why)
-                                                #endif /* _OPENMP */
                                             }
                                         }
-                                        #ifdef _OPENMP
-                                        Py_END_ALLOW_THREADS
-                                        #else
-{
-#ifdef WITH_THREAD
-                                        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                        #endif
-                                        #endif /* _OPENMP */
-                                        #ifdef WITH_THREAD
-                                        __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                        #endif
-                                        #ifndef _OPENMP
-}
-#endif /* _OPENMP */
                                     }
                                 }
-                                if (__pyx_parallel_exc_type) {
-                                  /* This may have been overridden by a continue, break or return in another thread. Prefer the error. */
-                                  __pyx_parallel_why = 4;
-                                }
-                                if (__pyx_parallel_why) {
-                                  __pyx_v_dx = __pyx_parallel_temp0;
-                                  __pyx_v_j = __pyx_parallel_temp1;
-                                  __pyx_v_k = __pyx_parallel_temp2;
-                                  switch (__pyx_parallel_why) {
-                                        case 4:
-                                    {
-                                        #ifdef WITH_THREAD
-                                        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                        #endif
-                                        __Pyx_GIVEREF(__pyx_parallel_exc_type);
-                                        __Pyx_ErrRestoreWithState(__pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb);
-                                        __pyx_filename = __pyx_parallel_filename; __pyx_lineno = __pyx_parallel_lineno; __pyx_clineno = __pyx_parallel_clineno;
-                                        #ifdef WITH_THREAD
-                                        __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                        #endif
-                                    }
-                                    goto __pyx_L8_error;
-                                  }
-                                }
                             }
-                            goto __pyx_L19;
-                            __pyx_L8_error:;
-                            {
-                                #ifdef WITH_THREAD
-                                PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                #endif
-                                #ifdef _OPENMP
-                                #pragma omp flush(__pyx_parallel_exc_type)
-                                #endif /* _OPENMP */
-                                if (!__pyx_parallel_exc_type) {
-                                  __Pyx_ErrFetchWithState(&__pyx_parallel_exc_type, &__pyx_parallel_exc_value, &__pyx_parallel_exc_tb);
-                                  __pyx_parallel_filename = __pyx_filename; __pyx_parallel_lineno = __pyx_lineno; __pyx_parallel_clineno = __pyx_clineno;
-                                  __Pyx_GOTREF(__pyx_parallel_exc_type);
-                                }
-                                #ifdef WITH_THREAD
-                                __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                #endif
-                            }
-                            __pyx_parallel_why = 4;
-                            goto __pyx_L18;
-                            __pyx_L18:;
-                            #ifdef _OPENMP
-                            #pragma omp critical(__pyx_parallel_lastprivates6)
-                            #endif /* _OPENMP */
-                            {
-                                __pyx_parallel_temp0 = __pyx_v_dx;
-                                __pyx_parallel_temp1 = __pyx_v_i;
-                                __pyx_parallel_temp2 = __pyx_v_j;
-                                __pyx_parallel_temp3 = __pyx_v_k;
-                            }
-                            __pyx_L19:;
-                            #ifdef _OPENMP
-                            #pragma omp flush(__pyx_parallel_why)
-                            #endif /* _OPENMP */
                         }
                     }
-                    #ifdef _OPENMP
-                    Py_END_ALLOW_THREADS
-                    #else
-{
-#ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    #endif /* _OPENMP */
-                    /* Clean up any temporaries */
-                    #ifdef WITH_THREAD
-                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                    #endif
-                    #ifndef _OPENMP
-}
-#endif /* _OPENMP */
                 }
-            }
-            if (__pyx_parallel_exc_type) {
-              /* This may have been overridden by a continue, break or return in another thread. Prefer the error. */
-              __pyx_parallel_why = 4;
-            }
-            if (__pyx_parallel_why) {
-              __pyx_v_dx = __pyx_parallel_temp0;
-              __pyx_v_i = __pyx_parallel_temp1;
-              __pyx_v_j = __pyx_parallel_temp2;
-              __pyx_v_k = __pyx_parallel_temp3;
-              switch (__pyx_parallel_why) {
-                    case 4:
-                {
-                    #ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    __Pyx_GIVEREF(__pyx_parallel_exc_type);
-                    __Pyx_ErrRestoreWithState(__pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb);
-                    __pyx_filename = __pyx_parallel_filename; __pyx_lineno = __pyx_parallel_lineno; __pyx_clineno = __pyx_parallel_clineno;
-                    #ifdef WITH_THREAD
-                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                    #endif
-                }
-                goto __pyx_L4_error;
-              }
             }
         }
         #if ((defined(__APPLE__) || defined(__OSX__)) && (defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && (__GNUC_MINOR__ > 95)))))
@@ -4791,7 +3879,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
         #endif
       }
 
-      /* "CHAPSim_post/_libs/integrate.pyx":125
+      /* "CHAPSim_post/_libs/integrate.pyx":137
  *     cdef double dx
  * 
  *     for i in prange(mid,size,nogil=True,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -4806,18 +3894,11 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
           #endif
           goto __pyx_L5;
         }
-        __pyx_L4_error: {
-          #ifdef WITH_THREAD
-          __Pyx_FastGIL_Forget();
-          Py_BLOCK_THREADS
-          #endif
-          goto __pyx_L1_error;
-        }
         __pyx_L5:;
       }
   }
 
-  /* "CHAPSim_post/_libs/integrate.pyx":132
+  /* "CHAPSim_post/_libs/integrate.pyx":144
  *                 int_array[i,k] += array[j,k]*dx
  * 
  *     for i in prange(mid,0,-1,nogil=True,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -4834,14 +3915,6 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
         __pyx_t_12 = __pyx_v_mid;
         if ((-1L == 0)) abort();
         {
-            double __pyx_parallel_temp0 = ((double)__PYX_NAN());
-            Py_ssize_t __pyx_parallel_temp1 = ((Py_ssize_t)0xbad0bad0);
-            Py_ssize_t __pyx_parallel_temp2 = ((Py_ssize_t)0xbad0bad0);
-            Py_ssize_t __pyx_parallel_temp3 = ((Py_ssize_t)0xbad0bad0);
-            const char *__pyx_parallel_filename = NULL; int __pyx_parallel_lineno = 0, __pyx_parallel_clineno = 0;
-            PyObject *__pyx_parallel_exc_type = NULL, *__pyx_parallel_exc_value = NULL, *__pyx_parallel_exc_tb = NULL;
-            int __pyx_parallel_why;
-            __pyx_parallel_why = 0;
             #if ((defined(__APPLE__) || defined(__OSX__)) && (defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && (__GNUC_MINOR__ > 95)))))
                 #undef likely
                 #undef unlikely
@@ -4852,20 +3925,13 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
             if (__pyx_t_10 > 0)
             {
                 #ifdef _OPENMP
-                #pragma omp parallel private(__pyx_t_13, __pyx_t_14, __pyx_t_15, __pyx_t_16, __pyx_t_17, __pyx_t_19, __pyx_t_2, __pyx_t_20, __pyx_t_21, __pyx_t_22, __pyx_t_6) private(__pyx_filename, __pyx_lineno, __pyx_clineno) shared(__pyx_parallel_why, __pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb)
+                #pragma omp parallel private(__pyx_t_13, __pyx_t_14, __pyx_t_15, __pyx_t_16, __pyx_t_17, __pyx_t_19, __pyx_t_2, __pyx_t_20, __pyx_t_21, __pyx_t_22)
                 #endif /* _OPENMP */
                 {
-                    #ifdef _OPENMP
-                    #ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    Py_BEGIN_ALLOW_THREADS
-                    #endif /* _OPENMP */
                     #ifdef _OPENMP
                     #pragma omp for lastprivate(__pyx_v_dx) firstprivate(__pyx_v_i) lastprivate(__pyx_v_i) lastprivate(__pyx_v_j) lastprivate(__pyx_v_k) schedule(dynamic)
                     #endif /* _OPENMP */
                     for (__pyx_t_11 = 0; __pyx_t_11 < __pyx_t_10; __pyx_t_11++){
-                        if (__pyx_parallel_why < 2)
                         {
                             __pyx_v_i = (Py_ssize_t)(__pyx_t_12 + -1L * __pyx_t_11);
                             /* Initialize private variables to invalid values */
@@ -4873,7 +3939,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
                             __pyx_v_j = ((Py_ssize_t)0xbad0bad0);
                             __pyx_v_k = ((Py_ssize_t)0xbad0bad0);
 
-                            /* "CHAPSim_post/_libs/integrate.pyx":133
+                            /* "CHAPSim_post/_libs/integrate.pyx":145
  * 
  *     for i in prange(mid,0,-1,nogil=True,schedule='dynamic'):
  *         for k in prange(size_x,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -4883,13 +3949,6 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
                             __pyx_t_2 = __pyx_v_size_x;
                             if ((1 == 0)) abort();
                             {
-                                double __pyx_parallel_temp0 = ((double)__PYX_NAN());
-                                Py_ssize_t __pyx_parallel_temp1 = ((Py_ssize_t)0xbad0bad0);
-                                Py_ssize_t __pyx_parallel_temp2 = ((Py_ssize_t)0xbad0bad0);
-                                const char *__pyx_parallel_filename = NULL; int __pyx_parallel_lineno = 0, __pyx_parallel_clineno = 0;
-                                PyObject *__pyx_parallel_exc_type = NULL, *__pyx_parallel_exc_value = NULL, *__pyx_parallel_exc_tb = NULL;
-                                int __pyx_parallel_why;
-                                __pyx_parallel_why = 0;
                                 __pyx_t_14 = (__pyx_t_2 - 0 + 1 - 1/abs(1)) / 1;
                                 if (__pyx_t_14 > 0)
                                 {
@@ -4897,24 +3956,17 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
                                     #pragma omp parallel
                                     #endif /* _OPENMP */
                                     {
-                                        #ifdef _OPENMP
-                                        #ifdef WITH_THREAD
-                                        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                        #endif
-                                        Py_BEGIN_ALLOW_THREADS
-                                        #endif /* _OPENMP */
                                         #if 0
                                         #pragma omp for lastprivate(__pyx_v_dx) lastprivate(__pyx_v_j) firstprivate(__pyx_v_k) lastprivate(__pyx_v_k) schedule(dynamic)
                                         #endif /* _OPENMP */
                                         for (__pyx_t_15 = 0; __pyx_t_15 < __pyx_t_14; __pyx_t_15++){
-                                            if (__pyx_parallel_why < 2)
                                             {
                                                 __pyx_v_k = (Py_ssize_t)(0 + 1 * __pyx_t_15);
                                                 /* Initialize private variables to invalid values */
                                                 __pyx_v_dx = ((double)__PYX_NAN());
                                                 __pyx_v_j = ((Py_ssize_t)0xbad0bad0);
 
-                                                /* "CHAPSim_post/_libs/integrate.pyx":134
+                                                /* "CHAPSim_post/_libs/integrate.pyx":146
  *     for i in prange(mid,0,-1,nogil=True,schedule='dynamic'):
  *         for k in prange(size_x,schedule='dynamic'):
  *             for j in range(mid,i+1,-1):             # <<<<<<<<<<<<<<
@@ -4926,7 +3978,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
                                                 for (__pyx_t_17 = __pyx_v_mid; __pyx_t_17 > __pyx_t_16; __pyx_t_17-=1) {
                                                   __pyx_v_j = __pyx_t_17;
 
-                                                  /* "CHAPSim_post/_libs/integrate.pyx":136
+                                                  /* "CHAPSim_post/_libs/integrate.pyx":148
  *             for j in range(mid,i+1,-1):
  * 
  *                 dx = staggered_y[j-1] - staggered_y[j]             # <<<<<<<<<<<<<<
@@ -4934,28 +3986,10 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
  * 
  */
                                                   __pyx_t_19 = (__pyx_v_j - 1);
-                                                  __pyx_t_6 = -1;
-                                                  if (__pyx_t_19 < 0) {
-                                                    __pyx_t_19 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                                    if (unlikely(__pyx_t_19 < 0)) __pyx_t_6 = 0;
-                                                  } else if (unlikely(__pyx_t_19 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_6 = 0;
-                                                  if (unlikely(__pyx_t_6 != -1)) {
-                                                    __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                                    __PYX_ERR(0, 136, __pyx_L29_error)
-                                                  }
                                                   __pyx_t_20 = __pyx_v_j;
-                                                  __pyx_t_6 = -1;
-                                                  if (__pyx_t_20 < 0) {
-                                                    __pyx_t_20 += __pyx_pybuffernd_staggered_y.diminfo[0].shape;
-                                                    if (unlikely(__pyx_t_20 < 0)) __pyx_t_6 = 0;
-                                                  } else if (unlikely(__pyx_t_20 >= __pyx_pybuffernd_staggered_y.diminfo[0].shape)) __pyx_t_6 = 0;
-                                                  if (unlikely(__pyx_t_6 != -1)) {
-                                                    __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                                    __PYX_ERR(0, 136, __pyx_L29_error)
-                                                  }
                                                   __pyx_v_dx = ((*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_19, __pyx_pybuffernd_staggered_y.diminfo[0].strides)) - (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.buf, __pyx_t_20, __pyx_pybuffernd_staggered_y.diminfo[0].strides)));
 
-                                                  /* "CHAPSim_post/_libs/integrate.pyx":137
+                                                  /* "CHAPSim_post/_libs/integrate.pyx":149
  * 
  *                 dx = staggered_y[j-1] - staggered_y[j]
  *                 int_array[i,k] += array[j,k]*dx             # <<<<<<<<<<<<<<
@@ -4964,189 +3998,18 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
  */
                                                   __pyx_t_20 = __pyx_v_j;
                                                   __pyx_t_19 = __pyx_v_k;
-                                                  __pyx_t_6 = -1;
-                                                  if (__pyx_t_20 < 0) {
-                                                    __pyx_t_20 += __pyx_pybuffernd_array.diminfo[0].shape;
-                                                    if (unlikely(__pyx_t_20 < 0)) __pyx_t_6 = 0;
-                                                  } else if (unlikely(__pyx_t_20 >= __pyx_pybuffernd_array.diminfo[0].shape)) __pyx_t_6 = 0;
-                                                  if (__pyx_t_19 < 0) {
-                                                    __pyx_t_19 += __pyx_pybuffernd_array.diminfo[1].shape;
-                                                    if (unlikely(__pyx_t_19 < 0)) __pyx_t_6 = 1;
-                                                  } else if (unlikely(__pyx_t_19 >= __pyx_pybuffernd_array.diminfo[1].shape)) __pyx_t_6 = 1;
-                                                  if (unlikely(__pyx_t_6 != -1)) {
-                                                    __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                                    __PYX_ERR(0, 137, __pyx_L29_error)
-                                                  }
                                                   __pyx_t_22 = __pyx_v_i;
                                                   __pyx_t_21 = __pyx_v_k;
-                                                  __pyx_t_6 = -1;
-                                                  if (__pyx_t_22 < 0) {
-                                                    __pyx_t_22 += __pyx_pybuffernd_int_array.diminfo[0].shape;
-                                                    if (unlikely(__pyx_t_22 < 0)) __pyx_t_6 = 0;
-                                                  } else if (unlikely(__pyx_t_22 >= __pyx_pybuffernd_int_array.diminfo[0].shape)) __pyx_t_6 = 0;
-                                                  if (__pyx_t_21 < 0) {
-                                                    __pyx_t_21 += __pyx_pybuffernd_int_array.diminfo[1].shape;
-                                                    if (unlikely(__pyx_t_21 < 0)) __pyx_t_6 = 1;
-                                                  } else if (unlikely(__pyx_t_21 >= __pyx_pybuffernd_int_array.diminfo[1].shape)) __pyx_t_6 = 1;
-                                                  if (unlikely(__pyx_t_6 != -1)) {
-                                                    __Pyx_RaiseBufferIndexErrorNogil(__pyx_t_6);
-                                                    __PYX_ERR(0, 137, __pyx_L29_error)
-                                                  }
                                                   *__Pyx_BufPtrStrided2d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_int_array.rcbuffer->pybuffer.buf, __pyx_t_22, __pyx_pybuffernd_int_array.diminfo[0].strides, __pyx_t_21, __pyx_pybuffernd_int_array.diminfo[1].strides) += ((*__Pyx_BufPtrStrided2d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_array.rcbuffer->pybuffer.buf, __pyx_t_20, __pyx_pybuffernd_array.diminfo[0].strides, __pyx_t_19, __pyx_pybuffernd_array.diminfo[1].strides)) * __pyx_v_dx);
                                                 }
-                                                goto __pyx_L34;
-                                                __pyx_L29_error:;
-                                                {
-                                                    #ifdef WITH_THREAD
-                                                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                                    #endif
-                                                    #ifdef _OPENMP
-                                                    #pragma omp flush(__pyx_parallel_exc_type)
-                                                    #endif /* _OPENMP */
-                                                    if (!__pyx_parallel_exc_type) {
-                                                      __Pyx_ErrFetchWithState(&__pyx_parallel_exc_type, &__pyx_parallel_exc_value, &__pyx_parallel_exc_tb);
-                                                      __pyx_parallel_filename = __pyx_filename; __pyx_parallel_lineno = __pyx_lineno; __pyx_parallel_clineno = __pyx_clineno;
-                                                      __Pyx_GOTREF(__pyx_parallel_exc_type);
-                                                    }
-                                                    #ifdef WITH_THREAD
-                                                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                                    #endif
-                                                }
-                                                __pyx_parallel_why = 4;
-                                                goto __pyx_L33;
-                                                __pyx_L33:;
-                                                #ifdef _OPENMP
-                                                #pragma omp critical(__pyx_parallel_lastprivates7)
-                                                #endif /* _OPENMP */
-                                                {
-                                                    __pyx_parallel_temp0 = __pyx_v_dx;
-                                                    __pyx_parallel_temp1 = __pyx_v_j;
-                                                    __pyx_parallel_temp2 = __pyx_v_k;
-                                                }
-                                                __pyx_L34:;
-                                                #ifdef _OPENMP
-                                                #pragma omp flush(__pyx_parallel_why)
-                                                #endif /* _OPENMP */
                                             }
                                         }
-                                        #ifdef _OPENMP
-                                        Py_END_ALLOW_THREADS
-                                        #else
-{
-#ifdef WITH_THREAD
-                                        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                        #endif
-                                        #endif /* _OPENMP */
-                                        #ifdef WITH_THREAD
-                                        __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                        #endif
-                                        #ifndef _OPENMP
-}
-#endif /* _OPENMP */
                                     }
                                 }
-                                if (__pyx_parallel_exc_type) {
-                                  /* This may have been overridden by a continue, break or return in another thread. Prefer the error. */
-                                  __pyx_parallel_why = 4;
-                                }
-                                if (__pyx_parallel_why) {
-                                  __pyx_v_dx = __pyx_parallel_temp0;
-                                  __pyx_v_j = __pyx_parallel_temp1;
-                                  __pyx_v_k = __pyx_parallel_temp2;
-                                  switch (__pyx_parallel_why) {
-                                        case 4:
-                                    {
-                                        #ifdef WITH_THREAD
-                                        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                        #endif
-                                        __Pyx_GIVEREF(__pyx_parallel_exc_type);
-                                        __Pyx_ErrRestoreWithState(__pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb);
-                                        __pyx_filename = __pyx_parallel_filename; __pyx_lineno = __pyx_parallel_lineno; __pyx_clineno = __pyx_parallel_clineno;
-                                        #ifdef WITH_THREAD
-                                        __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                        #endif
-                                    }
-                                    goto __pyx_L25_error;
-                                  }
-                                }
                             }
-                            goto __pyx_L36;
-                            __pyx_L25_error:;
-                            {
-                                #ifdef WITH_THREAD
-                                PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                                #endif
-                                #ifdef _OPENMP
-                                #pragma omp flush(__pyx_parallel_exc_type)
-                                #endif /* _OPENMP */
-                                if (!__pyx_parallel_exc_type) {
-                                  __Pyx_ErrFetchWithState(&__pyx_parallel_exc_type, &__pyx_parallel_exc_value, &__pyx_parallel_exc_tb);
-                                  __pyx_parallel_filename = __pyx_filename; __pyx_parallel_lineno = __pyx_lineno; __pyx_parallel_clineno = __pyx_clineno;
-                                  __Pyx_GOTREF(__pyx_parallel_exc_type);
-                                }
-                                #ifdef WITH_THREAD
-                                __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                                #endif
-                            }
-                            __pyx_parallel_why = 4;
-                            goto __pyx_L35;
-                            __pyx_L35:;
-                            #ifdef _OPENMP
-                            #pragma omp critical(__pyx_parallel_lastprivates8)
-                            #endif /* _OPENMP */
-                            {
-                                __pyx_parallel_temp0 = __pyx_v_dx;
-                                __pyx_parallel_temp1 = __pyx_v_i;
-                                __pyx_parallel_temp2 = __pyx_v_j;
-                                __pyx_parallel_temp3 = __pyx_v_k;
-                            }
-                            __pyx_L36:;
-                            #ifdef _OPENMP
-                            #pragma omp flush(__pyx_parallel_why)
-                            #endif /* _OPENMP */
                         }
                     }
-                    #ifdef _OPENMP
-                    Py_END_ALLOW_THREADS
-                    #else
-{
-#ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    #endif /* _OPENMP */
-                    /* Clean up any temporaries */
-                    #ifdef WITH_THREAD
-                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                    #endif
-                    #ifndef _OPENMP
-}
-#endif /* _OPENMP */
                 }
-            }
-            if (__pyx_parallel_exc_type) {
-              /* This may have been overridden by a continue, break or return in another thread. Prefer the error. */
-              __pyx_parallel_why = 4;
-            }
-            if (__pyx_parallel_why) {
-              __pyx_v_dx = __pyx_parallel_temp0;
-              __pyx_v_i = __pyx_parallel_temp1;
-              __pyx_v_j = __pyx_parallel_temp2;
-              __pyx_v_k = __pyx_parallel_temp3;
-              switch (__pyx_parallel_why) {
-                    case 4:
-                {
-                    #ifdef WITH_THREAD
-                    PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-                    #endif
-                    __Pyx_GIVEREF(__pyx_parallel_exc_type);
-                    __Pyx_ErrRestoreWithState(__pyx_parallel_exc_type, __pyx_parallel_exc_value, __pyx_parallel_exc_tb);
-                    __pyx_filename = __pyx_parallel_filename; __pyx_lineno = __pyx_parallel_lineno; __pyx_clineno = __pyx_parallel_clineno;
-                    #ifdef WITH_THREAD
-                    __Pyx_PyGILState_Release(__pyx_gilstate_save);
-                    #endif
-                }
-                goto __pyx_L21_error;
-              }
             }
         }
         #if ((defined(__APPLE__) || defined(__OSX__)) && (defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && (__GNUC_MINOR__ > 95)))))
@@ -5157,7 +4020,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
         #endif
       }
 
-      /* "CHAPSim_post/_libs/integrate.pyx":132
+      /* "CHAPSim_post/_libs/integrate.pyx":144
  *                 int_array[i,k] += array[j,k]*dx
  * 
  *     for i in prange(mid,0,-1,nogil=True,schedule='dynamic'):             # <<<<<<<<<<<<<<
@@ -5172,18 +4035,11 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
           #endif
           goto __pyx_L22;
         }
-        __pyx_L21_error: {
-          #ifdef WITH_THREAD
-          __Pyx_FastGIL_Forget();
-          Py_BLOCK_THREADS
-          #endif
-          goto __pyx_L1_error;
-        }
         __pyx_L22:;
       }
   }
 
-  /* "CHAPSim_post/_libs/integrate.pyx":139
+  /* "CHAPSim_post/_libs/integrate.pyx":151
  *                 int_array[i,k] += array[j,k]*dx
  * 
  *     return int_array             # <<<<<<<<<<<<<<
@@ -5195,9 +4051,9 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
   __pyx_r = ((PyObject *)__pyx_v_int_array);
   goto __pyx_L0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":112
- * 
- * 
+  /* "CHAPSim_post/_libs/integrate.pyx":124
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y2D_channel(np.ndarray[np.float64_t,ndim=2] array,             # <<<<<<<<<<<<<<
  *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
@@ -5230,7 +4086,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
   return __pyx_r;
 }
 
-/* "CHAPSim_post/_libs/integrate.pyx":142
+/* "CHAPSim_post/_libs/integrate.pyx":154
  * 
  * 
  * def cumulativeInt_y2D(np.ndarray[np.float64_t,ndim=2] array,             # <<<<<<<<<<<<<<
@@ -5239,9 +4095,9 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_6cumulativeInt_y2D_ch
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_9cumulativeInt_y2D(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_12CHAPSim_post_5_libs_9integrate_9cumulativeInt_y2D = {"cumulativeInt_y2D", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_12CHAPSim_post_5_libs_9integrate_9cumulativeInt_y2D, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_9cumulativeInt_y2D(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_11cumulativeInt_y2D(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_12CHAPSim_post_5_libs_9integrate_11cumulativeInt_y2D = {"cumulativeInt_y2D", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_12CHAPSim_post_5_libs_9integrate_11cumulativeInt_y2D, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_11cumulativeInt_y2D(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_array = 0;
   PyArrayObject *__pyx_v_staggered_y = 0;
   int __pyx_v_channel;
@@ -5276,17 +4132,17 @@ static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_9cumulativeInt_y2D(Py
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_staggered_y)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y2D", 1, 3, 3, 1); __PYX_ERR(0, 142, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y2D", 1, 3, 3, 1); __PYX_ERR(0, 154, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_channel)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y2D", 1, 3, 3, 2); __PYX_ERR(0, 142, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("cumulativeInt_y2D", 1, 3, 3, 2); __PYX_ERR(0, 154, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "cumulativeInt_y2D") < 0)) __PYX_ERR(0, 142, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "cumulativeInt_y2D") < 0)) __PYX_ERR(0, 154, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -5297,19 +4153,19 @@ static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_9cumulativeInt_y2D(Py
     }
     __pyx_v_array = ((PyArrayObject *)values[0]);
     __pyx_v_staggered_y = ((PyArrayObject *)values[1]);
-    __pyx_v_channel = __Pyx_PyInt_As_int(values[2]); if (unlikely((__pyx_v_channel == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 144, __pyx_L3_error)
+    __pyx_v_channel = __Pyx_PyInt_As_int(values[2]); if (unlikely((__pyx_v_channel == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 156, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("cumulativeInt_y2D", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 142, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("cumulativeInt_y2D", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 154, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("CHAPSim_post._libs.integrate.cumulativeInt_y2D", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_array), __pyx_ptype_5numpy_ndarray, 1, "array", 0))) __PYX_ERR(0, 142, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_staggered_y), __pyx_ptype_5numpy_ndarray, 1, "staggered_y", 0))) __PYX_ERR(0, 143, __pyx_L1_error)
-  __pyx_r = __pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D(__pyx_self, __pyx_v_array, __pyx_v_staggered_y, __pyx_v_channel);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_array), __pyx_ptype_5numpy_ndarray, 1, "array", 0))) __PYX_ERR(0, 154, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_staggered_y), __pyx_ptype_5numpy_ndarray, 1, "staggered_y", 0))) __PYX_ERR(0, 155, __pyx_L1_error)
+  __pyx_r = __pyx_pf_12CHAPSim_post_5_libs_9integrate_10cumulativeInt_y2D(__pyx_self, __pyx_v_array, __pyx_v_staggered_y, __pyx_v_channel);
 
   /* function exit code */
   goto __pyx_L0;
@@ -5320,7 +4176,7 @@ static PyObject *__pyx_pw_12CHAPSim_post_5_libs_9integrate_9cumulativeInt_y2D(Py
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_array, PyArrayObject *__pyx_v_staggered_y, int __pyx_v_channel) {
+static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_10cumulativeInt_y2D(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_array, PyArrayObject *__pyx_v_staggered_y, int __pyx_v_channel) {
   PyObject *__pyx_v_msg = NULL;
   __Pyx_LocalBuf_ND __pyx_pybuffernd_array;
   __Pyx_Buffer __pyx_pybuffer_array;
@@ -5348,34 +4204,34 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D(CY
   __pyx_pybuffernd_staggered_y.rcbuffer = &__pyx_pybuffer_staggered_y;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 142, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 154, __pyx_L1_error)
   }
   __pyx_pybuffernd_array.diminfo[0].strides = __pyx_pybuffernd_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_array.diminfo[0].shape = __pyx_pybuffernd_array.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_array.diminfo[1].strides = __pyx_pybuffernd_array.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_array.diminfo[1].shape = __pyx_pybuffernd_array.rcbuffer->pybuffer.shape[1];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_staggered_y.rcbuffer->pybuffer, (PyObject*)__pyx_v_staggered_y, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 142, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_staggered_y.rcbuffer->pybuffer, (PyObject*)__pyx_v_staggered_y, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 154, __pyx_L1_error)
   }
   __pyx_pybuffernd_staggered_y.diminfo[0].strides = __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_staggered_y.diminfo[0].shape = __pyx_pybuffernd_staggered_y.rcbuffer->pybuffer.shape[0];
 
-  /* "CHAPSim_post/_libs/integrate.pyx":146
+  /* "CHAPSim_post/_libs/integrate.pyx":158
  *                       int channel):
  * 
  *     if staggered_y.size != array.shape[0] + 1:             # <<<<<<<<<<<<<<
  *         msg = ("This integration method must be"
  *                 " called with the staggered data")
  */
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_staggered_y), __pyx_n_s_size); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 146, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_staggered_y), __pyx_n_s_size); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 158, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyInt_From_long(((__pyx_v_array->dimensions[0]) + 1)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 146, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_long(((__pyx_v_array->dimensions[0]) + 1)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 158, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = PyObject_RichCompare(__pyx_t_1, __pyx_t_2, Py_NE); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 146, __pyx_L1_error)
+  __pyx_t_3 = PyObject_RichCompare(__pyx_t_1, __pyx_t_2, Py_NE); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 158, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 146, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 158, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   if (unlikely(__pyx_t_4)) {
 
-    /* "CHAPSim_post/_libs/integrate.pyx":147
+    /* "CHAPSim_post/_libs/integrate.pyx":159
  * 
  *     if staggered_y.size != array.shape[0] + 1:
  *         msg = ("This integration method must be"             # <<<<<<<<<<<<<<
@@ -5385,20 +4241,20 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D(CY
     __Pyx_INCREF(__pyx_kp_u_This_integration_method_must_be);
     __pyx_v_msg = __pyx_kp_u_This_integration_method_must_be;
 
-    /* "CHAPSim_post/_libs/integrate.pyx":149
+    /* "CHAPSim_post/_libs/integrate.pyx":161
  *         msg = ("This integration method must be"
  *                 " called with the staggered data")
  *         raise RuntimeError(msg)             # <<<<<<<<<<<<<<
  * 
  *     if channel == 1:
  */
-    __pyx_t_3 = __Pyx_PyObject_CallOneArg(__pyx_builtin_RuntimeError, __pyx_v_msg); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 149, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_CallOneArg(__pyx_builtin_RuntimeError, __pyx_v_msg); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 161, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __PYX_ERR(0, 149, __pyx_L1_error)
+    __PYX_ERR(0, 161, __pyx_L1_error)
 
-    /* "CHAPSim_post/_libs/integrate.pyx":146
+    /* "CHAPSim_post/_libs/integrate.pyx":158
  *                       int channel):
  * 
  *     if staggered_y.size != array.shape[0] + 1:             # <<<<<<<<<<<<<<
@@ -5407,7 +4263,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D(CY
  */
   }
 
-  /* "CHAPSim_post/_libs/integrate.pyx":151
+  /* "CHAPSim_post/_libs/integrate.pyx":163
  *         raise RuntimeError(msg)
  * 
  *     if channel == 1:             # <<<<<<<<<<<<<<
@@ -5417,7 +4273,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D(CY
   __pyx_t_4 = ((__pyx_v_channel == 1) != 0);
   if (__pyx_t_4) {
 
-    /* "CHAPSim_post/_libs/integrate.pyx":152
+    /* "CHAPSim_post/_libs/integrate.pyx":164
  * 
  *     if channel == 1:
  *         return cumulativeInt_y2D_channel(array,staggered_y)             # <<<<<<<<<<<<<<
@@ -5425,7 +4281,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D(CY
  *         return cumulativeInt_y2D_pipe(array,staggered_y)
  */
     __Pyx_XDECREF(__pyx_r);
-    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_cumulativeInt_y2D_channel); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 152, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_cumulativeInt_y2D_channel); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 164, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __pyx_t_1 = NULL;
     __pyx_t_5 = 0;
@@ -5442,7 +4298,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D(CY
     #if CYTHON_FAST_PYCALL
     if (PyFunction_Check(__pyx_t_2)) {
       PyObject *__pyx_temp[3] = {__pyx_t_1, ((PyObject *)__pyx_v_array), ((PyObject *)__pyx_v_staggered_y)};
-      __pyx_t_3 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_5, 2+__pyx_t_5); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 152, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_5, 2+__pyx_t_5); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 164, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
       __Pyx_GOTREF(__pyx_t_3);
     } else
@@ -5450,13 +4306,13 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D(CY
     #if CYTHON_FAST_PYCCALL
     if (__Pyx_PyFastCFunction_Check(__pyx_t_2)) {
       PyObject *__pyx_temp[3] = {__pyx_t_1, ((PyObject *)__pyx_v_array), ((PyObject *)__pyx_v_staggered_y)};
-      __pyx_t_3 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_5, 2+__pyx_t_5); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 152, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_5, 2+__pyx_t_5); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 164, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
       __Pyx_GOTREF(__pyx_t_3);
     } else
     #endif
     {
-      __pyx_t_6 = PyTuple_New(2+__pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 152, __pyx_L1_error)
+      __pyx_t_6 = PyTuple_New(2+__pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 164, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_6);
       if (__pyx_t_1) {
         __Pyx_GIVEREF(__pyx_t_1); PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_1); __pyx_t_1 = NULL;
@@ -5467,7 +4323,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D(CY
       __Pyx_INCREF(((PyObject *)__pyx_v_staggered_y));
       __Pyx_GIVEREF(((PyObject *)__pyx_v_staggered_y));
       PyTuple_SET_ITEM(__pyx_t_6, 1+__pyx_t_5, ((PyObject *)__pyx_v_staggered_y));
-      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_6, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 152, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_6, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 164, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     }
@@ -5476,7 +4332,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D(CY
     __pyx_t_3 = 0;
     goto __pyx_L0;
 
-    /* "CHAPSim_post/_libs/integrate.pyx":151
+    /* "CHAPSim_post/_libs/integrate.pyx":163
  *         raise RuntimeError(msg)
  * 
  *     if channel == 1:             # <<<<<<<<<<<<<<
@@ -5485,21 +4341,66 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_8cumulativeInt_y2D(CY
  */
   }
 
-  /* "CHAPSim_post/_libs/integrate.pyx":154
+  /* "CHAPSim_post/_libs/integrate.pyx":166
  *         return cumulativeInt_y2D_channel(array,staggered_y)
  *     else:
  *         return cumulativeInt_y2D_pipe(array,staggered_y)             # <<<<<<<<<<<<<<
  */
   /*else*/ {
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_3 = __pyx_f_12CHAPSim_post_5_libs_9integrate_cumulativeInt_y2D_pipe(((PyArrayObject *)__pyx_v_array), ((PyArrayObject *)__pyx_v_staggered_y)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 154, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_3);
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_cumulativeInt_y2D_pipe); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 166, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_6 = NULL;
+    __pyx_t_5 = 0;
+    if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_2))) {
+      __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_2);
+      if (likely(__pyx_t_6)) {
+        PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+        __Pyx_INCREF(__pyx_t_6);
+        __Pyx_INCREF(function);
+        __Pyx_DECREF_SET(__pyx_t_2, function);
+        __pyx_t_5 = 1;
+      }
+    }
+    #if CYTHON_FAST_PYCALL
+    if (PyFunction_Check(__pyx_t_2)) {
+      PyObject *__pyx_temp[3] = {__pyx_t_6, ((PyObject *)__pyx_v_array), ((PyObject *)__pyx_v_staggered_y)};
+      __pyx_t_3 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_5, 2+__pyx_t_5); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 166, __pyx_L1_error)
+      __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
+      __Pyx_GOTREF(__pyx_t_3);
+    } else
+    #endif
+    #if CYTHON_FAST_PYCCALL
+    if (__Pyx_PyFastCFunction_Check(__pyx_t_2)) {
+      PyObject *__pyx_temp[3] = {__pyx_t_6, ((PyObject *)__pyx_v_array), ((PyObject *)__pyx_v_staggered_y)};
+      __pyx_t_3 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_5, 2+__pyx_t_5); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 166, __pyx_L1_error)
+      __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
+      __Pyx_GOTREF(__pyx_t_3);
+    } else
+    #endif
+    {
+      __pyx_t_1 = PyTuple_New(2+__pyx_t_5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 166, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_1);
+      if (__pyx_t_6) {
+        __Pyx_GIVEREF(__pyx_t_6); PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_6); __pyx_t_6 = NULL;
+      }
+      __Pyx_INCREF(((PyObject *)__pyx_v_array));
+      __Pyx_GIVEREF(((PyObject *)__pyx_v_array));
+      PyTuple_SET_ITEM(__pyx_t_1, 0+__pyx_t_5, ((PyObject *)__pyx_v_array));
+      __Pyx_INCREF(((PyObject *)__pyx_v_staggered_y));
+      __Pyx_GIVEREF(((PyObject *)__pyx_v_staggered_y));
+      PyTuple_SET_ITEM(__pyx_t_1, 1+__pyx_t_5, ((PyObject *)__pyx_v_staggered_y));
+      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_1, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 166, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_3);
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    }
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_r = __pyx_t_3;
     __pyx_t_3 = 0;
     goto __pyx_L0;
   }
 
-  /* "CHAPSim_post/_libs/integrate.pyx":142
+  /* "CHAPSim_post/_libs/integrate.pyx":154
  * 
  * 
  * def cumulativeInt_y2D(np.ndarray[np.float64_t,ndim=2] array,             # <<<<<<<<<<<<<<
@@ -6609,6 +5510,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_cumulativeInt_y1D_pipe, __pyx_k_cumulativeInt_y1D_pipe, sizeof(__pyx_k_cumulativeInt_y1D_pipe), 0, 0, 1, 1},
   {&__pyx_n_s_cumulativeInt_y2D, __pyx_k_cumulativeInt_y2D, sizeof(__pyx_k_cumulativeInt_y2D), 0, 0, 1, 1},
   {&__pyx_n_s_cumulativeInt_y2D_channel, __pyx_k_cumulativeInt_y2D_channel, sizeof(__pyx_k_cumulativeInt_y2D_channel), 0, 0, 1, 1},
+  {&__pyx_n_s_cumulativeInt_y2D_pipe, __pyx_k_cumulativeInt_y2D_pipe, sizeof(__pyx_k_cumulativeInt_y2D_pipe), 0, 0, 1, 1},
   {&__pyx_n_s_dx, __pyx_k_dx, sizeof(__pyx_k_dx), 0, 0, 1, 1},
   {&__pyx_n_s_i, __pyx_k_i, sizeof(__pyx_k_i), 0, 0, 1, 1},
   {&__pyx_n_s_import, __pyx_k_import, sizeof(__pyx_k_import), 0, 0, 1, 1},
@@ -6626,6 +5528,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_range, __pyx_k_range, sizeof(__pyx_k_range), 0, 0, 1, 1},
   {&__pyx_n_s_size, __pyx_k_size, sizeof(__pyx_k_size), 0, 0, 1, 1},
   {&__pyx_n_s_size_x, __pyx_k_size_x, sizeof(__pyx_k_size_x), 0, 0, 1, 1},
+  {&__pyx_n_s_size_y, __pyx_k_size_y, sizeof(__pyx_k_size_y), 0, 0, 1, 1},
   {&__pyx_n_s_staggered_y, __pyx_k_staggered_y, sizeof(__pyx_k_staggered_y), 0, 0, 1, 1},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
   {&__pyx_n_s_ycc, __pyx_k_ycc, sizeof(__pyx_k_ycc), 0, 0, 1, 1},
@@ -6633,8 +5536,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {0, 0, 0, 0, 0, 0, 0}
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 19, __pyx_L1_error)
-  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) __PYX_ERR(0, 64, __pyx_L1_error)
+  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 22, __pyx_L1_error)
+  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) __PYX_ERR(0, 72, __pyx_L1_error)
   __pyx_builtin_ImportError = __Pyx_GetBuiltinName(__pyx_n_s_ImportError); if (!__pyx_builtin_ImportError) __PYX_ERR(1, 947, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
@@ -6667,65 +5570,77 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__2);
   __Pyx_GIVEREF(__pyx_tuple__2);
 
-  /* "CHAPSim_post/_libs/integrate.pyx":8
- * import cython
- * 
+  /* "CHAPSim_post/_libs/integrate.pyx":11
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y1D_pipe(np.ndarray[np.float64_t,ndim=1] array,             # <<<<<<<<<<<<<<
  *                       np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
  */
-  __pyx_tuple__3 = PyTuple_Pack(8, __pyx_n_s_array, __pyx_n_s_staggered_y, __pyx_n_s_size, __pyx_n_s_int_array, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_dx, __pyx_n_s_ycc); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __pyx_tuple__3 = PyTuple_Pack(8, __pyx_n_s_array, __pyx_n_s_staggered_y, __pyx_n_s_size, __pyx_n_s_int_array, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_dx, __pyx_n_s_ycc); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 11, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__3);
   __Pyx_GIVEREF(__pyx_tuple__3);
-  __pyx_codeobj__4 = (PyObject*)__Pyx_PyCode_New(2, 0, 8, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__3, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_CHAPSim_post__libs_integrate_pyx, __pyx_n_s_cumulativeInt_y1D_pipe, 8, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__4)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __pyx_codeobj__4 = (PyObject*)__Pyx_PyCode_New(2, 0, 8, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__3, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_CHAPSim_post__libs_integrate_pyx, __pyx_n_s_cumulativeInt_y1D_pipe, 11, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__4)) __PYX_ERR(0, 11, __pyx_L1_error)
 
-  /* "CHAPSim_post/_libs/integrate.pyx":29
- *     return int_array
- * 
+  /* "CHAPSim_post/_libs/integrate.pyx":35
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y1D_channel(np.ndarray[np.float64_t,ndim=1] array,             # <<<<<<<<<<<<<<
  *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  *     cdef Py_ssize_t size = array.size
  */
-  __pyx_tuple__5 = PyTuple_Pack(8, __pyx_n_s_array, __pyx_n_s_staggered_y, __pyx_n_s_size, __pyx_n_s_mid, __pyx_n_s_int_array, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_dx); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(0, 29, __pyx_L1_error)
+  __pyx_tuple__5 = PyTuple_Pack(8, __pyx_n_s_array, __pyx_n_s_staggered_y, __pyx_n_s_size, __pyx_n_s_mid, __pyx_n_s_int_array, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_dx); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(0, 35, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__5);
   __Pyx_GIVEREF(__pyx_tuple__5);
-  __pyx_codeobj__6 = (PyObject*)__Pyx_PyCode_New(2, 0, 8, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__5, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_CHAPSim_post__libs_integrate_pyx, __pyx_n_s_cumulativeInt_y1D_channel, 29, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__6)) __PYX_ERR(0, 29, __pyx_L1_error)
+  __pyx_codeobj__6 = (PyObject*)__Pyx_PyCode_New(2, 0, 8, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__5, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_CHAPSim_post__libs_integrate_pyx, __pyx_n_s_cumulativeInt_y1D_channel, 35, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__6)) __PYX_ERR(0, 35, __pyx_L1_error)
 
-  /* "CHAPSim_post/_libs/integrate.pyx":57
- * 
- * 
+  /* "CHAPSim_post/_libs/integrate.pyx":65
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y1D(np.ndarray[np.float64_t,ndim=1] array,             # <<<<<<<<<<<<<<
  *                       np.ndarray[np.float64_t,ndim=1] staggered_y,
  *                       int channel):
  */
-  __pyx_tuple__7 = PyTuple_Pack(4, __pyx_n_s_array, __pyx_n_s_staggered_y, __pyx_n_s_channel, __pyx_n_s_msg); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(0, 57, __pyx_L1_error)
+  __pyx_tuple__7 = PyTuple_Pack(4, __pyx_n_s_array, __pyx_n_s_staggered_y, __pyx_n_s_channel, __pyx_n_s_msg); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(0, 65, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__7);
   __Pyx_GIVEREF(__pyx_tuple__7);
-  __pyx_codeobj__8 = (PyObject*)__Pyx_PyCode_New(3, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__7, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_CHAPSim_post__libs_integrate_pyx, __pyx_n_s_cumulativeInt_y1D, 57, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__8)) __PYX_ERR(0, 57, __pyx_L1_error)
+  __pyx_codeobj__8 = (PyObject*)__Pyx_PyCode_New(3, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__7, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_CHAPSim_post__libs_integrate_pyx, __pyx_n_s_cumulativeInt_y1D, 65, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__8)) __PYX_ERR(0, 65, __pyx_L1_error)
 
-  /* "CHAPSim_post/_libs/integrate.pyx":112
+  /* "CHAPSim_post/_libs/integrate.pyx":96
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
+ * def cumulativeInt_y2D_pipe(np.ndarray[np.float64_t,ndim=2] array,             # <<<<<<<<<<<<<<
+ *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
- * 
+ */
+  __pyx_tuple__9 = PyTuple_Pack(10, __pyx_n_s_array, __pyx_n_s_staggered_y, __pyx_n_s_size_y, __pyx_n_s_size_x, __pyx_n_s_int_array, __pyx_n_s_i, __pyx_n_s_k, __pyx_n_s_j, __pyx_n_s_dx, __pyx_n_s_ycc); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__9);
+  __Pyx_GIVEREF(__pyx_tuple__9);
+  __pyx_codeobj__10 = (PyObject*)__Pyx_PyCode_New(2, 0, 10, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__9, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_CHAPSim_post__libs_integrate_pyx, __pyx_n_s_cumulativeInt_y2D_pipe, 96, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__10)) __PYX_ERR(0, 96, __pyx_L1_error)
+
+  /* "CHAPSim_post/_libs/integrate.pyx":124
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y2D_channel(np.ndarray[np.float64_t,ndim=2] array,             # <<<<<<<<<<<<<<
  *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
  */
-  __pyx_tuple__9 = PyTuple_Pack(10, __pyx_n_s_array, __pyx_n_s_staggered_y, __pyx_n_s_size, __pyx_n_s_mid, __pyx_n_s_size_x, __pyx_n_s_int_array, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_k, __pyx_n_s_dx); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(0, 112, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__9);
-  __Pyx_GIVEREF(__pyx_tuple__9);
-  __pyx_codeobj__10 = (PyObject*)__Pyx_PyCode_New(2, 0, 10, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__9, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_CHAPSim_post__libs_integrate_pyx, __pyx_n_s_cumulativeInt_y2D_channel, 112, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__10)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __pyx_tuple__11 = PyTuple_Pack(10, __pyx_n_s_array, __pyx_n_s_staggered_y, __pyx_n_s_size, __pyx_n_s_mid, __pyx_n_s_size_x, __pyx_n_s_int_array, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_k, __pyx_n_s_dx); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(0, 124, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__11);
+  __Pyx_GIVEREF(__pyx_tuple__11);
+  __pyx_codeobj__12 = (PyObject*)__Pyx_PyCode_New(2, 0, 10, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__11, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_CHAPSim_post__libs_integrate_pyx, __pyx_n_s_cumulativeInt_y2D_channel, 124, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__12)) __PYX_ERR(0, 124, __pyx_L1_error)
 
-  /* "CHAPSim_post/_libs/integrate.pyx":142
+  /* "CHAPSim_post/_libs/integrate.pyx":154
  * 
  * 
  * def cumulativeInt_y2D(np.ndarray[np.float64_t,ndim=2] array,             # <<<<<<<<<<<<<<
  *                       np.ndarray[np.float64_t,ndim=1] staggered_y,
  *                       int channel):
  */
-  __pyx_tuple__11 = PyTuple_Pack(4, __pyx_n_s_array, __pyx_n_s_staggered_y, __pyx_n_s_channel, __pyx_n_s_msg); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(0, 142, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__11);
-  __Pyx_GIVEREF(__pyx_tuple__11);
-  __pyx_codeobj__12 = (PyObject*)__Pyx_PyCode_New(3, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__11, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_CHAPSim_post__libs_integrate_pyx, __pyx_n_s_cumulativeInt_y2D, 142, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__12)) __PYX_ERR(0, 142, __pyx_L1_error)
+  __pyx_tuple__13 = PyTuple_Pack(4, __pyx_n_s_array, __pyx_n_s_staggered_y, __pyx_n_s_channel, __pyx_n_s_msg); if (unlikely(!__pyx_tuple__13)) __PYX_ERR(0, 154, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__13);
+  __Pyx_GIVEREF(__pyx_tuple__13);
+  __pyx_codeobj__14 = (PyObject*)__Pyx_PyCode_New(3, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__13, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_CHAPSim_post__libs_integrate_pyx, __pyx_n_s_cumulativeInt_y2D, 154, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__14)) __PYX_ERR(0, 154, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -7076,64 +5991,76 @@ if (!__Pyx_RefNanny) {
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_np, __pyx_t_1) < 0) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":8
- * import cython
- * 
+  /* "CHAPSim_post/_libs/integrate.pyx":11
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y1D_pipe(np.ndarray[np.float64_t,ndim=1] array,             # <<<<<<<<<<<<<<
  *                       np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12CHAPSim_post_5_libs_9integrate_1cumulativeInt_y1D_pipe, NULL, __pyx_n_s_CHAPSim_post__libs_integrate); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12CHAPSim_post_5_libs_9integrate_1cumulativeInt_y1D_pipe, NULL, __pyx_n_s_CHAPSim_post__libs_integrate); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 11, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_cumulativeInt_y1D_pipe, __pyx_t_1) < 0) __PYX_ERR(0, 8, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_cumulativeInt_y1D_pipe, __pyx_t_1) < 0) __PYX_ERR(0, 11, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":29
- *     return int_array
- * 
+  /* "CHAPSim_post/_libs/integrate.pyx":35
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y1D_channel(np.ndarray[np.float64_t,ndim=1] array,             # <<<<<<<<<<<<<<
  *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  *     cdef Py_ssize_t size = array.size
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12CHAPSim_post_5_libs_9integrate_3cumulativeInt_y1D_channel, NULL, __pyx_n_s_CHAPSim_post__libs_integrate); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 29, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12CHAPSim_post_5_libs_9integrate_3cumulativeInt_y1D_channel, NULL, __pyx_n_s_CHAPSim_post__libs_integrate); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 35, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_cumulativeInt_y1D_channel, __pyx_t_1) < 0) __PYX_ERR(0, 29, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_cumulativeInt_y1D_channel, __pyx_t_1) < 0) __PYX_ERR(0, 35, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":57
- * 
- * 
+  /* "CHAPSim_post/_libs/integrate.pyx":65
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y1D(np.ndarray[np.float64_t,ndim=1] array,             # <<<<<<<<<<<<<<
  *                       np.ndarray[np.float64_t,ndim=1] staggered_y,
  *                       int channel):
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12CHAPSim_post_5_libs_9integrate_5cumulativeInt_y1D, NULL, __pyx_n_s_CHAPSim_post__libs_integrate); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 57, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12CHAPSim_post_5_libs_9integrate_5cumulativeInt_y1D, NULL, __pyx_n_s_CHAPSim_post__libs_integrate); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 65, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_cumulativeInt_y1D, __pyx_t_1) < 0) __PYX_ERR(0, 57, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_cumulativeInt_y1D, __pyx_t_1) < 0) __PYX_ERR(0, 65, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":112
+  /* "CHAPSim_post/_libs/integrate.pyx":96
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
+ * def cumulativeInt_y2D_pipe(np.ndarray[np.float64_t,ndim=2] array,             # <<<<<<<<<<<<<<
+ *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
- * 
+ */
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12CHAPSim_post_5_libs_9integrate_7cumulativeInt_y2D_pipe, NULL, __pyx_n_s_CHAPSim_post__libs_integrate); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_cumulativeInt_y2D_pipe, __pyx_t_1) < 0) __PYX_ERR(0, 96, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "CHAPSim_post/_libs/integrate.pyx":124
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
  * def cumulativeInt_y2D_channel(np.ndarray[np.float64_t,ndim=2] array,             # <<<<<<<<<<<<<<
  *                             np.ndarray[np.float64_t,ndim=1] staggered_y):
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12CHAPSim_post_5_libs_9integrate_7cumulativeInt_y2D_channel, NULL, __pyx_n_s_CHAPSim_post__libs_integrate); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12CHAPSim_post_5_libs_9integrate_9cumulativeInt_y2D_channel, NULL, __pyx_n_s_CHAPSim_post__libs_integrate); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 124, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_cumulativeInt_y2D_channel, __pyx_t_1) < 0) __PYX_ERR(0, 112, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_cumulativeInt_y2D_channel, __pyx_t_1) < 0) __PYX_ERR(0, 124, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "CHAPSim_post/_libs/integrate.pyx":142
+  /* "CHAPSim_post/_libs/integrate.pyx":154
  * 
  * 
  * def cumulativeInt_y2D(np.ndarray[np.float64_t,ndim=2] array,             # <<<<<<<<<<<<<<
  *                       np.ndarray[np.float64_t,ndim=1] staggered_y,
  *                       int channel):
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12CHAPSim_post_5_libs_9integrate_9cumulativeInt_y2D, NULL, __pyx_n_s_CHAPSim_post__libs_integrate); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 142, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12CHAPSim_post_5_libs_9integrate_11cumulativeInt_y2D, NULL, __pyx_n_s_CHAPSim_post__libs_integrate); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 154, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_cumulativeInt_y2D, __pyx_t_1) < 0) __PYX_ERR(0, 142, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_cumulativeInt_y2D, __pyx_t_1) < 0) __PYX_ERR(0, 154, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "CHAPSim_post/_libs/integrate.pyx":1
@@ -8278,23 +7205,6 @@ static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObjec
      "Buffer acquisition failed on assignment; and then reacquiring the old buffer failed too!");
 }
 
-/* BufferIndexError */
-  static void __Pyx_RaiseBufferIndexError(int axis) {
-  PyErr_Format(PyExc_IndexError,
-     "Out of bounds on buffer access (axis %d)", axis);
-}
-
-/* BufferIndexErrorNogil */
-  static void __Pyx_RaiseBufferIndexErrorNogil(int axis) {
-    #ifdef WITH_THREAD
-    PyGILState_STATE gilstate = PyGILState_Ensure();
-    #endif
-    __Pyx_RaiseBufferIndexError(axis);
-    #ifdef WITH_THREAD
-    PyGILState_Release(gilstate);
-    #endif
-}
-
 /* PyErrFetchRestore */
   #if CYTHON_FAST_THREAD_STATE
 static CYTHON_INLINE void __Pyx_ErrRestoreInState(PyThreadState *tstate, PyObject *type, PyObject *value, PyObject *tb) {
@@ -8318,14 +7228,6 @@ static CYTHON_INLINE void __Pyx_ErrFetchInState(PyThreadState *tstate, PyObject 
     tstate->curexc_traceback = 0;
 }
 #endif
-
-/* None */
-  static CYTHON_INLINE Py_ssize_t __Pyx_div_Py_ssize_t(Py_ssize_t a, Py_ssize_t b) {
-    Py_ssize_t q = a / b;
-    Py_ssize_t r = a - q*b;
-    q -= ((r != 0) & ((r ^ b) < 0));
-    return q;
-}
 
 /* PyIntBinop */
   #if !CYTHON_COMPILING_IN_PYPY

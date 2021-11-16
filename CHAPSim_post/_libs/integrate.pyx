@@ -5,6 +5,9 @@ cimport numpy as np
 from cython.parallel import parallel,prange
 import cython
 
+@cython.cdivision(True)
+@cython.boundscheck(False) 
+@cython.wraparound(False) 
 def cumulativeInt_y1D_pipe(np.ndarray[np.float64_t,ndim=1] array,
                       np.ndarray[np.float64_t,ndim=1] staggered_y):
     
@@ -26,6 +29,9 @@ def cumulativeInt_y1D_pipe(np.ndarray[np.float64_t,ndim=1] array,
 
     return int_array
 
+@cython.cdivision(True)
+@cython.boundscheck(False) 
+@cython.wraparound(False) 
 def cumulativeInt_y1D_channel(np.ndarray[np.float64_t,ndim=1] array,
                             np.ndarray[np.float64_t,ndim=1] staggered_y):
     cdef Py_ssize_t size = array.size
@@ -53,7 +59,9 @@ def cumulativeInt_y1D_channel(np.ndarray[np.float64_t,ndim=1] array,
 
 
 
-
+@cython.cdivision(True)
+@cython.boundscheck(False) 
+@cython.wraparound(False) 
 def cumulativeInt_y1D(np.ndarray[np.float64_t,ndim=1] array,
                       np.ndarray[np.float64_t,ndim=1] staggered_y,
                       int channel):
@@ -82,8 +90,10 @@ cdef int _get_index(double* array_ptr,
 
     return return_index    
 
-
-cdef cumulativeInt_y2D_pipe(np.ndarray[np.float64_t,ndim=2] array,
+@cython.cdivision(True)
+@cython.boundscheck(False) 
+@cython.wraparound(False) 
+def cumulativeInt_y2D_pipe(np.ndarray[np.float64_t,ndim=2] array,
                             np.ndarray[np.float64_t,ndim=1] staggered_y):
 
     cdef Py_ssize_t size_y = array.shape[0]
@@ -108,7 +118,9 @@ cdef cumulativeInt_y2D_pipe(np.ndarray[np.float64_t,ndim=2] array,
 
     return int_array
     
-
+@cython.cdivision(True)
+@cython.boundscheck(False) 
+@cython.wraparound(False) 
 def cumulativeInt_y2D_channel(np.ndarray[np.float64_t,ndim=2] array,
                             np.ndarray[np.float64_t,ndim=1] staggered_y):
     

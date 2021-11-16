@@ -479,18 +479,8 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
             R_z = np.zeros((max_z_step,NCL2,NCL1))
 
             if max_z_step >0:
-                try:
-                    autocov_calc_z(fluct1,fluct2,R_z,max_z_step)
-                except Exception as e:
-                    msg = f"Exception raised by accelerator routine of type {type(e).__name__}: {e.__str__()}: "
-                    if cp.rcParams['ForceMode']:    
-                        raise RuntimeError(msg+"Parameter ForceMode set to true raising RuntimeError")
-                    else:
-                        warnings.simplefilter('once')
-                        warnings.warn(msg + "Using numba backend")
-                        return self._autocov_numba_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step)
-                else:
-                    return np.ascontiguousarray(R_z)
+                autocov_calc_z(fluct1,fluct2,R_z,max_z_step)
+                return np.ascontiguousarray(R_z)
         else:
             if cp.rcParams['autocorr_mode'] != 0 and cp.rcParams['ForceMode']:
                 msg = f"Calculation mode {cp.rcParams['autocorr_mode']} doesn't exist, ForceMode is True raising RuntimeError"
@@ -503,18 +493,19 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
     @staticmethod
     
     def _autocov_numba_z(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
-        from numba import njit, prange
-        @njit(parallel=True,fastmath=True)
-        def numba_method(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
-            R_z = np.zeros((max_z_step,NCL2,NCL1))
+        raise NotImplementedError
+        # from numba import njit, prange
+        # @njit(parallel=True,fastmath=True)
+        # def numba_method(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step):
+        #     R_z = np.zeros((max_z_step,NCL2,NCL1))
 
-            if max_z_step >0:
-                for iz0 in prange(max_z_step):
-                    for iz in prange(NCL3-max_z_step):
-                        R_z[iz0,:,:] += self.shape_zfluct1[iz,:,:]*fluct2[iz+iz0,:,:]
-            R_z /= (NCL3-max_z_step)
-            return R_z
-        return numba_method(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step)
+        #     if max_z_step >0:
+        #         for iz0 in prange(max_z_step):
+        #             for iz in prange(NCL3-max_z_step):
+        #                 R_z[iz0,:,:] += self.shape_zfluct1[iz,:,:]*fluct2[iz+iz0,:,:]
+        #     R_z /= (NCL3-max_z_step)
+        #     return R_z
+        # return numba_method(fluct1,fluct2,NCL1,NCL2,NCL3,max_z_step)
 
 
 
@@ -557,12 +548,13 @@ class CHAPSim_autocov_io(CHAPSim_autocov_base):
 
     @staticmethod
     def _autocov_numba_x(fluct1,fluct2,NCL1,NCL2,NCL3,max_x_step):
-        R_x = np.zeros((max_x_step,NCL2,NCL1-max_x_step))
-        for ix0 in range(max_x_step):
-            for ix in range(NCL1-max_x_step):
-                R_x[ix0,:,ix] += (fluct1[:,:,ix]*fluct2[:,:,ix0+ix]).mean(axis=0)
+        raise NotImplementedError
+        # R_x = np.zeros((max_x_step,NCL2,NCL1-max_x_step))
+        # for ix0 in range(max_x_step):
+        #     for ix in range(NCL1-max_x_step):
+        #         R_x[ix0,:,ix] += (fluct1[:,:,ix]*fluct2[:,:,ix0+ix]).mean(axis=0)
         
-        return R_x
+        # return R_x
     
 
 
