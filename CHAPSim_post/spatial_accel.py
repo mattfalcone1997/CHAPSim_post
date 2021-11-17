@@ -152,14 +152,14 @@ class TEST_flow_quant(blayer_TEST_base):
 
     def plot_mom_thickness(self,fig=None, ax = None, line_kw=None,**kwargs):
         
-        x_coords = self._meta_data.Coord_ND_DF['x']
+        x_coords = self._meta_data.Coord_ND_DF['x'][:-1]
         
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
         
         line_kw = cplt.update_line_kw(line_kw)
         
-        theta =  self.IntThickIniDF['momentum thickness']
+        theta =  self.IntThickIniDF.loc['momentum thickness']
         
         fig, ax = cplt.subplots()
         
@@ -169,14 +169,14 @@ class TEST_flow_quant(blayer_TEST_base):
     
     def plot_disp_thickness(self,fig=None, ax = None, line_kw=None,**kwargs):
         
-        x_coords = self._meta_data.Coord_ND_DF['x']
+        x_coords = self._meta_data.Coord_ND_DF['x'][:-1]
         
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
         
         line_kw = cplt.update_line_kw(line_kw)
         
-        theta =  self.IntThickIniDF['displacement thickness']
+        theta =  self.IntThickIniDF.loc['displacement thickness']
         
         fig, ax = cplt.subplots()
         
@@ -184,17 +184,50 @@ class TEST_flow_quant(blayer_TEST_base):
         
         return fig, ax
     
-    
+    def plot_shape_factor(self,fig=None, ax = None, line_kw=None,**kwargs):
         
-    def plot_ini_Cf_Re_delta(self,fig=None, ax = None, line_kw=None,**kwargs):
+        x_coords = self._meta_data.Coord_ND_DF['x'][:-1]
         
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
         
         line_kw = cplt.update_line_kw(line_kw)
-                
-        Cf = self.SkinFrictionDF['skin friction']
-        delta =  self.IntThickIniDF['blayer thickness']
+        
+        theta =  self.IntThickIniDF.loc['H']
+        
+        fig, ax = cplt.subplots()
+        
+        ax.cplot(x_coords,theta,label=r'\delta^*',**line_kw)
+        
+        return fig, ax
+    
+    def plot_blayer_thickness(self,fig=None, ax = None, line_kw=None,**kwargs):
+        
+        x_coords = self._meta_data.Coord_ND_DF['x'][:-1]
+        
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
+        
+        line_kw = cplt.update_line_kw(line_kw)
+        
+        theta =  self.IntThickIniDF.loc['blayer thickness']
+        
+        fig, ax = cplt.subplots()
+        
+        ax.cplot(x_coords,theta,label=r'\delta',**line_kw)
+        
+        return fig, ax
+    
+    
+        
+    def plot_Cf_Re_delta(self,fig=None, ax = None, line_kw=None,**kwargs):
+        
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
+        
+        line_kw = cplt.update_line_kw(line_kw)
+        Cf = self.SkinFrictionDF.loc['skin friction']
+        delta =  self.IntThickIniDF.loc['blayer thickness']
         REN = self._meta_data.metaDF['REN']
         
         Re_delta = REN*delta
@@ -207,15 +240,15 @@ class TEST_flow_quant(blayer_TEST_base):
         
         return fig, ax
     
-    def plot_ini_Cf_Re_theta(self,fig=None, ax = None, line_kw=None,**kwargs):
+    def plot_Cf_Re_theta(self,fig=None, ax = None, line_kw=None,**kwargs):
         
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
         
         line_kw = cplt.update_line_kw(line_kw)
                 
-        Cf = self.SkinFrictionDF['skin friction']
-        theta =  self.IntThickIniDF['momentum thickness']
+        Cf = self.SkinFrictionDF.loc['skin friction']
+        theta =  self.IntThickIniDF.loc['momentum thickness']
         REN = self._meta_data.metaDF['REN']
         
         Re_theta = REN*theta
@@ -301,7 +334,7 @@ class TEST_recycle_rescale(blayer_TEST_base):
             
     def _get_rescaling(self):
         file = os.path.join(self._debug_folder,'CHK_rescale_params.csv')
-        self.paramsDF = pd.read_csv(file)
+        self.paramsDF = pd.read_csv(file).dropna(axis=1).pivot_table(index='Iteration')
         
     def _get_velo_prof(self,iter=None):
         if iter is None:
