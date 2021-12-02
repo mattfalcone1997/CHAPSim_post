@@ -281,10 +281,15 @@ class DomainHandler():
             iCase = iCase_or_metadata
 
             
-        if iCase in [1,4,5]:
+        if iCase in [1,4]:
             self.coord_sys = 'cart'
+            self._domain = 'channel'
         elif iCase in [2,3]:
-            self.coord_sys = 'cylind'
+            self.coord_sys = 'polar'
+            self._domain = 'pipe'
+        elif iCase == 5:
+            self.coord_sys = 'cart'
+            self._domain = 'blayer'
         else:
             msg = "CHAPSim case type invalid"
             raise ValueError(msg)
@@ -292,14 +297,18 @@ class DomainHandler():
         self.Grad_calc = gradient.Grad_calc
 
     @property
-    def is_cylind(self):
-        return self.coord_sys == 'cylind'
+    def is_polar(self):
+        return self.coord_sys == 'polar'
 
+    @property
+    def is_channel(self):
+        return self._domain == 'channel'
+    
     def __str__(self):
         if self.coord_sys == 'cart':
             coord = "cartesian"
         else:
-            coord = "cylindrical"
+            coord = "polar (cylindrical)"
 
         return f"{self.__class__.__name__} with %s coordinate system"%coord
 
@@ -342,7 +351,7 @@ class DomainHandler():
         if flow_array.ndim == 3:
             grad_vector[2] = self.Grad_calc(coordDF,flow_array,'z')
 
-            factor_out = 1/coordDF['y'] if self.is_cylind else 1.0
+            factor_out = 1/coordDF['y'] if self.is_polar else 1.0
             grad_vector[2] = np.multiply(grad_vector[2],factor_out)
 
         return grad_vector
@@ -355,8 +364,8 @@ class DomainHandler():
         grad_vector = np.zeros_like(vector_array)
         grad_vector[0] = self.Grad_calc(coordDF,vector_array[0],'x')
         
-        factor_in = coordDF['y'] if self.is_cylind else 1.0
-        factor_out = 1/coordDF['y'] if self.is_cylind else 1.0
+        factor_in = coordDF['y'] if self.is_polar else 1.0
+        factor_out = 1/coordDF['y'] if self.is_polar else 1.0
 
         grad_vector[1] = self.Grad_calc(coordDF,np.multiply(vector_array[1],factor_in),'y')
         grad_vector[1] = np.multiply(grad_vector[1],factor_out)
@@ -375,8 +384,8 @@ class DomainHandler():
         return lap_scalar
 
     def Scalar_laplacian_tg(self,coordDF,flow_array):
-        factor_in = coordDF['y'] if self.is_cylind else 1.0
-        factor_out = 1/coordDF['y'] if self.is_cylind else 1.0
+        factor_in = coordDF['y'] if self.is_polar else 1.0
+        factor_out = 1/coordDF['y'] if self.is_polar else 1.0
         dflow_dy = np.multiply(self.Grad_calc(coordDF,flow_array,'y'),
                                 factor_in)
         lap_scalar = np.multiply(self.Grad_calc(coordDF,dflow_dy,'y'),
@@ -384,11 +393,11 @@ class DomainHandler():
         return lap_scalar
 
     def Integrate_cumult(self,CoordDF,flow_array):
-        channel = not self.is_cylind
+        channel = not self.is_polar
         return gradient.cumIntegrate_y(CoordDF,flow_array,channel=channel)
 
     def Integrate_tot(self,CoordDF,flow_array):
-        channel = not self.is_cylind
+        channel = not self.is_polar
         return gradient.totIntegrate_y(CoordDF,flow_array,channel=channel)
 class coorddata:
     _modes_available = ['centered', 'staggered']
@@ -506,7 +515,7 @@ class coorddata:
         self.coord_staggered.to_hdf(filename,key=key+"/coord_staggered",mode=mode)
 
         hdf_obj = cd.hdfHandler(filename,mode='r',key=key)
-        cart_mode = False if self._domain_handler.is_cylind else True
+        cart_mode = False if self._domain_handler.is_polar else True
         hdf_obj.attrs['cart_mode'] = cart_mode
 
         
@@ -540,7 +549,7 @@ class coorddata:
         ZND = np.zeros(ZCC.size+1)
 
         XND[0] = 0.0
-        YND[0] = 0 if self._domain_handler.is_cylind else -1.0
+        YND[0] = 0 if self._domain_handler.is_polar else -1.0
         ZND[0] = 0.0
 
         for i in  range(1,XND.size):

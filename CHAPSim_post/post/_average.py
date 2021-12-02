@@ -214,7 +214,7 @@ class _AVG_developing(_AVG_base):
 
     def _int_thickness_calc(self,PhyTime):
 
-        U0_index = 0 if self.Domain.is_cylind else int(self.shape[0]*0.5)
+        U0_index = 0 if self.Domain.is_polar else int(self.shape[0]*0.5)
         U_mean = self.flow_AVGDF[PhyTime,'u'].copy()
         y_coords = self.CoordDF['y']
 
@@ -595,7 +595,7 @@ class CHAPSim_AVG_io(_AVG_developing):
 
         y_indices = []
         for i,x in enumerate(x_index):
-            if self.Domain.is_cylind:
+            if self.Domain.is_polar:
                 norm_coordDF = -1*(self.CoordDF-1)/norm_distance[x]
             else:
                 norm_coordDF = (1-abs(self.CoordDF))/norm_distance[x]
@@ -632,7 +632,7 @@ class CHAPSim_AVG_io(_AVG_developing):
 
         true_ycoords = []
         for x,index in zip(x_index,indices):
-            if self.Domain.is_cylind:
+            if self.Domain.is_polar:
                 norm_coordDF = -1*(self.CoordDF-1)/norm_distance[x]
             else:
                 norm_coordDF = (1-abs(self.CoordDF))/norm_distance[x]
@@ -703,7 +703,7 @@ class CHAPSim_AVG_io(_AVG_developing):
 
         x_coords = self.CoordDF['x']
 
-        line_kw = cplt.update_line_kw(line_kw,label=r"$\delta$")
+        line_kw = cplt.update_line_kw(line_kw,label=r"$\delta^*$")
         ax.cplot(x_coords,delta,**line_kw)
 
         xlabel = self.Domain.create_label(r'$x$')
@@ -740,31 +740,39 @@ class CHAPSim_AVG_io(_AVG_developing):
 
         return fig, ax
 
+    def _get_uplus_yplus_transforms(self,PhyTime,x_val):
+        u_tau, delta_v = self.wall_unit_calc(PhyTime)
+        x_index = self.CoordDF.index_calc('x',x_val)[0]
+        
+        if self.Domain.is_polar:
+            x_transform = lambda y:  -1*(y - 1.0)/delta_v[x_index]
+            y_transform = lambda u: u/u_tau[x_index]
+        else:
+            x_transform = lambda y:  (y + 1.0)/delta_v[x_index]
+            y_transform = lambda u: u/u_tau[x_index]
+        
+        return x_transform, y_transform
+    
     def plot_flow_wall_units(self,x_vals,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
         
         PhyTime = self.check_PhyTime(PhyTime)
         x_vals = misc_utils.check_list_vals(x_vals)
         x_vals = indexing.true_coords_from_coords(self.CoordDF,'x',x_vals)
 
-        x_indices = self.CoordDF.index_calc('x',x_vals)
-
-        labels = [self.Domain.create_label(r"$x = %.3g$"%x) for x in x_vals]
-
-        fig, ax = self.flow_AVGDF.plot_line('u','y',x_vals,labels=labels,channel_half=True,time=PhyTime,
-                            fig=fig,ax=ax,line_kw=line_kw,**kwargs)
-
-        if self.Domain.is_cylind:
-            flip_axis = lambda x: -1*(x - 1.0)
-            ax.apply_func('x',flip_axis)
-        else:
-            ax.shift_xaxis(1.0)
-
-        u_tau, delta_v = self.wall_unit_calc(PhyTime)
-
-        ax.set_xscale('log')
-
-        ax.normalise('y',u_tau[x_indices])
-        ax.normalise('x',delta_v[x_indices])
+        for x in x_vals:
+            label = self.Domain.create_label(r"$x = %.3g$"%x)
+            x_transform, y_transform = self._get_uplus_yplus_transforms(PhyTime, x)
+            fig, ax = self.flow_AVGDF.plot_line('u','y',
+                                                x_vals,
+                                                transform_xdata = x_transform,
+                                                transform_ydata = y_transform,
+                                                labels=[label],
+                                                channel_half=True,
+                                                time=PhyTime,
+                                                fig=fig,
+                                                ax=ax,
+                                                line_kw=line_kw,
+                                                **kwargs)
 
         labels = [l.get_label() for l in ax.get_lines()]
         if not r"$\bar{u}^+=y^+$" in labels:
@@ -775,7 +783,7 @@ class CHAPSim_AVG_io(_AVG_developing):
 
         ax.set_xlabel(r"$y^+$")
         ax.set_ylabel(r"$\bar{u}^+$")
-
+        ax.set_xscale('log')
         ncol = cplt.get_legend_ncols(len(x_vals))
         ax.clegend(vertical=False,ncol=ncol)
 
@@ -1149,7 +1157,7 @@ class CHAPSim_AVG_tg(_AVG_base):
     def int_thickness_calc(self,PhyTime=None):
         PhyTime = self.check_PhyTime(PhyTime)
 
-        if self.Domain.is_cylind:
+        if self.Domain.is_polar:
             U0_index = int(np.floor(self.NCL[1]*0.5))
         else:
             U0_index = 0
@@ -1211,7 +1219,7 @@ class CHAPSim_AVG_tg(_AVG_base):
         
 
         y_indices = []
-        if self.Domain.is_cylind:
+        if self.Domain.is_polar:
             norm_coordDF = -1*(self.CoordDF-1)/norm_distance
         else:
             norm_coordDF = (1-abs(self.CoordDF))/norm_distance
@@ -1242,7 +1250,7 @@ class CHAPSim_AVG_tg(_AVG_base):
         index = self.y_coord_index_norm(coord_list,avg_time=avg_time,mode=mode)[0]
 
         true_ycoords = []
-        if self.Domain.is_cylind:
+        if self.Domain.is_polar:
             norm_coordDF = -1*(self.CoordDF-1)/norm_distance
         else:
             norm_coordDF = (1-abs(self.CoordDF))/norm_distance
@@ -1306,7 +1314,7 @@ class CHAPSim_AVG_tg(_AVG_base):
         fig, ax = self.flow_AVGDF.plot_line('u',channel_half=True,time=PhyTime,
                             fig=fig,ax=ax,line_kw=line_kw,**kwargs)
 
-        if self.Domain.is_cylind:
+        if self.Domain.is_polar:
             flip_axis = lambda x: -1*(x - 1.0)
             ax.apply_func('x',flip_axis)
         else:

@@ -287,7 +287,7 @@ class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
             budget_scale = u_tau**3/delta_v
 
         def _x_Transform(data):
-            if self.Domain.is_cylind:
+            if self.Domain.is_polar:
                 return (-1.*data.copy() -1.)/delta_v[x_index]
             else:
                 return (data.copy() + 1.)/delta_v[x_index]
@@ -361,7 +361,7 @@ class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
     #     budget_scale = u_tau**3/delta_v
 
     #     for i, a in enumerate(ax):
-    #         if self.Domain.is_cylind:
+    #         if self.Domain.is_polar:
     #             a.apply_func('x',lambda xdata: -1.*xdata -1.)
     #         else:
     #             a.shift_xaxis(1.)
@@ -529,7 +529,7 @@ class CHAPSim_budget_tg(ReynoldsBudget_base):
             budget_scale = u_tau**3/delta_v
 
         def _x_Transform(data):
-            if self.Domain.is_cylind:
+            if self.Domain.is_polar:
                 return (-1.*data.copy() -1.)/delta_v
             else:
                 return (data.copy() + 1.)/delta_v
@@ -1019,7 +1019,7 @@ class _FIK_developing_base(_budget_base):
 
         bulk = self._scale_vel(PhyTime)
         REN = self.avg_data.metaDF['REN']
-        const = 4.0 if self.Domain.is_cylind else 6.0
+        const = 4.0 if self.Domain.is_polar else 6.0
         return const/(REN*bulk)
 
     def _turbulent_extract(self,PhyTime):

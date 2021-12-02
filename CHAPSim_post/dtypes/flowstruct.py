@@ -451,7 +451,7 @@ class FlowStructND(FlowStruct_base):
         return fig, ax
 
     def _check_line_channel(self):
-        return self._wall_normal_line and not self.Domain.is_cylind
+        return self._wall_normal_line and self.Domain.is_channel
 
     def get_dim_from_axis(self,axis):
 
@@ -470,12 +470,13 @@ class FlowStructND(FlowStruct_base):
         array_axis = self.get_dim_from_axis(axis)
         new_datalayout = self._data_layout.copy()
         new_coord = self.CoordDF.copy()
-        new_coord_nd = self.Coord_ND_DF.copy()
+        new_coord_nd = None if self.Coord_ND_DF is None else self.Coord_ND_DF.copy()
 
         for a in axis:
             new_datalayout.remove(a)
             del new_coord[a]
-            del new_coord_nd[a]
+            if new_coord_nd is not None:
+                del new_coord_nd[a]
 
         if self._wall_normal_line not in new_datalayout:
             wall_normal_line = None
@@ -829,7 +830,7 @@ class FlowStruct3D(FlowStructND):
         data_layout = 'zyx'
         wall_normal_line = 'y'
         
-        if self._coorddata._domain_handler.is_cylind:
+        if self._coorddata._domain_handler.is_polar:
             polar_plane = 'zy'
         else:
             polar_plane = None
@@ -840,7 +841,7 @@ class FlowStruct3D(FlowStructND):
         data_layout = 'zyx'
         wall_normal_line = 'y'
         
-        if self._coorddata._domain_handler.is_cylind:
+        if self._coorddata._domain_handler.is_polar:
             polar_plane = 'zy'
         else:
             polar_plane = None

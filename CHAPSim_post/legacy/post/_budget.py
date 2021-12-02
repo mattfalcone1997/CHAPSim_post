@@ -941,7 +941,7 @@ class CHAPSim_FIK_base(CHAPSim_budget_base):
 
         bulk = self._scale_vel(PhyTime)
         REN = self.avg_data.metaDF['REN']
-        const = 4.0 if self.Domain.is_cylind else 6.0
+        const = 4.0 if self.Domain.is_polar else 6.0
         return const/(REN*bulk)
 
     def _turbulent_extract(self,PhyTime):

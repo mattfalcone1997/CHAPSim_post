@@ -68,6 +68,14 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         for i in range(len(delta_v_star)):
             y_plus[i] = y_coord/delta_v_star[i]
         return y_plus
+    
+    def _get_uplus_yplus_transforms(self,PhyTime,x_val):
+        u_tau, delta_v = self.wall_unit_calc(PhyTime)
+        x_index = self.CoordDF.index_calc('x',x_val)[0]
+        x_transform = lambda y:  y/delta_v[x_index]
+        y_transform = lambda u: u/u_tau[x_index]
+        
+        return x_transform, y_transform
 _avg_io_class = CHAPSim_AVG_io
 
 class CHAPSim_meta(cp.CHAPSim_meta):
@@ -101,17 +109,22 @@ class TEST_flow_quant(blayer_TEST_base):
             file_blayer = os.path.join(self._debug_folder,'CHK_BLAYER_THICK.%d.dat'%iter)
             assert os.path.isfile(file_blayer)
             
-        _, _, disp, mom, H = np.loadtxt(file_int).T
+        _, _, disp, mom, H,U_infty = np.loadtxt(file_int).T
         
         _, _, blayer = np.loadtxt(file_blayer).T
         
         
-        index = ['displacement thickness',
+        columns = ['displacement thickness',
                  'momentum thickness',
                  'H',
-                 'blayer thickness']
+                 'blayer thickness',
+                 'U_infty']
         
-        self.IntThickIniDF = pd.DataFrame([disp,mom, H, blayer],index = index )
+        index = self._meta_data.Coord_ND_DF['x'][:-1]
+        array = np.array([disp,mom, H, blayer,U_infty]).T
+        self.IntThickIniDF = pd.DataFrame(array,
+                                        columns=columns,
+                                        index=index)
         
     def _get_Cf(self,iter=None):
         if iter is None:
@@ -125,30 +138,46 @@ class TEST_flow_quant(blayer_TEST_base):
         file = os.path.join(self._debug_folder,'CHK_WALL_UNIT.dat')
         _, _, u_tau, delta_v = np.loadtxt(file).T
         
+        array = np.array([Cf,u_tau, delta_v]).T
         
+        columns = ['skin friction', 'u tau', 'delta v']
+        index = self._meta_data.Coord_ND_DF['x'][:-1]
         
-        index = ['skin friction', 'u_tau', 'delta_v']
-        self.SkinFrictionDF = pd.DataFrame([Cf,u_tau, delta_v],index = index )
+        self.SkinFrictionDF = pd.DataFrame(array,
+                                        columns=columns,
+                                        index=index)
         
-    
+    # def _get_outlet_conv_test(self):
+    #     file = os.path.join(self._debug_folder,'CHK_outlet_conv_u.csv')
+    #     self.outlet_convDF = pd.read_csv(file).dropna(axis=1).pivot_table(index='YCC')
+
     def _get_interp_test(self):
               
         file = os.path.join(self._debug_folder,'CHK_MEAN_INTERP.dat')
         _, y_in, y_out, array_in, array_out = np.loadtxt(file).T
         
-        index = ['y_in', 'y_out', 'array_in', 'array_out']
-        self.meanInterpDF = pd.DataFrame([y_in, y_out, array_in, array_out],index = index )
+        columns = ['y_in', 'y_out', 'array_in', 'array_out']
+        array = np.array([y_in, y_out, array_in, array_out]).T
+        index = self._meta_data.CoordDF['y']
+        
+        self.meanInterpDF = pd.DataFrame(array,
+                                        columns=columns,
+                                        index=index)
         
         file = os.path.join(self._debug_folder,'CHK_FLUCT_INTERP.dat')
         _, y_in, y_out, array_in1, array_out1, array_in10, array_out10,array_in40, array_out40 = np.loadtxt(file).T
         
-        index = ['y_in', 'y_out', 'array_in1', 'array_out1',
+        columns = ['y_in', 'y_out', 'array_in1', 'array_out1',
                 'array_in10', 'array_out10','array_in40',
                 'array_out40']
         
-        self.fluctInterpDF = pd.DataFrame([y_in, y_out,array_in1, array_out1,
-                                            array_in10, array_out10,array_in40,
-                                            array_out40],index = index )
+        array = np.array([y_in, y_out,array_in1, array_out1,
+                        array_in10, array_out10,array_in40,
+                        array_out40]).T
+        
+        self.fluctInterpDF = pd.DataFrame(array,
+                                        columns=columns,
+                                        index=index)
 
     def plot_mom_thickness(self,fig=None, ax = None, line_kw=None,**kwargs):
         
@@ -159,11 +188,28 @@ class TEST_flow_quant(blayer_TEST_base):
         
         line_kw = cplt.update_line_kw(line_kw)
         
-        theta =  self.IntThickIniDF.loc['momentum thickness']
+        theta =  self.IntThickIniDF['momentum thickness']
         
         fig, ax = cplt.subplots()
         
-        ax.cplot(x_coords,theta,label=r'\theta',**line_kw)
+        ax.cplot(x_coords,theta,label=r'$\theta$ (CHAPSim)',**line_kw)
+        
+        return fig, ax
+    
+    def plot_freestream_velocity(self,fig=None, ax = None, line_kw=None,**kwargs):
+        
+        x_coords = self._meta_data.Coord_ND_DF['x'][:-1]
+        
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
+        
+        line_kw = cplt.update_line_kw(line_kw)
+        
+        U_infty =  self.IntThickIniDF['U_infty']
+        
+        fig, ax = cplt.subplots()
+        
+        ax.cplot(x_coords,U_infty,label=r'$U_\infty$ (CHAPSim)',**line_kw)
         
         return fig, ax
     
@@ -176,11 +222,11 @@ class TEST_flow_quant(blayer_TEST_base):
         
         line_kw = cplt.update_line_kw(line_kw)
         
-        theta =  self.IntThickIniDF.loc['displacement thickness']
+        theta =  self.IntThickIniDF['displacement thickness']
         
         fig, ax = cplt.subplots()
         
-        ax.cplot(x_coords,theta,label=r'\delta^*',**line_kw)
+        ax.cplot(x_coords,theta,label=r'$\delta^*$ (CHAPSim)',**line_kw)
         
         return fig, ax
     
@@ -193,11 +239,11 @@ class TEST_flow_quant(blayer_TEST_base):
         
         line_kw = cplt.update_line_kw(line_kw)
         
-        theta =  self.IntThickIniDF.loc['H']
+        theta =  self.IntThickIniDF['H']
         
         fig, ax = cplt.subplots()
         
-        ax.cplot(x_coords,theta,label=r'\delta^*',**line_kw)
+        ax.cplot(x_coords,theta,label=r'$H$ (CHAPSim)',**line_kw)
         
         return fig, ax
     
@@ -210,11 +256,11 @@ class TEST_flow_quant(blayer_TEST_base):
         
         line_kw = cplt.update_line_kw(line_kw)
         
-        theta =  self.IntThickIniDF.loc['blayer thickness']
+        theta =  self.IntThickIniDF['blayer thickness']
         
         fig, ax = cplt.subplots()
         
-        ax.cplot(x_coords,theta,label=r'\delta',**line_kw)
+        ax.cplot(x_coords,theta,label=r'$\delta$ (CHAPSim)',**line_kw)
         
         return fig, ax
     
@@ -226,8 +272,8 @@ class TEST_flow_quant(blayer_TEST_base):
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
         
         line_kw = cplt.update_line_kw(line_kw)
-        Cf = self.SkinFrictionDF.loc['skin friction']
-        delta =  self.IntThickIniDF.loc['blayer thickness']
+        Cf = self.SkinFrictionDF['skin friction']
+        delta =  self.IntThickIniDF['blayer thickness']
         REN = self._meta_data.metaDF['REN']
         
         Re_delta = REN*delta
@@ -247,8 +293,8 @@ class TEST_flow_quant(blayer_TEST_base):
         
         line_kw = cplt.update_line_kw(line_kw)
                 
-        Cf = self.SkinFrictionDF.loc['skin friction']
-        theta =  self.IntThickIniDF.loc['momentum thickness']
+        Cf = self.SkinFrictionDF['skin friction']
+        theta =  self.IntThickIniDF['momentum thickness']
         REN = self._meta_data.metaDF['REN']
         
         Re_theta = REN*theta
@@ -270,19 +316,62 @@ class TEST_initialiseBlayer(blayer_TEST_base):
     def __init__(self,path_to_folder):
         super().__init__(path_to_folder)
         self._get_initialise_test()
+        self._get_initialise_corr()
         
     def _get_initialise_test(self):
         file = os.path.join(self._debug_folder,'CHK_INIL_VELO_PROF.dat')
-        file_array = np.loadtxt(file).T
-        index = ['y','y^+','eta']
-        self.y_scalesDF = pd.DataFrame(file_array[1:4],index=index)
-        index = ['logistic','spaldings','velo_defect']
-        self.velo_compsDF = pd.DataFrame(file_array[4:7],index=index)
+        file_array = np.loadtxt(file)
         
-        index = ['u^+','u']
-        self.veloDF = pd.DataFrame(file_array[7:9],index=index)
-        index = ['delta_v', 'u_tau']
-        self.wall_unitDF = pd.DataFrame(file_array[9:11],index=index)
+        columns = ['y','y plus','eta']
+        index = self._meta_data.CoordDF['y']
+        
+        self.y_scalesDF = pd.DataFrame(file_array[:,1:4],
+                                        columns=columns,
+                                        index=index)
+        columns = ['logistic','spaldings','velo defect']
+        self.velo_compsDF = pd.DataFrame(file_array[:,4:7],
+                                        columns=columns,
+                                        index=index)
+        
+        columns = ['u plus','u']
+        self.veloDF = pd.DataFrame(file_array[:,7:9],
+                                        columns=columns,
+                                        index=index)
+        columns = ['delta v', 'u tau', 'Cf']
+        self.wall_unitDF = pd.DataFrame(file_array[:,9:12],
+                                        columns=columns,
+                                        index=index)
+    
+    def _get_initialise_corr(self):
+        file = os.path.join(self._debug_folder,'CHK_INI_CORR.dat')
+        file_array = np.loadtxt(file)
+        
+        x_coords = self._meta_data.Coord_ND_DF['x'][:-1]
+        columns = ['Cf', 'u tau', 'delta v', 'blayer thick']
+        self.correlationsDF = pd.DataFrame(file_array[:,2:],
+                                           columns=columns,
+                                           index = x_coords)
+        
+    def plot_Cf_Re_delta(self,fig=None, ax = None, line_kw=None,**kwargs):
+        
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
+        
+        line_kw = cplt.update_line_kw(line_kw)
+        Cf = self.correlationsDF['Cf']
+        delta =  self.correlationsDF['blayer thick']
+        REN = self._meta_data.metaDF['REN']
+        
+        Re_delta = REN*delta
+        Cf_corr = 0.01947*Re_delta**-0.1785
+        
+        fig, ax = cplt.subplots()
+        
+        ax.cplot(Re_delta,Cf,label='Actual',**line_kw)
+        ax.cplot(Re_delta,Cf_corr,label=r'$C_f = 0.01947Re_\delta^{-0.1785}$',**line_kw)
+        
+        return fig, ax
+        
         
 class TEST_FreestreamWall(blayer_TEST_base):
     def __init__(self,path_to_folder,iter=None):
@@ -297,13 +386,23 @@ class TEST_FreestreamWall(blayer_TEST_base):
             file = os.path.join(self._debug_folder,'CHK_FREESTREAM_VELO.%d.dat'%iter)
             assert os.path.isfile(file)
             
-        file_array = np.loadtxt(file).T
+        file_array = np.loadtxt(file)
+        index = self._meta_data.Coord_ND_DF['x'][:-1]
+        columns = ['u','v','w']
+        self.VeloDF = pd.DataFrame(file_array[:,[2,3,5]],
+                                        columns=columns,
+                                        index=index)
         
-        self.VeloDF = pd.DataFrame(file_array[[2,3,5]],index= ['u','v','w'])
-        self.DispGradDF = pd.DataFrame(file_array[6:10],index= ['ddelta_dx_l', 'ddelta_dx_g','delta','dx'])
+        columns = ['disp grad local', 'disp grad global','delta','dx']
+        self.DispGradDF = pd.DataFrame(file_array[:,6:10],
+                                        columns=columns,
+                                        index=index)
         
-        self.VeloGrad = pd.DataFrame(file_array[10:12],index=['U_velo_grad', 'W_velo_grad'])
-        
+        columns = ['U vel _grad', 'W velo grad']
+        self.VeloGrad = pd.DataFrame(file_array[:,10:12],
+                                        columns=columns,
+                                        index=index)
+                
     def _get_G_freestream(self,iter):
         if iter is None:
             file = os.path.join(self._debug_folder,'CHK_FREESTREAM_G.dat')
@@ -311,12 +410,41 @@ class TEST_FreestreamWall(blayer_TEST_base):
             file = os.path.join(self._debug_folder,'CHK_FREESTREAM_G.%d.dat'%iter)
             assert os.path.isfile(file)
             
-        file_array = np.loadtxt(file).T
+        file_array = np.loadtxt(file)
+        index = self._meta_data.Coord_ND_DF['x'][:-1]
+        columns = ['u','v','w']
+        self.GVeloDF = pd.DataFrame(file_array[:,2:5],
+                                        columns=columns,
+                                        index=index)
         
-        self.GVeloDF = pd.DataFrame(file_array[2:5],index= ['u','v','w'])
-        self.GDispGradDF = pd.DataFrame(file_array[5:9],index= ['ddelta_dx_l', 'ddelta_dx_g','delta','dx'])
+        columns = ['ddelta_dx_l', 'ddelta_dx_g','delta','dx']
+        self.GDispGradDF = pd.DataFrame(file_array[:,5:9],
+                                        columns=columns,
+                                        index=index)
         
-        self.GVeloGrad = pd.DataFrame(file_array[9:],index=['U_velo_grad', 'W_velo_grad'])
+        columns = ['U_velo_grad', 'W_velo_grad']
+        self.GVeloGrad = pd.DataFrame(file_array[:,9:],
+                                        columns=columns,
+                                        index=index)
+        
+
+class TEST_outlet(blayer_TEST_base):
+    def __init__(self,path_to_folder,iter=None):
+        super().__init__(path_to_folder)
+        
+        self._get_tests(iter)
+    def _get_tests(self,iter):
+        if iter is None:
+            file = os.path.join(self._debug_folder,'CHK_conv_outlet.csv')
+            file1 = os.path.join(self._debug_folder,'CHK_outlet_extract.csv')
+        else:
+            file = os.path.join(self._debug_folder,'CHK_conv_outlet.%d.csv'%iter)
+            file1 = os.path.join(self._debug_folder,'CHK_outlet_extract.%d.csv'%iter)
+
+        self.conv_outletDF = pd.read_csv(file).dropna(axis=1).pivot_table(index='YCC')
+
+        self.outlet_velDF = pd.read_csv(file1).dropna(axis=1).pivot_table(index='YCC')
+
 
 class TEST_recycle_rescale(blayer_TEST_base):
     def __init__(self,path_to_folder,iter=None):
@@ -334,7 +462,7 @@ class TEST_recycle_rescale(blayer_TEST_base):
             
     def _get_rescaling(self):
         file = os.path.join(self._debug_folder,'CHK_rescale_params.csv')
-        self.paramsDF = pd.read_csv(file).dropna(axis=1).pivot_table(index='Iteration')
+        self.paramsDF = pd.read_csv(file).dropna(axis=1).drop_duplicates(subset='Iteration').pivot_table(index='Iteration')
         
     def _get_velo_prof(self,iter=None):
         if iter is None:
@@ -343,11 +471,17 @@ class TEST_recycle_rescale(blayer_TEST_base):
             file = os.path.join(self._debug_folder,'CHK_U_VELO_PROF.%d.dat'%iter)
             assert os.path.isfile(file)
         
-        file_array = np.loadtxt(file).T
+        file_array = np.loadtxt(file)
         
-        index = [1,6,20,40]
-        self.Q_inletDF = pd.DataFrame(file_array[2:6],index = index)
-        self.G_inletDF = pd.DataFrame(file_array[6:10],index = index)
+        columns = [1,6,20,40]
+        index = self._meta_data.CoordDF['y']
+        self.Q_inletDF = pd.DataFrame(file_array[:,2:6],
+                                        columns=columns,
+                                        index=index)
+        
+        self.G_inletDF = pd.DataFrame(file_array[:,6:10],
+                                        columns=columns,
+                                        index=index)
         self.Q_plane = file_array[-1]
         
     def _get_gather_tests(self,iter=None):
@@ -357,9 +491,13 @@ class TEST_recycle_rescale(blayer_TEST_base):
             file = os.path.join(self._debug_folder,'CHK_U_VELO_INTERP.%d.dat'%iter)
             assert os.path.isfile(file)
             
-        file_array = np.loadtxt(file).T
+        file_array = np.loadtxt(file)
+        index = self._meta_data.CoordDF['y']
+        columns = ['inner','outer','plane']
         
-        self.UmeanDF = pd.DataFrame(file_array[3:],index=['inner','outer','plane'])
+        self.UmeanDF = pd.DataFrame(file_array[:,3:],
+                                        columns=columns,
+                                        index=index)
         
         if iter is None:
             file = os.path.join(self._debug_folder,'CHK_U_VELO_INTERP_FLUCT.dat')
@@ -368,22 +506,38 @@ class TEST_recycle_rescale(blayer_TEST_base):
             assert os.path.isfile(file)
         
     
-        file_array = np.loadtxt(file).T
+        file_array = np.loadtxt(file)
         
-        self.UfluctDF = pd.DataFrame(file_array[2:],index=['inner','outer','plane'])
+        columns = ['inner','outer','plane']
+        self.UfluctDF = pd.DataFrame(file_array[:,2:],
+                                        columns=columns,
+                                        index=index)
             
     def _get_scalings(self):
         file = os.path.join(self._debug_folder,'CHK_Y_SCALE_U.dat')
-        file_array = np.loadtxt(file).T
+        file_array = np.loadtxt(file)
+        index = np.array([0,
+                    *self._meta_data.CoordDF['y'],
+                    self._meta_data.Coord_ND_DF['y'][-1]])
+        columns = ['inlet','recy']
+        self.yplusDF = pd.DataFrame(file_array[:,2:4],
+                                        columns=columns,
+                                        index=index)
         
-        self.yplusDF = pd.DataFrame(file_array[2:4],index=['inlet','recy'])
-        self.etaDF = pd.DataFrame(file_array[4:],index=['inlet','recy'])
+        self.etaDF = pd.DataFrame(file_array[:,4:],
+                                        columns=columns,
+                                        index=index)
         
     def _get_weights(self):
         file = os.path.join(self._debug_folder,'CHK_RESCALE_WEIGHT.dat')
-        file_array = np.loadtxt(file).T
+        file_array = np.loadtxt(file)
+        index = np.array([0,
+                          *self._meta_data.CoordDF['y'],
+                          self._meta_data.Coord_ND_DF['y'][-1]])
         
-        
-        self.Weight = pd.DataFrame(file_array[1:3],index=['eta','W'])
+        columns = ['eta','W']
+        self.Weight = pd.DataFrame(file_array[:,1:3],
+                                        columns=columns,
+                                        index=index)
 
         

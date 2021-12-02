@@ -394,13 +394,30 @@ class OutputFileStore_io(OutputFileStore_base):
     _monitor_old = "OUTPUT_"
 
 class DomainHandler(cd.GeomHandler):
+    def __init__(self,iCase_or_metadata):
 
-    def __init__(self,polar):
-        if not isinstance(polar,bool):
-            polar = self.check_polar_from_icase(polar)
+        if isinstance(iCase_or_metadata,CHAPSim_meta):
+            iCase = iCase_or_metadata.metaDF['iCase']
+        else:
+            iCase = iCase_or_metadata
             
-        super().__init__(polar)
-        
+        if iCase in [1,4]:
+            self.coord_sys = 'cart'
+            self._domain = 'channel'
+        elif iCase in [2,3]:
+            self.coord_sys = 'polar'
+            self._domain = 'pipe'
+        elif iCase == 5:
+            self.coord_sys = 'cart'
+            self._domain = 'blayer'
+        else:
+            msg = "CHAPSim case type invalid"
+            raise ValueError(msg)
+            
+    @property
+    def is_channel(self):
+        return self._domain == 'channel'
+    
     def _alter_item(self,char,to_out=True):
         convert_dict = styleParams.cart_to_polar if to_out else styleParams.polar_to_cart
         if self.coord_sys == 'cylind' and char in convert_dict.keys():
@@ -413,7 +430,7 @@ class DomainHandler(cd.GeomHandler):
             msg = "Comp must be either x, y, or z"
             raise ValueError(msg)
 
-        if self.is_cylind:
+        if self.is_polar:
             return styleParams.CoordLabel_pipe(comp)
         else:
             return styleParams.CoordLabel_channel(comp)
@@ -421,9 +438,9 @@ class DomainHandler(cd.GeomHandler):
     def _get_coord_symbol(self,comp):
         if comp not in ['x','y','z']:
             return comp
-        if self.is_cylind:
+        if self.is_polar:
             comp = styleParams.cart_to_polar[comp]
-        if self.is_cylind:
+        if self.is_polar:
             return styleParams.CoordLabel_pipe(comp)
         else:
             return styleParams.CoordLabel_channel(comp)
@@ -431,7 +448,7 @@ class DomainHandler(cd.GeomHandler):
     def _get_velocity_symbol(self,comp):
         if comp not in ['u','v','w']:
             return comp
-        if self.is_cylind:
+        if self.is_polar:
             return styleParams.cart_to_polar[comp]
         else:
             return comp
@@ -445,7 +462,7 @@ class DomainHandler(cd.GeomHandler):
         return "".join(text_list)
 
     def styleYdata(self,data):
-        if self.is_cylind:
+        if self.is_polar:
             return styleParams.ystyle_channel.transformy(data)
         else:
             return styleParams.ystyle_pipe.transformy(data)
@@ -479,7 +496,7 @@ class DomainHandler(cd.GeomHandler):
         if flow_array.ndim == 3:
             grad_vector[2] = self.Grad_calc(coordDF,flow_array,'z')
 
-            factor_out = 1/coordDF['y'] if self.is_cylind else 1.0
+            factor_out = 1/coordDF['y'] if self.is_polar else 1.0
             grad_vector[2] = np.multiply(grad_vector[2],factor_out)
 
         return grad_vector
@@ -492,8 +509,8 @@ class DomainHandler(cd.GeomHandler):
         grad_vector = np.zeros_like(vector_array)
         grad_vector[0] = self.Grad_calc(coordDF,vector_array[0],'x')
         
-        factor_in = coordDF['y'] if self.is_cylind else 1.0
-        factor_out = 1/coordDF['y'] if self.is_cylind else 1.0
+        factor_in = coordDF['y'] if self.is_polar else 1.0
+        factor_out = 1/coordDF['y'] if self.is_polar else 1.0
 
         grad_vector[1] = self.Grad_calc(coordDF,np.multiply(vector_array[1],factor_in),'y')
         grad_vector[1] = np.multiply(grad_vector[1],factor_out)
@@ -512,8 +529,8 @@ class DomainHandler(cd.GeomHandler):
         return lap_scalar
 
     def Scalar_laplacian_tg(self,coordDF,flow_array):
-        factor_in = coordDF['y'] if self.is_cylind else 1.0
-        factor_out = 1/coordDF['y'] if self.is_cylind else 1.0
+        factor_in = coordDF['y'] if self.is_polar else 1.0
+        factor_out = 1/coordDF['y'] if self.is_polar else 1.0
         dflow_dy = np.multiply(self.Grad_calc(coordDF,flow_array,'y'),
                                 factor_in)
         lap_scalar = np.multiply(self.Grad_calc(coordDF,dflow_dy,'y'),
@@ -530,7 +547,7 @@ class DomainHandler(cd.GeomHandler):
             msg = r"This function can only be applied to arrays with dimension 2 and 3"
             raise ValueError(msg)
 
-        if self.is_cylind:
+        if self.is_polar:
             int_array = cumtrapz(flow_array,y_coords, axis=axis,initial=0)
         else:
             middle_index = int(y_coords.size*0.5)
@@ -567,11 +584,11 @@ class DomainHandler(cd.GeomHandler):
         return simps(flow_array,y_coords, axis=axis)
 
     def Integrate_cumult(self,CoordDF,flow_array):
-        channel = not self.is_cylind
+        channel = not self.is_polar
         return gradient.cumIntegrate_y(CoordDF,flow_array,channel=channel)
 
     def Integrate_tot(self,CoordDF,flow_array):
-        channel = not self.is_cylind
+        channel = not self.is_polar
         return gradient.totIntegrate_y(CoordDF,flow_array,channel=channel)
 
 class coorddata(cd.AxisData):
@@ -678,7 +695,7 @@ class coorddata(cd.AxisData):
             self.coord_staggered.to_hdf(filename,key=key+"/coord_staggered",mode=mode)
 
         hdf_obj = cd.hdfHandler(filename,mode='r',key=key)
-        cart_mode = False if self._domain_handler.is_cylind else True
+        cart_mode = False if self._domain_handler.is_polar else True
         hdf_obj.attrs['cart_mode'] = cart_mode
 
         
@@ -712,7 +729,7 @@ class coorddata(cd.AxisData):
     #     ZND = np.zeros(ZCC.size+1)
 
     #     XND[0] = 0.0
-    #     YND[0] = 0 if self._domain_handler.is_cylind else -1.0
+    #     YND[0] = 0 if self._domain_handler.is_polar else -1.0
     #     ZND[0] = 0.0
 
     #     for i in  range(1,XND.size):
@@ -928,7 +945,7 @@ class coorddata(cd.AxisData):
             msg = "This operation can only be done on other objects of this type"
             raise TypeError(msg)
 
-        if self._domain_handler.is_cylind != other_obj._domain_handler.is_cylind:
+        if self._domain_handler.is_polar != other_obj._domain_handler.is_polar:
             return False
 
         if self.coord_centered != other_obj.coord_centered:

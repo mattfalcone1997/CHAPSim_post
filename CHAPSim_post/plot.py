@@ -656,15 +656,12 @@ def create_fig_ax_with_squeeze(fig=None,ax=None,**kwargs):
     elif ax is None:
         ax=fig.add_subplot(1,1,1)
     else:
-        if not isinstance(fig, CHAPSimFigure):
-            msg = f"fig needs to be an instance of {CHAPSimFigure.__name__}"
-            raise TypeError(msg)
-        if not isinstance(ax,(AxesCHAPSim, Axes3DCHAPSim)):
-            msg = f"ax needs to be an instance of {AxesCHAPSim.__name__}"
-            raise TypeError(msg)
-    
+        fig = _upgrade_fig(fig)
+        ax = _upgrade_ax(fig, ax)
+
     return fig, ax
 
+    
 def create_fig_ax_without_squeeze(*args,fig=None,ax=None,**kwargs):
     kwargs['squeeze'] = False
     if fig is None:
@@ -672,6 +669,9 @@ def create_fig_ax_without_squeeze(*args,fig=None,ax=None,**kwargs):
     elif ax is None:
         kwargs.pop('figsize',None)
         ax=fig.subplots(*args,**kwargs)
+    
+    fig = _upgrade_fig(fig)
+    
     single_input = False
     if isinstance(ax,mpl.axes.Axes):
         ax = np.array([ax])
@@ -683,11 +683,43 @@ def create_fig_ax_without_squeeze(*args,fig=None,ax=None,**kwargs):
                 f"{mpl.axes.Axes.__name__}  or an iterable"
                 f" of it not {type(ax)}")
         raise TypeError(msg)
-
+    
     ax = ax.flatten()
-
+    for i, a in enumerate(ax):
+        ax[i] = _upgrade_ax(fig,a)
+        
     return fig, ax, single_input
 
+def _upgrade_fig(fig):
+    if not isinstance(fig, CHAPSimFigure):
+        if isinstance(fig,mpl.figure.Figure):
+            d = fig.__getstate__()
+            fig = CHAPSimFigure()
+            fig.__setstate__(d)
+        else:
+            msg = f"fig needs to be an instance of {CHAPSimFigure.__name__}"
+            raise TypeError(msg)
+    
+    return fig
+
+def _upgrade_ax(fig,ax):
+    fig = _upgrade_fig(fig)
+    if not isinstance(ax,(AxesCHAPSim, Axes3DCHAPSim)):
+        if isinstance(ax,mpl.axes.Axes):
+            d = ax.__getstate__().copy()
+            #ax.remove()
+            ax = fig.add_subplot(1,1,1)
+            ax.__setstate__(d)
+        elif isinstance(ax,mpl.axes.Axes3D):
+            d = ax.__getstate__().copy()
+            #ax.remove()
+            ax = fig.add_subplot(1,1,1,projection='3d')
+            ax.__setstate__(d)
+        else:
+            msg = f"ax needs to be an instance of {AxesCHAPSim.__name__}"
+            raise TypeError(msg)
+    return ax
+    
 def get_legend_ncols(line_no):
     return 4 if line_no >3 else line_no
 

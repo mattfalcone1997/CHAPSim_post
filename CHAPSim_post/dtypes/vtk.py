@@ -20,7 +20,7 @@ class VTKstruct_base:
         return self._flowstruct._polar_plane is not None
     
     def __call__(self,*,use_pipe=True):
-        if self._flowstruct.Domain.is_cylind:
+        if self._flowstruct.Domain.is_polar:
             self._use_pipe_rep = use_pipe
         
         return self

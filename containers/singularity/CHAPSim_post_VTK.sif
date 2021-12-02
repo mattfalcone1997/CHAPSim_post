@@ -6,71 +6,22 @@ From: ubuntu:20.04
     apt-get -y update
     DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
     apt-get install -y python3 python3-dev gfortran ffmpeg libssl-dev meson python3-pip wget git ninja-build bison flex chrpath libgl1-mesa-dev xvfb
-
-    cd /opt
-    mkdir cmake
-    cd cmake
-    wget https://github.com/Kitware/CMake/releases/download/v3.21.3/cmake-3.21.3.tar.gz
-    tar xvf cmake-3.21.3.tar.gz && cd cmake-3.21.3
-    ./bootstrap && make -j8 && make install 
-    
-    cd /opt/ && mkdir VTK_deps && cd VTK_deps
-    git clone --recursive https://gitlab.kitware.com/paraview/paraview-superbuild.git
-    
-    mkdir build && cd build
-    cmake -GNinja -DENABLE_osmesa=ON -DENABLE_mpi=ON -DENABLE_hdf5=ON -DENABLE_ffmpeg=ON -DENABLE_paraview=OFF -DENABLE_python=OFF ../paraview-superbuild
-    ninja
-    
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/VTK_deps/build/install/lib
-    export C_INCLUDE_PATH=$C_INCLUDE_PATH:/opt/VTK_deps/build/install/include
-    export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/opt/VTK_deps/build/install/include
-    export MPLCONFIGDIR=/opt/matplotlibdir
-    
-    
+   
     PYBIN=/usr/bin/python3
-    LIB_PATH=/opt/VTK_deps/build/install
-    
     cd /opt
     git clone -b new_master https://github.com/mattfalcone1997/CHAPSim_post.git
     cd CHAPSim_post
     $PYBIN -m pip install -r requirements.txt
     $PYBIN -m pip install .
-
-    cd /opt
-    mkdir VTK && cd VTK 
-
-    wget https://www.vtk.org/files/release/9.1/VTK-9.1.0.tar.gz
-    tar xvf VTK-*.tar.gz
-    cd VTK-*
-    mkdir build && cd build
-
-    cmake -GNinja\
-      -DFFMPEG_ROOT=$LIB_PATH \
-      -DVTK_BUILD_TESTING=OFF \
-      -DVTK_WHEEL_BUILD=ON \
-      -DVTK_PYTHON_VERSION=3 \
-      -DVTK_WRAP_PYTHON=ON \
-      -DVTK_OPENGL_HAS_OSMESA=ON \
-      -DVTK_OPENGL_HAS_EGL=OFF \
-      -DOSMESA_ROOT=$LIB_PATH \
-      -DVTK_USE_X=OFF \
-      -DPython3_EXECUTABLE=$PYBIN \
-      -DCMAKE_INSTALL_LIBDIR=${PWD} \
-      -S ../ -B .
-      
-    ninja
-    $PYBIN setup.py bdist_wheel
-    $PYBIN -m pip install dist/vtk-*.whl
+  
+    export MPLCONFIGDIR=/opt/matplotlibdir
 
     python3 -c "import pyvista"
     python3 -c "import matplotlib"
 
 
 %environment
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/VTK_deps/build/install/lib
-    export C_INCLUDE_PATH=$C_INCLUDE_PATH:/opt/VTK_deps/build/install/include
-    export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/opt/VTK_deps/build/install/include
-    export PATH=$PATH:/opt/ParaView/build/bin
+
     export DISPLAY=:99.0
     export PYVISTA_OFF_SCREEN=true
     export PYVISTA_USE_IPYVTK=true

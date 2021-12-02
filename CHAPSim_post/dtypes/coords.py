@@ -14,14 +14,14 @@ class GeomHandler():
         self.Grad_calc = gradient.Grad_calc
         
     @property
-    def is_cylind(self):
+    def is_polar(self):
         return self.coord_sys == 'polar'
     
     def __str__(self):
         if self.coord_sys == 'cart':
             coord = "cartesian"
         else:
-            coord = "cylindrical"
+            coord = "polar (cylindrical)"
             
         return f"{self.__class__.__name__} with %s coordinate system"%coord
     
@@ -109,7 +109,7 @@ class AxisData:
             self.coord_staggered.to_hdf(filename,key=key+"/coord_staggered",mode=mode)
 
         hdf_obj = hdfHandler(filename,mode='r',key=key)
-        cart_mode = False if self._domain_handler.is_cylind else True
+        cart_mode = False if self._domain_handler.is_polar else True
         hdf_obj.attrs['cart_mode'] = cart_mode
     
     def create_vtkStructuredGrid(self,staggered = True):
@@ -152,7 +152,7 @@ class AxisData:
             msg = "This operation can only be done on other objects of this type"
             raise TypeError(msg)
 
-        if self._domain_handler.is_cylind != other_obj._domain_handler.is_cylind:
+        if self._domain_handler.is_polar != other_obj._domain_handler.is_polar:
             return False
 
         if self.coord_centered != other_obj.coord_centered:
