@@ -142,14 +142,14 @@ class IndexBase(ABC):
             if not isinstance(key[0],(list,Index)):
                 inner_key = [key[0]]
             else:
-                inner_key = key[0]
+                inner_key = list(key[0])
             if not isinstance(key[1],(list,Index)):
                 outer_key = [key[1]]
             else:
-                outer_key = key[1]
+                outer_key = list(key[1])
 
             key_list = list(itertools.product(inner_key,outer_key))
-            print(key_list)
+            print("Check",key_list)
         else:
             if not isinstance(key,list):
                 msg = "This function should only be called on keys containing lists"
