@@ -601,6 +601,7 @@ class CHAPSim_AVG_io(_AVG_developing):
                 norm_coordDF = (1-abs(self.CoordDF))/norm_distance[x]
             else:
                 norm_coordDF = self.CoordDF/norm_distance[x]
+            print(norm_coordDF)
             y_index = indexing.coord_index_calc(norm_coordDF,'y', coord_list)
             y_indices.append(y_index)
 
