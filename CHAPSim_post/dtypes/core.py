@@ -670,8 +670,8 @@ class datastruct:
     def from_hdf(cls,*args,**kwargs):
         return cls(*args,from_hdf=True,**kwargs)
 
-    def from_internal(cls,*args,**kwargs):
-        return cls(*args,**kwargs)
+    def from_internal(self,*args,**kwargs):
+        return self.__class__(*args,**kwargs)
 
     @classmethod
     def from_concat(cls,struct_list):
