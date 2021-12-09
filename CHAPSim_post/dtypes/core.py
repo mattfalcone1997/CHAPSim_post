@@ -54,6 +54,7 @@ class IndexBase(ABC):
         pass
     
     def __contains__(self,key):
+        key = self._item_handler(key)
         return key in self._index
 
     def remove(self,key):
@@ -877,7 +878,6 @@ class datastruct:
         self.set_value(key,value)
     
     def set_value(self,key, value):
-        print(key,self.index,key in self.index)
         if key in self.index:
             
             loc = self._indexer.get_loc(key)
