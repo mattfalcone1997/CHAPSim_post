@@ -705,7 +705,7 @@ class CHAPSim_AVG_io(CHAPSim_AVG_base):
 
 
         Phy_string = '%.9g' % PhyTime
-        flow_index = [[Phy_string]*4,['u','v','w','P']]
+        flow_index = [[Phy_string]*4,['u','v','w','p']]
         vector_index = [[Phy_string]*3,['u','v','w']]
         sym_2_tensor_index = [[Phy_string]*6,['uu','uv','uw','vv','vw','ww']]
         sym_3_tensor_index = [[Phy_string]*10,['uuu','uuv','uuw','uvv',\
@@ -1446,7 +1446,7 @@ class CHAPSim_AVG_tg_base(CHAPSim_AVG_base):
         Pr_Velo_grad_tensor = AVG_info[32:41]
         DUDX2_tensor = AVG_info[41:]*factor
 
-        flow_index = [[None]*4,['u','v','w','P']]
+        flow_index = [[None]*4,['u','v','w','p']]
         vector_index = [[None]*3,['u','v','w']]
         sym_2_tensor_index = [[None]*6,['uu','uv','uw','vv','vw','ww']]
         sym_3_tensor_index = [[None]*10,['uuu','uuv','uuw','uvv',\

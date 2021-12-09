@@ -238,7 +238,7 @@ class CHAPSim_Inst(Common):
         Phy_string = '%.9g' % PhyTime
 
         # creating datastruct index
-        index = [[Phy_string]*4,['u','v','w','P']]
+        index = [[Phy_string]*4,['u','v','w','p']]
 
         # creating datastruct so that data can be easily accessible elsewhere
         Instant_DF = cd.flowstruct3D(self._coorddata,flow_info,index=index,copy=False)# pd.DataFrame(flow_info1,index=index)

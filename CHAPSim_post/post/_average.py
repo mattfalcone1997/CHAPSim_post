@@ -114,7 +114,7 @@ class _AVG_base(Common,ABC):
                         PR_Velo_grad_tensorDF,DUDX2_tensorDF):
 
         for index in PU_vectorDF.index:
-            P_mean = flow_AVGDF[index[0],'P']
+            P_mean = flow_AVGDF[index[0],'p']
             u_mean = flow_AVGDF[index]
             PU_vectorDF[index] -= P_mean*u_mean
 
@@ -136,7 +136,7 @@ class _AVG_base(Common,ABC):
                         + u2_mean*u1u3 + u3_mean*u1u2)
 
         for index in PR_Velo_grad_tensorDF.index:
-            p_mean = flow_AVGDF[index[0],'P']
+            p_mean = flow_AVGDF[index[0],'p']
             u_grad = Velo_grad_tensorDF[index]
             PR_Velo_grad_tensorDF[index] -= p_mean*u_grad
 
@@ -431,7 +431,7 @@ class CHAPSim_AVG_io(_AVG_developing):
 
 
         Phy_string = '%.9g' % PhyTime
-        flow_index = [[Phy_string]*4,['u','v','w','P']]
+        flow_index = [[Phy_string]*4,['u','v','w','p']]
         vector_index = [[Phy_string]*3,['u','v','w']]
         sym_2_tensor_index = [[Phy_string]*6,['uu','uv','uw','vv','vw','ww']]
         sym_3_tensor_index = [[Phy_string]*10,['uuu','uuv','uuw','uvv',\
@@ -601,7 +601,7 @@ class CHAPSim_AVG_io(_AVG_developing):
                 norm_coordDF = (1-abs(self.CoordDF))/norm_distance[x]
             else:
                 norm_coordDF = self.CoordDF/norm_distance[x]
-            print(norm_coordDF)
+
             y_index = indexing.coord_index_calc(norm_coordDF,'y', coord_list)
             y_indices.append(y_index)
 
@@ -1017,7 +1017,7 @@ class CHAPSim_AVG_tg(_AVG_base):
     def _AVG_index_contruct(self,time):
         Phy_string = '%.9g' % time
 
-        flow_comp_index = ['u','v','w','P']
+        flow_comp_index = ['u','v','w','p']
         pu_comp_index = ['u','v','w']
         uu_comp_index = ['uu','uv','uw','vv','vw','ww']
         uuu_comp_index = ['uuu','uuv','uuw','uvv',

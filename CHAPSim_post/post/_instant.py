@@ -36,6 +36,8 @@ class _Inst_base(Common,ABC):
     ## CHAPSim_Inst
     This is a module for processing and visualising instantaneous data from CHAPSim
     """
+    
+    _inst_comp = ['u', 'v', 'w','p']
     @docstring.copy_fromattr("_inst_extract")
     def __init__(self,*args,**kwargs):
         fromfile= kwargs.pop('fromfile',False)
@@ -81,6 +83,11 @@ class _Inst_base(Common,ABC):
 
         self._avg_data = self._create_avg_data(path_to_folder,abs_path,time0,avg_data=avg_data)
 
+        self._update_instant()
+        
+    def _update_instant(self):
+        pass
+    
     @abstractmethod
     def _create_avg_data(self,path_to_folder,abs_path,time0):
         pass
@@ -192,7 +199,11 @@ class _Inst_base(Common,ABC):
         else:
             file_string = "DNS_perioz_INSTANT_T" + instant
 
-        veloVector = ["_U","_V","_W","_P"]
+        if not self._inst_comp[:3] == ['u','v','w']:
+            msg = "The vectors u v w must occupy the first three position"
+            raise ValueError(msg)
+        
+        veloVector = ['_%s'%comp.upper() for comp in self._inst_comp]
         file_ext = ".D"
         
         full_path = misc_utils.check_paths(path_to_folder,'1_instant_rawdata',
@@ -210,12 +221,13 @@ class _Inst_base(Common,ABC):
         #Reshaping and interpolating flow data so that it is centred
         flow_info=flow_info.reshape((4,NCL3,NCL2,NCL1))
         flow_info = self._velo_interp(flow_info,NCL3,NCL2,NCL1)
+        
         gc.collect()
 
         Phy_string = '%.9g' % PhyTime
 
         # creating datastruct index
-        index = [[Phy_string]*4,['u','v','w','P']]
+        index = [[Phy_string]*len(self._inst_comp),self._inst_comp]
 
         # creating datastruct so that data can be easily accessible elsewhere
         Instant_DF = cd.FlowStruct3D(self._coorddata,flow_info,index=index,copy=False)# pd.DataFrame(flow_info1,index=index)
@@ -231,7 +243,8 @@ class _Inst_base(Common,ABC):
         #This doesn't interpolate pressure as it is already located at the cell centre
         #interpolation reduces u extent, therefore to maintain size, V, W reduced by 1
         
-        flow_interp = np.zeros((4,NCL3,NCL2,NCL1-1))
+        comp_size = len(self._inst_comp)
+        flow_interp = np.zeros((comp_size,NCL3,NCL2,NCL1-1))
         
         flow_interp[0] = post.velo_interp3D(flow_info[0],NCL1,NCL2,NCL3,2)
         flow_interp[1] = post.velo_interp3D(flow_info[1],NCL1,NCL2,NCL3,1)
@@ -249,8 +262,8 @@ class _Inst_base(Common,ABC):
         #         flow_interp[2,i,:,:] = 0.5*(flow_info[2,i,:,:-1] + flow_info[2,i+1,:,:-1])
         #     else: #interpolation with first cell due to z periodicity BC
         #         flow_interp[2,i,:,:] = 0.5*(flow_info[2,i,:,:-1] + flow_info[2,0,:,:-1])
-        
-        flow_interp[3,:,:,:] = flow_info[3,:,:,:-1] #Removing final pressure value 
+        for i in range(3,comp_size):
+            flow_interp[i,:,:,:] = flow_info[i,:,:,:-1] #Removing final pressure value 
         return flow_interp
 
     def check_PhyTime(self,PhyTime):
