@@ -143,7 +143,7 @@ class IndexBase(ABC):
                 inner_key = [key[0]]
             else:
                 inner_key = key[0]
-            if not isinstance(key[1],list,Index):
+            if not isinstance(key[1],(list,Index)):
                 outer_key = [key[1]]
             else:
                 outer_key = key[1]
