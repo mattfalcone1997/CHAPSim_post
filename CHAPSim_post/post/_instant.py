@@ -221,7 +221,8 @@ class _Inst_base(Common,ABC):
         flow_info, NCL1, NCL2, NCL3, PhyTime = self._file_extract(file_list)
         
         #Reshaping and interpolating flow data so that it is centred
-        flow_info=flow_info.reshape((4,NCL3,NCL2,NCL1))
+        comp_size = len(self._inst_comp)
+        flow_info=flow_info.reshape((comp_size,NCL3,NCL2,NCL1))
         flow_info = self._velo_interp(flow_info,NCL3,NCL2,NCL1)
         
         gc.collect()
