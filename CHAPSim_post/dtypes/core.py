@@ -139,7 +139,6 @@ class IndexBase(ABC):
     @staticmethod
     def _getitem_process_list(key):
         if isinstance(key,tuple):
-            print(type(key[0]),type(key[1]))
             if not isinstance(key[0],(list,Index)):
                 inner_key = [key[0]]
             else:
@@ -150,7 +149,6 @@ class IndexBase(ABC):
                 outer_key = list(key[1])
 
             key_list = list(itertools.product(inner_key,outer_key))
-            print("Check",key_list)
         else:
             if not isinstance(key,list):
                 msg = "This function should only be called on keys containing lists"

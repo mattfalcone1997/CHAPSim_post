@@ -148,7 +148,7 @@ class VTKstruct3D(VTKstruct_base):
             r = self._flowstruct._wall_normal_line
             theta = self._flowstruct._polar_plane
             theta.remove(r)
-            z = set(plane).difference(self._flowstruct._polar_plane)[0]
+            z = list(set(plane).difference(self._flowstruct._polar_plane))[0]
             
             
             if self._use_cell_data:

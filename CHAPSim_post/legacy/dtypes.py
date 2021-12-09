@@ -249,12 +249,10 @@ class structIndexer:
 
     def __getstate__(self):
         d = self.__dict__
-        print(d)
         d['_structIndexer__parent_dstruct'] = d['_structIndexer__parent_dstruct']()
         return d
 
     def __setstate__(self,state):
-        print(state['_structIndexer__parent_dstruct'])
         state['_structIndexer__parent_dstruct'] = weakref.ref(state['_structIndexer__parent_dstruct'])
         self.__dict__ = state
 class hdfHandler:
