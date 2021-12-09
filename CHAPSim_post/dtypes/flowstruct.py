@@ -1,16 +1,39 @@
+"""
+flowstruct
+^^^^^^^^^^
+
+This sub-module contains the primary storage and visualisation 
+classes of CHAPSim_post. It is built around the ``FlowStructND`` 
+class which can store and visualise structured data of artibrary 
+dimension. Derived classes are used to store must of the data such as the ``FlowStruct3D`` class for the instantaneous data. This class is designed to have its data components accessed by keys. These classes can be output to HDF5 file format and are derived from the ``datastruct`` class found in the core module. 
+
+"""
+
 from abc import abstractproperty
 from scipy import interpolate
+from typing import (NewType,
+                    Iterable,
+                    Union,
+                    Callable,
+                    List,
+                    Tuple,
+                    Any)
 
+from numbers import Number
 import CHAPSim_post.plot as cplt
 # from CHAPSim_post.post._meta import coorddata
-from CHAPSim_post.utils import misc_utils
-
+from CHAPSim_post.utils import misc_utils, docstring
+import matplotlib as mpl
 from .vtk import VTKstruct2D, VTKstruct3D
 from .coords import coordstruct, AxisData
 from .core import *
 
+FlowStructType =  NewType('FlowStructType',datastruct)
 
-class FlowStruct_base(datastruct):
+class _FlowStruct_base(datastruct):
+    """
+    Base class for the FlowStruct classes
+    """
     def __init__(self,*args,from_hdf=False,**kwargs):
         
         self._set_coorddata(args[0],**kwargs)
@@ -25,22 +48,37 @@ class FlowStruct_base(datastruct):
 
     @property
     def Domain(self):
+        """
+        Property for accessing the FlowStruct's DomainHandler
+        """
         return self._coorddata._domain_handler
 
     @property
     def CoordDF(self):
+        """
+        Property for accessing the FlowStruct's centered data
+        """
         return self._coorddata.centered
 
     @property
     def Coord_ND_DF(self):
+        """
+        Property for accessing the FlowStruct's staggered data is present
+        """
         return self._coorddata.staggered
 
-    def remove_time(self,time):
+    def remove_time(self,time: Number ) -> None:
+        """
+        Removes specified time from FlowStruct
+        """
         del_index = [ index for index in self.index if index[0] == time]
         for index in del_index:
             del self[index]
     
-    def shift_times(self,time):
+    def shift_times(self,time: Number) -> FlowStructType:
+        """
+        Shifts all the FlowStruct's times by a scalar
+        """
         new_index = []
         for index in self.index:
             new_time = float(index[0]) + time
@@ -49,18 +87,44 @@ class FlowStruct_base(datastruct):
         return self.from_internal(dict(zip(new_index, self._data)))
             
 
-    def get_identity_transform(self):
+    def _get_identity_transform(self) ->  Callable:
+        """
+        For use on ``plot_line`` internals if data transform is given as None
+        """
         def identity_transform(data):
             return data
         
         return identity_transform
 
-    def _check_datatransforms(self,transform_xdata,transform_ydata):
+    def _check_datatransforms(self,
+                              transform_xdata:  Union[ Callable,None],
+                              transform_ydata:  Union[ Callable,None])->  Union[ Callable,  Callable] :  
+        """
+        Checks validity of transforms  on ``plot_line`` functions and replaces ``None`` with the identity transform
+
+        Parameters
+        ----------
+        transform_xdata : Callable or None
+            Transform for line x data or None
+        transform_ydata : Callable
+            Transform for line y data 
+
+        Returns
+        -------
+        Callable, Callable
+            
+
+        Raises
+        ------
+        TypeError
+            If either input is not callable or not None
+
+        """
         
         if transform_xdata is None:
-            transform_xdata = self.get_identity_transform()
+            transform_xdata = self._get_identity_transform()
         if transform_ydata is None:
-            transform_ydata = self.get_identity_transform()
+            transform_ydata = self._get_identity_transform()
 
         if not hasattr(transform_xdata,'__call__'):
             msg = "transform_xdata must be None or callable"
@@ -73,14 +137,32 @@ class FlowStruct_base(datastruct):
 
         
     @property
-    def times(self):
+    def times(self) ->  Union[ List[float],None]:
+        """
+        
+        Returns a list of the FlowStruct's times or None
+        
+        Returns
+        -------
+        list of float or None
+            list of the FlowStruct's times
+            
+        """
         if 'None' in self.index.outer_index:
             return None
         else:
             return sorted([float(x) for x in self.outer_index])
 
     @property
-    def comp(self):
+    def comp(self) -> Index:
+        """
+        Property returning the FlowStruct's components
+
+        Returns
+        -------
+        Index
+            Components of the FlowStruct
+        """
         return self.inner_index
 
     @abstractproperty
@@ -88,7 +170,15 @@ class FlowStruct_base(datastruct):
         pass
 
     @property
-    def shape(self):
+    def shape(self)-> tuple:
+        """
+        Returns the shape of the FlowStruct's underlying Numpy arrays
+
+        Returns
+        -------
+        Tuple
+            Shape of the array
+        """
         key = self.index[0]
         return self[key].shape
 
@@ -108,22 +198,79 @@ class FlowStruct_base(datastruct):
 
             self._coorddata = AxisData.from_hdf(path,key=coord_key)
 
-    def check_times(self,key,err=None,warn=None):
+    def check_times(self,key:  Union[Number,None],
+                    err: Exception =None,
+                    warn: str = None) -> str:
+        """
+        Checks whether time is present in FlowStruct and
+        corrects if possible
+
+        Parameters
+        ----------
+        key :  Union[Number,None]
+            Input key
+        err : Exception, optional
+            Error to be raised if there is an issue, by default None
+        warn : str, optional
+            Warning to be raised if issue can be fixed, by default None
+
+        Returns
+        -------
+        str
+            The correct key
+        """
+        
         if err is None:
             msg = f"{self.__class__.__name__} object does not have time {key}"
             err = KeyError(msg)
         if warn is None:
             warn = (f"{self.__class__.__name__} object does not have time {key}"
                     f" only one {key} present. This time will be used")
+        
         return self.check_outer(key,err,warn=warn)
 
-    def check_comp(self,key,err=None):
+    def check_comp(self,
+                   key: str,
+                   err: Exception =None) -> str:
+        """
+        Checks whether component is present in FloStruct and raises error 'err' if not else a defaut KeyError is raised
+
+        Parameters
+        ----------
+        key : str
+            INput component
+        err : Exception, optional
+            Custom exception to be raised, by default None
+
+        Returns
+        -------
+        str
+            Valid component
+        """
         if err is None:
             msg = f"Component {key} not in {self.__class__.__name__}"
             err = KeyError(msg)
         return self.check_inner(key,err)
 
-    def check_line_labels(self,items,labels):
+    def check_line_labels(self,items: list,
+                          labels:  List[str]):
+        """
+        Checks that appropriate numbers and types of line labels are given
+
+        Parameters
+        ----------
+        items : list
+            items to be plotted
+        labels :  List[str]
+            list of labels
+
+        Raises
+        ------
+        TypeError
+            Ensures input types are valid
+        ValueError
+            Ensures to correct number of labels are present
+        """
         if labels is None:
             return
 
@@ -135,7 +282,20 @@ class FlowStruct_base(datastruct):
             msg = "The number of labels must be equal the number of items"
             raise ValueError(msg)
 
-    def is_fully_compatible(self,data):
+    def is_fully_compatible(self,data: FlowStructType) -> bool:
+        """
+        Checks whether a FlowStruct is compatible with this instance. THis is primarily used for arithmetic between FlowStructs
+
+        Parameters
+        ----------
+        data : FlowStructType
+            Another FlowStruct
+
+        Returns
+        -------
+        bool
+            bool signifying whether the FlowStruct is compatable
+        """
         if not self.is_shape_compatible(data):
             return False
 
@@ -147,16 +307,73 @@ class FlowStruct_base(datastruct):
 
         return True
 
-    def is_type_compatible(self,data):
+    def is_type_compatible(self,data: FlowStructType) -> bool:
+        """
+        Checks types
+
+        Parameters
+        ----------
+        data : FlowStructType
+            Another FlowStruct
+
+        Returns
+        -------
+        bool
+            returns true if the types are the compatible
+        """
         return  isinstance(data,self.__class__)
     
-    def is_coords_compatible(self,data):
+    def is_coords_compatible(self,data: FlowStructType) -> bool:
+        """
+        Checks that the coorddata for the FlowStructs are compatible
+
+        Parameters
+        ----------
+        data : FlowStructType
+            Another FlowStruct
+
+        Returns
+        -------
+        bool
+            returns True if the Flowstructs have equivalent coorddata
+        """
         return self._coorddata == data._coorddata
 
-    def is_shape_compatible(self,data):
+    def is_shape_compatible(self,data: FlowStructType) -> bool:
+        """
+        Checks that the shapes are the same
+
+        Parameters
+        ----------
+        data : FlowStructType
+            Another FlowStruct
+
+        Returns
+        -------
+        bool
+            returns True if their shapes are the same
+        """
         return self.shape == data.shape
 
-    def check_shape(self):
+    def check_shape(self) -> bool:
+        """
+        Checks that the shape of the input numpy arrays are valid
+
+        Returns
+        -------
+        bool
+            returns True if the shapes are valid
+
+        Raises
+        ------
+        ValueError
+            raised if not all arrays have the same shape
+        ValueError
+            raised if the shapes are not in the coordinate data
+        ValueError
+            Checks all arrays have the same dimension
+
+        """
         if not all([arr.shape == self.shape for _, arr in self]):
             msg = f"All arrays must have the same shape in {self.__class__.__name__} class"
             raise ValueError(msg)
@@ -167,17 +384,26 @@ class FlowStruct_base(datastruct):
             msg = "The coordinate data is of different shape %s to the array data %s"%(coord_shapes,self.shape)
             raise ValueError(msg)
 
-        shapes = [arr.shape for _, arr in self]
         dims = [arr.ndim for _, arr in self]
-        if not all(s == shapes[0] for s in shapes):
-            msg = f"All array shapes in {self.__class__.__name__} must be the same"
-            raise ValueError(msg)
-
         if not all(dim == self._dim for dim in dims):
             msg = f"All array ndims in {self.__class__.__name__} must be equal to {self._dim}"
             raise ValueError(msg)
     
-    def concat(self,arr_or_data):
+    def concat(self,arr_or_data:  Union[FlowStructType, Iterable[FlowStructType]]) -> FlowStructType:
+        """
+        Concatenates FlowStructs or iterables of FlowStructs
+
+        Parameters
+        ----------
+        arr_or_data : FlowStructType
+            FlowStruct or iterables of FlowStructs
+
+        Raises
+        ------
+        ValueError
+            Raised if FlowStructs are not compatible
+
+        """
 
         msg= "The flowstructs must be the compatible"
         if isinstance(arr_or_data,self.__class__):
@@ -197,7 +423,20 @@ class FlowStruct_base(datastruct):
         msg = "This method is not available for this class"
         raise NotImplementedError(msg)
 
-    def symmetrify(self,dim=None):
+    def symmetrify(self,dim: int =None) -> FlowStructType:
+        """
+        Flips FlowStruct along a dimension
+
+        Parameters
+        ----------
+        dim : int, optional
+            Dimension to be flipped, by default None
+
+        Returns
+        -------
+        FlowStructType
+            Flipped FlowStruct
+        """
         symm_dstruct = super().symmetrify(dim=dim)
         return self.from_internal(symm_dstruct)
 
@@ -218,7 +457,15 @@ class FlowStruct_base(datastruct):
         dstruct = super()._arith_unary_op(func)
         return self.from_internal(dstruct)
 
-    def copy(self):
+    def copy(self) -> FlowStructType:
+        """
+        Returns a deep copy of the FlowStruct
+
+        Returns
+        -------
+        FlowStructType
+            deep copy of the FlowStruct
+        """
         cls = self.__class__
         return cls(self._coorddata,self.to_dict(),copy=True)
 
@@ -326,10 +573,35 @@ class _FlowStruct_slicer:
         new_coorddata = AxisData(flow_struct.Domain,new_CoordDF,new_Coord_ND_DF)
 
         return new_coorddata, data_layout, wall_normal_line, polar_plane
-                 
 
-class FlowStructND(FlowStruct_base):
+slicer_example = """
+Example using FlowStructND.slice
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``fstruct`` is a 3D FlowStructND with a domain (x, y, z) of (0:30,-1:1,0:4)
+in its three dimensions. If I wanted to create a plane at x = 15:
+.. code-block:: python
+    fstruct_plane = fstruct.slice[15,:,:]
+    
+If I wanted to create a FlowStruct with only y_values from -1 to 0:
 
+.. code-block:: python
+    fstruct_half =fstruct.slice[:,:0,:]
+    
+"""
+
+docstring.sub.update(slicer=slicer_example)
+
+
+class FlowStructND(_FlowStruct_base):
+    """
+    The class that does much of the heavy lifting for the module. It 
+    contains the functionality to return FlowStructND 'sub-domains' 
+    such as planes of 3D data as well as visualising data if the 
+    method is available  to the dimension of the FlowStruct. It is 
+    base class to the more commonly used FlowStruct3D, FlowStruct2D,
+    FlowStruct1D, FlowStruct1D_time  classes.
+    """
+    
     def _array_ini(self, array, index=None,data_layout=None,wall_normal_line=None,polar_plane= None, copy=False):
         super()._array_ini(array, index=index, copy=copy)
         self._set_data_layout(data_layout, wall_normal_line, polar_plane)
@@ -345,7 +617,21 @@ class FlowStructND(FlowStruct_base):
                         polar_plane= polar_plane, 
                         copy=copy)
     @property
-    def VTK(self):
+    def VTK(self) ->  Union[VTKstruct2D,VTKstruct3D]:
+        """
+        Returns a VTKStruct if the dimensions allow 
+
+        Returns
+        -------
+         Union[VTKstruct2D,VTKstruct3D]
+            Allows inter-operability with VTK based tools such as 
+            Pyvista
+
+        Raises
+        ------
+        Exception
+            raised if the FlowStruct dimension is not 2 or 3
+        """
         use_cell_data = self._coorddata.contains_staggered
         if self._dim == 2:
             return VTKstruct2D(self,cell_data = use_cell_data)
@@ -354,11 +640,38 @@ class FlowStructND(FlowStruct_base):
         else:
             raise Exception
 
-    def to_vtk(self,file_name):
+    def to_vtk(self,file_name: str):
+        """
+        Outputs .vts file of FlowStruct
+
+        Parameters
+        ----------
+        file_name : str
+            file path for saving
+        """
         self.VTK.to_vtk(file_name)
 
-    def to_hdf(self,filepath,mode='a',key=None):
+    def to_hdf(self,filepath: str,
+               mode: str ='a',
+               key: Union[str,None] =None) -> hdfHandler:
+        """
+        Saves FlowStruct into the HDF5file format
 
+        Parameters
+        ----------
+        filepath : str
+            path to be saved
+        mode : str, optional
+            write mode, look at h5py documentation for more information, by default 'a'
+        key :  Union[str,None], optional
+            key location for the HDF5 file, by default None
+
+        Returns
+        -------
+        hdfHandler
+            for easy handling of hdf data, this is returned if more keys need to be added
+        """
+        
         hdf_obj = super().to_hdf(filepath,mode=mode,key=key)
         key = hdf_obj.name
 
@@ -394,7 +707,16 @@ class FlowStructND(FlowStruct_base):
         self._set_data_layout(data_layout, wall_normal_line, polar_plane)
 
         
-    def from_internal(self, *args, **kwargs):
+    def from_internal(self, *args, **kwargs) -> FlowStructType:
+        """
+        Gives datastruct type interface for creating a FlowStruct of the
+        same type
+
+        Returns
+        -------
+        FlowStruct
+            Resulting FlowStruct
+        """
         kwarg_dict = dict(data_layout=self._data_layout,
                             wall_normal_line = self._wall_normal_line,
                             polar_plane = self._polar_plane)
@@ -434,10 +756,48 @@ class FlowStructND(FlowStruct_base):
         self._wall_normal_line = wall_normal_line
         self._dim = self._data[0].ndim
 
-    def plot_line(self,comp,time=None,label=None,channel_half=False,
-                    transform_ydata=None, transform_xdata=None, 
-                    fig=None,ax=None,line_kw=None,**kwargs):
+    
+    def plot_line(self,comp: str,
+                  time: Number =None,
+                  label: str =None,
+                  channel_half: bool =False,
+                  transform_ydata:  Callable=None,
+                  transform_xdata:  Callable=None, 
+                  fig: cplt.CHAPSimFigure =None,
+                  ax: cplt.AxesCHAPSim =None,
+                  line_kw: dict =None,
+                  **kwargs) ->  Union[cplt.CHAPSimFigure,cplt.AxesCHAPSim ]:
+        """
+        Plots a line if the FlowStruct is 1D
 
+        Parameters
+        ----------
+        comp : str
+            Component of FlowStruct to be plotted
+        time : Number, optional
+            time to be plotted, by default None
+        label : str, optional
+            label to be based to line object, by default None
+        channel_half : bool, optional
+            If the flow is a channel, whether to plot only half, by default False
+        transform_ydata :  Callable, optional
+            Function applied to ydata, by default None
+        transform_xdata :  Callable, optional
+            Function applied to xdata, by default None
+        fig : cplt.CHAPSimFigure, optional
+            Input figure, it is created if None, by default None
+        ax : cplt.AxesCHAPSim, optional
+            Input axes, it is created if None, by default None
+        line_kw : dict, optional
+            dictionary passed to plotting function, by default None
+        **kwargs :
+            keyword arguments passed to figure creation routine
+            
+        Returns
+        -------
+         Union[cplt.CHAPSimFigure,cplt.AxesCHAPSim ]
+            returns figure and axes associated with line plot
+        """
         time = self.check_times(time)
         comp = self.check_comp(comp)
 
@@ -453,8 +813,25 @@ class FlowStructND(FlowStruct_base):
     def _check_line_channel(self):
         return self._wall_normal_line and self.Domain.is_channel
 
-    def get_dim_from_axis(self,axis):
+    def get_dim_from_axis(self,axis: str)-> int:
+        """
+        Gets the array dimension from given coord 
 
+        Parameters
+        ----------
+        axis : str
+            The axis present in the data_layout: e.g. 'x'
+
+        Returns
+        -------
+        int
+            array dimension
+
+        Raises
+        ------
+        ValueError
+            Raises exception if the axis is not present in the FlowStruct
+        """
         if len(axis) > 1:
             return tuple([self.get_dim_from_axis(a) for a in axis])
         if self._data_layout.count(axis) > 1:
@@ -466,7 +843,22 @@ class FlowStructND(FlowStruct_base):
 
         return "".join(self._data_layout).find(axis)
 
-    def reduce(self,numpy_op,axis):
+    def reduce(self,numpy_op:  Callable,axis: str) -> FlowStructType:
+        """
+        Produces FlowStruct by applying numpy operation along axes of a FlowStruct
+
+        Parameters
+        ----------
+        numpy_op :  Callable
+            Numpt operation e.g. numpy.amax
+        axis : str
+            FlowStruct Axis e.g. 'x'
+
+        Returns
+        -------
+        FlowStructType
+            FlowStruct from reduction operation
+        """
         array_axis = self.get_dim_from_axis(axis)
         new_datalayout = self._data_layout.copy()
         new_coord = self.CoordDF.copy()
@@ -506,7 +898,45 @@ class FlowStructND(FlowStruct_base):
                             wall_normal_line=wall_normal_line,
                             polar_plane=polar_plane)
 
-    def plot_line_data(self,data,label=None,channel_half=False,transform_ydata=None, transform_xdata=None, fig=None,ax=None,line_kw=None,**kwargs):
+    def plot_line_data(self,data: np.ndarray,
+                       label: str =None,
+                       channel_half: bool =False,
+                       transform_ydata: Callable =None,
+                       transform_xdata: Callable =None, 
+                       fig: cplt.CHAPSimFigure =None,
+                       ax: cplt.AxesCHAPSim =None,
+                       line_kw: dict =None,
+                       **kwargs)->  Union[cplt.CHAPSimFigure,cplt.AxesCHAPSim ]:
+        """
+        Plots a line plot on 1D data based on the parameters
+        from the FlowStruct
+
+        Parameters
+        ----------
+        data : np.ndarray
+            Array to be plotted
+        label : str, optional
+            label to be based to line object, by default None
+        channel_half : bool, optional
+            If the flow is a channel, whether to plot only half, by default False
+        transform_ydata :  Callable, optional
+            Function applied to ydata, by default None
+        transform_xdata :  Callable, optional
+            Function applied to xdata, by default None
+        fig : cplt.CHAPSimFigure, optional
+            Input figure, it is created if None, by default None
+        ax : cplt.AxesCHAPSim, optional
+            Input axes, it is created if None, by default None
+        line_kw : dict, optional
+            dictionary passed to plotting function, by default None
+        **kwargs :
+            keyword arguments passed to figure creation routine
+            
+        Returns
+        -------
+         Union[cplt.CHAPSimFigure,cplt.AxesCHAPSim ]
+            returns figure and axes associated with line plot
+        """
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
         line_kw = cplt.update_line_kw(line_kw)
 
@@ -528,7 +958,36 @@ class FlowStructND(FlowStruct_base):
 
         return fig, ax
 
-    def plot_contour(self,comp,time=None,rotate=False,fig=None,ax=None,pcolor_kw=None,**kwargs):
+    def plot_contour(self,comp: str,
+                        time: Number =None,
+                        rotate: bool=False,
+                        fig: cplt.CHAPSimFigure =None,
+                        ax: cplt.AxesCHAPSim =None,
+                        pcolor_kw: dict =None,
+                        **kwargs) ->  Union[cplt.CHAPSimFigure,mpl.collections.PolyCollection ]:
+        """
+        If 2D the FlowStructND will plot a contour plot of the data in the FlowStructND
+
+        Parameters
+        ----------
+        comp : str
+            Component of FlowStruct to be plotted
+        time : Number, optional
+            time to be plotted, by default None
+        rotate : bool, optional
+            whether the plot should be rotated, by default False
+        fig : cplt.CHAPSimFigure, optional
+            Input figure, it is created if None, by default None
+        ax : cplt.AxesCHAPSim, optional
+            Input axes, it is created if None, by default None
+        pcolor_kw : dict, optional
+            dictionary passed to pcolormesh, by default None
+
+        Returns
+        -------
+        Union[cplt.CHAPSimFigure,mpl.collections.PolyCollection ]
+            returned figure and matplotlib mesh plot
+        """
         self._check_dim(2)
         if self._polar_plane is not None:
             subplot_kw = {'projection' : 'polar'}
@@ -559,7 +1018,43 @@ class FlowStructND(FlowStruct_base):
 
         return fig, ax
 
-    def plot_vector(self,comps,time=None,rotate=False,spacing=(1,1),scaling=1,fig=None,ax=None,quiver_kw=None,**kwargs):
+    def plot_vector(self,comps: str,
+                        time: Number=None,
+                        rotate: bool=False,
+                        spacing: Tuple[int] =(1,1),
+                        scaling: int =1,
+                        fig: cplt.CHAPSimFigure=None,
+                        ax: cplt.AxesCHAPSim =None,
+                        quiver_kw: dict =None,
+                        **kwargs)-> Union[cplt.CHAPSimFigure,mpl.quiver.Quiver]:
+        """
+        Plots a vector plot of a two-dimensional FlowStruct
+
+        Parameters
+        ----------
+        comp : str
+            Component of FlowStruct to be plotted
+        time : Number, optional
+            time to be plotted, by default None
+        rotate : bool, optional
+            [description], by default False
+        spacing : Tuple[int], optional
+            Spacing between the arrows, by default (1,1)
+        scaling : int, optional
+            arrow scaling factor, by default 1
+        fig : cplt.CHAPSimFigure, optional
+            Input figure, it is created if None, by default None
+        ax : cplt.AxesCHAPSim, optional
+            Input axes, it is created if None, by default None
+        quiver_kw : dict, optional
+            dictionary passed to quiver function, by default None
+
+        Returns
+        -------
+        Union[cplt.CHAPSimFigure,mpl.quiver.Quiver]
+            [description]
+        """    
+        
         self._check_dim(2)
         if self._polar_plane is not None:
             subplot_kw = {'projection' : 'polar'}
@@ -595,7 +1090,36 @@ class FlowStructND(FlowStruct_base):
 
         return fig, ax
 
-    def plot_isosurface(self,comp,Value,time=None,fig=None,ax=None,surf_kw=None,**kwargs):
+    def plot_isosurface(self,comp: str,
+                            Value: Number,
+                            time: Number =None,
+                            fig: cplt.CHAPSimFigure=None,
+                            ax: cplt.AxesCHAPSim =None,
+                            surf_kw: dict =None,
+                            **kwargs) -> Union[cplt.CHAPSimFigure,cplt.Axes3DCHAPSim]:
+        """
+        
+
+        Parameters
+        ----------
+        comp : str
+            [description]
+        Value : Number
+            [description]
+        time : Number, optional
+            [description], by default None
+        fig : cplt.CHAPSimFigure, optional
+            Input figure, it is created if None, by default None
+        ax : cplt.AxesCHAPSim, optional
+            Input axes, it is created if None, by default None
+        surf_kw : dict, optional
+            dictionary passed to Poly3DCollection, by default None
+
+        Returns
+        -------
+        Union[cplt.CHAPSimFigure,cplt.Axes3DCHAPSim]
+            [description]
+        """
         self._check_dim(3)
 
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,projection='3d',**kwargs)
@@ -619,7 +1143,36 @@ class FlowStructND(FlowStruct_base):
         ax.axes.set_box_aspect(coord_lims)
         return fig, ax
     
-    def plot_surf(self,comp,time=None,fig=None,ax=None,surf_kw=None,**kwargs):
+    def plot_surf(self,comp: str,
+                  time: Number=None,
+                  fig: cplt.CHAPSimFigure =None,
+                  ax: cplt.Axes3DCHAPSim =None,
+                  surf_kw: dict =None,
+                  **kwargs):
+        """
+
+
+        Parameters
+        ----------
+        comp : str
+            Component of FlowStruct to be plotted
+        time : Number, optional
+            time to be plotted, by default None
+        fig : cplt.CHAPSimFigure, optional
+            Input figure, it is created if None, by default None
+        ax : cplt.AxesCHAPSim, optional
+            Input axes, it is created if None, by default None
+        surf_kw : dict, optional
+            dictionary passed to plotting function, by default None
+        **kwargs :
+            keyword arguments passed to figure creation routine
+
+
+        Returns
+        -------
+        [type]
+            [description]
+        """
         self._check_dim(2)
 
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,projection='3d',**kwargs)
@@ -672,12 +1225,32 @@ class FlowStructND(FlowStruct_base):
                             wall_normal_line=self._wall_normal_line)
 
 
+    @docstring.sub
     @property
-    def slice(self):
+    def slice(self) -> _FlowStruct_slicer:
+        """
+        Returns an object that can be sliced using the coordinates 
+        of the data:
+        
+        %(slicer)s
+        
+        Returns
+        -------
+        _FlowStruct_slicer
+            [description]
+        """
         return _FlowStruct_slicer(self)
 
     @property
-    def location(self):
+    def location(self) -> Number:
+        """
+        Returns location if present
+
+        Returns
+        -------
+        Number
+            retuns location of FlowStruct
+        """
         if not hasattr(self,'_location'):
             self._location = 0.
         return self._location
@@ -691,6 +1264,7 @@ class FlowStructND(FlowStruct_base):
             return True
         else:
             return False
+        
     @classmethod
     def join(cls,new_axis,axis_vals,flowstructs,index=None,wall_normal=False):
         if not all(f._data_layout == flowstructs[0]._data_layout\
@@ -746,7 +1320,20 @@ class FlowStructND(FlowStruct_base):
 
 
 class FlowStructND_time(FlowStructND):
-    def to_ND(self):
+    """
+    A class for FlowStructs which evolve in time 
+    """
+    def to_ND(self) -> FlowStructND:
+        """
+        Converts FlowStructND_time to FlowStruct_ND with 
+        time as an additional axis
+
+        Returns
+        -------
+        FlowStructND
+            FlowStruct_ND with time as an additional axis
+        """
+        
         array = []
         for comp in self.inner_index:
             comp_array = []
@@ -772,7 +1359,26 @@ class FlowStructND_time(FlowStructND):
                             wall_normal_line = self._wall_normal_line,
                             polar_plane = self._polar_plane)
 
-    def __getitem__(self,key):
+    def __getitem__(self,key: Any) -> np.ndarray:
+        """
+        If a single key is passed, the array returned 
+        contains time along the outer dimension
+
+        Parameters
+        ----------
+        key : Any
+            key for FlowStruct
+
+        Returns
+        -------
+        np.ndarray
+            Numpy array
+
+        Raises
+        ------
+        TypeError
+            If a listkey is used
+        """
         if self._indexer.is_multikey(key):
             return self._getitem_process_multikey(key)
         
@@ -825,7 +1431,11 @@ class FlowStructND_time(FlowStructND):
         kwargs.update(kwarg_dict)
         return FlowStructND_time(self._coorddata,*args,**kwargs)
     
-class FlowStruct3D(FlowStructND):    
+class FlowStruct3D(FlowStructND):  
+    """
+    A core class for storing and visualising full 3D datasets 
+    with the capability to output to vtkStructuredGrid and HDF5
+    """  
     def _array_ini(self,array, index=None,  copy=False):
         data_layout = 'zyx'
         wall_normal_line = 'y'
@@ -856,7 +1466,14 @@ class FlowStruct3D(FlowStructND):
                                 *args,**kwargs)
 
     @property
-    def VTK(self):
+    def VTK(self) -> VTKstruct3D:
+        """
+        returns VTKStruct based on the data in the flow struct
+
+
+        Returns:
+            VTKstruct3D: class that can use the
+        """
         return VTKstruct3D(self)
 
     def get_unit_figsize(self,plane):
@@ -889,8 +1506,9 @@ class FlowStruct3D(FlowStructND):
         
         slicer = self._plane_calculate(plane,axis_val)
         rotate = self._check_rotate(plane,rotate_axes)
-        flowstruct = self.slice[slicer]
-
+        
+        flowstruct = self[time,[comp]]
+        flowstruct = flowstruct.slice[slicer]
         fig, ax = flowstruct.plot_contour(comp,time=time,rotate=rotate,
                                             fig=fig,ax=ax,pcolor_kw=pcolor_kw,
                                             **kwargs)
@@ -1061,16 +1679,16 @@ class FlowStruct2D(FlowStructND):
         
 
 
-    def plot_contour(self,comp,time=None,fig=None,ax=None,pcolor_kw=None,**kwargs):
+    def plot_contour(self,comp,time=None,rotate_axes=False,fig=None,ax=None,pcolor_kw=None,**kwargs):
         
         data_layout = ''.join(self._data_layout)
-        rotate = self._check_rotate(data_layout,False)
+        rotate = self._check_rotate(data_layout,rotate_axes)
 
         return super().plot_contour(comp,time=time,rotate=rotate,fig=fig, ax=ax,pcolor_kw=pcolor_kw,**kwargs)
 
-    def plot_vector(self,comps,time=None,spacing=(1,1),scaling=1,fig=None,ax=None,quiver_kw=None,**kwargs):
+    def plot_vector(self,comps,time=None,spacing=(1,1),scaling=1,rotate_axes=False,fig=None,ax=None,quiver_kw=None,**kwargs):
         data_layout = ''.join(self._data_layout)
-        rotate = self._check_rotate(data_layout,False)
+        rotate = self._check_rotate(data_layout,rotate_axes)
 
         return super().plot_vector(comps, time=time, rotate=rotate,
                                     spacing=spacing,scaling=scaling,

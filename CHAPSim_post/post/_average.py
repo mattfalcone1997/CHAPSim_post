@@ -597,8 +597,10 @@ class CHAPSim_AVG_io(_AVG_developing):
         for i,x in enumerate(x_index):
             if self.Domain.is_polar:
                 norm_coordDF = -1*(self.CoordDF-1)/norm_distance[x]
-            else:
+            elif self.Domain.is_channel:
                 norm_coordDF = (1-abs(self.CoordDF))/norm_distance[x]
+            else:
+                norm_coordDF = self.CoordDF/norm_distance[x]
             y_index = indexing.coord_index_calc(norm_coordDF,'y', coord_list)
             y_indices.append(y_index)
 
@@ -634,8 +636,10 @@ class CHAPSim_AVG_io(_AVG_developing):
         for x,index in zip(x_index,indices):
             if self.Domain.is_polar:
                 norm_coordDF = -1*(self.CoordDF-1)/norm_distance[x]
-            else:
+            elif self.Domain.is_channel:
                 norm_coordDF = (1-abs(self.CoordDF))/norm_distance[x]
+            else:
+                norm_coordDF = self.CoordDF/norm_distance[x]
             true_ycoords.append(norm_coordDF['y'][index])
 
         return true_ycoords

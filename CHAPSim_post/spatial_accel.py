@@ -21,7 +21,11 @@ from CHAPSim_post import POD
 
 class CHAPSim_Inst_io(cp.CHAPSim_Inst_io):
     pass
-_instant_class = CHAPSim_Inst_io
+_inst_io_class = CHAPSim_Inst_io
+
+class CHAPSim_fluct_io(cp.CHAPSim_fluct_io):
+    pass
+_fluct_io_class = CHAPSim_fluct_io
 
 class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
     def _int_thickness_calc(self,PhyTime):
@@ -317,7 +321,7 @@ class TEST_initialiseBlayer(blayer_TEST_base):
         super().__init__(path_to_folder)
         self._get_initialise_test()
         self._get_initialise_corr()
-        
+        self._get_fluct_ini()
     def _get_initialise_test(self):
         file = os.path.join(self._debug_folder,'CHK_INIL_VELO_PROF.dat')
         file_array = np.loadtxt(file)
@@ -333,15 +337,21 @@ class TEST_initialiseBlayer(blayer_TEST_base):
                                         columns=columns,
                                         index=index)
         
-        columns = ['u plus','u']
-        self.veloDF = pd.DataFrame(file_array[:,7:9],
+        columns = ['u plus','u','u_check']
+        self.veloDF = pd.DataFrame(file_array[:,7:10],
                                         columns=columns,
                                         index=index)
         columns = ['delta v', 'u tau', 'Cf']
-        self.wall_unitDF = pd.DataFrame(file_array[:,9:12],
+        self.wall_unitDF = pd.DataFrame(file_array[:,10:13],
                                         columns=columns,
                                         index=index)
-    
+    def _get_fluct_ini(self):
+        file = os.path.join(self._debug_folder,'CHK_fluct_ini.csv')
+        self.fluct_iniDF = pd.read_csv(file).dropna(axis=1).pivot_table(index='YCC')
+
+        file = os.path.join(self._debug_folder,'CHK_fluct_avg.csv')
+        self.fluct_avgDF = pd.read_csv(file).dropna(axis=1).pivot_table(index='YCC')
+
     def _get_initialise_corr(self):
         file = os.path.join(self._debug_folder,'CHK_INI_CORR.dat')
         file_array = np.loadtxt(file)
@@ -371,7 +381,6 @@ class TEST_initialiseBlayer(blayer_TEST_base):
         ax.cplot(Re_delta,Cf_corr,label=r'$C_f = 0.01947Re_\delta^{-0.1785}$',**line_kw)
         
         return fig, ax
-        
         
 class TEST_FreestreamWall(blayer_TEST_base):
     def __init__(self,path_to_folder,iter=None):
@@ -482,7 +491,10 @@ class TEST_recycle_rescale(blayer_TEST_base):
         self.G_inletDF = pd.DataFrame(file_array[:,6:10],
                                         columns=columns,
                                         index=index)
-        self.Q_plane = file_array[-1]
+        columns = ['Q plane', 'Q initial mean']
+        self.Q_planeDF =  pd.DataFrame(file_array[:,-2:],
+                                       columns=columns,
+                                       index=index)
         
     def _get_gather_tests(self,iter=None):
         if iter is None:
