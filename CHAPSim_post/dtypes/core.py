@@ -878,6 +878,7 @@ class datastruct:
         self.set_value(key,value)
     
     def set_value(self,key, value):
+        key = self._indexer._item_handler(key)
         if key in self.index:
             
             loc = self._indexer.get_loc(key)
