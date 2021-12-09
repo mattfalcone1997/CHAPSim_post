@@ -98,28 +98,28 @@ def coord_index_calc(CoordDF,comp,coord_list):
     coords = CoordDF[comp]
     coord_list = misc_utils.check_list_vals(coord_list)
     
+    min_coord = np.amin(coords)
+    max_coord = np.amax(coords)
     index_list=[]
     for coord in coord_list:
-        try:
-            for i in range(coords.size):
-                if coords[i+1]>coord:
-                    if abs(coords[i+1]-coord)>abs(coords[i]-coord):
-                        index_list.append(i)
-                        break
-                    else:
-                        index_list.append(i+1)
-                        break 
-        except IndexError:
+        if coord < min_coord or coord > max_coord:
+            end_threshold = abs(coords[-1] - coords[-2])
+            start_threshold = abs(coords[1] - coords[0])
             
-            coord_end_plus=2*coords[coords.size-1]-coords[coords.size-2]
-            
-            if coord_end_plus>coord:
-                index_list.append(i)
+            if abs(max_coord - coord) < end_threshold:
+                index_list.append(coords.size-1)
+            elif abs(min_coord - coord) < start_threshold:
+                index_list.append(0)
             else:
                 msg = "Value in coord_list out of bounds: "\
                     + "%s coordinate given: %g, max %s coordinate:" % (comp,coord,comp)\
                     + " %g. Ignoring values beyond this" % max(coords)
                 raise IndexError(msg) from None
+
+        min_array = np.abs(coords - coord)
+        index_list.append(np.argmin(min_array))
+            
+            
 
     return index_list
 
