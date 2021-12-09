@@ -147,7 +147,8 @@ class IndexBase(ABC):
             else:
                 outer_key = key[1]
 
-            key_list = itertools.product(inner_key,outer_key)
+            key_list = list(itertools.product(inner_key,outer_key))
+            print(key_list)
         else:
             if not isinstance(key,list):
                 msg = "This function should only be called on keys containing lists"
@@ -876,7 +877,7 @@ class datastruct:
         self.set_value(key,value)
     
     def set_value(self,key, value):
-
+        print(key,self.index,key in self.index)
         if key in self.index:
             
             loc = self._indexer.get_loc(key)
@@ -885,7 +886,7 @@ class datastruct:
             self.create_new_item(key,value)
 
     def create_new_item(self,key,value):
-        if key in self:
+        if key in self.index:
             msg = "Cannot create new key, the key is already present"
             raise KeyError(msg)
         
