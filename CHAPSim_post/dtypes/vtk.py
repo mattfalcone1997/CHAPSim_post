@@ -144,12 +144,12 @@ class VTKstruct3D(VTKstruct_base):
     def _grid(self):
         plane = self._flowstruct._data_layout
             
-        if self._check_polar():
+        if self._use_pipe_rep:
             r = self._flowstruct._wall_normal_line
             theta = self._flowstruct._polar_plane
             theta.remove(r)
-            z = plane[:]
-            z.remove(self._flowstruct._polar_plane)
+            z = set(plane).difference(self._flowstruct._polar_plane)[0]
+            
             
             if self._use_cell_data:
                 r_array = self._flowstruct.Coord_ND_DF[r]
@@ -169,7 +169,7 @@ class VTKstruct3D(VTKstruct_base):
             else:
                 coord_1 = y
                 coord_2 = x
-            coord3 = z
+            coord_3 = z
             
         else:
             if self._use_cell_data:
