@@ -123,7 +123,7 @@ class IndexBase(ABC):
     @staticmethod
     def is_listkey(key):
         if isinstance(key,tuple):
-            if any([isinstance(k,list,Index) for k in key]):
+            if any([isinstance(k,(list,Index)) for k in key]):
                 return True
         elif isinstance(key,(list,Index)):
             return True
