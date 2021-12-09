@@ -116,10 +116,10 @@ def coord_index_calc(CoordDF,comp,coord_list):
             if coord_end_plus>coord:
                 index_list.append(i)
             else:
-                warnings.warn("\033[1;33Value in coord_list out of bounds: "\
-                             + "%s coordinate given: %g, max %s coordinate:" % (comp,coord,comp)\
-                             + " %g. Ignoring values beyond this" % max(coords))
-                return index_list
+                msg = "Value in coord_list out of bounds: "\
+                    + "%s coordinate given: %g, max %s coordinate:" % (comp,coord,comp)\
+                    + " %g. Ignoring values beyond this" % max(coords)
+                raise IndexError(msg) from None
 
     return index_list
 
