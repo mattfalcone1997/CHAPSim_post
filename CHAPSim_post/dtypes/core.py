@@ -139,6 +139,7 @@ class IndexBase(ABC):
     @staticmethod
     def _getitem_process_list(key):
         if isinstance(key,tuple):
+            print(type(key[0]),type(key[1]))
             if not isinstance(key[0],(list,Index)):
                 inner_key = [key[0]]
             else:
