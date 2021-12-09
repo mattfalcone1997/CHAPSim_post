@@ -9,6 +9,7 @@ import sys
 import pyvista
 import copy
 import itertools
+import warnings
 from abc import abstractmethod, ABC, abstractproperty
 
 import CHAPSim_post.plot as cplt
@@ -28,11 +29,25 @@ class _classfinder:
         self._cls = cls
     
     def __getattr__(self,attr):
+        module = sys.modules[self._cls.__module__]
         if hasattr(self._cls,attr):
             return getattr(self._cls,attr)
-        else:
-            module = sys.modules[self._cls.__module__]
+        elif hasattr(module, attr):
             return getattr(module,attr)
+        else:
+            warn_msg = (f"Attribute {attr} being inherited from parent "
+                        "class. This behavior may be undesired")
+            warnings.warn(warn_msg)
+            mro = self._cls.mro()
+            for c in mro:
+                if hasattr(c,attr):
+                    return getattr(c,attr)
+            
+            msg = "Attribute %s was not found"%attr
+            raise ModuleNotFoundError(msg)
+            
+            
+            
 
 class Common(ABC):
 
