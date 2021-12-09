@@ -157,9 +157,11 @@ class _Inst_base(Common,ABC):
         for file in file_list:
             file_temp = open(file,'rb')
             open_list.append(file_temp)
+        
+        comp_size = len(self._inst_comp)
         #allocating arrays
-        int_info=np.zeros((4,4))
-        r_info = np.zeros((4,3))
+        int_info=np.zeros((comp_size,4))
+        r_info = np.zeros((comp_size,3))
 
         i=0
         #reading metadata from file
