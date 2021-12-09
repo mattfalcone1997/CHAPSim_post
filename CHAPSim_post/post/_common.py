@@ -36,13 +36,13 @@ class _classfinder:
             return getattr(module,attr)
         else:
             mro = self._cls.mro()
-            for c in mro:
-                if hasattr(c,attr):
+            for c in mro[1:]:
+                if hasattr(c._module,attr):
                     warn_msg = (f"Attribute {attr} being inherited "
                                 f"from parent class ({c.__module__}.{c.__name__})"
                                  ". This behavior may be undesired")
                     warnings.warn(warn_msg)
-                    return getattr(c,attr)
+                    return getattr(c._module,attr)
             
             msg = "Attribute %s was not found"%attr
             raise ModuleNotFoundError(msg)
