@@ -158,8 +158,10 @@ class VTKstruct3D(VTKstruct_base):
 
         if self._use_pipe_rep:
             data_list = [Y,X,Z]
-            polar_plane = self._flowstruct._polar_plane
+            
+            polar_plane = self._flowstruct._polar_plane.copy()
             wall_line = self._flowstruct._wall_normal_line
+            print(wall_line,polar_plane)
             r_loc = self._flowstruct._data_layout.index(wall_line)
             polar_plane.remove(wall_line)
             theta_loc = self._flowstruct._data_layout.index(polar_plane[0])
