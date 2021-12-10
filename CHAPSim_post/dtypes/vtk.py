@@ -161,7 +161,7 @@ class VTKstruct3D(VTKstruct_base):
             
             polar_plane = self._flowstruct._polar_plane.copy()
             wall_line = self._flowstruct._wall_normal_line
-            print(wall_line,polar_plane)
+
             r_loc = self._flowstruct._data_layout.index(wall_line)
             polar_plane.remove(wall_line)
             theta_loc = self._flowstruct._data_layout.index(polar_plane[0])
@@ -169,8 +169,8 @@ class VTKstruct3D(VTKstruct_base):
             r_array = data_list[r_loc]
             theta_array = data_list[theta_loc]
             
-            x_cart = r_array*np.sin(theta_array)
-            y_cart = r_array*np.cos(theta_array)
+            y_cart = r_array*np.sin(theta_array)
+            x_cart = r_array*np.cos(theta_array)
             
             data_list[r_loc] = x_cart
             data_list[theta_loc] = y_cart
