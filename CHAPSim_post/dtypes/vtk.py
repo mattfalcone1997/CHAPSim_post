@@ -142,47 +142,40 @@ class VTKstruct3D(VTKstruct_base):
 
     @property
     def _grid(self):
-        plane = self._flowstruct._data_layout
-            
-        if self._use_pipe_rep:
-            r = self._flowstruct._wall_normal_line
-            theta = self._flowstruct._polar_plane
-            theta.remove(r)
-            theta=theta[0]
-            z = list(set(plane).difference(self._flowstruct._polar_plane))[0]
-            
-            
-            if self._use_cell_data:
-                r_array = self._flowstruct.Coord_ND_DF[r]
-                theta_array =  self._flowstruct.Coord_ND_DF[theta]
-                z =  self._flowstruct.Coord_ND_DF[z]
-            else:
-                r_array = self._flowstruct.CoordDF[r]
-                theta_array =  self._flowstruct.CoordDF[theta]
-                z =  self._flowstruct.CoordDF[z]
-                
-            x = r_array*np.sin(theta_array)
-            y = r_array*np.cos(theta_array)
-            
-            if plane[0] == r:
-                coord_1 = x
-                coord_2 = y
-            else:
-                coord_1 = y
-                coord_2 = x
-            coord_3 = z
-            
+        plane = self._flowstruct._data_layout        
+        
+        if self._use_cell_data:
+            coord_1 = self._flowstruct.Coord_ND_DF[plane[0]]
+            coord_2 = self._flowstruct.Coord_ND_DF[plane[1]]
+            coord_3 = self._flowstruct.Coord_ND_DF[plane[2]]
         else:
-            if self._use_cell_data:
-                coord_1 = self._flowstruct.Coord_ND_DF[plane[0]]
-                coord_2 = self._flowstruct.Coord_ND_DF[plane[1]]
-                coord_3 = self._flowstruct.Coord_ND_DF[plane[2]]
-            else:
-                coord_1 = self._flowstruct.CoordDF[plane[0]]
-                coord_2 = self._flowstruct.CoordDF[plane[1]]
-                coord_3 = self._flowstruct.CoordDF[plane[2]]
-                
+            coord_1 = self._flowstruct.CoordDF[plane[0]]
+            coord_2 = self._flowstruct.CoordDF[plane[1]]
+            coord_3 = self._flowstruct.CoordDF[plane[2]]
+        
         Y,X,Z = np.meshgrid(coord_2,coord_3,coord_1)
+
+
+        if self._use_pipe_rep:
+            data_list = [Y,X,Z]
+            polar_plane = self._flowstruct._polar_plane
+            wall_line = self._flowstruct._wall_normal_line
+            r_loc = self._flowstruct._data_layout.index(wall_line)
+            polar_plane.remove(wall_line)
+            theta_loc = self._flowstruct._data_layout.index(polar_plane[0])
+
+            r_array = data_list[r_loc]
+            theta_array = data_list[theta_loc]
+            
+            x_cart = r_array*np.sin(theta_array)
+            y_cart = r_array*np.cos(theta_array)
+            
+            data_list[r_loc] = x_cart
+            data_list[theta_loc] = y_cart
+            
+            Y,X,Z = data_list        
+            
+                
 
         grid = StructuredGrid(X,Z,Y)
         return grid
