@@ -175,10 +175,6 @@ class VTKstruct3D(VTKstruct_base):
             data_list[r_loc] = x_cart
             data_list[theta_loc] = y_cart
             
-            print(np.amin(r_array),np.amax(r_array))
-            print(np.amin(theta_array),np.amax(theta_array))
-            print(r_loc, theta_loc)
-            
             Z,Y,X = data_list        
             
                 
