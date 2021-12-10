@@ -498,7 +498,7 @@ class _Inst_base(Common,ABC):
         
         lambda2 = np.sort(S2_Omega2_eigvals,axis=3)[:,:,:,1]
         
-        return cd.flowstruct3D(self._coorddata,{(PhyTime,'lambda_2'):lambda2})
+        return cd.FlowStruct3D(self._coorddata,{(PhyTime,'lambda_2'):lambda2})
 
     @docstring.sub
     def plot_lambda2(self,vals_list,x_split_pair=None,PhyTime=None,y_limit=None,y_mode='half_channel',Y_plus=True,colors=None,surf_kw=None,fig=None,ax=None,**kwargs):

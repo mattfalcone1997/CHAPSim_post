@@ -28,11 +28,15 @@ class VTKstruct_base:
     def __getattr__(self,attr):
         _grid = self._grid
         if hasattr(_grid,attr):
-            inner_list = self._flowstruct.inner_index
-            outer_list = self._flowstruct.outer_index
-
-
-            grid = self[outer_list,inner_list]
+            msg = ("Methods from StructuredGrid can"
+                   " only be directly accessed from "
+                   "VTKStruct's if there is only one"
+                   " time in reference FlowStruct")
+            err = RuntimeError(msg)
+            
+            time = self._flowstruct.index.check_outer(None,err)
+            
+            grid = self.to_vtk(time=time)
             return getattr(grid,attr)
 
         elif hasattr(self._flowstruct, attr):
@@ -55,7 +59,18 @@ class VTKstruct_base:
     def copy(self):
         return copy.deepcopy(self)
     
-    def to_vtk(self,file_name):
+    def to_vtk(self,time=None):
+        inner_list = self._flowstruct.inner_index
+        
+        msg = ("A time must be specified for this"
+                " conversion as there are multiple "
+                "times in the reference FlowStruct")
+        err = ValueError(msg)
+        
+        time = self._flowstruct.index.check_outer(time,err)
+        return self[time,inner_list]
+    
+    def save_vtk(self,file_name):
         file_base, file_ext = os.path.splitext(file_name)
         if file_ext == ".vtk":
             writer = vtk.vtkStructuredGridWriter()
