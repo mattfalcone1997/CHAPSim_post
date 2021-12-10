@@ -157,7 +157,7 @@ class VTKstruct3D(VTKstruct_base):
 
 
         if self._use_pipe_rep:
-            data_list = [Y,X,Z]
+            data_list = [Z,Y,X]
             
             polar_plane = self._flowstruct._polar_plane.copy()
             wall_line = self._flowstruct._wall_normal_line
@@ -179,7 +179,7 @@ class VTKstruct3D(VTKstruct_base):
             print(np.amin(theta_array),np.amax(theta_array))
             print(r_loc, theta_loc)
             
-            Y,X,Z = data_list        
+            Z,Y,X = data_list        
             
                 
 
