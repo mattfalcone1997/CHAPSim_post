@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.animation import FuncAnimation
 from cycler import cycler
 
 import itertools
@@ -752,5 +753,5 @@ def create_general_video(fig,path_to_folder,func,abs_path=True,func_args=None,fu
     def animate(time):
         return func(fig,time,*func_args,**func_kw)
 
-    return mpl.animation.FuncAnimation(fig,animate,frames=times,**kwargs)
+    return FuncAnimation(fig,animate,frames=times,**kwargs)
 
