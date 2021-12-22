@@ -118,7 +118,7 @@ class _Inst_base(Common,ABC):
 
         self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
 
-        self.InstDF = cd.FlowStruct3D.from_hdf(file_name,coorddata=self._coorddata,key=key+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
+        self.InstDF = cd.FlowStruct3D.from_hdf(file_name,key=key+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
 
     @property
     def shape(self):
@@ -621,7 +621,7 @@ class _Inst_base(Common,ABC):
             Datastruct with the vorticity vector in it
         """
 
-        self.check_PhyTime(self.InstDF,PhyTime)
+        self.check_PhyTime(PhyTime)
 
         vorticity = np.zeros((3,*self.shape),dtype='f8')
         u_velo = self.InstDF[PhyTime,'u']
@@ -633,7 +633,7 @@ class _Inst_base(Common,ABC):
         vorticity[2] = gradient.Grad_calc(self.CoordDF,v_velo,'x') - gradient.Grad_calc(self.CoordDF,u_velo,'y')     
 
         index = [(PhyTime,x) for x in ['x','y','z']]
-        return cd.flowstruct3D(self._coorddata,vorticity,index=index)
+        return cd.FlowStruct3D(self._coorddata,vorticity,index=index)
 
     @docstring.sub
     def plot_vorticity_contour(self,comp,plane,axis_vals,PhyTime=None,x_split_list=None,y_mode='half_channel',pcolor_kw=None,fig=None,ax=None,**kwargs):

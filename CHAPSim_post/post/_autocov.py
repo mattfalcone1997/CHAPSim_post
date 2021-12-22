@@ -244,6 +244,63 @@ class CHAPSim_autocov_io(_autocov_base):
                 ax[j].set_title(r"$%s=%.3g$"%(title_symbol,y_vals[j]),loc='right')
         
         return fig, ax
+    
+    def plot_contour_zy(self,comp,axis_vals,norm=True,show_positive=True,pcolor_kw=None,fig=None,ax=None,**kwargs):
+        if not comp in ('x','z'):
+            msg = f"comp must be the string 'x' or 'z' not {comp} "
+            raise ValueError(msg)
+
+        axis_vals = misc_utils.check_list_vals(axis_vals)
+        if comp == 'x':
+            Ruu_DF = self.Rx_DF[None,[comp]].copy()
+        else:
+            Ruu_DF = self.Rz_DF[None,[comp]].copy()
+            
+        pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
+        
+        if norm:
+            Ruu_0=Ruu_DF[None,comp][0]
+            Ruu_DF[None,comp]/=Ruu_0
+        
+
+            
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,4*len(axis_vals)])
+        fig, ax = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
+
+        xlabel = self.Domain.create_label(r"$\Delta %s/\delta$" %comp)
+        ylabel = self.Domain.create_label(r"$y$")
+        
+        min_val = np.inf
+        max_val = -np.inf
+        
+        for i, val in enumerate(axis_vals):
+            
+            Ruu_slice = Ruu_DF.slice[:,:,val]
+            
+            if not show_positive:
+                Ruu_slice[None,comp] = np.ma.masked_array(Ruu_slice[None,comp])
+                Ruu_slice[None,comp].mask = Ruu_slice[None,comp] > 0
+                
+            fig, ax[i] = Ruu_slice.plot_contour(comp,
+                                                None,
+                                                fig=fig,
+                                                ax=ax[i],
+                                                pcolor_kw=pcolor_kw)
+            lmin, lmax = ax[i].get_clim()
+            
+            min_val = min(min_val,lmin)
+            max_val = max(max_val,lmax)
+            
+            ax[i].set_xlabel(xlabel)
+            ax[i].set_ylabel(ylabel)
+            
+
+        for a in ax:
+            a.set_clim([min_val,max_val])
+            fig.colorbar(a,ax=a.axes)
+            fig.tight_layout()
+            
+        return fig, ax
 class CHAPSim_autocov_tg(_autocov_base):
     _tgpost = True
     def _autocov_extract(self,comp,path_to_folder=".",time0=None,ntimes=None,abs_path=True,max_x_sep=None,max_z_sep=None):
@@ -407,7 +464,8 @@ class CHAPSim_autocov_tg(_autocov_base):
             return fig, ax[0]
         else:
             return fig, ax
-
+    
+            
 class CHAPSim_autocov_temp(CHAPSim_autocov_tg):
     def _autocov_extract(self,comp,path_to_folder=".",time0=None,abs_path=True,max_x_sep=None,max_z_sep=None):
         times = misc_utils.time_extract(path_to_folder,abs_path)

@@ -18,6 +18,7 @@ from . import plot as cplt
 
 from CHAPSim_post.utils import misc_utils,indexing
 from CHAPSim_post import POD
+import CHAPSim_post.dtypes as cd
 
 class CHAPSim_Inst_io(cp.CHAPSim_Inst_io):
     pass
@@ -87,18 +88,27 @@ class CHAPSim_meta(cp.CHAPSim_meta):
 _meta_class = CHAPSim_meta
 
 class blayer_TEST_base(ABC):
-    blayer_folder = "7_BLAYER_TESTS/"
+    blayer_folder = "8_BLAYER_TESTS/"
+    blayer_avg_test = "7_BLAYER_DATA"
     def __init__(self,path_to_folder):
+        
         self._debug_folder = os.path.join(path_to_folder,self.blayer_folder)
+        if not os.path.isdir(self._debug_folder):
+            self._debug_folder = os.path.join(path_to_folder,'7_BLAYER_TESTS')
+            self._blayer_folder = None
+        else:
+            self._blayer_folder = os.path.join(path_to_folder,self.blayer_avg_test)
         self._meta_data = CHAPSim_meta(path_to_folder)
         
 class TEST_flow_quant(blayer_TEST_base):
-    def __init__(self,path_to_folder,iter=None):
+    def __init__(self,time,path_to_folder,iter=None):
         super().__init__(path_to_folder)
         
         self._get_ini_thickesses(iter)
         self._get_Cf(iter)
         self._get_interp_test()
+        if iter is not None:
+            self._get_avg_data(time)
     
     def _get_ini_thickesses(self,iter=None):
         
@@ -182,7 +192,26 @@ class TEST_flow_quant(blayer_TEST_base):
         self.fluctInterpDF = pd.DataFrame(array,
                                         columns=columns,
                                         index=index)
+    def _get_avg_data(self,time):
+        if self._blayer_folder is None:
+            self.AVGdata = None
+            return
+        
+        file_name = 'DNS_QuantAVG_T%0.9E.D'%time
+        file = os.path.join(self._blayer_folder,file_name)
+        
+        int_info = np.fromfile(file,count=2, dtype=np.int32)
+        size = self._meta_data.NCL[0]*self._meta_data.NCL[1]*3
+        avg_info = np.fromfile(file,count=size, dtype=np.float64)
+        avg_info = avg_info.reshape((3,
+                                    self._meta_data.NCL[1],
+                                    self._meta_data.NCL[0]))
 
+        index = [[time]*3,['u','v','w']]
+        self.AVGdata = cd.FlowStruct2D(self._meta_data._coorddata,
+                                       avg_info,index=index)
+        
+        print(int_info)
     def plot_mom_thickness(self,fig=None, ax = None, line_kw=None,**kwargs):
         
         x_coords = self._meta_data.Coord_ND_DF['x'][:-1]
@@ -310,7 +339,6 @@ class TEST_flow_quant(blayer_TEST_base):
         ax.cplot(Re_theta,Cf_corr,label=r'$C_f = 0.024Re_\theta^{-1/4}$',**line_kw)
         
         return fig, ax
-        
         
         
         

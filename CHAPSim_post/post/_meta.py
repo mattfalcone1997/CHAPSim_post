@@ -394,29 +394,21 @@ class OutputFileStore_io(OutputFileStore_base):
     _monitor_old = "OUTPUT_"
 
 class DomainHandler(cd.GeomHandler):
-    def __init__(self,iCase_or_metadata):
-
-        if isinstance(iCase_or_metadata,CHAPSim_meta):
-            iCase = iCase_or_metadata.metaDF['iCase']
-        else:
-            iCase = iCase_or_metadata
-            
+    @staticmethod
+    def get_FlowGeometry(metaDF):
+        iCase = metaDF['iCase']
         if iCase in [1,4]:
-            self.coord_sys = 'cart'
-            self._domain = 'channel'
+            geom_type = cd.CHANNEL
         elif iCase in [2,3]:
-            self.coord_sys = 'polar'
-            self._domain = 'pipe'
+            geom_type = cd.PIPE
         elif iCase == 5:
-            self.coord_sys = 'cart'
-            self._domain = 'blayer'
+            geom_type = cd.BLAYER
         else:
             msg = "CHAPSim case type invalid"
             raise ValueError(msg)
-            
-    @property
-    def is_channel(self):
-        return self._domain == 'channel'
+        
+        return geom_type
+    
     
     def _alter_item(self,char,to_out=True):
         convert_dict = styleParams.cart_to_polar if to_out else styleParams.polar_to_cart
@@ -661,42 +653,27 @@ class coorddata(cd.AxisData):
         self.coord_centered = cd.coordstruct(coord_dict)
         self.coord_staggered = cd.coordstruct(coord_nd_dict)
 
-        self._domain_handler = self._domain_handler_class(iCase)
+        geom_type = self._domain_handler_class.get_FlowGeometry(metaDF)
+        self._domain_handler = self._domain_handler_class(geom_type)
 
 
     @classmethod
     def from_coordstructs(cls,Domain,coord,coord_nd):
         return cls(Domain,coord,coord_nd,from_coordstruct=True)
+             
     
-    # def _hdf_extract(self,filename,key=None):
+    # def to_hdf(self,filename,mode,key=None):
     #     if key is None:
     #         key = self.__class__.__name__
+
+    #     self.coord_centered.to_hdf(filename,key=key+"/coord_centered",mode=mode)
         
+    #     if self.contains_staggered:
+    #         self.coord_staggered.to_hdf(filename,key=key+"/coord_staggered",mode=mode)
 
     #     hdf_obj = cd.hdfHandler(filename,mode='r',key=key)
-    #     hdf_obj.check_type_id(self.__class__)
-
-    #     iCase = True if hdf_obj.attrs['cart_mode'] else False
-    #     self._domain_handler = self._domain_handler_class(iCase)
-
-    #     self.coord_centered = cd.coordstruct.from_hdf(filename,key=key+"/coord_centered")
-    #     if 'coord_staggered' in hdf_obj.keys():
-    #         self.coord_staggered = cd.coordstruct.from_hdf(filename,key=key+"/coord_staggered")
-    #     else:
-    #         self.coord_staggered = None            
-    
-    def to_hdf(self,filename,mode,key=None):
-        if key is None:
-            key = self.__class__.__name__
-
-        self.coord_centered.to_hdf(filename,key=key+"/coord_centered",mode=mode)
-        
-        if self.contains_staggered:
-            self.coord_staggered.to_hdf(filename,key=key+"/coord_staggered",mode=mode)
-
-        hdf_obj = cd.hdfHandler(filename,mode='r',key=key)
-        cart_mode = False if self._domain_handler.is_polar else True
-        hdf_obj.attrs['cart_mode'] = cart_mode
+    #     cart_mode = False if self._domain_handler.is_polar else True
+    #     hdf_obj.attrs['cart_mode'] = cart_mode
 
         
     

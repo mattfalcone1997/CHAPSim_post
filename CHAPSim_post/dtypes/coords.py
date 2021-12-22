@@ -4,26 +4,49 @@ import numpy as np
 from CHAPSim_post.utils import indexing, gradient
 from pyvista import StructuredGrid
 
+PIPE = 1
+CHANNEL = 2
+BLAYER = 3
+
 class GeomHandler():
-    def __init__(self,polar):
-        if polar:
-            self.coord_sys = 'polar'
-        else:
-            self.coord_sys = 'cart'
+    def __init__(self,GeomTYPE):
+        
+        self._check_geom_type(GeomTYPE)
+        
+        self._geomTYPE = GeomTYPE
 
         self.Grad_calc = gradient.Grad_calc
+    
+    @staticmethod
+    def _check_geom_type(geom_type):
+        if geom_type not in [PIPE,CHANNEL,BLAYER]:
+            msg = "geometry type not valid"
+            raise ValueError(msg)
         
     @property
     def is_polar(self):
-        return self.coord_sys == 'polar'
+        return self._geomTYPE == PIPE
     
+    @property
+    def is_channel(self):
+        return self._geomTYPE == CHANNEL
+
     def __str__(self):
-        if self.coord_sys == 'cart':
-            coord = "cartesian"
+        if self.is_channel:
+            name = "channel"
+        elif self.is_polar:
+            name = "pipe"
         else:
-            coord = "polar (cylindrical)"
+            name = "boundary layer"
             
-        return f"{self.__class__.__name__} with %s coordinate system"%coord
+        return f"{self.__class__.__name__} instance with %s flow"%name
+    
+    def to_hdf_attr(self,h5_obj):
+        h5_obj.attrs["GeomType"] = self._geomTYPE
+    
+    @classmethod
+    def from_hdf_attr(cls,h5_obj):
+        return cls(h5_obj.attrs['GeomType'])
     
     def __repr__(self):
         return self.__str__()
@@ -85,8 +108,7 @@ class AxisData:
         hdf_obj = hdfHandler(filename,mode='r',key=key)
         hdf_obj.check_type_id(self.__class__)
 
-        iCase = False if hdf_obj.attrs['cart_mode'] else True
-        self._domain_handler = self._domain_handler_class(iCase)
+        self._domain_handler = self._domain_handler_class.from_hdf_attr(hdf_obj)
 
         self.coord_centered = coordstruct.from_hdf(filename,key=key+"/coord_centered")
         if 'coord_staggered' in hdf_obj.keys():
@@ -109,8 +131,7 @@ class AxisData:
             self.coord_staggered.to_hdf(filename,key=key+"/coord_staggered",mode=mode)
 
         hdf_obj = hdfHandler(filename,mode='r',key=key)
-        cart_mode = False if self._domain_handler.is_polar else True
-        hdf_obj.attrs['cart_mode'] = cart_mode
+        self._domain_handler.to_hdf_attr(hdf_obj)
     
     def create_vtkStructuredGrid(self,staggered = True):
         if staggered:

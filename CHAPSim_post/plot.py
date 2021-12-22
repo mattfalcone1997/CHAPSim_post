@@ -726,12 +726,17 @@ def get_legend_ncols(line_no):
 def close(*args,**kwargs):
     plt.close(*args,**kwargs)
 
-def create_general_video(fig,path_to_folder,abs_path,func,func_args=None,func_kw=None,time_range=None,**kwargs):
+def create_general_video(fig,path_to_folder,func,abs_path=True,func_args=None,func_kw=None,times=None,**kwargs):
 
-    times= misc_utils.time_extract(path_to_folder,abs_path)
-    if time_range is not None:
-        times = list(filter(lambda x: x>time_range[0],times))
-        times = list(filter(lambda x: x<time_range[1],times))
+    
+    if times is None:
+        times= misc_utils.time_extract(path_to_folder,abs_path)
+    else:
+        all_times = misc_utils.time_extract(path_to_folder,abs_path)
+        if not all(time in all_times for time in times):
+            msg = "Not all tims given are in the results folder"
+            raise RuntimeError(msg)
+        
     times.sort()
 
     if cp.rcParams["TEST"]:
