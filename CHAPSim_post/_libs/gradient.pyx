@@ -146,19 +146,6 @@ cdef int _get_total_size(int dim,
     
     return size
 
-# cdef int _get_index_flag(int index,
-#                         int axis,
-#                         int* sizes,
-#                         index_flag index_loc,
-#                         int dim ) nogil:
-    
-#     if index_loc == MINUS:
-#        return index - _get_axis_stride(dim,axis,sizes)
-#     elif index_loc == PLUS:
-#         return index + _get_axis_stride(dim,axis,sizes)
-#     else:
-#         return index
-
 cdef int _get_axis_stride(int dim,
                         int axis,
                         int* sizes) nogil:
@@ -167,18 +154,6 @@ cdef int _get_axis_stride(int dim,
             stride *= sizes[j]
     
     return stride
-
-# cdef int _get_index(int index,
-#                     int* stride_count,
-#                     int dim ) nogil:
-
-#     cdef int return_index = 0
-#     cdef int i
-#     for i in range(dim):
-#         return_index += stride_count[i]*index[i]
-
-#     return return_index 
-
 
 cdef void _get_strides(int dim,
                         int* sizes,
