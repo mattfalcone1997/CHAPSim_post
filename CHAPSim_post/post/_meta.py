@@ -412,7 +412,7 @@ class DomainHandler(cd.GeomHandler):
     
     def _alter_item(self,char,to_out=True):
         convert_dict = styleParams.cart_to_polar if to_out else styleParams.polar_to_cart
-        if self.coord_sys == 'cylind' and char in convert_dict.keys():
+        if self.is_polar and char in convert_dict.keys():
             return convert_dict[char]
         else:
             return char

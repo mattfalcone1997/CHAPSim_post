@@ -1016,7 +1016,7 @@ class datastruct:
     def _arith_unary_op(self,func):
 
         new_data = {key :func(val) for key, val in self}
-        return self.__class__(new_data) 
+        return datastruct(new_data) 
 
     def __abs__(self):
         return self._arith_unary_op(operator.abs)

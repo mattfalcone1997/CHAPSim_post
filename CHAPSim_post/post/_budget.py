@@ -323,7 +323,7 @@ class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
                                                     transform_ydata=budget_scale,
                                                     fig=fig,ax=ax[i],line_kw=line_kw)
             
-            title = self.Domain.create_label(r"$x = %.2g$"%x_loc)
+            title = self.Domain.create_label(r"$x = %.1f$"%x_loc)
             ax[i].set_title(title,loc='right')
 
             if mpl.rcParams['text.usetex'] == True:

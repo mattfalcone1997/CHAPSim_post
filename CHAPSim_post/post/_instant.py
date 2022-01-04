@@ -3,7 +3,7 @@
 File contains the implementation of the classes to processes the 
 instantaneous results from the CHAPSim DNS solver 
 """
-from abc import abstractmethod, ABC
+from abc import abstractmethod, ABC, abstractproperty
 import numpy as np
 import matplotlib as mpl
 
@@ -21,7 +21,7 @@ from CHAPSim_post._libs import file_handler, post
 
 from functools import partial
 from ._average import CHAPSim_AVG_io,CHAPSim_AVG_temp, CHAPSim_AVG_tg
-from ._common import Common
+from ._common import Common, classproperty
 
 _avg_io_class = CHAPSim_AVG_io
 _avg_temp_class = CHAPSim_AVG_temp
@@ -46,6 +46,10 @@ class _Inst_base(Common,ABC):
         else:
             self._hdf_extract(*args,**kwargs)
 
+    @abstractproperty
+    def _avg_class(self):
+        pass
+    
     def _inst_extract(self,time,path_to_folder='.',avg_data=None,abs_path = True, time0=None):
         """
         Instantiates CHAPSim_Inst by extracting data from the 
@@ -119,7 +123,8 @@ class _Inst_base(Common,ABC):
         self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
 
         self.InstDF = cd.FlowStruct3D.from_hdf(file_name,key=key+'/InstDF')#pd.read_hdf(file_name,base_name+'/InstDF').data(shape)
-
+        self._avg_data = self._avg_class.from_hdf(file_name,key=key+'/avg_data')
+        
     @property
     def shape(self):
         inst_index = self.InstDF.index[0]
@@ -149,6 +154,7 @@ class _Inst_base(Common,ABC):
 
         self._meta_data.save_hdf(file_name,'a',key=key+'/meta_data')
         self.InstDF.to_hdf(file_name,key=key+'/InstDF',mode='a')
+        self._avg_data.save_hdf(file_name,'a',key=key+'/avg_data')
 
     def _file_extract(self,file_list):
         #A list of all the relevant files for this timestep                           
@@ -728,7 +734,11 @@ class _Inst_base(Common,ABC):
 
 class CHAPSim_Inst_io(_Inst_base):
     _tgpost = False 
-        
+    
+    @classproperty
+    def _avg_class(cls):
+        return cls._module._avg_io_class
+    
     def _create_avg_data(self,path_to_folder,abs_path,time0,avg_data=None):
         time = misc_utils.max_time_calc(path_to_folder,abs_path)
         if avg_data is not None:
@@ -742,7 +752,11 @@ class CHAPSim_Inst_io(_Inst_base):
 
 class CHAPSim_Inst_tg(_Inst_base):
     _tgpost = True
-        
+    
+    @classproperty
+    def _avg_class(cls):
+        return cls._module._avg_class_tg
+    
     def _create_avg_data(self,path_to_folder,abs_path,time0,avg_data=None):
         time = misc_utils.max_time_calc(path_to_folder,abs_path)
         if avg_data is not None:
@@ -768,6 +782,9 @@ class CHAPSim_Inst_tg(_Inst_base):
 
 class CHAPSim_Inst_temp(_Inst_base):
     _tgpost = True
+    @classproperty
+    def _avg_class(cls):
+        return cls._module._avg_class_temp
     
     def _create_avg_data(self,path_to_folder,abs_path,time0,avg_data=None):
         times = self.InstDF.times
