@@ -1260,10 +1260,12 @@ class FlowStructND(_FlowStruct_base):
         self._location = value
 
     def _check_rotate(self,plane,rotate_axes):
-        if plane in ['yz','yx','zx'] or rotate_axes:
-            return True
+        check_plane = plane in ['yz','yx','zx']
+        
+        if rotate_axes is None:
+            return check_plane
         else:
-            return False
+            return rotate_axes
         
     @classmethod
     def join(cls,new_axis,axis_vals,flowstructs,index=None,wall_normal=False):
@@ -1502,7 +1504,7 @@ class FlowStruct3D(FlowStructND):
         self.VTK.to_vtk(file_name)
 
 
-    def plot_contour(self,comp,plane,axis_val,time=None,rotate_axes=False,fig=None,ax=None,pcolor_kw=None,**kwargs):
+    def plot_contour(self,comp,plane,axis_val,time=None,rotate_axes=None,fig=None,ax=None,pcolor_kw=None,**kwargs):
         
         slicer = self._plane_calculate(plane,axis_val)
         rotate = self._check_rotate(plane,rotate_axes)
@@ -1525,7 +1527,7 @@ class FlowStruct3D(FlowStructND):
             return (slice(None),axis_val, slice(None))
 
 
-    def plot_vector(self,comps,plane,axis_val,time=None,spacing=(1,1),scaling=1,rotate_axes=False,fig=None,ax=None,quiver_kw=None,**kwargs):
+    def plot_vector(self,comps,plane,axis_val,time=None,spacing=(1,1),scaling=1,rotate_axes=None,fig=None,ax=None,quiver_kw=None,**kwargs):
         slicer = self._plane_calculate(plane,axis_val)
         rotate = self._check_rotate(plane,rotate_axes)
         flowstruct = self.slice[slicer]
@@ -1679,14 +1681,14 @@ class FlowStruct2D(FlowStructND):
         
 
 
-    def plot_contour(self,comp,time=None,rotate_axes=False,fig=None,ax=None,pcolor_kw=None,**kwargs):
+    def plot_contour(self,comp,time=None,rotate_axes=None,fig=None,ax=None,pcolor_kw=None,**kwargs):
         
         data_layout = ''.join(self._data_layout)
         rotate = self._check_rotate(data_layout,rotate_axes)
 
         return super().plot_contour(comp,time=time,rotate=rotate,fig=fig, ax=ax,pcolor_kw=pcolor_kw,**kwargs)
 
-    def plot_vector(self,comps,time=None,spacing=(1,1),scaling=1,rotate_axes=False,fig=None,ax=None,quiver_kw=None,**kwargs):
+    def plot_vector(self,comps,time=None,spacing=(1,1),scaling=1,rotate_axes=None,fig=None,ax=None,quiver_kw=None,**kwargs):
         data_layout = ''.join(self._data_layout)
         rotate = self._check_rotate(data_layout,rotate_axes)
 
