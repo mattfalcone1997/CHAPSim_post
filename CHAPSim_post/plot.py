@@ -601,8 +601,8 @@ def update_pcolor_kw(pcolor_kw,**kwargs):
     
     pcolor_kw = _default_update_replace('pcolor_kw',pcolor_kw,
                                 cmap = 'jet',
-                                shading = 'gouraud')
-    pcolor_kw.update(**kwargs)
+                                shading = 'gouraud',
+                                **kwargs)
     return pcolor_kw
 
 def update_contour_kw(contour_kw,**kwargs):

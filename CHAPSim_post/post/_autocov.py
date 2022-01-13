@@ -245,7 +245,7 @@ class CHAPSim_autocov_io(_autocov_base):
         
         return fig, ax
     
-    def plot_contour_zy(self,comp,axis_vals,norm=True,show_positive=True,pcolor_kw=None,fig=None,ax=None,**kwargs):
+    def plot_contour_zy(self,comp,axis_vals,norm=True,show_positive=True,contour_kw=None,fig=None,ax=None,**kwargs):
         if not comp in ('x','z'):
             msg = f"comp must be the string 'x' or 'z' not {comp} "
             raise ValueError(msg)
@@ -256,7 +256,7 @@ class CHAPSim_autocov_io(_autocov_base):
         else:
             Ruu_DF = self.Rz_DF[None,[comp]].copy()
             
-        pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
+        contour_kw = cplt.contour_kw(contour_kw)
         
         if norm:
             Ruu_0=Ruu_DF[None,comp][0]
@@ -285,7 +285,7 @@ class CHAPSim_autocov_io(_autocov_base):
                                                 None,
                                                 fig=fig,
                                                 ax=ax[i],
-                                                pcolor_kw=pcolor_kw)
+                                                contour_kw=contour_kw)
             lmin, lmax = ax[i].get_clim()
             
             min_val = min(min_val,lmin)
