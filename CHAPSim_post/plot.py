@@ -13,6 +13,7 @@ from cycler import cycler
 
 import itertools
 import warnings
+import copy
 from shutil import which
 
 import CHAPSim_post as cp
@@ -609,9 +610,10 @@ def update_contour_kw(contour_kw,**kwargs):
     return _default_update_replace('contour_kw',contour_kw,**kwargs)
 
 def get_contour_func_params(ax, contour_kw, plot_func='pcolormesh',**kwargs):
+    kw_copy = copy.deepcopy(contour_kw)
     
-    if isinstance(contour_kw,dict):
-        plot_func = contour_kw.pop('plot_func',plot_func)
+    if isinstance(kw_copy,dict):
+        plot_func = kw_copy.pop('plot_func',plot_func)
 
     if hasattr(ax,plot_func):
         options = ['pcolormesh', 'contour', 'contourf']
@@ -626,11 +628,11 @@ def get_contour_func_params(ax, contour_kw, plot_func='pcolormesh',**kwargs):
         raise AttributeError(msg)
 
     if plot_func.__name__ == 'pcolormesh':
-        contour_kw = update_pcolor_kw(contour_kw,**kwargs)
+        kw_copy = update_pcolor_kw(kw_copy,**kwargs)
     else:
-        contour_kw = update_contour_kw(contour_kw,**kwargs)
+        kw_copy = update_contour_kw(kw_copy,**kwargs)
         
-    return plot_func, contour_kw
+    return plot_func, kw_copy
     
 def update_mesh_kw(mesh_kw,**kwargs):
     if mesh_kw is None:
@@ -713,7 +715,7 @@ def _upgrade_ax(fig,ax):
             #ax.remove()
             ax = fig.add_subplot(1,1,1)
             ax.__setstate__(d)
-        elif isinstance(ax,mpl.axes.Axes3D):
+        elif isinstance(ax,Axes3D):
             d = ax.__getstate__().copy()
             #ax.remove()
             ax = fig.add_subplot(1,1,1,projection='3d')

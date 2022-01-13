@@ -89,7 +89,7 @@ class CHAPSim_fluct_base(Common):
         warn = UserWarning(warn_msg)
         return self.fluctDF.check_times(PhyTime,err_msg,warn_msg)
     
-    def plot_contour(self,comp,axis_vals,plane='xz',PhyTime=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
+    def plot_contour(self,comp,axis_vals,plane='xz',PhyTime=None,y_mode='wall',fig=None,ax=None,contour_kw=None,**kwargs):
         
         plane = self.Domain.to_internal(plane)
         axis_vals = misc_utils.check_list_vals(axis_vals)
@@ -114,7 +114,7 @@ class CHAPSim_fluct_base(Common):
         title_symbol = misc_utils.get_title_symbol(coord,y_mode,False)
 
         for i,val in enumerate(int_vals):
-            fig, ax1 = self.fluctDF.plot_contour(comp,plane,val,time=PhyTime,fig=fig,ax=ax[i],pcolor_kw=pcolor_kw)
+            fig, ax1 = self.fluctDF.plot_contour(comp,plane,val,time=PhyTime,fig=fig,ax=ax[i],contour_kw=contour_kw)
 
             xlabel = self.Domain.create_label(r"$%s$"%plane[0])
             ylabel = self.Domain.create_label(r"$%s$"%plane[1])
