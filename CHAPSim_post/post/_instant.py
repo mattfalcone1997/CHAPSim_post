@@ -12,6 +12,7 @@ import os
 import warnings
 import gc
 import copy
+import itertools
 from CHAPSim_post.utils import docstring, gradient, indexing, misc_utils, parallel
 from CHAPSim_post import rcParams
 import CHAPSim_post.plot as cplt
@@ -284,7 +285,7 @@ class _Inst_base(Common,ABC):
         return self.InstDF.check_times(PhyTime,err,warn_msg)
 
     @docstring.sub
-    def plot_contour(self,comp,axis_vals,plane='xz',PhyTime=None,y_mode='wall',fig=None,ax=None,pcolor_kw=None,**kwargs):
+    def plot_contour(self,comp,axis_vals,plane='xz',PhyTime=None,y_mode='wall',fig=None,ax=None,contour_kw=None,**kwargs):
         """
         Plot a contour along a given plane at different locations in the third axis
 
@@ -348,7 +349,7 @@ class _Inst_base(Common,ABC):
         title_symbol = misc_utils.get_title_symbol(coord,y_mode,False)
 
         for i,val in enumerate(int_vals):
-            fig, ax1 = self.InstDF.plot_contour(comp,plane,val,time=PhyTime,fig=fig,ax=ax[i],pcolor_kw=pcolor_kw)
+            fig, ax1 = self.InstDF.plot_contour(comp,plane,val,time=PhyTime,fig=fig,ax=ax[i],contour_kw=contour_kw)
 
             xlabel = self.Domain.create_label(r"$%s$"%plane[0])
             ylabel = self.Domain.create_label(r"$%s$"%plane[1])
@@ -478,24 +479,24 @@ class _Inst_base(Common,ABC):
         #Calculating strain rate tensor
         velo_list = ['u','v','w']
         coord_list = ['x','y','z']
-                
-        strain_rate = np.zeros((*self.shape,3,3))
-        rot_rate =  np.zeros((*self.shape,3,3))
-        i=0
-        for velo1,coord1 in zip(velo_list,coord_list):
-            j=0
-            for velo2,coord2 in zip(velo_list,coord_list):
-                velo_field1 = self.InstDF[PhyTime,velo1]
-                velo_field2 = self.InstDF[PhyTime,velo2]
+        
+        
+        velo_grad = np.zeros((*self.shape,9))
+        comp_iter = itertools.product(velo_list,coord_list)
+        
+        for i, (u, x) in enumerate(comp_iter):
+            velo_field = self.InstDF[PhyTime,u]
 
-                strain_rate[:,:,:,i,j] = 0.5*(gradient.Grad_calc(self.CoordDF,velo_field1,coord2) \
-                                        + gradient.Grad_calc(self.CoordDF,velo_field2,coord1))
-                rot_rate[:,:,:,i,j] = 0.5*(gradient.Grad_calc(self.CoordDF,velo_field1,coord2) \
-                                        - gradient.Grad_calc(self.CoordDF,velo_field2,coord1))
-                j+=1
-            i+=1
+            velo_grad[:,:,:,i] = gradient.Grad_calc(self.CoordDF,velo_field,x)
+        
+        velo_grad = velo_grad.reshape((*self.shape,3,3))
+        velo_grad_T = np.einsum(velo_grad,'ijklm -> ijkml')
+        strain_rate = 0.5*( velo_grad + velo_grad_T)
+        
+        rot_rate = 0.5*(velo_grad - velo_grad_T)
 
-        del velo_field1 ; del velo_field2
+        del velo_field; del velo_grad; del velo_grad_T
+        
         S2_Omega2 = np.matmul(strain_rate,strain_rate) + np.matmul(rot_rate,rot_rate)
         del strain_rate ; del rot_rate
 

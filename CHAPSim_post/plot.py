@@ -576,19 +576,62 @@ def subplots(nrows=1, ncols=1, sharex=False, sharey=False, squeeze=True, subplot
                     subplot_kw=subplot_kw, gridspec_kw=gridspec_kw)
     return fig, ax
 
-def update_pcolor_kw(pcolor_kw):
-    if pcolor_kw is None:
-        pcolor_kw = {'cmap':'jet','shading':'gouraud'}
-    else:
-        if not isinstance(pcolor_kw,dict):
-            msg = f"pcolor_kw must be None or a dict not a {type(pcolor_kw)}"
-            raise TypeError(msg)
-        if 'cmap' not in pcolor_kw.keys():
-            pcolor_kw['cmap'] = 'jet'
-        if 'shading' not in pcolor_kw.keys():
-            pcolor_kw['shading'] = 'gouraud'
+def _default_update_new(name,type_kw,**kwargs):
+    if type_kw is None:
+        contour_kw = {}
+    elif not isinstance(type_kw,dict):
+        raise TypeError(f"{name} needs to be a dictionary")
+
+    for key, val in kwargs.items():
+        if key not in contour_kw.keys():
+            contour_kw[key] = val    
+
+    return contour_kw
+
+def _default_update_replace(name,type_kw,**kwargs):
+    if type_kw is None:
+        type_kw = {}
+    elif not isinstance(type_kw,dict):
+        raise TypeError(f"{name} needs to be a dictionary")
+
+    type_kw.update(kwargs)
+
+    return type_kw
+def update_pcolor_kw(pcolor_kw,**kwargs):
+    
+    pcolor_kw = _default_update_replace('pcolor_kw',pcolor_kw,
+                                cmap = 'jet',
+                                shading = 'gouraud')
+    pcolor_kw.update(**kwargs)
     return pcolor_kw
 
+def update_contour_kw(contour_kw,**kwargs):
+    return _default_update_replace('contour_kw',contour_kw,**kwargs)
+
+def get_contour_func_params(ax, contour_kw, plot_func='pcolormesh',**kwargs):
+    
+    if isinstance(contour_kw,dict):
+        plot_func = contour_kw.pop('plot_func',plot_func)
+
+    if hasattr(ax,plot_func):
+        options = ['pcolormesh', 'contour', 'contourf']
+        if plot_func not in options:
+            msg = "An available function was not selected"
+            raise AttributeError(msg)
+    
+        plot_func = getattr(ax,plot_func)
+        
+    else:
+        msg = f"The default function must be an attribute of {type(ax)}"
+        raise AttributeError(msg)
+
+    if plot_func.__name__ == 'pcolormesh':
+        contour_kw = update_pcolor_kw(contour_kw,**kwargs)
+    else:
+        contour_kw = update_contour_kw(contour_kw,**kwargs)
+        
+    return plot_func, contour_kw
+    
 def update_mesh_kw(mesh_kw,**kwargs):
     if mesh_kw is None:
         mesh_kw = {}
@@ -599,56 +642,15 @@ def update_mesh_kw(mesh_kw,**kwargs):
     
     return mesh_kw
 
-def update_quiver_kw(quiver_kw):
-    if quiver_kw is not None:
-        if 'angles' in quiver_kw.keys():
-            del quiver_kw['angles']
-        if 'scale_units' in quiver_kw.keys():
-            del quiver_kw['scale_units']
-        if 'scale' in quiver_kw.keys():
-            del quiver_kw['scale']
-    else:
-        quiver_kw = {}
-
-    return quiver_kw
+def update_quiver_kw(quiver_kw,**kwargs):
+    return _default_update_new('quiver_kw',quiver_kw,**kwargs)
 
 def update_line_kw(line_kw,**kwargs):
-    
-    if line_kw is None:
-        line_kw = {}
-    elif not isinstance(line_kw,dict):
-        raise TypeError("line_kw needs to be a dictionary")
-
-    line_kw = line_kw.copy()
-
-    for key, val in kwargs.items():
-        if key not in line_kw.keys():
-            line_kw[key] = val    
-
-    return line_kw
-
-def update_contour_kw(contour_kw,**kwargs):
-    if contour_kw is None:
-        contour_kw = {}
-    elif not isinstance(contour_kw,dict):
-        raise TypeError("line_kw needs to be a dictionary")
-
-    for key, val in kwargs.items():
-        if key not in contour_kw.keys():
-            contour_kw[key] = val    
-
-    return contour_kw
+    return  _default_update_replace('line_kw',line_kw,**kwargs)
 
 
-def update_subplots_kw(subplots_kw,**kwargs):
-    if subplots_kw is None:
-        subplots_kw = {}
-
-    for key, val in kwargs.items():
-        if key not in subplots_kw.keys():
-            subplots_kw[key] = val    
-
-    return subplots_kw
+def update_subplots_kw(subplots_kw,**kwargs):  
+    return _default_update_replace('subplots_kw',subplots_kw,**kwargs)
 
 def create_fig_ax_with_squeeze(fig=None,ax=None,**kwargs):
     

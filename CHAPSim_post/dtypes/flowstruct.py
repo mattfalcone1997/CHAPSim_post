@@ -963,7 +963,7 @@ class FlowStructND(_FlowStruct_base):
                         rotate: bool=False,
                         fig: cplt.CHAPSimFigure =None,
                         ax: cplt.AxesCHAPSim =None,
-                        pcolor_kw: dict =None,
+                        contour_kw: dict =None,
                         **kwargs) ->  Union[cplt.CHAPSimFigure,mpl.collections.PolyCollection ]:
         """
         If 2D the FlowStructND will plot a contour plot of the data in the FlowStructND
@@ -980,7 +980,7 @@ class FlowStructND(_FlowStruct_base):
             Input figure, it is created if None, by default None
         ax : cplt.AxesCHAPSim, optional
             Input axes, it is created if None, by default None
-        pcolor_kw : dict, optional
+        contour_kw : dict, optional
             dictionary passed to pcolormesh, by default None
 
         Returns
@@ -997,7 +997,9 @@ class FlowStructND(_FlowStruct_base):
                 kwargs['subplot_kw'] = subplot_kw
         
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
-        pcolor_kw = cplt.update_pcolor_kw(pcolor_kw)
+        
+        plot_func, contour_kw = cplt.get_contour_func_params(ax,contour_kw)
+
 
         time = self.check_times(time)
         comp = self.check_comp(comp)
@@ -1014,7 +1016,7 @@ class FlowStructND(_FlowStruct_base):
 
         X,Y = np.meshgrid(x_coord,y_coord)
 
-        ax = ax.pcolormesh(X,Y,flow.squeeze(),**pcolor_kw)
+        ax = plot_func(X,Y,flow.squeeze(),**contour_kw)
 
         return fig, ax
 
@@ -1504,7 +1506,7 @@ class FlowStruct3D(FlowStructND):
         self.VTK.to_vtk(file_name)
 
 
-    def plot_contour(self,comp,plane,axis_val,time=None,rotate_axes=None,fig=None,ax=None,pcolor_kw=None,**kwargs):
+    def plot_contour(self,comp,plane,axis_val,time=None,rotate_axes=None,fig=None,ax=None,contour_kw=None,**kwargs):
         
         slicer = self._plane_calculate(plane,axis_val)
         rotate = self._check_rotate(plane,rotate_axes)
@@ -1512,7 +1514,7 @@ class FlowStruct3D(FlowStructND):
         flowstruct = self[time,[comp]]
         flowstruct = flowstruct.slice[slicer]
         fig, ax = flowstruct.plot_contour(comp,time=time,rotate=rotate,
-                                            fig=fig,ax=ax,pcolor_kw=pcolor_kw,
+                                            fig=fig,ax=ax,contour_kw=contour_kw,
                                             **kwargs)
 
 
@@ -1681,12 +1683,12 @@ class FlowStruct2D(FlowStructND):
         
 
 
-    def plot_contour(self,comp,time=None,rotate_axes=None,fig=None,ax=None,pcolor_kw=None,**kwargs):
+    def plot_contour(self,comp,time=None,rotate_axes=None,fig=None,ax=None,contour_kw=None,**kwargs):
         
         data_layout = ''.join(self._data_layout)
         rotate = self._check_rotate(data_layout,rotate_axes)
 
-        return super().plot_contour(comp,time=time,rotate=rotate,fig=fig, ax=ax,pcolor_kw=pcolor_kw,**kwargs)
+        return super().plot_contour(comp,time=time,rotate=rotate,fig=fig, ax=ax,contour_kw=contour_kw,**kwargs)
 
     def plot_vector(self,comps,time=None,spacing=(1,1),scaling=1,rotate_axes=None,fig=None,ax=None,quiver_kw=None,**kwargs):
         data_layout = ''.join(self._data_layout)
