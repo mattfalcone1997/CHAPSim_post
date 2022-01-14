@@ -631,8 +631,12 @@ class hdfHandler:
         return self.__class__(filename,mode,key)
 
     def __del__(self):
-        if hasattr(self,'_hdf_file'):
-            self._hdf_file.close()
+        try:
+            if hasattr(self,'_hdf_file'):
+                if self._hdf_file:
+                    self._hdf_file.close()
+        except Exception:
+            pass
 
 class datastruct:
 
