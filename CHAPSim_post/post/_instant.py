@@ -490,7 +490,7 @@ class _Inst_base(Common,ABC):
             velo_grad[:,:,:,i] = gradient.Grad_calc(self.CoordDF,velo_field,x)
         
         velo_grad = velo_grad.reshape((*self.shape,3,3))
-        velo_grad_T = np.einsum(velo_grad,'ijklm -> ijkml')
+        velo_grad_T = np.einsum('ijklm -> ijkml',velo_grad)
         strain_rate = 0.5*( velo_grad + velo_grad_T)
         
         rot_rate = 0.5*(velo_grad - velo_grad_T)

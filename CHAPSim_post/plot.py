@@ -598,6 +598,7 @@ def _default_update_replace(name,type_kw,**kwargs):
     type_kw.update(kwargs)
 
     return type_kw
+
 def update_pcolor_kw(pcolor_kw,**kwargs):
     
     pcolor_kw = _default_update_replace('pcolor_kw',pcolor_kw,
@@ -654,6 +655,18 @@ def update_line_kw(line_kw,**kwargs):
 def update_subplots_kw(subplots_kw,**kwargs):  
     return _default_update_replace('subplots_kw',subplots_kw,**kwargs)
 
+def _check__mpl_kwargs(artist,kwargs):
+    kw_copy = copy.deepcopy(kwargs)
+    kw_copy.pop('axes',None)
+    for k in kw_copy:
+        func = getattr(artist,f"set_{k}",None)
+        if not callable(func):
+            msg = (f"Artist of type {artist.__name__}"
+                    f" has no property {k}. You may"
+                    " have passed an incorrect keyword")
+            raise AttributeError(msg)
+            
+        
 def create_fig_ax_with_squeeze(fig=None,ax=None,**kwargs):
     
     if fig is None:
@@ -663,7 +676,8 @@ def create_fig_ax_with_squeeze(fig=None,ax=None,**kwargs):
     else:
         fig = _upgrade_fig(fig)
         ax = _upgrade_ax(fig, ax)
-
+    _check__mpl_kwargs(fig,kwargs)
+    
     return fig, ax
 
     
@@ -692,7 +706,9 @@ def create_fig_ax_without_squeeze(*args,fig=None,ax=None,**kwargs):
     ax = ax.flatten()
     for i, a in enumerate(ax):
         ax[i] = _upgrade_ax(fig,a)
-        
+    
+    _check__mpl_kwargs(fig,kwargs)
+    
     return fig, ax, single_input
 
 def _upgrade_fig(fig):
