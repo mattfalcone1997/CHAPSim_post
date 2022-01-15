@@ -628,7 +628,7 @@ class _Inst_base(Common,ABC):
             Datastruct with the vorticity vector in it
         """
 
-        self.check_PhyTime(PhyTime)
+        PhyTime = self.check_PhyTime(PhyTime)
 
         vorticity = np.zeros((3,*self.shape),dtype='f8')
         u_velo = self.InstDF[PhyTime,'u']
