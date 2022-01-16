@@ -1,6 +1,7 @@
 import os
 from pathlib import PurePath
 import numpy as np
+import warnings
 import sys
 
 # from CHAPSim_post import rcParams
@@ -22,7 +23,7 @@ class Params:
 
     def keys(self):
         return self.__params.keys()
-
+    
     def __getitem__(self,key):
         if key not in self.__params.keys():
             msg = f"Parameter not present must be one of the following: {self.__params.keys()}"
@@ -30,6 +31,24 @@ class Params:
 
         return self.__params[key]
 
+    def _check_cuda(self,key, value):
+        
+        if key != 'use_cupy': return
+        if not value: return 
+        
+        try:
+            import cupy
+            
+            if not cupy.is_available():
+                msg = "There are no CUDA GPUs available"
+                return key, False
+        except (ImportError, ModuleNotFoundError):
+            msg = ('There has been a problem import CuPy'
+                   ' check installation this has been deactivated')
+            warnings.warn(msg)
+            return key, False
+            
+    
     def _check_key_val(self,key,value):
         if key not in self.__params.keys():
             msg = f"Parameter not present must be one of the following: {self.__params.keys}"
@@ -48,6 +67,7 @@ class Params:
         return key, value
 
     def __setitem__(self,key,value):
+        key, value = self._check_cuda(key,value)
         key, value = self._check_key_val(key,value)
 
         self.__params[key] = value

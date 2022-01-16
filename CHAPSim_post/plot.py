@@ -661,7 +661,8 @@ def _check__mpl_kwargs(artist,kwargs):
     for k in kw_copy:
         func = getattr(artist,f"set_{k}",None)
         if not callable(func):
-            msg = (f"Artist of type {artist.__name__}"
+            name = artist.__class__.__name__
+            msg = (f"Artist of type {name}"
                     f" has no property {k}. You may"
                     " have passed an incorrect keyword")
             raise AttributeError(msg)
@@ -676,7 +677,7 @@ def create_fig_ax_with_squeeze(fig=None,ax=None,**kwargs):
     else:
         fig = _upgrade_fig(fig)
         ax = _upgrade_ax(fig, ax)
-    _check__mpl_kwargs(fig,kwargs)
+    # _check__mpl_kwargs(fig,kwargs)
     
     return fig, ax
 
@@ -707,7 +708,7 @@ def create_fig_ax_without_squeeze(*args,fig=None,ax=None,**kwargs):
     for i, a in enumerate(ax):
         ax[i] = _upgrade_ax(fig,a)
     
-    _check__mpl_kwargs(fig,kwargs)
+    # _check__mpl_kwargs(fig,kwargs)
     
     return fig, ax, single_input
 

@@ -31,6 +31,10 @@ _avg_tg_class = CHAPSim_AVG_tg
 from ._meta import CHAPSim_meta
 _meta_class=CHAPSim_meta
 
+if rcParams['use_cupy']:
+    from cupy import linalg
+else:
+    from numpy import linalg
 
 class _Inst_base(Common,ABC):
     """
@@ -500,7 +504,7 @@ class _Inst_base(Common,ABC):
         S2_Omega2 = np.matmul(strain_rate,strain_rate) + np.matmul(rot_rate,rot_rate)
         del strain_rate ; del rot_rate
 
-        S2_Omega2_eigvals, e_vecs = np.linalg.eigh(S2_Omega2)
+        S2_Omega2_eigvals, e_vecs = linalg.eigh(S2_Omega2)
         del e_vecs; del S2_Omega2
         
         lambda2 = np.sort(S2_Omega2_eigvals,axis=3)[:,:,:,1]

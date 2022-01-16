@@ -26,6 +26,9 @@ __all__ = ["Grad_calc",'Scalar_grad_io',"Vector_div_io",
             "Scalar_laplacian_io","Scalar_laplacian_tg",
              "totIntegrate_y",'cumIntegrate_y']
 
+if cp.rcParams['use_cupy']:
+    import cupy as cnp
+
 class Gradient():
     def __init__(self):
         self.__type = None
@@ -51,6 +54,9 @@ class Gradient():
     def setup_cython_method(self,coordDF):
         self.grad_calc_method = self.grad_calc_cy
 
+    def setup_cupy_method(self,coordDF):
+        self.grad_calc_method = self.grad_calc_cupy
+        
     def setup_symbolic_stored_method(self,coordDF):
         msg = "This methods have not been implemented yet"
         raise NotImplementedError(msg)
@@ -120,6 +126,31 @@ class Gradient():
         
         return gradient.gradient_calc(flow_array,coord_array,dim)
     
+    def grad_calc_cupy(self,CoordDF,flow_array,comp):
+        if flow_array.ndim == 3:
+            dim = ord('z') - ord(comp)
+        elif flow_array.ndim == 2:
+            dim = ord('y') - ord(comp)
+            if comp == 'z':
+                msg = "gradients in the z direction can only be calculated on 3-d arrays"
+                raise ValueError(msg)
+        elif flow_array.ndim == 1:
+            dim = 0
+            if comp != 'y':
+                msg = "For 1D flow arrays only y can be used"
+                raise ValueError(msg)
+        else:
+            msg = "This method can only be used on one, two and three dimensional arrays"
+            raise TypeError(msg)
+
+        coord_array = CoordDF[comp]
+        if coord_array.size != flow_array.shape[dim]:
+            msg = (f"The coordinate array size ({coord_array.size})"
+                    f" and flow array size in dimension ({flow_array.shape[dim]})"
+                    " does not match")
+            raise ValueError(msg)
+            
+        return cnp.gradient(flow_array,coord_array,edge_order=2,axis=dim)
     # def _grad_calc_cy_work(self,flow_array,coord_array,dim):
 
 
