@@ -39,8 +39,11 @@ class Params:
             if value:
                 import cupy
                 
-                if not cupy.is_available():
+                if cupy.is_available():
+                    return key, value
+                else:
                     msg = "There are no CUDA GPUs available"
+                    warnings.warn(msg)
                     return key, False
             else:
                 return key, value 
