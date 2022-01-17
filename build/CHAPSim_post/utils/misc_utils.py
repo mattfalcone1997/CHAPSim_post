@@ -33,15 +33,17 @@ class Params:
 
     def _check_cuda(self,key, value):
         
-        if key != 'use_cupy': return
-        if not value: return 
+        if key != 'use_cupy': return key, value
         
         try:
-            import cupy
-            
-            if not cupy.is_available():
-                msg = "There are no CUDA GPUs available"
-                return key, False
+            if value:
+                import cupy
+                
+                if not cupy.is_available():
+                    msg = "There are no CUDA GPUs available"
+                    return key, False
+            else:
+                return key, value 
         except (ImportError, ModuleNotFoundError):
             msg = ('There has been a problem import CuPy'
                    ' check installation this has been deactivated')

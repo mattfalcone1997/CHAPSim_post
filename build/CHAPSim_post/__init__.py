@@ -19,7 +19,7 @@ Param_dict = {"TEST":False,
             "AVG_Style": "overline",
             "relax_HDF_type_checks":False,
             "use_parallel": 'thread',
-            "use_CuPy" : False}
+            "use_cupy" : False}
 
 rcParams = Params()
 rcParams.update(Param_dict)
