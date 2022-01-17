@@ -30,7 +30,7 @@ _cupy_avail = False
 
 try:
     import cupy as cnpy
-    _cupy_avail = True
+    _cupy_avail = cnpy.is_available()
 except:
     pass
 class Gradient():
@@ -128,9 +128,7 @@ class Gradient():
         
         msg = "This method cannot be called if cupy is not available"
         if not _cupy_avail: raise RuntimeError(msg)
-        
-        if cnpy.is_available(): raise RuntimeError(msg)
-        
+                
         dim = self._get_grad_dim(flow_array,comp)
 
         coord_array = CoordDF[comp]
