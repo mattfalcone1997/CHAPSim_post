@@ -507,7 +507,7 @@ class _Inst_base(Common,ABC):
         if rcParams['use_cupy'] and _cupy_avail:
             S2_Omega2_eigvals, e_vecs = cnpy.linalg.eigh(S2_Omega2)
             del e_vecs; del S2_Omega2
-            lambda2 = cnpy.sort(S2_Omega2_eigvals,axis=3)[:,:,:,1].asnumpy()
+            lambda2 = cnpy.sort(S2_Omega2_eigvals,axis=3)[:,:,:,1].get()
         else:
             S2_Omega2_eigvals, e_vecs = np.linalg.eigh(S2_Omega2)
             del e_vecs; del S2_Omega2
