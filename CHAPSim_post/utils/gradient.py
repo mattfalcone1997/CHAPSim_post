@@ -120,7 +120,8 @@ class Gradient():
                     " does not match")
             raise ValueError(msg)
         
-        return gradient.gradient_calc(flow_array,coord_array,dim)
+        return gradient.gradient_calc(flow_array.astype('f8'),
+                                      coord_array.astype('f8'),dim)
     
     def grad_calc_cupy(self,CoordDF,flow_array,comp):
         
