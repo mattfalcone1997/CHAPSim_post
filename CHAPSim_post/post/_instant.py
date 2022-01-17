@@ -513,9 +513,7 @@ class _Inst_base(Common,ABC):
             del e_vecs; del S2_Omega2
             lambda2 = np.sort(S2_Omega2_eigvals,axis=3)[:,:,:,1]
         
-        del S2_Omega2_eigvals
-        print(type(lambda2))
-        
+        del S2_Omega2_eigvals        
         
         return cd.FlowStruct3D(self._coorddata,{(PhyTime,'lambda_2'):lambda2})
 

@@ -138,7 +138,7 @@ class Gradient():
                     " does not match")
             raise ValueError(msg)
             
-        return cnpy.gradient(flow_array,coord_array,edge_order=2,axis=dim)
+        return cnpy.gradient(flow_array,coord_array,edge_order=2,axis=dim).get()
     # def _grad_calc_cy_work(self,flow_array,coord_array,dim):
 
 
