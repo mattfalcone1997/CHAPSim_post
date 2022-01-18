@@ -288,7 +288,7 @@ class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
 
         def _x_Transform(data):
             if self.Domain.is_polar:
-                return (-1.*data.copy() -1.)/delta_v[x_index]
+                return -1.(*data.copy() -1.)/delta_v[x_index]
             else:
                 return (data.copy() + 1.)/delta_v[x_index]
 
@@ -530,7 +530,7 @@ class CHAPSim_budget_tg(ReynoldsBudget_base,_budget_base):
 
         def _x_Transform(data):
             if self.Domain.is_polar:
-                return (-1.*data.copy() -1.)/delta_v
+                return -1.(*data.copy() -1.)/delta_v
             else:
                 return (data.copy() + 1.)/delta_v
 
@@ -594,7 +594,7 @@ class Budget_tg_array(postArray,_budget_base):
         return fig, ax
 
 
-class CHAPSim_budget_temp(CHAPSim_budget_tg,_budget_base):
+class CHAPSim_budget_temp(CHAPSim_budget_tg):
     _flowstruct_class = cd.FlowStruct1D_time
     def plot_budget(self, time_list,budget_terms=None,wall_units=True, fig=None, ax =None,line_kw=None,**kwargs):
         
