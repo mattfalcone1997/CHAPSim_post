@@ -1127,7 +1127,7 @@ class CHAPSim_AVG_tg(_AVG_base):
         
         ioflowflg = self.metaDF['iDomain'] in [2,3]
 
-        if ioflowflg and time0 is not None:
+        if time0 is not None:
             file0, NSTATIS0,_, _, _ = self._get_tg_boilerplate(full_path,
                                                                time0,
                                                                abs_path)
@@ -1352,7 +1352,7 @@ class CHAPSim_AVG_tg(_AVG_base):
 
         PhyTime = self.check_PhyTime(PhyTime)
 
-        if comp == 'uv':
+        if comp == 'uv' and self.Domain.is_channel:
             transform_y = lambda x: -1.*x
         else:
             transform_y = None

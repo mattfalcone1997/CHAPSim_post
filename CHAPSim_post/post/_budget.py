@@ -402,7 +402,7 @@ class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
 
         return fig, ax
 
-class CHAPSim_budget_tg(ReynoldsBudget_base):
+class CHAPSim_budget_tg(ReynoldsBudget_base,_budget_base):
     _flowstruct_class = cd.FlowStruct1D
     def _advection_extract(self,PhyTime,comp):
 

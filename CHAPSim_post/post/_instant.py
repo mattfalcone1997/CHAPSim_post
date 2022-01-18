@@ -787,7 +787,11 @@ class CHAPSim_Inst_tg(_Inst_base):
             new_flow_array = np.zeros(new_flow_shape)
             new_flow_array[:,:,:,:-1] =  flow_info
             new_flow_array[:,:,:,-1] = flow_info[:,:,:,0]
-
+            
+        else:
+            new_flow_array = flow_info
+            
+        print(new_flow_array.shape,flow_info.shape,NCL3, NCL2, NCL1+1)
         return  super()._velo_interp(new_flow_array, NCL3, NCL2, NCL1+1)
 
 
