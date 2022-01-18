@@ -288,7 +288,7 @@ class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
 
         def _x_Transform(data):
             if self.Domain.is_polar:
-                return -1.(*data.copy() -1.)/delta_v[x_index]
+                return -1.*(data.copy() -1.)/delta_v[x_index]
             else:
                 return (data.copy() + 1.)/delta_v[x_index]
 
@@ -530,7 +530,7 @@ class CHAPSim_budget_tg(ReynoldsBudget_base,_budget_base):
 
         def _x_Transform(data):
             if self.Domain.is_polar:
-                return -1.(*data.copy() -1.)/delta_v
+                return -1.*(data.copy() -1.)/delta_v
             else:
                 return (data.copy() + 1.)/delta_v
 
