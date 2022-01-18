@@ -329,7 +329,6 @@ class _Inst_base(Common,ABC):
             output figure and axes objects
         """
 
-        plane = self.Domain.to_internal(plane)
         axis_vals = misc_utils.check_list_vals(axis_vals)
 
         PhyTime = self.check_PhyTime(PhyTime)
@@ -415,7 +414,6 @@ class _Inst_base(Common,ABC):
         %(fig)s, %(ax)s
             output figure and axes objects
         """
-        plane = self.Domain.to_internal(plane)
 
         axis_vals = misc_utils.check_list_vals(axis_vals)
         PhyTime = self.check_PhyTime(PhyTime)

@@ -91,7 +91,6 @@ class CHAPSim_fluct_base(Common):
     
     def plot_contour(self,comp,axis_vals,plane='xz',PhyTime=None,y_mode='wall',fig=None,ax=None,contour_kw=None,**kwargs):
         
-        plane = self.Domain.to_internal(plane)
         axis_vals = misc_utils.check_list_vals(axis_vals)
         PhyTime = self.check_PhyTime(PhyTime)
 
@@ -190,7 +189,6 @@ class CHAPSim_fluct_base(Common):
 
     def plot_vector(self,plane,axis_vals,PhyTime=None,y_mode='half_channel',spacing=(1,1),scaling=1,x_split_list=None,fig=None,ax=None,quiver_kw=None,**kwargs):
         
-        plane = self.Domain.to_internal(plane)
         axis_vals = misc_utils.check_list_vals(axis_vals)
         PhyTime = self.check_PhyTime(PhyTime)
 

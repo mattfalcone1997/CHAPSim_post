@@ -237,7 +237,7 @@ class coordstruct(datastruct):
     
     def check_plane(self,plane):
         if plane not in ['xy','zy','xz']:
-            plane = plane[::-1]
+            plane = [ x[::-1] for x in plane ]
             if plane not in ['xy','zy','xz']:
                 msg = "The contour slice must be either %s"%['xy','yz','xz']
                 raise KeyError(msg)
