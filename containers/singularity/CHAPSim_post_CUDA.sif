@@ -9,7 +9,7 @@ From: nvidia/cuda:11.5.0-devel-ubuntu20.04
    
     PYBIN=/usr/bin/python3
     cd /opt
-    git clone -b new_master https://github.com/mattfalcone1997/CHAPSim_post.git
+    git clone https://github.com/mattfalcone1997/CHAPSim_post.git
     cd CHAPSim_post
     $PYBIN -m pip install -r requirements.txt
     $PYBIN -m pip install cupy-cuda115
