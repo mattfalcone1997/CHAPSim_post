@@ -1181,7 +1181,7 @@ typedef npy_clongdouble __pyx_t_5numpy_clongdouble_t;
  */
 typedef npy_cdouble __pyx_t_5numpy_complex_t;
 
-/* "CHAPSim_post/_libs/gradient.pyx":85
+/* "CHAPSim_post/_libs/gradient.pyx":95
  * 
  * 
  * ctypedef enum index_flag:             # <<<<<<<<<<<<<<
@@ -1882,7 +1882,9 @@ static PyObject *__pyx_codeobj__4;
 static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_varx(double *__pyx_v_input_array, double *__pyx_v_x_array, int __pyx_v_axis, int *__pyx_v_sizes, int *__pyx_v_strides, int __pyx_v_dim, double *__pyx_v_gradient_array) {
   CYTHON_UNUSED int __pyx_v_total_size;
   int __pyx_v_minus_index;
+  int __pyx_v_minus2_index;
   int __pyx_v_plus_index;
+  int __pyx_v_plus2_index;
   int __pyx_v_axis_index;
   int __pyx_v_axis_stride;
   double *__pyx_v_a;
@@ -1898,13 +1900,13 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_varx(doubl
  *                                 double* gradient_array) nogil:
  * 
  *     cdef int total_size = _get_total_size(dim, sizes)             # <<<<<<<<<<<<<<
- *     cdef int minus_index, plus_index
+ *     cdef int minus_index, minus2_index, plus_index, plus2_index
  *     cdef int axis_index
  */
   __pyx_v_total_size = __pyx_f_12CHAPSim_post_5_libs_8gradient__get_total_size(__pyx_v_dim, __pyx_v_sizes);
 
   /* "CHAPSim_post/_libs/gradient.pyx":20
- *     cdef int minus_index, plus_index
+ *     cdef int minus_index, minus2_index, plus_index, plus2_index
  *     cdef int axis_index
  *     cdef int axis_stride = _get_axis_stride(dim,axis,sizes)             # <<<<<<<<<<<<<<
  * 
@@ -1972,14 +1974,16 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_varx(doubl
           #endif /* _OPENMP */
           {
               #ifdef _OPENMP
-              #pragma omp for lastprivate(__pyx_v_axis_index) firstprivate(__pyx_v_i) lastprivate(__pyx_v_i) lastprivate(__pyx_v_minus_index) lastprivate(__pyx_v_plus_index)
+              #pragma omp for lastprivate(__pyx_v_axis_index) firstprivate(__pyx_v_i) lastprivate(__pyx_v_i) lastprivate(__pyx_v_minus2_index) lastprivate(__pyx_v_minus_index) lastprivate(__pyx_v_plus2_index) lastprivate(__pyx_v_plus_index)
               #endif /* _OPENMP */
               for (__pyx_t_2 = 0; __pyx_t_2 < __pyx_t_3; __pyx_t_2++){
                   {
                       __pyx_v_i = (int)(0 + 1 * __pyx_t_2);
                       /* Initialize private variables to invalid values */
                       __pyx_v_axis_index = ((int)0xbad0bad0);
+                      __pyx_v_minus2_index = ((int)0xbad0bad0);
                       __pyx_v_minus_index = ((int)0xbad0bad0);
+                      __pyx_v_plus2_index = ((int)0xbad0bad0);
                       __pyx_v_plus_index = ((int)0xbad0bad0);
 
                       /* "CHAPSim_post/_libs/gradient.pyx":33
@@ -1996,7 +2000,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_varx(doubl
  * 
  *         minus_index = i - axis_stride             # <<<<<<<<<<<<<<
  *         plus_index = i + axis_stride
- * 
+ *         minus2_index = i - 2*axis_stride
  */
                       __pyx_v_minus_index = (__pyx_v_i - __pyx_v_axis_stride);
 
@@ -2004,70 +2008,88 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_varx(doubl
  * 
  *         minus_index = i - axis_stride
  *         plus_index = i + axis_stride             # <<<<<<<<<<<<<<
- * 
- *         if axis_index == 0:
+ *         minus2_index = i - 2*axis_stride
+ *         plus2_index = i + 2*axis_stride
  */
                       __pyx_v_plus_index = (__pyx_v_i + __pyx_v_axis_stride);
 
+                      /* "CHAPSim_post/_libs/gradient.pyx":37
+ *         minus_index = i - axis_stride
+ *         plus_index = i + axis_stride
+ *         minus2_index = i - 2*axis_stride             # <<<<<<<<<<<<<<
+ *         plus2_index = i + 2*axis_stride
+ * 
+ */
+                      __pyx_v_minus2_index = (__pyx_v_i - (2 * __pyx_v_axis_stride));
+
                       /* "CHAPSim_post/_libs/gradient.pyx":38
  *         plus_index = i + axis_stride
+ *         minus2_index = i - 2*axis_stride
+ *         plus2_index = i + 2*axis_stride             # <<<<<<<<<<<<<<
+ * 
+ *         if axis_index == 0:
+ */
+                      __pyx_v_plus2_index = (__pyx_v_i + (2 * __pyx_v_axis_stride));
+
+                      /* "CHAPSim_post/_libs/gradient.pyx":40
+ *         plus2_index = i + 2*axis_stride
  * 
  *         if axis_index == 0:             # <<<<<<<<<<<<<<
- *             gradient_array[i] = b[axis_index]*input_array[i] + \
- *                                 c[axis_index]*input_array[plus_index]
+ *             gradient_array[i] = a[axis_index]*input_array[i] + \
+ *                                 b[axis_index]*input_array[plus_index] +\
  */
                       __pyx_t_4 = ((__pyx_v_axis_index == 0) != 0);
                       if (__pyx_t_4) {
 
-                        /* "CHAPSim_post/_libs/gradient.pyx":39
+                        /* "CHAPSim_post/_libs/gradient.pyx":41
  * 
  *         if axis_index == 0:
- *             gradient_array[i] = b[axis_index]*input_array[i] + \             # <<<<<<<<<<<<<<
- *                                 c[axis_index]*input_array[plus_index]
- *         elif axis_index == sizes[axis] -1:
+ *             gradient_array[i] = a[axis_index]*input_array[i] + \             # <<<<<<<<<<<<<<
+ *                                 b[axis_index]*input_array[plus_index] +\
+ *                                 c[axis_index]*input_array[plus2_index]
  */
-                        (__pyx_v_gradient_array[__pyx_v_i]) = (((__pyx_v_b[__pyx_v_axis_index]) * (__pyx_v_input_array[__pyx_v_i])) + ((__pyx_v_c[__pyx_v_axis_index]) * (__pyx_v_input_array[__pyx_v_plus_index])));
+                        (__pyx_v_gradient_array[__pyx_v_i]) = ((((__pyx_v_a[__pyx_v_axis_index]) * (__pyx_v_input_array[__pyx_v_i])) + ((__pyx_v_b[__pyx_v_axis_index]) * (__pyx_v_input_array[__pyx_v_plus_index]))) + ((__pyx_v_c[__pyx_v_axis_index]) * (__pyx_v_input_array[__pyx_v_plus2_index])));
 
-                        /* "CHAPSim_post/_libs/gradient.pyx":38
- *         plus_index = i + axis_stride
+                        /* "CHAPSim_post/_libs/gradient.pyx":40
+ *         plus2_index = i + 2*axis_stride
  * 
  *         if axis_index == 0:             # <<<<<<<<<<<<<<
- *             gradient_array[i] = b[axis_index]*input_array[i] + \
- *                                 c[axis_index]*input_array[plus_index]
+ *             gradient_array[i] = a[axis_index]*input_array[i] + \
+ *                                 b[axis_index]*input_array[plus_index] +\
  */
                         goto __pyx_L7;
                       }
 
-                      /* "CHAPSim_post/_libs/gradient.pyx":41
- *             gradient_array[i] = b[axis_index]*input_array[i] + \
- *                                 c[axis_index]*input_array[plus_index]
+                      /* "CHAPSim_post/_libs/gradient.pyx":44
+ *                                 b[axis_index]*input_array[plus_index] +\
+ *                                 c[axis_index]*input_array[plus2_index]
  *         elif axis_index == sizes[axis] -1:             # <<<<<<<<<<<<<<
- *             gradient_array[i] = a[axis_index]*input_array[minus_index] +\
- *                                 b[axis_index]*input_array[i]
+ *             gradient_array[i] = a[axis_index]*input_array[minus2_index] +\
+ *                                 b[axis_index]*input_array[minus_index] +\
  */
                       __pyx_t_4 = ((__pyx_v_axis_index == ((__pyx_v_sizes[__pyx_v_axis]) - 1)) != 0);
                       if (__pyx_t_4) {
 
-                        /* "CHAPSim_post/_libs/gradient.pyx":42
- *                                 c[axis_index]*input_array[plus_index]
+                        /* "CHAPSim_post/_libs/gradient.pyx":45
+ *                                 c[axis_index]*input_array[plus2_index]
  *         elif axis_index == sizes[axis] -1:
- *             gradient_array[i] = a[axis_index]*input_array[minus_index] +\             # <<<<<<<<<<<<<<
- *                                 b[axis_index]*input_array[i]
- *         else:
+ *             gradient_array[i] = a[axis_index]*input_array[minus2_index] +\             # <<<<<<<<<<<<<<
+ *                                 b[axis_index]*input_array[minus_index] +\
+ *                                 c[axis_index]*input_array[i]
  */
-                        (__pyx_v_gradient_array[__pyx_v_i]) = (((__pyx_v_a[__pyx_v_axis_index]) * (__pyx_v_input_array[__pyx_v_minus_index])) + ((__pyx_v_b[__pyx_v_axis_index]) * (__pyx_v_input_array[__pyx_v_i])));
+                        (__pyx_v_gradient_array[__pyx_v_i]) = ((((__pyx_v_a[__pyx_v_axis_index]) * (__pyx_v_input_array[__pyx_v_minus2_index])) + ((__pyx_v_b[__pyx_v_axis_index]) * (__pyx_v_input_array[__pyx_v_minus_index]))) + ((__pyx_v_c[__pyx_v_axis_index]) * (__pyx_v_input_array[__pyx_v_i])));
 
-                        /* "CHAPSim_post/_libs/gradient.pyx":41
- *             gradient_array[i] = b[axis_index]*input_array[i] + \
- *                                 c[axis_index]*input_array[plus_index]
+                        /* "CHAPSim_post/_libs/gradient.pyx":44
+ *                                 b[axis_index]*input_array[plus_index] +\
+ *                                 c[axis_index]*input_array[plus2_index]
  *         elif axis_index == sizes[axis] -1:             # <<<<<<<<<<<<<<
- *             gradient_array[i] = a[axis_index]*input_array[minus_index] +\
- *                                 b[axis_index]*input_array[i]
+ *             gradient_array[i] = a[axis_index]*input_array[minus2_index] +\
+ *                                 b[axis_index]*input_array[minus_index] +\
  */
                         goto __pyx_L7;
                       }
 
-                      /* "CHAPSim_post/_libs/gradient.pyx":46
+                      /* "CHAPSim_post/_libs/gradient.pyx":50
  *         else:
  *             gradient_array[i] = a[axis_index]*input_array[minus_index] + \
  *                                 b[axis_index]*input_array[i] + \             # <<<<<<<<<<<<<<
@@ -2076,8 +2098,8 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_varx(doubl
  */
                       /*else*/ {
 
-                        /* "CHAPSim_post/_libs/gradient.pyx":45
- *                                 b[axis_index]*input_array[i]
+                        /* "CHAPSim_post/_libs/gradient.pyx":49
+ *                                 c[axis_index]*input_array[i]
  *         else:
  *             gradient_array[i] = a[axis_index]*input_array[minus_index] + \             # <<<<<<<<<<<<<<
  *                                 b[axis_index]*input_array[i] + \
@@ -2098,7 +2120,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_varx(doubl
       #define unlikely(x) __builtin_expect(!!(x), 0)
   #endif
 
-  /* "CHAPSim_post/_libs/gradient.pyx":49
+  /* "CHAPSim_post/_libs/gradient.pyx":53
  *                                 c[axis_index]*input_array[plus_index]
  * 
  *     free(a)             # <<<<<<<<<<<<<<
@@ -2107,7 +2129,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_varx(doubl
  */
   free(__pyx_v_a);
 
-  /* "CHAPSim_post/_libs/gradient.pyx":50
+  /* "CHAPSim_post/_libs/gradient.pyx":54
  * 
  *     free(a)
  *     free(b)             # <<<<<<<<<<<<<<
@@ -2116,7 +2138,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_varx(doubl
  */
   free(__pyx_v_b);
 
-  /* "CHAPSim_post/_libs/gradient.pyx":51
+  /* "CHAPSim_post/_libs/gradient.pyx":55
  *     free(a)
  *     free(b)
  *     free(c)             # <<<<<<<<<<<<<<
@@ -2136,7 +2158,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_varx(doubl
   /* function exit code */
 }
 
-/* "CHAPSim_post/_libs/gradient.pyx":53
+/* "CHAPSim_post/_libs/gradient.pyx":57
  *     free(c)
  * 
  * cdef void _perform_gradient_constx(double* input_array,             # <<<<<<<<<<<<<<
@@ -2147,7 +2169,9 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_varx(doubl
 static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_constx(double *__pyx_v_input_array, double __pyx_v_dx, int __pyx_v_axis, int *__pyx_v_sizes, int *__pyx_v_strides, int __pyx_v_dim, double *__pyx_v_gradient_array) {
   CYTHON_UNUSED int __pyx_v_total_size;
   int __pyx_v_minus_index;
+  int __pyx_v_minus2_index;
   int __pyx_v_plus_index;
+  int __pyx_v_plus2_index;
   int __pyx_v_axis_index;
   int __pyx_v_axis_stride;
   double __pyx_v_idx;
@@ -2160,17 +2184,17 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_constx(dou
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":61
+  /* "CHAPSim_post/_libs/gradient.pyx":65
  *                                     double* gradient_array) nogil:
  * 
  *     cdef int total_size = _get_total_size(dim, sizes)             # <<<<<<<<<<<<<<
- *     cdef int minus_index, plus_index
+ *     cdef int minus_index, minus2_index, plus_index, plus2_index
  *     cdef int a, b, c, axis_index
  */
   __pyx_v_total_size = __pyx_f_12CHAPSim_post_5_libs_8gradient__get_total_size(__pyx_v_dim, __pyx_v_sizes);
 
-  /* "CHAPSim_post/_libs/gradient.pyx":64
- *     cdef int minus_index, plus_index
+  /* "CHAPSim_post/_libs/gradient.pyx":68
+ *     cdef int minus_index, minus2_index, plus_index, plus2_index
  *     cdef int a, b, c, axis_index
  *     cdef int axis_stride = _get_axis_stride(dim,axis,sizes)             # <<<<<<<<<<<<<<
  * 
@@ -2178,7 +2202,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_constx(dou
  */
   __pyx_v_axis_stride = __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_stride(__pyx_v_dim, __pyx_v_axis, __pyx_v_sizes);
 
-  /* "CHAPSim_post/_libs/gradient.pyx":66
+  /* "CHAPSim_post/_libs/gradient.pyx":70
  *     cdef int axis_stride = _get_axis_stride(dim,axis,sizes)
  * 
  *     cdef double idx = 1.0/dx             # <<<<<<<<<<<<<<
@@ -2193,11 +2217,11 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_constx(dou
     #ifdef WITH_THREAD
     __Pyx_PyGILState_Release(__pyx_gilstate_save);
     #endif
-    __PYX_ERR(0, 66, __pyx_L1_error)
+    __PYX_ERR(0, 70, __pyx_L1_error)
   }
   __pyx_v_idx = (1.0 / __pyx_v_dx);
 
-  /* "CHAPSim_post/_libs/gradient.pyx":69
+  /* "CHAPSim_post/_libs/gradient.pyx":73
  *     cdef int i
  * 
  *     for i in prange(total_size):             # <<<<<<<<<<<<<<
@@ -2221,17 +2245,19 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_constx(dou
           #endif /* _OPENMP */
           {
               #ifdef _OPENMP
-              #pragma omp for lastprivate(__pyx_v_axis_index) firstprivate(__pyx_v_i) lastprivate(__pyx_v_i) lastprivate(__pyx_v_minus_index) lastprivate(__pyx_v_plus_index)
+              #pragma omp for lastprivate(__pyx_v_axis_index) firstprivate(__pyx_v_i) lastprivate(__pyx_v_i) lastprivate(__pyx_v_minus2_index) lastprivate(__pyx_v_minus_index) lastprivate(__pyx_v_plus2_index) lastprivate(__pyx_v_plus_index)
               #endif /* _OPENMP */
               for (__pyx_t_2 = 0; __pyx_t_2 < __pyx_t_3; __pyx_t_2++){
                   {
                       __pyx_v_i = (int)(0 + 1 * __pyx_t_2);
                       /* Initialize private variables to invalid values */
                       __pyx_v_axis_index = ((int)0xbad0bad0);
+                      __pyx_v_minus2_index = ((int)0xbad0bad0);
                       __pyx_v_minus_index = ((int)0xbad0bad0);
+                      __pyx_v_plus2_index = ((int)0xbad0bad0);
                       __pyx_v_plus_index = ((int)0xbad0bad0);
 
-                      /* "CHAPSim_post/_libs/gradient.pyx":70
+                      /* "CHAPSim_post/_libs/gradient.pyx":74
  * 
  *     for i in prange(total_size):
  *         axis_index = _get_axis_index(i,strides,axis)             # <<<<<<<<<<<<<<
@@ -2240,84 +2266,102 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_constx(dou
  */
                       __pyx_v_axis_index = __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_index(__pyx_v_i, __pyx_v_strides, __pyx_v_axis);
 
-                      /* "CHAPSim_post/_libs/gradient.pyx":72
+                      /* "CHAPSim_post/_libs/gradient.pyx":76
  *         axis_index = _get_axis_index(i,strides,axis)
  * 
  *         minus_index = i - axis_stride             # <<<<<<<<<<<<<<
  *         plus_index = i + axis_stride
- * 
+ *         minus2_index = i - 2*axis_stride
  */
                       __pyx_v_minus_index = (__pyx_v_i - __pyx_v_axis_stride);
 
-                      /* "CHAPSim_post/_libs/gradient.pyx":73
+                      /* "CHAPSim_post/_libs/gradient.pyx":77
  * 
  *         minus_index = i - axis_stride
  *         plus_index = i + axis_stride             # <<<<<<<<<<<<<<
- * 
- *         if axis_index == 0:
+ *         minus2_index = i - 2*axis_stride
+ *         plus2_index = i + 2*axis_stride
  */
                       __pyx_v_plus_index = (__pyx_v_i + __pyx_v_axis_stride);
 
-                      /* "CHAPSim_post/_libs/gradient.pyx":75
+                      /* "CHAPSim_post/_libs/gradient.pyx":78
+ *         minus_index = i - axis_stride
  *         plus_index = i + axis_stride
+ *         minus2_index = i - 2*axis_stride             # <<<<<<<<<<<<<<
+ *         plus2_index = i + 2*axis_stride
+ * 
+ */
+                      __pyx_v_minus2_index = (__pyx_v_i - (2 * __pyx_v_axis_stride));
+
+                      /* "CHAPSim_post/_libs/gradient.pyx":79
+ *         plus_index = i + axis_stride
+ *         minus2_index = i - 2*axis_stride
+ *         plus2_index = i + 2*axis_stride             # <<<<<<<<<<<<<<
+ * 
+ *         if axis_index == 0:
+ */
+                      __pyx_v_plus2_index = (__pyx_v_i + (2 * __pyx_v_axis_stride));
+
+                      /* "CHAPSim_post/_libs/gradient.pyx":81
+ *         plus2_index = i + 2*axis_stride
  * 
  *         if axis_index == 0:             # <<<<<<<<<<<<<<
- *             gradient_array[i] = idx*(input_array[plus_index] - input_array[i])
- *         elif axis_index == sizes[axis] - 1:
+ *             gradient_array[i] = idx*(-1.5*input_array[i] +\
+ *                                       2 * input_array[plus_index] \
  */
                       __pyx_t_4 = ((__pyx_v_axis_index == 0) != 0);
                       if (__pyx_t_4) {
 
-                        /* "CHAPSim_post/_libs/gradient.pyx":76
+                        /* "CHAPSim_post/_libs/gradient.pyx":82
  * 
  *         if axis_index == 0:
- *             gradient_array[i] = idx*(input_array[plus_index] - input_array[i])             # <<<<<<<<<<<<<<
- *         elif axis_index == sizes[axis] - 1:
- *             gradient_array[i] = idx*(input_array[i] \
+ *             gradient_array[i] = idx*(-1.5*input_array[i] +\             # <<<<<<<<<<<<<<
+ *                                       2 * input_array[plus_index] \
+ *                                       -0.5 * input_array[plus2_index])
  */
-                        (__pyx_v_gradient_array[__pyx_v_i]) = (__pyx_v_idx * ((__pyx_v_input_array[__pyx_v_plus_index]) - (__pyx_v_input_array[__pyx_v_i])));
+                        (__pyx_v_gradient_array[__pyx_v_i]) = (__pyx_v_idx * (((-1.5 * (__pyx_v_input_array[__pyx_v_i])) + (2.0 * (__pyx_v_input_array[__pyx_v_plus_index]))) - (0.5 * (__pyx_v_input_array[__pyx_v_plus2_index]))));
 
-                        /* "CHAPSim_post/_libs/gradient.pyx":75
- *         plus_index = i + axis_stride
+                        /* "CHAPSim_post/_libs/gradient.pyx":81
+ *         plus2_index = i + 2*axis_stride
  * 
  *         if axis_index == 0:             # <<<<<<<<<<<<<<
- *             gradient_array[i] = idx*(input_array[plus_index] - input_array[i])
- *         elif axis_index == sizes[axis] - 1:
+ *             gradient_array[i] = idx*(-1.5*input_array[i] +\
+ *                                       2 * input_array[plus_index] \
  */
                         goto __pyx_L7;
                       }
 
-                      /* "CHAPSim_post/_libs/gradient.pyx":77
- *         if axis_index == 0:
- *             gradient_array[i] = idx*(input_array[plus_index] - input_array[i])
+                      /* "CHAPSim_post/_libs/gradient.pyx":86
+ *                                       -0.5 * input_array[plus2_index])
+ * 
  *         elif axis_index == sizes[axis] - 1:             # <<<<<<<<<<<<<<
- *             gradient_array[i] = idx*(input_array[i] \
- *                                     - input_array[minus_index])
+ *             gradient_array[i] = idx*(0.5*input_array[minus2_index] \
+ *                                       -2 * input_array[minus_index] \
  */
                       __pyx_t_4 = ((__pyx_v_axis_index == ((__pyx_v_sizes[__pyx_v_axis]) - 1)) != 0);
                       if (__pyx_t_4) {
 
-                        /* "CHAPSim_post/_libs/gradient.pyx":78
- *             gradient_array[i] = idx*(input_array[plus_index] - input_array[i])
+                        /* "CHAPSim_post/_libs/gradient.pyx":87
+ * 
  *         elif axis_index == sizes[axis] - 1:
- *             gradient_array[i] = idx*(input_array[i] \             # <<<<<<<<<<<<<<
- *                                     - input_array[minus_index])
- *         else:
+ *             gradient_array[i] = idx*(0.5*input_array[minus2_index] \             # <<<<<<<<<<<<<<
+ *                                       -2 * input_array[minus_index] \
+ *                                       +1.5 * input_array[i])
  */
-                        (__pyx_v_gradient_array[__pyx_v_i]) = (__pyx_v_idx * ((__pyx_v_input_array[__pyx_v_i]) - (__pyx_v_input_array[__pyx_v_minus_index])));
+                        (__pyx_v_gradient_array[__pyx_v_i]) = (__pyx_v_idx * (((0.5 * (__pyx_v_input_array[__pyx_v_minus2_index])) - (2.0 * (__pyx_v_input_array[__pyx_v_minus_index]))) + (1.5 * (__pyx_v_input_array[__pyx_v_i]))));
 
-                        /* "CHAPSim_post/_libs/gradient.pyx":77
- *         if axis_index == 0:
- *             gradient_array[i] = idx*(input_array[plus_index] - input_array[i])
+                        /* "CHAPSim_post/_libs/gradient.pyx":86
+ *                                       -0.5 * input_array[plus2_index])
+ * 
  *         elif axis_index == sizes[axis] - 1:             # <<<<<<<<<<<<<<
- *             gradient_array[i] = idx*(input_array[i] \
- *                                     - input_array[minus_index])
+ *             gradient_array[i] = idx*(0.5*input_array[minus2_index] \
+ *                                       -2 * input_array[minus_index] \
  */
                         goto __pyx_L7;
                       }
 
-                      /* "CHAPSim_post/_libs/gradient.pyx":81
- *                                     - input_array[minus_index])
+                      /* "CHAPSim_post/_libs/gradient.pyx":91
+ *                                       +1.5 * input_array[i])
  *         else:
  *             gradient_array[i] = 0.5*idx*(input_array[plus_index] \             # <<<<<<<<<<<<<<
  *                                     - input_array[minus_index])
@@ -2325,7 +2369,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_constx(dou
  */
                       /*else*/ {
 
-                        /* "CHAPSim_post/_libs/gradient.pyx":82
+                        /* "CHAPSim_post/_libs/gradient.pyx":92
  *         else:
  *             gradient_array[i] = 0.5*idx*(input_array[plus_index] \
  *                                     - input_array[minus_index])             # <<<<<<<<<<<<<<
@@ -2347,7 +2391,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_constx(dou
       #define unlikely(x) __builtin_expect(!!(x), 0)
   #endif
 
-  /* "CHAPSim_post/_libs/gradient.pyx":53
+  /* "CHAPSim_post/_libs/gradient.pyx":57
  *     free(c)
  * 
  * cdef void _perform_gradient_constx(double* input_array,             # <<<<<<<<<<<<<<
@@ -2362,7 +2406,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_constx(dou
   __pyx_L0:;
 }
 
-/* "CHAPSim_post/_libs/gradient.pyx":90
+/* "CHAPSim_post/_libs/gradient.pyx":100
  *     PLUS = 3
  * 
  * cdef void _get_grad_coeffs_varx(int axis,             # <<<<<<<<<<<<<<
@@ -2384,7 +2428,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__get_grad_coeffs_varx(int __
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":101
+  /* "CHAPSim_post/_libs/gradient.pyx":111
  *     cdef int i
  * 
  *     for i in range(sizes[axis]):             # <<<<<<<<<<<<<<
@@ -2396,185 +2440,42 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__get_grad_coeffs_varx(int __
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "CHAPSim_post/_libs/gradient.pyx":103
+    /* "CHAPSim_post/_libs/gradient.pyx":113
  *     for i in range(sizes[axis]):
  * 
  *         if i == 0:             # <<<<<<<<<<<<<<
- *             dx2 = x_array[i+1] - x_array[i]
- * 
+ *             dx1 = x_array[i+1] - x_array[i]
+ *             dx2 = x_array[i+2] - x_array[i+1]
  */
     __pyx_t_4 = ((__pyx_v_i == 0) != 0);
     if (__pyx_t_4) {
 
-      /* "CHAPSim_post/_libs/gradient.pyx":104
+      /* "CHAPSim_post/_libs/gradient.pyx":114
  * 
  *         if i == 0:
- *             dx2 = x_array[i+1] - x_array[i]             # <<<<<<<<<<<<<<
- * 
- *             a[i] = 0
- */
-      __pyx_v_dx2 = ((__pyx_v_x_array[(__pyx_v_i + 1)]) - (__pyx_v_x_array[__pyx_v_i]));
-
-      /* "CHAPSim_post/_libs/gradient.pyx":106
- *             dx2 = x_array[i+1] - x_array[i]
- * 
- *             a[i] = 0             # <<<<<<<<<<<<<<
- *             b[i] = -1/dx2
- *             c[i]  = 1/dx2
- */
-      (__pyx_v_a[__pyx_v_i]) = 0.0;
-
-      /* "CHAPSim_post/_libs/gradient.pyx":107
- * 
- *             a[i] = 0
- *             b[i] = -1/dx2             # <<<<<<<<<<<<<<
- *             c[i]  = 1/dx2
- *         elif i == sizes[axis] -1:
- */
-      if (unlikely(__pyx_v_dx2 == 0)) {
-        #ifdef WITH_THREAD
-        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-        #endif
-        PyErr_SetString(PyExc_ZeroDivisionError, "float division");
-        #ifdef WITH_THREAD
-        __Pyx_PyGILState_Release(__pyx_gilstate_save);
-        #endif
-        __PYX_ERR(0, 107, __pyx_L1_error)
-      }
-      (__pyx_v_b[__pyx_v_i]) = (-1.0 / __pyx_v_dx2);
-
-      /* "CHAPSim_post/_libs/gradient.pyx":108
- *             a[i] = 0
- *             b[i] = -1/dx2
- *             c[i]  = 1/dx2             # <<<<<<<<<<<<<<
- *         elif i == sizes[axis] -1:
- *             dx1 = x_array[i] - x_array[i-1]
- */
-      if (unlikely(__pyx_v_dx2 == 0)) {
-        #ifdef WITH_THREAD
-        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-        #endif
-        PyErr_SetString(PyExc_ZeroDivisionError, "float division");
-        #ifdef WITH_THREAD
-        __Pyx_PyGILState_Release(__pyx_gilstate_save);
-        #endif
-        __PYX_ERR(0, 108, __pyx_L1_error)
-      }
-      (__pyx_v_c[__pyx_v_i]) = (1.0 / __pyx_v_dx2);
-
-      /* "CHAPSim_post/_libs/gradient.pyx":103
- *     for i in range(sizes[axis]):
- * 
- *         if i == 0:             # <<<<<<<<<<<<<<
- *             dx2 = x_array[i+1] - x_array[i]
+ *             dx1 = x_array[i+1] - x_array[i]             # <<<<<<<<<<<<<<
+ *             dx2 = x_array[i+2] - x_array[i+1]
  * 
  */
-      goto __pyx_L5;
-    }
+      __pyx_v_dx1 = ((__pyx_v_x_array[(__pyx_v_i + 1)]) - (__pyx_v_x_array[__pyx_v_i]));
 
-    /* "CHAPSim_post/_libs/gradient.pyx":109
- *             b[i] = -1/dx2
- *             c[i]  = 1/dx2
- *         elif i == sizes[axis] -1:             # <<<<<<<<<<<<<<
- *             dx1 = x_array[i] - x_array[i-1]
+      /* "CHAPSim_post/_libs/gradient.pyx":115
+ *         if i == 0:
+ *             dx1 = x_array[i+1] - x_array[i]
+ *             dx2 = x_array[i+2] - x_array[i+1]             # <<<<<<<<<<<<<<
+ * 
  * 
  */
-    __pyx_t_4 = ((__pyx_v_i == ((__pyx_v_sizes[__pyx_v_axis]) - 1)) != 0);
-    if (__pyx_t_4) {
+      __pyx_v_dx2 = ((__pyx_v_x_array[(__pyx_v_i + 2)]) - (__pyx_v_x_array[(__pyx_v_i + 1)]));
 
-      /* "CHAPSim_post/_libs/gradient.pyx":110
- *             c[i]  = 1/dx2
- *         elif i == sizes[axis] -1:
- *             dx1 = x_array[i] - x_array[i-1]             # <<<<<<<<<<<<<<
+      /* "CHAPSim_post/_libs/gradient.pyx":118
  * 
- *             a[i] = -1/dx1
- */
-      __pyx_v_dx1 = ((__pyx_v_x_array[__pyx_v_i]) - (__pyx_v_x_array[(__pyx_v_i - 1)]));
-
-      /* "CHAPSim_post/_libs/gradient.pyx":112
- *             dx1 = x_array[i] - x_array[i-1]
  * 
- *             a[i] = -1/dx1             # <<<<<<<<<<<<<<
- *             b[i] = 1/dx1
- *             c[i] = 0.
+ *             a[i] = -(2*dx1 + dx2)/(dx1*(dx1 + dx2))             # <<<<<<<<<<<<<<
+ *             b[i] = (dx1 + dx2)/(dx1*dx2)
+ *             c[i]  = -dx1/(dx2*(dx1 + dx2))
  */
-      if (unlikely(__pyx_v_dx1 == 0)) {
-        #ifdef WITH_THREAD
-        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-        #endif
-        PyErr_SetString(PyExc_ZeroDivisionError, "float division");
-        #ifdef WITH_THREAD
-        __Pyx_PyGILState_Release(__pyx_gilstate_save);
-        #endif
-        __PYX_ERR(0, 112, __pyx_L1_error)
-      }
-      (__pyx_v_a[__pyx_v_i]) = (-1.0 / __pyx_v_dx1);
-
-      /* "CHAPSim_post/_libs/gradient.pyx":113
- * 
- *             a[i] = -1/dx1
- *             b[i] = 1/dx1             # <<<<<<<<<<<<<<
- *             c[i] = 0.
- *         else:
- */
-      if (unlikely(__pyx_v_dx1 == 0)) {
-        #ifdef WITH_THREAD
-        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
-        #endif
-        PyErr_SetString(PyExc_ZeroDivisionError, "float division");
-        #ifdef WITH_THREAD
-        __Pyx_PyGILState_Release(__pyx_gilstate_save);
-        #endif
-        __PYX_ERR(0, 113, __pyx_L1_error)
-      }
-      (__pyx_v_b[__pyx_v_i]) = (1.0 / __pyx_v_dx1);
-
-      /* "CHAPSim_post/_libs/gradient.pyx":114
- *             a[i] = -1/dx1
- *             b[i] = 1/dx1
- *             c[i] = 0.             # <<<<<<<<<<<<<<
- *         else:
- *             dx1 = x_array[i] - x_array[i-1]
- */
-      (__pyx_v_c[__pyx_v_i]) = 0.;
-
-      /* "CHAPSim_post/_libs/gradient.pyx":109
- *             b[i] = -1/dx2
- *             c[i]  = 1/dx2
- *         elif i == sizes[axis] -1:             # <<<<<<<<<<<<<<
- *             dx1 = x_array[i] - x_array[i-1]
- * 
- */
-      goto __pyx_L5;
-    }
-
-    /* "CHAPSim_post/_libs/gradient.pyx":116
- *             c[i] = 0.
- *         else:
- *             dx1 = x_array[i] - x_array[i-1]             # <<<<<<<<<<<<<<
- *             dx2 = x_array[i+1] - x_array[i]
- * 
- */
-    /*else*/ {
-      __pyx_v_dx1 = ((__pyx_v_x_array[__pyx_v_i]) - (__pyx_v_x_array[(__pyx_v_i - 1)]));
-
-      /* "CHAPSim_post/_libs/gradient.pyx":117
- *         else:
- *             dx1 = x_array[i] - x_array[i-1]
- *             dx2 = x_array[i+1] - x_array[i]             # <<<<<<<<<<<<<<
- * 
- *             a[i] = -(dx2)/(dx1 * (dx1 + dx2))
- */
-      __pyx_v_dx2 = ((__pyx_v_x_array[(__pyx_v_i + 1)]) - (__pyx_v_x_array[__pyx_v_i]));
-
-      /* "CHAPSim_post/_libs/gradient.pyx":119
- *             dx2 = x_array[i+1] - x_array[i]
- * 
- *             a[i] = -(dx2)/(dx1 * (dx1 + dx2))             # <<<<<<<<<<<<<<
- *             b[i] = (dx2 - dx1) / (dx1 * dx2)
- *             c[i] = dx1 / (dx2 * (dx1 + dx2))
- */
-      __pyx_t_5 = (-__pyx_v_dx2);
+      __pyx_t_5 = (-((2.0 * __pyx_v_dx1) + __pyx_v_dx2));
       __pyx_t_6 = (__pyx_v_dx1 * (__pyx_v_dx1 + __pyx_v_dx2));
       if (unlikely(__pyx_t_6 == 0)) {
         #ifdef WITH_THREAD
@@ -2584,18 +2485,18 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__get_grad_coeffs_varx(int __
         #ifdef WITH_THREAD
         __Pyx_PyGILState_Release(__pyx_gilstate_save);
         #endif
-        __PYX_ERR(0, 119, __pyx_L1_error)
+        __PYX_ERR(0, 118, __pyx_L1_error)
       }
       (__pyx_v_a[__pyx_v_i]) = (__pyx_t_5 / __pyx_t_6);
 
-      /* "CHAPSim_post/_libs/gradient.pyx":120
+      /* "CHAPSim_post/_libs/gradient.pyx":119
  * 
- *             a[i] = -(dx2)/(dx1 * (dx1 + dx2))
- *             b[i] = (dx2 - dx1) / (dx1 * dx2)             # <<<<<<<<<<<<<<
- *             c[i] = dx1 / (dx2 * (dx1 + dx2))
- * 
+ *             a[i] = -(2*dx1 + dx2)/(dx1*(dx1 + dx2))
+ *             b[i] = (dx1 + dx2)/(dx1*dx2)             # <<<<<<<<<<<<<<
+ *             c[i]  = -dx1/(dx2*(dx1 + dx2))
+ *         elif i == sizes[axis] -1:
  */
-      __pyx_t_6 = (__pyx_v_dx2 - __pyx_v_dx1);
+      __pyx_t_6 = (__pyx_v_dx1 + __pyx_v_dx2);
       __pyx_t_5 = (__pyx_v_dx1 * __pyx_v_dx2);
       if (unlikely(__pyx_t_5 == 0)) {
         #ifdef WITH_THREAD
@@ -2605,18 +2506,98 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__get_grad_coeffs_varx(int __
         #ifdef WITH_THREAD
         __Pyx_PyGILState_Release(__pyx_gilstate_save);
         #endif
-        __PYX_ERR(0, 120, __pyx_L1_error)
+        __PYX_ERR(0, 119, __pyx_L1_error)
       }
       (__pyx_v_b[__pyx_v_i]) = (__pyx_t_6 / __pyx_t_5);
 
-      /* "CHAPSim_post/_libs/gradient.pyx":121
- *             a[i] = -(dx2)/(dx1 * (dx1 + dx2))
- *             b[i] = (dx2 - dx1) / (dx1 * dx2)
- *             c[i] = dx1 / (dx2 * (dx1 + dx2))             # <<<<<<<<<<<<<<
+      /* "CHAPSim_post/_libs/gradient.pyx":120
+ *             a[i] = -(2*dx1 + dx2)/(dx1*(dx1 + dx2))
+ *             b[i] = (dx1 + dx2)/(dx1*dx2)
+ *             c[i]  = -dx1/(dx2*(dx1 + dx2))             # <<<<<<<<<<<<<<
+ *         elif i == sizes[axis] -1:
+ *             dx1 = x_array[i-1] - x_array[i-2]
+ */
+      __pyx_t_5 = (-__pyx_v_dx1);
+      __pyx_t_6 = (__pyx_v_dx2 * (__pyx_v_dx1 + __pyx_v_dx2));
+      if (unlikely(__pyx_t_6 == 0)) {
+        #ifdef WITH_THREAD
+        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
+        #endif
+        PyErr_SetString(PyExc_ZeroDivisionError, "float division");
+        #ifdef WITH_THREAD
+        __Pyx_PyGILState_Release(__pyx_gilstate_save);
+        #endif
+        __PYX_ERR(0, 120, __pyx_L1_error)
+      }
+      (__pyx_v_c[__pyx_v_i]) = (__pyx_t_5 / __pyx_t_6);
+
+      /* "CHAPSim_post/_libs/gradient.pyx":113
+ *     for i in range(sizes[axis]):
  * 
+ *         if i == 0:             # <<<<<<<<<<<<<<
+ *             dx1 = x_array[i+1] - x_array[i]
+ *             dx2 = x_array[i+2] - x_array[i+1]
+ */
+      goto __pyx_L5;
+    }
+
+    /* "CHAPSim_post/_libs/gradient.pyx":121
+ *             b[i] = (dx1 + dx2)/(dx1*dx2)
+ *             c[i]  = -dx1/(dx2*(dx1 + dx2))
+ *         elif i == sizes[axis] -1:             # <<<<<<<<<<<<<<
+ *             dx1 = x_array[i-1] - x_array[i-2]
+ *             dx2 = x_array[i] - x_array[i-1]
+ */
+    __pyx_t_4 = ((__pyx_v_i == ((__pyx_v_sizes[__pyx_v_axis]) - 1)) != 0);
+    if (__pyx_t_4) {
+
+      /* "CHAPSim_post/_libs/gradient.pyx":122
+ *             c[i]  = -dx1/(dx2*(dx1 + dx2))
+ *         elif i == sizes[axis] -1:
+ *             dx1 = x_array[i-1] - x_array[i-2]             # <<<<<<<<<<<<<<
+ *             dx2 = x_array[i] - x_array[i-1]
  * 
  */
-      __pyx_t_5 = (__pyx_v_dx2 * (__pyx_v_dx1 + __pyx_v_dx2));
+      __pyx_v_dx1 = ((__pyx_v_x_array[(__pyx_v_i - 1)]) - (__pyx_v_x_array[(__pyx_v_i - 2)]));
+
+      /* "CHAPSim_post/_libs/gradient.pyx":123
+ *         elif i == sizes[axis] -1:
+ *             dx1 = x_array[i-1] - x_array[i-2]
+ *             dx2 = x_array[i] - x_array[i-1]             # <<<<<<<<<<<<<<
+ * 
+ *             a[i] = dx2/( dx1*(dx1 + dx2) )
+ */
+      __pyx_v_dx2 = ((__pyx_v_x_array[__pyx_v_i]) - (__pyx_v_x_array[(__pyx_v_i - 1)]));
+
+      /* "CHAPSim_post/_libs/gradient.pyx":125
+ *             dx2 = x_array[i] - x_array[i-1]
+ * 
+ *             a[i] = dx2/( dx1*(dx1 + dx2) )             # <<<<<<<<<<<<<<
+ *             b[i] = -( dx1 + dx2 )/(dx1*dx2)
+ *             c[i] = ( 2*dx2 + dx1 )/( dx2*( dx1 + dx2 ) )
+ */
+      __pyx_t_6 = (__pyx_v_dx1 * (__pyx_v_dx1 + __pyx_v_dx2));
+      if (unlikely(__pyx_t_6 == 0)) {
+        #ifdef WITH_THREAD
+        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
+        #endif
+        PyErr_SetString(PyExc_ZeroDivisionError, "float division");
+        #ifdef WITH_THREAD
+        __Pyx_PyGILState_Release(__pyx_gilstate_save);
+        #endif
+        __PYX_ERR(0, 125, __pyx_L1_error)
+      }
+      (__pyx_v_a[__pyx_v_i]) = (__pyx_v_dx2 / __pyx_t_6);
+
+      /* "CHAPSim_post/_libs/gradient.pyx":126
+ * 
+ *             a[i] = dx2/( dx1*(dx1 + dx2) )
+ *             b[i] = -( dx1 + dx2 )/(dx1*dx2)             # <<<<<<<<<<<<<<
+ *             c[i] = ( 2*dx2 + dx1 )/( dx2*( dx1 + dx2 ) )
+ *         else:
+ */
+      __pyx_t_6 = (-(__pyx_v_dx1 + __pyx_v_dx2));
+      __pyx_t_5 = (__pyx_v_dx1 * __pyx_v_dx2);
       if (unlikely(__pyx_t_5 == 0)) {
         #ifdef WITH_THREAD
         PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
@@ -2625,14 +2606,126 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__get_grad_coeffs_varx(int __
         #ifdef WITH_THREAD
         __Pyx_PyGILState_Release(__pyx_gilstate_save);
         #endif
-        __PYX_ERR(0, 121, __pyx_L1_error)
+        __PYX_ERR(0, 126, __pyx_L1_error)
       }
-      (__pyx_v_c[__pyx_v_i]) = (__pyx_v_dx1 / __pyx_t_5);
+      (__pyx_v_b[__pyx_v_i]) = (__pyx_t_6 / __pyx_t_5);
+
+      /* "CHAPSim_post/_libs/gradient.pyx":127
+ *             a[i] = dx2/( dx1*(dx1 + dx2) )
+ *             b[i] = -( dx1 + dx2 )/(dx1*dx2)
+ *             c[i] = ( 2*dx2 + dx1 )/( dx2*( dx1 + dx2 ) )             # <<<<<<<<<<<<<<
+ *         else:
+ *             dx1 = x_array[i] - x_array[i-1]
+ */
+      __pyx_t_5 = ((2.0 * __pyx_v_dx2) + __pyx_v_dx1);
+      __pyx_t_6 = (__pyx_v_dx2 * (__pyx_v_dx1 + __pyx_v_dx2));
+      if (unlikely(__pyx_t_6 == 0)) {
+        #ifdef WITH_THREAD
+        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
+        #endif
+        PyErr_SetString(PyExc_ZeroDivisionError, "float division");
+        #ifdef WITH_THREAD
+        __Pyx_PyGILState_Release(__pyx_gilstate_save);
+        #endif
+        __PYX_ERR(0, 127, __pyx_L1_error)
+      }
+      (__pyx_v_c[__pyx_v_i]) = (__pyx_t_5 / __pyx_t_6);
+
+      /* "CHAPSim_post/_libs/gradient.pyx":121
+ *             b[i] = (dx1 + dx2)/(dx1*dx2)
+ *             c[i]  = -dx1/(dx2*(dx1 + dx2))
+ *         elif i == sizes[axis] -1:             # <<<<<<<<<<<<<<
+ *             dx1 = x_array[i-1] - x_array[i-2]
+ *             dx2 = x_array[i] - x_array[i-1]
+ */
+      goto __pyx_L5;
+    }
+
+    /* "CHAPSim_post/_libs/gradient.pyx":129
+ *             c[i] = ( 2*dx2 + dx1 )/( dx2*( dx1 + dx2 ) )
+ *         else:
+ *             dx1 = x_array[i] - x_array[i-1]             # <<<<<<<<<<<<<<
+ *             dx2 = x_array[i+1] - x_array[i]
+ * 
+ */
+    /*else*/ {
+      __pyx_v_dx1 = ((__pyx_v_x_array[__pyx_v_i]) - (__pyx_v_x_array[(__pyx_v_i - 1)]));
+
+      /* "CHAPSim_post/_libs/gradient.pyx":130
+ *         else:
+ *             dx1 = x_array[i] - x_array[i-1]
+ *             dx2 = x_array[i+1] - x_array[i]             # <<<<<<<<<<<<<<
+ * 
+ *             a[i] = -(dx2)/(dx1 * (dx1 + dx2))
+ */
+      __pyx_v_dx2 = ((__pyx_v_x_array[(__pyx_v_i + 1)]) - (__pyx_v_x_array[__pyx_v_i]));
+
+      /* "CHAPSim_post/_libs/gradient.pyx":132
+ *             dx2 = x_array[i+1] - x_array[i]
+ * 
+ *             a[i] = -(dx2)/(dx1 * (dx1 + dx2))             # <<<<<<<<<<<<<<
+ *             b[i] = (dx2 - dx1) / (dx1 * dx2)
+ *             c[i] = dx1 / (dx2 * (dx1 + dx2))
+ */
+      __pyx_t_6 = (-__pyx_v_dx2);
+      __pyx_t_5 = (__pyx_v_dx1 * (__pyx_v_dx1 + __pyx_v_dx2));
+      if (unlikely(__pyx_t_5 == 0)) {
+        #ifdef WITH_THREAD
+        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
+        #endif
+        PyErr_SetString(PyExc_ZeroDivisionError, "float division");
+        #ifdef WITH_THREAD
+        __Pyx_PyGILState_Release(__pyx_gilstate_save);
+        #endif
+        __PYX_ERR(0, 132, __pyx_L1_error)
+      }
+      (__pyx_v_a[__pyx_v_i]) = (__pyx_t_6 / __pyx_t_5);
+
+      /* "CHAPSim_post/_libs/gradient.pyx":133
+ * 
+ *             a[i] = -(dx2)/(dx1 * (dx1 + dx2))
+ *             b[i] = (dx2 - dx1) / (dx1 * dx2)             # <<<<<<<<<<<<<<
+ *             c[i] = dx1 / (dx2 * (dx1 + dx2))
+ * 
+ */
+      __pyx_t_5 = (__pyx_v_dx2 - __pyx_v_dx1);
+      __pyx_t_6 = (__pyx_v_dx1 * __pyx_v_dx2);
+      if (unlikely(__pyx_t_6 == 0)) {
+        #ifdef WITH_THREAD
+        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
+        #endif
+        PyErr_SetString(PyExc_ZeroDivisionError, "float division");
+        #ifdef WITH_THREAD
+        __Pyx_PyGILState_Release(__pyx_gilstate_save);
+        #endif
+        __PYX_ERR(0, 133, __pyx_L1_error)
+      }
+      (__pyx_v_b[__pyx_v_i]) = (__pyx_t_5 / __pyx_t_6);
+
+      /* "CHAPSim_post/_libs/gradient.pyx":134
+ *             a[i] = -(dx2)/(dx1 * (dx1 + dx2))
+ *             b[i] = (dx2 - dx1) / (dx1 * dx2)
+ *             c[i] = dx1 / (dx2 * (dx1 + dx2))             # <<<<<<<<<<<<<<
+ * 
+ * 
+ */
+      __pyx_t_6 = (__pyx_v_dx2 * (__pyx_v_dx1 + __pyx_v_dx2));
+      if (unlikely(__pyx_t_6 == 0)) {
+        #ifdef WITH_THREAD
+        PyGILState_STATE __pyx_gilstate_save = __Pyx_PyGILState_Ensure();
+        #endif
+        PyErr_SetString(PyExc_ZeroDivisionError, "float division");
+        #ifdef WITH_THREAD
+        __Pyx_PyGILState_Release(__pyx_gilstate_save);
+        #endif
+        __PYX_ERR(0, 134, __pyx_L1_error)
+      }
+      (__pyx_v_c[__pyx_v_i]) = (__pyx_v_dx1 / __pyx_t_6);
     }
     __pyx_L5:;
   }
 
-  /* "CHAPSim_post/_libs/gradient.pyx":90
+  /* "CHAPSim_post/_libs/gradient.pyx":100
  *     PLUS = 3
  * 
  * cdef void _get_grad_coeffs_varx(int axis,             # <<<<<<<<<<<<<<
@@ -2647,7 +2740,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__get_grad_coeffs_varx(int __
   __pyx_L0:;
 }
 
-/* "CHAPSim_post/_libs/gradient.pyx":126
+/* "CHAPSim_post/_libs/gradient.pyx":139
  * 
  * 
  * cdef int _get_axis_index(int index,             # <<<<<<<<<<<<<<
@@ -2668,7 +2761,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_index(int __pyx_v_i
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":130
+  /* "CHAPSim_post/_libs/gradient.pyx":143
  *                          int axis) nogil:
  * 
  *     cdef int i, larger_subtract =1             # <<<<<<<<<<<<<<
@@ -2677,7 +2770,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_index(int __pyx_v_i
  */
   __pyx_v_larger_subtract = 1;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":131
+  /* "CHAPSim_post/_libs/gradient.pyx":144
  * 
  *     cdef int i, larger_subtract =1
  *     cdef int axis_index = index             # <<<<<<<<<<<<<<
@@ -2686,7 +2779,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_index(int __pyx_v_i
  */
   __pyx_v_axis_index = __pyx_v_index;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":133
+  /* "CHAPSim_post/_libs/gradient.pyx":146
  *     cdef int axis_index = index
  *     cdef int axis_num
  *     for i in range(0,axis):             # <<<<<<<<<<<<<<
@@ -2698,7 +2791,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_index(int __pyx_v_i
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "CHAPSim_post/_libs/gradient.pyx":134
+    /* "CHAPSim_post/_libs/gradient.pyx":147
  *     cdef int axis_num
  *     for i in range(0,axis):
  *         axis_num = axis_index / strides[i]             # <<<<<<<<<<<<<<
@@ -2713,7 +2806,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_index(int __pyx_v_i
       #ifdef WITH_THREAD
       __Pyx_PyGILState_Release(__pyx_gilstate_save);
       #endif
-      __PYX_ERR(0, 134, __pyx_L1_error)
+      __PYX_ERR(0, 147, __pyx_L1_error)
     }
     else if (sizeof(int) == sizeof(long) && (!(((int)-1) > 0)) && unlikely((__pyx_v_strides[__pyx_v_i]) == (int)-1)  && unlikely(UNARY_NEG_WOULD_OVERFLOW(__pyx_v_axis_index))) {
       #ifdef WITH_THREAD
@@ -2723,11 +2816,11 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_index(int __pyx_v_i
       #ifdef WITH_THREAD
       __Pyx_PyGILState_Release(__pyx_gilstate_save);
       #endif
-      __PYX_ERR(0, 134, __pyx_L1_error)
+      __PYX_ERR(0, 147, __pyx_L1_error)
     }
     __pyx_v_axis_num = __Pyx_div_int(__pyx_v_axis_index, (__pyx_v_strides[__pyx_v_i]));
 
-    /* "CHAPSim_post/_libs/gradient.pyx":135
+    /* "CHAPSim_post/_libs/gradient.pyx":148
  *     for i in range(0,axis):
  *         axis_num = axis_index / strides[i]
  *         axis_index -= axis_num*strides[i]             # <<<<<<<<<<<<<<
@@ -2737,7 +2830,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_index(int __pyx_v_i
     __pyx_v_axis_index = (__pyx_v_axis_index - (__pyx_v_axis_num * (__pyx_v_strides[__pyx_v_i])));
   }
 
-  /* "CHAPSim_post/_libs/gradient.pyx":137
+  /* "CHAPSim_post/_libs/gradient.pyx":150
  *         axis_index -= axis_num*strides[i]
  * 
  *     return axis_index/strides[axis]             # <<<<<<<<<<<<<<
@@ -2752,7 +2845,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_index(int __pyx_v_i
     #ifdef WITH_THREAD
     __Pyx_PyGILState_Release(__pyx_gilstate_save);
     #endif
-    __PYX_ERR(0, 137, __pyx_L1_error)
+    __PYX_ERR(0, 150, __pyx_L1_error)
   }
   else if (sizeof(int) == sizeof(long) && (!(((int)-1) > 0)) && unlikely((__pyx_v_strides[__pyx_v_axis]) == (int)-1)  && unlikely(UNARY_NEG_WOULD_OVERFLOW(__pyx_v_axis_index))) {
     #ifdef WITH_THREAD
@@ -2762,12 +2855,12 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_index(int __pyx_v_i
     #ifdef WITH_THREAD
     __Pyx_PyGILState_Release(__pyx_gilstate_save);
     #endif
-    __PYX_ERR(0, 137, __pyx_L1_error)
+    __PYX_ERR(0, 150, __pyx_L1_error)
   }
   __pyx_r = __Pyx_div_int(__pyx_v_axis_index, (__pyx_v_strides[__pyx_v_axis]));
   goto __pyx_L0;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":126
+  /* "CHAPSim_post/_libs/gradient.pyx":139
  * 
  * 
  * cdef int _get_axis_index(int index,             # <<<<<<<<<<<<<<
@@ -2783,7 +2876,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_index(int __pyx_v_i
   return __pyx_r;
 }
 
-/* "CHAPSim_post/_libs/gradient.pyx":139
+/* "CHAPSim_post/_libs/gradient.pyx":152
  *     return axis_index/strides[axis]
  * 
  * cdef int _get_total_size(int dim,             # <<<<<<<<<<<<<<
@@ -2799,7 +2892,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_total_size(int __pyx_v_d
   int __pyx_t_2;
   int __pyx_t_3;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":141
+  /* "CHAPSim_post/_libs/gradient.pyx":154
  * cdef int _get_total_size(int dim,
  *                         int* sizes) nogil :
  *     cdef int size = 1             # <<<<<<<<<<<<<<
@@ -2808,7 +2901,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_total_size(int __pyx_v_d
  */
   __pyx_v_size = 1;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":144
+  /* "CHAPSim_post/_libs/gradient.pyx":157
  *     cdef int i
  * 
  *     for i in range(dim):             # <<<<<<<<<<<<<<
@@ -2820,7 +2913,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_total_size(int __pyx_v_d
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "CHAPSim_post/_libs/gradient.pyx":145
+    /* "CHAPSim_post/_libs/gradient.pyx":158
  * 
  *     for i in range(dim):
  *         size *= sizes[i]             # <<<<<<<<<<<<<<
@@ -2830,7 +2923,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_total_size(int __pyx_v_d
     __pyx_v_size = (__pyx_v_size * (__pyx_v_sizes[__pyx_v_i]));
   }
 
-  /* "CHAPSim_post/_libs/gradient.pyx":147
+  /* "CHAPSim_post/_libs/gradient.pyx":160
  *         size *= sizes[i]
  * 
  *     return size             # <<<<<<<<<<<<<<
@@ -2840,7 +2933,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_total_size(int __pyx_v_d
   __pyx_r = __pyx_v_size;
   goto __pyx_L0;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":139
+  /* "CHAPSim_post/_libs/gradient.pyx":152
  *     return axis_index/strides[axis]
  * 
  * cdef int _get_total_size(int dim,             # <<<<<<<<<<<<<<
@@ -2853,7 +2946,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_total_size(int __pyx_v_d
   return __pyx_r;
 }
 
-/* "CHAPSim_post/_libs/gradient.pyx":149
+/* "CHAPSim_post/_libs/gradient.pyx":162
  *     return size
  * 
  * cdef int _get_axis_stride(int dim,             # <<<<<<<<<<<<<<
@@ -2869,7 +2962,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_stride(int __pyx_v_
   int __pyx_t_2;
   long __pyx_t_3;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":152
+  /* "CHAPSim_post/_libs/gradient.pyx":165
  *                         int axis,
  *                         int* sizes) nogil:
  *     cdef int stride = 1             # <<<<<<<<<<<<<<
@@ -2878,7 +2971,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_stride(int __pyx_v_
  */
   __pyx_v_stride = 1;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":153
+  /* "CHAPSim_post/_libs/gradient.pyx":166
  *                         int* sizes) nogil:
  *     cdef int stride = 1
  *     for j in range(axis+1,dim):             # <<<<<<<<<<<<<<
@@ -2890,7 +2983,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_stride(int __pyx_v_
   for (__pyx_t_3 = (__pyx_v_axis + 1); __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_j = __pyx_t_3;
 
-    /* "CHAPSim_post/_libs/gradient.pyx":154
+    /* "CHAPSim_post/_libs/gradient.pyx":167
  *     cdef int stride = 1
  *     for j in range(axis+1,dim):
  *             stride *= sizes[j]             # <<<<<<<<<<<<<<
@@ -2900,7 +2993,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_stride(int __pyx_v_
     __pyx_v_stride = (__pyx_v_stride * (__pyx_v_sizes[__pyx_v_j]));
   }
 
-  /* "CHAPSim_post/_libs/gradient.pyx":156
+  /* "CHAPSim_post/_libs/gradient.pyx":169
  *             stride *= sizes[j]
  * 
  *     return stride             # <<<<<<<<<<<<<<
@@ -2910,7 +3003,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_stride(int __pyx_v_
   __pyx_r = __pyx_v_stride;
   goto __pyx_L0;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":149
+  /* "CHAPSim_post/_libs/gradient.pyx":162
  *     return size
  * 
  * cdef int _get_axis_stride(int dim,             # <<<<<<<<<<<<<<
@@ -2923,7 +3016,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_8gradient__get_axis_stride(int __pyx_v_
   return __pyx_r;
 }
 
-/* "CHAPSim_post/_libs/gradient.pyx":158
+/* "CHAPSim_post/_libs/gradient.pyx":171
  *     return stride
  * 
  * cdef void _get_strides(int dim,             # <<<<<<<<<<<<<<
@@ -2944,7 +3037,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__get_strides(int __pyx_v_dim
   int __pyx_t_7;
   __Pyx_RefNannySetupContext("_get_strides", 0);
 
-  /* "CHAPSim_post/_libs/gradient.pyx":163
+  /* "CHAPSim_post/_libs/gradient.pyx":176
  *     cdef int i, j
  *     cdef int stride_int_
  *     for i in range(dim):             # <<<<<<<<<<<<<<
@@ -2956,7 +3049,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__get_strides(int __pyx_v_dim
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "CHAPSim_post/_libs/gradient.pyx":164
+    /* "CHAPSim_post/_libs/gradient.pyx":177
  *     cdef int stride_int_
  *     for i in range(dim):
  *         strides[i] = 1             # <<<<<<<<<<<<<<
@@ -2965,7 +3058,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__get_strides(int __pyx_v_dim
  */
     (__pyx_v_strides[__pyx_v_i]) = 1;
 
-    /* "CHAPSim_post/_libs/gradient.pyx":165
+    /* "CHAPSim_post/_libs/gradient.pyx":178
  *     for i in range(dim):
  *         strides[i] = 1
  *         for j in range(i+1,dim):             # <<<<<<<<<<<<<<
@@ -2977,7 +3070,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__get_strides(int __pyx_v_dim
     for (__pyx_t_6 = (__pyx_v_i + 1); __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
       __pyx_v_j = __pyx_t_6;
 
-      /* "CHAPSim_post/_libs/gradient.pyx":166
+      /* "CHAPSim_post/_libs/gradient.pyx":179
  *         strides[i] = 1
  *         for j in range(i+1,dim):
  *             strides[i] *= sizes[j]             # <<<<<<<<<<<<<<
@@ -2989,7 +3082,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__get_strides(int __pyx_v_dim
     }
   }
 
-  /* "CHAPSim_post/_libs/gradient.pyx":158
+  /* "CHAPSim_post/_libs/gradient.pyx":171
  *     return stride
  * 
  * cdef void _get_strides(int dim,             # <<<<<<<<<<<<<<
@@ -3001,7 +3094,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_8gradient__get_strides(int __pyx_v_dim
   __Pyx_RefNannyFinishContext();
 }
 
-/* "CHAPSim_post/_libs/gradient.pyx":171
+/* "CHAPSim_post/_libs/gradient.pyx":184
  * @cython.boundscheck(False)
  * @cython.wraparound(False)
  * def gradient_calc(np.ndarray input_array,             # <<<<<<<<<<<<<<
@@ -3047,17 +3140,17 @@ static PyObject *__pyx_pw_12CHAPSim_post_5_libs_8gradient_1gradient_calc(PyObjec
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_coord_array)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("gradient_calc", 1, 3, 3, 1); __PYX_ERR(0, 171, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("gradient_calc", 1, 3, 3, 1); __PYX_ERR(0, 184, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_axis)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("gradient_calc", 1, 3, 3, 2); __PYX_ERR(0, 171, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("gradient_calc", 1, 3, 3, 2); __PYX_ERR(0, 184, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "gradient_calc") < 0)) __PYX_ERR(0, 171, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "gradient_calc") < 0)) __PYX_ERR(0, 184, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -3068,18 +3161,18 @@ static PyObject *__pyx_pw_12CHAPSim_post_5_libs_8gradient_1gradient_calc(PyObjec
     }
     __pyx_v_input_array = ((PyArrayObject *)values[0]);
     __pyx_v_coord_array = ((PyArrayObject *)values[1]);
-    __pyx_v_axis = __Pyx_PyInt_As_int(values[2]); if (unlikely((__pyx_v_axis == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 173, __pyx_L3_error)
+    __pyx_v_axis = __Pyx_PyInt_As_int(values[2]); if (unlikely((__pyx_v_axis == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 186, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("gradient_calc", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 171, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("gradient_calc", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 184, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("CHAPSim_post._libs.gradient.gradient_calc", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_input_array), __pyx_ptype_5numpy_ndarray, 1, "input_array", 0))) __PYX_ERR(0, 171, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_coord_array), __pyx_ptype_5numpy_ndarray, 1, "coord_array", 0))) __PYX_ERR(0, 172, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_input_array), __pyx_ptype_5numpy_ndarray, 1, "input_array", 0))) __PYX_ERR(0, 184, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_coord_array), __pyx_ptype_5numpy_ndarray, 1, "coord_array", 0))) __PYX_ERR(0, 185, __pyx_L1_error)
   __pyx_r = __pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(__pyx_self, __pyx_v_input_array, __pyx_v_coord_array, __pyx_v_axis);
 
   /* function exit code */
@@ -3144,11 +3237,11 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
   __pyx_pybuffernd_coord_array.rcbuffer = &__pyx_pybuffer_coord_array;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_coord_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_coord_array, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 171, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_coord_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_coord_array, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 184, __pyx_L1_error)
   }
   __pyx_pybuffernd_coord_array.diminfo[0].strides = __pyx_pybuffernd_coord_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_coord_array.diminfo[0].shape = __pyx_pybuffernd_coord_array.rcbuffer->pybuffer.shape[0];
 
-  /* "CHAPSim_post/_libs/gradient.pyx":175
+  /* "CHAPSim_post/_libs/gradient.pyx":188
  *                     int axis):
  * 
  *     cdef int dim = input_array.ndim             # <<<<<<<<<<<<<<
@@ -3158,32 +3251,32 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
   __pyx_t_1 = __pyx_v_input_array->nd;
   __pyx_v_dim = __pyx_t_1;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":176
+  /* "CHAPSim_post/_libs/gradient.pyx":189
  * 
  *     cdef int dim = input_array.ndim
  *     cdef int dtype = input_array.itemsize             # <<<<<<<<<<<<<<
  *     cdef double dx
  *     cdef int *strides, *sizes
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_input_array), __pyx_n_s_itemsize); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 176, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_input_array), __pyx_n_s_itemsize); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 176, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 189, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_v_dtype = __pyx_t_1;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":179
+  /* "CHAPSim_post/_libs/gradient.pyx":192
  *     cdef double dx
  *     cdef int *strides, *sizes
  *     cdef np.ndarray[dtype=double,ndim=1] grad_array = np.zeros(input_array.size)             # <<<<<<<<<<<<<<
  * 
  *     cdef np.ndarray[dtype=double,ndim=1] input_copy = input_array.flatten()
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 179, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 192, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_zeros); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 179, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_zeros); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 192, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_input_array), __pyx_n_s_size); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 179, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_input_array), __pyx_n_s_size); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 192, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_t_5 = NULL;
   if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_4))) {
@@ -3198,16 +3291,16 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
   __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_5, __pyx_t_3) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3);
   __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 179, __pyx_L1_error)
+  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 192, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (!(likely(((__pyx_t_2) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_2, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 179, __pyx_L1_error)
+  if (!(likely(((__pyx_t_2) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_2, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 192, __pyx_L1_error)
   __pyx_t_6 = ((PyArrayObject *)__pyx_t_2);
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
     if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_grad_array.rcbuffer->pybuffer, (PyObject*)__pyx_t_6, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {
       __pyx_v_grad_array = ((PyArrayObject *)Py_None); __Pyx_INCREF(Py_None); __pyx_pybuffernd_grad_array.rcbuffer->pybuffer.buf = NULL;
-      __PYX_ERR(0, 179, __pyx_L1_error)
+      __PYX_ERR(0, 192, __pyx_L1_error)
     } else {__pyx_pybuffernd_grad_array.diminfo[0].strides = __pyx_pybuffernd_grad_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_grad_array.diminfo[0].shape = __pyx_pybuffernd_grad_array.rcbuffer->pybuffer.shape[0];
     }
   }
@@ -3215,14 +3308,14 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
   __pyx_v_grad_array = ((PyArrayObject *)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":181
+  /* "CHAPSim_post/_libs/gradient.pyx":194
  *     cdef np.ndarray[dtype=double,ndim=1] grad_array = np.zeros(input_array.size)
  * 
  *     cdef np.ndarray[dtype=double,ndim=1] input_copy = input_array.flatten()             # <<<<<<<<<<<<<<
  * 
  *     cdef coord_diff = np.diff(coord_array)
  */
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_input_array), __pyx_n_s_flatten); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 181, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_input_array), __pyx_n_s_flatten); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_4))) {
@@ -3236,16 +3329,16 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
   }
   __pyx_t_2 = (__pyx_t_3) ? __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3) : __Pyx_PyObject_CallNoArg(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 181, __pyx_L1_error)
+  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (!(likely(((__pyx_t_2) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_2, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 181, __pyx_L1_error)
+  if (!(likely(((__pyx_t_2) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_2, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 194, __pyx_L1_error)
   __pyx_t_7 = ((PyArrayObject *)__pyx_t_2);
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
     if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_input_copy.rcbuffer->pybuffer, (PyObject*)__pyx_t_7, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {
       __pyx_v_input_copy = ((PyArrayObject *)Py_None); __Pyx_INCREF(Py_None); __pyx_pybuffernd_input_copy.rcbuffer->pybuffer.buf = NULL;
-      __PYX_ERR(0, 181, __pyx_L1_error)
+      __PYX_ERR(0, 194, __pyx_L1_error)
     } else {__pyx_pybuffernd_input_copy.diminfo[0].strides = __pyx_pybuffernd_input_copy.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_input_copy.diminfo[0].shape = __pyx_pybuffernd_input_copy.rcbuffer->pybuffer.shape[0];
     }
   }
@@ -3253,16 +3346,16 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
   __pyx_v_input_copy = ((PyArrayObject *)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":183
+  /* "CHAPSim_post/_libs/gradient.pyx":196
  *     cdef np.ndarray[dtype=double,ndim=1] input_copy = input_array.flatten()
  * 
  *     cdef coord_diff = np.diff(coord_array)             # <<<<<<<<<<<<<<
  *     cdef int const_dx = int(np.allclose(coord_diff,coord_diff[0]))
  * 
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 183, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 196, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_diff); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 183, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_diff); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 196, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_t_4 = NULL;
@@ -3277,25 +3370,25 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
   }
   __pyx_t_2 = (__pyx_t_4) ? __Pyx_PyObject_Call2Args(__pyx_t_3, __pyx_t_4, ((PyObject *)__pyx_v_coord_array)) : __Pyx_PyObject_CallOneArg(__pyx_t_3, ((PyObject *)__pyx_v_coord_array));
   __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 183, __pyx_L1_error)
+  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 196, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_v_coord_diff = __pyx_t_2;
   __pyx_t_2 = 0;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":184
+  /* "CHAPSim_post/_libs/gradient.pyx":197
  * 
  *     cdef coord_diff = np.diff(coord_array)
  *     cdef int const_dx = int(np.allclose(coord_diff,coord_diff[0]))             # <<<<<<<<<<<<<<
  * 
  *     strides = <int*> malloc(dim*sizeof(int))
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 184, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 197, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_allclose); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 184, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_allclose); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 197, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_GetItemInt(__pyx_v_coord_diff, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 184, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_GetItemInt(__pyx_v_coord_diff, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 197, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_t_5 = NULL;
   __pyx_t_1 = 0;
@@ -3312,7 +3405,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
   #if CYTHON_FAST_PYCALL
   if (PyFunction_Check(__pyx_t_4)) {
     PyObject *__pyx_temp[3] = {__pyx_t_5, __pyx_v_coord_diff, __pyx_t_3};
-    __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_1, 2+__pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 184, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_1, 2+__pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 197, __pyx_L1_error)
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -3321,14 +3414,14 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
   #if CYTHON_FAST_PYCCALL
   if (__Pyx_PyFastCFunction_Check(__pyx_t_4)) {
     PyObject *__pyx_temp[3] = {__pyx_t_5, __pyx_v_coord_diff, __pyx_t_3};
-    __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_1, 2+__pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 184, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_1, 2+__pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 197, __pyx_L1_error)
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else
   #endif
   {
-    __pyx_t_8 = PyTuple_New(2+__pyx_t_1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 184, __pyx_L1_error)
+    __pyx_t_8 = PyTuple_New(2+__pyx_t_1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 197, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
     if (__pyx_t_5) {
       __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_5); __pyx_t_5 = NULL;
@@ -3339,19 +3432,19 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
     __Pyx_GIVEREF(__pyx_t_3);
     PyTuple_SET_ITEM(__pyx_t_8, 1+__pyx_t_1, __pyx_t_3);
     __pyx_t_3 = 0;
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 184, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 197, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
   }
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyNumber_Int(__pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 184, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyNumber_Int(__pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 197, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_t_4); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 184, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_t_4); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 197, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_const_dx = __pyx_t_1;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":186
+  /* "CHAPSim_post/_libs/gradient.pyx":199
  *     cdef int const_dx = int(np.allclose(coord_diff,coord_diff[0]))
  * 
  *     strides = <int*> malloc(dim*sizeof(int))             # <<<<<<<<<<<<<<
@@ -3360,7 +3453,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
  */
   __pyx_v_strides = ((int *)malloc((__pyx_v_dim * (sizeof(int)))));
 
-  /* "CHAPSim_post/_libs/gradient.pyx":187
+  /* "CHAPSim_post/_libs/gradient.pyx":200
  * 
  *     strides = <int*> malloc(dim*sizeof(int))
  *     sizes = <int*> malloc(dim*sizeof(int))             # <<<<<<<<<<<<<<
@@ -3369,7 +3462,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
  */
   __pyx_v_sizes = ((int *)malloc((__pyx_v_dim * (sizeof(int)))));
 
-  /* "CHAPSim_post/_libs/gradient.pyx":189
+  /* "CHAPSim_post/_libs/gradient.pyx":202
  *     sizes = <int*> malloc(dim*sizeof(int))
  * 
  *     for i in range(dim):             # <<<<<<<<<<<<<<
@@ -3381,26 +3474,26 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
   for (__pyx_t_10 = 0; __pyx_t_10 < __pyx_t_9; __pyx_t_10+=1) {
     __pyx_v_i = __pyx_t_10;
 
-    /* "CHAPSim_post/_libs/gradient.pyx":190
+    /* "CHAPSim_post/_libs/gradient.pyx":203
  * 
  *     for i in range(dim):
  *         strides[i] = input_array.strides[i]/input_array.itemsize             # <<<<<<<<<<<<<<
  *         sizes[i] = input_array.shape[i]
  * 
  */
-    __pyx_t_4 = __Pyx_PyInt_From_Py_intptr_t((__pyx_v_input_array->strides[__pyx_v_i])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 190, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyInt_From_Py_intptr_t((__pyx_v_input_array->strides[__pyx_v_i])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 203, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_input_array), __pyx_n_s_itemsize); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 190, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_input_array), __pyx_n_s_itemsize); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 203, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_8 = __Pyx_PyNumber_Divide(__pyx_t_4, __pyx_t_2); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 190, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyNumber_Divide(__pyx_t_4, __pyx_t_2); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 203, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __pyx_t_11 = __Pyx_PyInt_As_int(__pyx_t_8); if (unlikely((__pyx_t_11 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 190, __pyx_L1_error)
+    __pyx_t_11 = __Pyx_PyInt_As_int(__pyx_t_8); if (unlikely((__pyx_t_11 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 203, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
     (__pyx_v_strides[__pyx_v_i]) = __pyx_t_11;
 
-    /* "CHAPSim_post/_libs/gradient.pyx":191
+    /* "CHAPSim_post/_libs/gradient.pyx":204
  *     for i in range(dim):
  *         strides[i] = input_array.strides[i]/input_array.itemsize
  *         sizes[i] = input_array.shape[i]             # <<<<<<<<<<<<<<
@@ -3410,7 +3503,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
     (__pyx_v_sizes[__pyx_v_i]) = (__pyx_v_input_array->dimensions[__pyx_v_i]);
   }
 
-  /* "CHAPSim_post/_libs/gradient.pyx":193
+  /* "CHAPSim_post/_libs/gradient.pyx":206
  *         sizes[i] = input_array.shape[i]
  * 
  *     with nogil:             # <<<<<<<<<<<<<<
@@ -3425,7 +3518,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
       #endif
       /*try:*/ {
 
-        /* "CHAPSim_post/_libs/gradient.pyx":194
+        /* "CHAPSim_post/_libs/gradient.pyx":207
  * 
  *     with nogil:
  *         if const_dx == 1:             # <<<<<<<<<<<<<<
@@ -3435,7 +3528,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
         __pyx_t_12 = ((__pyx_v_const_dx == 1) != 0);
         if (__pyx_t_12) {
 
-          /* "CHAPSim_post/_libs/gradient.pyx":195
+          /* "CHAPSim_post/_libs/gradient.pyx":208
  *     with nogil:
  *         if const_dx == 1:
  *             dx = coord_array[1] - coord_array[0]             # <<<<<<<<<<<<<<
@@ -3446,7 +3539,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
           __pyx_t_14 = 0;
           __pyx_v_dx = ((*__Pyx_BufPtrStrided1d(double *, __pyx_pybuffernd_coord_array.rcbuffer->pybuffer.buf, __pyx_t_13, __pyx_pybuffernd_coord_array.diminfo[0].strides)) - (*__Pyx_BufPtrStrided1d(double *, __pyx_pybuffernd_coord_array.rcbuffer->pybuffer.buf, __pyx_t_14, __pyx_pybuffernd_coord_array.diminfo[0].strides)));
 
-          /* "CHAPSim_post/_libs/gradient.pyx":196
+          /* "CHAPSim_post/_libs/gradient.pyx":209
  *         if const_dx == 1:
  *             dx = coord_array[1] - coord_array[0]
  *             _perform_gradient_constx(&input_copy[0],             # <<<<<<<<<<<<<<
@@ -3455,7 +3548,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
  */
           __pyx_t_14 = 0;
 
-          /* "CHAPSim_post/_libs/gradient.pyx":202
+          /* "CHAPSim_post/_libs/gradient.pyx":215
  *                                     strides,
  *                                     dim,
  *                                     &grad_array[0])             # <<<<<<<<<<<<<<
@@ -3464,7 +3557,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
  */
           __pyx_t_13 = 0;
 
-          /* "CHAPSim_post/_libs/gradient.pyx":196
+          /* "CHAPSim_post/_libs/gradient.pyx":209
  *         if const_dx == 1:
  *             dx = coord_array[1] - coord_array[0]
  *             _perform_gradient_constx(&input_copy[0],             # <<<<<<<<<<<<<<
@@ -3473,7 +3566,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
  */
           __pyx_f_12CHAPSim_post_5_libs_8gradient__perform_gradient_constx((&(*__Pyx_BufPtrStrided1d(double *, __pyx_pybuffernd_input_copy.rcbuffer->pybuffer.buf, __pyx_t_14, __pyx_pybuffernd_input_copy.diminfo[0].strides))), __pyx_v_dx, __pyx_v_axis, __pyx_v_sizes, __pyx_v_strides, __pyx_v_dim, (&(*__Pyx_BufPtrStrided1d(double *, __pyx_pybuffernd_grad_array.rcbuffer->pybuffer.buf, __pyx_t_13, __pyx_pybuffernd_grad_array.diminfo[0].strides))));
 
-          /* "CHAPSim_post/_libs/gradient.pyx":194
+          /* "CHAPSim_post/_libs/gradient.pyx":207
  * 
  *     with nogil:
  *         if const_dx == 1:             # <<<<<<<<<<<<<<
@@ -3483,7 +3576,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
           goto __pyx_L8;
         }
 
-        /* "CHAPSim_post/_libs/gradient.pyx":205
+        /* "CHAPSim_post/_libs/gradient.pyx":218
  * 
  *         else:
  *             _perform_gradient_varx(&input_copy[0],             # <<<<<<<<<<<<<<
@@ -3493,7 +3586,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
         /*else*/ {
           __pyx_t_13 = 0;
 
-          /* "CHAPSim_post/_libs/gradient.pyx":206
+          /* "CHAPSim_post/_libs/gradient.pyx":219
  *         else:
  *             _perform_gradient_varx(&input_copy[0],
  *                                     &coord_array[0],             # <<<<<<<<<<<<<<
@@ -3502,7 +3595,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
  */
           __pyx_t_14 = 0;
 
-          /* "CHAPSim_post/_libs/gradient.pyx":211
+          /* "CHAPSim_post/_libs/gradient.pyx":224
  *                                     strides,
  *                                     dim,
  *                                     &grad_array[0])             # <<<<<<<<<<<<<<
@@ -3511,7 +3604,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
  */
           __pyx_t_15 = 0;
 
-          /* "CHAPSim_post/_libs/gradient.pyx":205
+          /* "CHAPSim_post/_libs/gradient.pyx":218
  * 
  *         else:
  *             _perform_gradient_varx(&input_copy[0],             # <<<<<<<<<<<<<<
@@ -3523,7 +3616,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
         __pyx_L8:;
       }
 
-      /* "CHAPSim_post/_libs/gradient.pyx":193
+      /* "CHAPSim_post/_libs/gradient.pyx":206
  *         sizes[i] = input_array.shape[i]
  * 
  *     with nogil:             # <<<<<<<<<<<<<<
@@ -3542,7 +3635,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
       }
   }
 
-  /* "CHAPSim_post/_libs/gradient.pyx":213
+  /* "CHAPSim_post/_libs/gradient.pyx":226
  *                                     &grad_array[0])
  * 
  *     free(strides)             # <<<<<<<<<<<<<<
@@ -3551,7 +3644,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
  */
   free(__pyx_v_strides);
 
-  /* "CHAPSim_post/_libs/gradient.pyx":214
+  /* "CHAPSim_post/_libs/gradient.pyx":227
  * 
  *     free(strides)
  *     free(sizes)             # <<<<<<<<<<<<<<
@@ -3560,33 +3653,33 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
  */
   free(__pyx_v_sizes);
 
-  /* "CHAPSim_post/_libs/gradient.pyx":215
+  /* "CHAPSim_post/_libs/gradient.pyx":228
  *     free(strides)
  *     free(sizes)
  *     shape = [input_array.shape[i] for i in range(dim)]             # <<<<<<<<<<<<<<
  *     return grad_array.reshape(shape)
  */
-  __pyx_t_8 = PyList_New(0); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 215, __pyx_L1_error)
+  __pyx_t_8 = PyList_New(0); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 228, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __pyx_t_1 = __pyx_v_dim;
   __pyx_t_9 = __pyx_t_1;
   for (__pyx_t_10 = 0; __pyx_t_10 < __pyx_t_9; __pyx_t_10+=1) {
     __pyx_v_i = __pyx_t_10;
-    __pyx_t_2 = __Pyx_PyInt_From_Py_intptr_t((__pyx_v_input_array->dimensions[__pyx_v_i])); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 215, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyInt_From_Py_intptr_t((__pyx_v_input_array->dimensions[__pyx_v_i])); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 228, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    if (unlikely(__Pyx_ListComp_Append(__pyx_t_8, (PyObject*)__pyx_t_2))) __PYX_ERR(0, 215, __pyx_L1_error)
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_8, (PyObject*)__pyx_t_2))) __PYX_ERR(0, 228, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   }
   __pyx_v_shape = ((PyObject*)__pyx_t_8);
   __pyx_t_8 = 0;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":216
+  /* "CHAPSim_post/_libs/gradient.pyx":229
  *     free(sizes)
  *     shape = [input_array.shape[i] for i in range(dim)]
  *     return grad_array.reshape(shape)             # <<<<<<<<<<<<<<
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_grad_array), __pyx_n_s_reshape); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 216, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_grad_array), __pyx_n_s_reshape); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 229, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_4 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -3600,14 +3693,14 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_8gradient_gradient_calc(CYTHON_U
   }
   __pyx_t_8 = (__pyx_t_4) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_4, __pyx_v_shape) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_v_shape);
   __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 216, __pyx_L1_error)
+  if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 229, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_r = __pyx_t_8;
   __pyx_t_8 = 0;
   goto __pyx_L0;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":171
+  /* "CHAPSim_post/_libs/gradient.pyx":184
  * @cython.boundscheck(False)
  * @cython.wraparound(False)
  * def gradient_calc(np.ndarray input_array,             # <<<<<<<<<<<<<<
@@ -4748,7 +4841,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {0, 0, 0, 0, 0, 0, 0}
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 111, __pyx_L1_error)
   __pyx_builtin_ImportError = __Pyx_GetBuiltinName(__pyx_n_s_ImportError); if (!__pyx_builtin_ImportError) __PYX_ERR(1, 947, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
@@ -4781,17 +4874,17 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__2);
   __Pyx_GIVEREF(__pyx_tuple__2);
 
-  /* "CHAPSim_post/_libs/gradient.pyx":171
+  /* "CHAPSim_post/_libs/gradient.pyx":184
  * @cython.boundscheck(False)
  * @cython.wraparound(False)
  * def gradient_calc(np.ndarray input_array,             # <<<<<<<<<<<<<<
  *                     np.ndarray[dtype=double,ndim=1] coord_array,
  *                     int axis):
  */
-  __pyx_tuple__3 = PyTuple_Pack(14, __pyx_n_s_input_array, __pyx_n_s_coord_array, __pyx_n_s_axis, __pyx_n_s_dim, __pyx_n_s_dtype, __pyx_n_s_dx, __pyx_n_s_strides, __pyx_n_s_sizes, __pyx_n_s_grad_array, __pyx_n_s_input_copy, __pyx_n_s_coord_diff, __pyx_n_s_const_dx, __pyx_n_s_i, __pyx_n_s_shape); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 171, __pyx_L1_error)
+  __pyx_tuple__3 = PyTuple_Pack(14, __pyx_n_s_input_array, __pyx_n_s_coord_array, __pyx_n_s_axis, __pyx_n_s_dim, __pyx_n_s_dtype, __pyx_n_s_dx, __pyx_n_s_strides, __pyx_n_s_sizes, __pyx_n_s_grad_array, __pyx_n_s_input_copy, __pyx_n_s_coord_diff, __pyx_n_s_const_dx, __pyx_n_s_i, __pyx_n_s_shape); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 184, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__3);
   __Pyx_GIVEREF(__pyx_tuple__3);
-  __pyx_codeobj__4 = (PyObject*)__Pyx_PyCode_New(3, 0, 14, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__3, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_CHAPSim_post__libs_gradient_pyx, __pyx_n_s_gradient_calc, 171, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__4)) __PYX_ERR(0, 171, __pyx_L1_error)
+  __pyx_codeobj__4 = (PyObject*)__Pyx_PyCode_New(3, 0, 14, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__3, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_CHAPSim_post__libs_gradient_pyx, __pyx_n_s_gradient_calc, 184, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__4)) __PYX_ERR(0, 184, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -5139,16 +5232,16 @@ if (!__Pyx_RefNanny) {
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_np, __pyx_t_1) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "CHAPSim_post/_libs/gradient.pyx":171
+  /* "CHAPSim_post/_libs/gradient.pyx":184
  * @cython.boundscheck(False)
  * @cython.wraparound(False)
  * def gradient_calc(np.ndarray input_array,             # <<<<<<<<<<<<<<
  *                     np.ndarray[dtype=double,ndim=1] coord_array,
  *                     int axis):
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12CHAPSim_post_5_libs_8gradient_1gradient_calc, NULL, __pyx_n_s_CHAPSim_post__libs_gradient); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 171, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_12CHAPSim_post_5_libs_8gradient_1gradient_calc, NULL, __pyx_n_s_CHAPSim_post__libs_gradient); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 184, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_gradient_calc, __pyx_t_1) < 0) __PYX_ERR(0, 171, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_gradient_calc, __pyx_t_1) < 0) __PYX_ERR(0, 184, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "CHAPSim_post/_libs/gradient.pyx":1

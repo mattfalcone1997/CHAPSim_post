@@ -15,7 +15,7 @@ cdef void _perform_gradient_varx(double* input_array,
                                 double* gradient_array) nogil:
 
     cdef int total_size = _get_total_size(dim, sizes)
-    cdef int minus_index, plus_index
+    cdef int minus_index, minus2_index, plus_index, plus2_index
     cdef int axis_index
     cdef int axis_stride = _get_axis_stride(dim,axis,sizes)
 
@@ -34,13 +34,17 @@ cdef void _perform_gradient_varx(double* input_array,
 
         minus_index = i - axis_stride
         plus_index = i + axis_stride
+        minus2_index = i - 2*axis_stride
+        plus2_index = i + 2*axis_stride
 
         if axis_index == 0:
-            gradient_array[i] = b[axis_index]*input_array[i] + \
-                                c[axis_index]*input_array[plus_index]
+            gradient_array[i] = a[axis_index]*input_array[i] + \
+                                b[axis_index]*input_array[plus_index] +\
+                                c[axis_index]*input_array[plus2_index]
         elif axis_index == sizes[axis] -1:
-            gradient_array[i] = a[axis_index]*input_array[minus_index] +\
-                                b[axis_index]*input_array[i]
+            gradient_array[i] = a[axis_index]*input_array[minus2_index] +\
+                                b[axis_index]*input_array[minus_index] +\
+                                c[axis_index]*input_array[i]
         else:
             gradient_array[i] = a[axis_index]*input_array[minus_index] + \
                                 b[axis_index]*input_array[i] + \
@@ -59,7 +63,7 @@ cdef void _perform_gradient_constx(double* input_array,
                                     double* gradient_array) nogil:
 
     cdef int total_size = _get_total_size(dim, sizes)
-    cdef int minus_index, plus_index
+    cdef int minus_index, minus2_index, plus_index, plus2_index
     cdef int a, b, c, axis_index
     cdef int axis_stride = _get_axis_stride(dim,axis,sizes)
 
@@ -71,12 +75,18 @@ cdef void _perform_gradient_constx(double* input_array,
         
         minus_index = i - axis_stride
         plus_index = i + axis_stride
+        minus2_index = i - 2*axis_stride
+        plus2_index = i + 2*axis_stride
 
         if axis_index == 0:
-            gradient_array[i] = idx*(input_array[plus_index] - input_array[i])
+            gradient_array[i] = idx*(-1.5*input_array[i] +\
+                                      2 * input_array[plus_index] \
+                                      -0.5 * input_array[plus2_index])
+
         elif axis_index == sizes[axis] - 1:
-            gradient_array[i] = idx*(input_array[i] \
-                                    - input_array[minus_index])
+            gradient_array[i] = idx*(0.5*input_array[minus2_index] \
+                                      -2 * input_array[minus_index] \
+                                      +1.5 * input_array[i])
         else:
             gradient_array[i] = 0.5*idx*(input_array[plus_index] \
                                     - input_array[minus_index])
@@ -101,17 +111,20 @@ cdef void _get_grad_coeffs_varx(int axis,
     for i in range(sizes[axis]):
 
         if i == 0:
-            dx2 = x_array[i+1] - x_array[i]
+            dx1 = x_array[i+1] - x_array[i]
+            dx2 = x_array[i+2] - x_array[i+1]
+            
 
-            a[i] = 0
-            b[i] = -1/dx2
-            c[i]  = 1/dx2
+            a[i] = -(2*dx1 + dx2)/(dx1*(dx1 + dx2))
+            b[i] = (dx1 + dx2)/(dx1*dx2)
+            c[i]  = -dx1/(dx2*(dx1 + dx2))
         elif i == sizes[axis] -1:
-            dx1 = x_array[i] - x_array[i-1]
+            dx1 = x_array[i-1] - x_array[i-2]
+            dx2 = x_array[i] - x_array[i-1]
 
-            a[i] = -1/dx1
-            b[i] = 1/dx1
-            c[i] = 0.
+            a[i] = dx2/( dx1*(dx1 + dx2) )
+            b[i] = -( dx1 + dx2 )/(dx1*dx2)
+            c[i] = ( 2*dx2 + dx1 )/( dx2*( dx1 + dx2 ) )
         else:
             dx1 = x_array[i] - x_array[i-1]
             dx2 = x_array[i+1] - x_array[i]
