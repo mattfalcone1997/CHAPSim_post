@@ -63,6 +63,8 @@ else
 	$PYBIN -m pip install -r requirements.txt
 
 	$PYBIN $CHAPSIM_POST_ROOT/setup.py install
+	
+	cd $CHAPSIM_POST_ROOT/scripts
 
 	$PYBIN -c "import CHAPSim_post" > /dev/null
 
