@@ -4,31 +4,24 @@ channels:
   - conda-forge
   - anaconda
 dependencies:
-  - python=3.7
+  - python=3.9
   - numpy
   - pandas
   - matplotlib
   - scipy
-  - numba
   - h5py
   - pyvista
-  - pyvistaqt
   - sympy
-  - mpi4py
   - ipython
-  - pytables
-  - ffmpeg
+  - imageio-ffmpeg
   - conda-build
-  - oct2py
-  - paramiko
-  - scp
   - seaborn
   - pip
-  - memory_profiler
   - cython
-  - llvmlite
-  - pyvista
-  - pyvistaqt
   - sphinx
   - sphinx_rtd_theme
   - scikit-image
+  - cycler
+  - ez_setup
+  - moviepy
+  - decorator
