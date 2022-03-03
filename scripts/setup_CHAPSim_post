@@ -35,7 +35,9 @@ if [ $USE_CONDA -eq 1 ]; then
 		echo -e "Conda environment doesn't exist. Creating a new one"
 		CONDA_ENV_EXISTS=0
 	fi
-
+else
+	echo -e "Setting up CHAPSim_post using system install."
+	sleep 5
 fi
 
 if [ $USE_CONDA -eq 1 ]; then
