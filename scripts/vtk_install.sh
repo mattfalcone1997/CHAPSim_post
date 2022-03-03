@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # VTK_INSTALL_ROOT=${PWD}/test
+# VTK_CONDA_PATH=$HOME/SOFTWARE/anaconda
 # VTK_CONDA_ENV=CHAPSim_post
 
 ###############################################################################
@@ -15,6 +16,12 @@ else
 fi
 
 if [ ! -z ${VTK_CONDA_ENV+x} ]; then
+
+    echo -e "Using conda environment: $VTK_CONDA_ENV"
+
+	source $VTK_CONDA_PATH/etc/profile.d/conda.sh 2>/dev/null
+
+	test_cmd conda "Check the anaconda root path, conda not found"
     conda activate $VTK_CONDA_ENV
     test_return "Error in conda activation\n"
 
