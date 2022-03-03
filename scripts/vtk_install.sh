@@ -17,10 +17,13 @@ fi
 
 if [ ! -z ${VTK_CONDA_ENV+x} ]; then
 
+    echo -e "Path to conda is $VTK_CONDA_PATH"
     echo -e "Using conda environment: $VTK_CONDA_ENV"
 
 	source $VTK_CONDA_PATH/etc/profile.d/conda.sh 2>/dev/null
 
+    test_return "Error in conda activation\n"
+    
 	test_cmd conda "Check the anaconda root path, conda not found"
     conda activate $VTK_CONDA_ENV
     test_return "Error in conda activation\n"
