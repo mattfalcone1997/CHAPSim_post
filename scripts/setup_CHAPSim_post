@@ -51,6 +51,8 @@ if [ $USE_CONDA -eq 1 ]; then
 
 	$CONDA_PREFIX/bin/python $CHAPSIM_POST_ROOT/setup.py install
 
+	cd $CHAPSIM_POST_ROOT/scripts
+
 	$CONDA_PREFIX/bin/python -c "import CHAPSim_post" > /dev/null
 
 	test_return "CHAPSim_post import test failed" 
