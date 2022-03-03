@@ -67,6 +67,9 @@ fi
 # Installing vtk dependencies
 
 VTK_DEPS=$VTK_INSTALL_ROOT/deps
+
+mkdir -p $VTK_DEPS
+
 cd $VTK_DEPS
 LIB_PATH=$VTK_DEPS/build/install
 
