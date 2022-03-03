@@ -39,8 +39,6 @@ if [ $USE_CONDA -eq 1 ]; then
 
 fi
 
-exit 0
-
 if [ $USE_CONDA -eq 1 ]; then
 
 	if [ $CONDA_ENV_EXISTS -eq 1 ]; then
