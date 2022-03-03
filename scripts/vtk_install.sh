@@ -1,15 +1,31 @@
 #!/bin/bash
 
-VTK_INSTALL_ROOT=${PWD}/test
-# CONDA_ENV=CHAPSim_post
+# VTK_INSTALL_ROOT=${PWD}/test
+# VTK_CONDA_ENV=CHAPSim_post
 
 ###############################################################################
 # test setup
 source ./helper_funcs.sh
 
-if [ ! -z ${CONDA_ENV+x} ]; then
-    conda activate $CONDA_ENV
+if [ -z ${VTK_INSTALL_ROOT+x} ]; then 
+    echo -e "environment variable VTK_INSTALL_ROOT must be set"
+    exit 1
+else 
+    echo -e "VTK installation root directory is: $VTK_INSTALL_ROOT"
+fi
+
+if [ ! -z ${VTK_CONDA_ENV+x} ]; then
+    conda activate $VTK_CONDA_ENV
     test_return "Error in conda activation\n"
+
+    echo -e "Using conda python with conda environment $VTK_CONDA_ENV" 
+    sleep 5
+
+else
+    echo -e "Using system python. Press ctrl - C"\
+        ", if you want to use conda and "\
+        "set the required environment variables" 
+    sleep 5
 fi
 
 PYBIN=$(which python3)

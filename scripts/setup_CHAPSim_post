@@ -1,8 +1,7 @@
 #!/bin/bash
 
 #CHAPSIM_CONDA_PATH=$HOME/SOFTWARE/anaconda
-#CHAPSIM_CONDA_ENV=CHAPSim_post
-
+#CHAPSIM_USE_CONDA
 
 if [ ! -f ../setup.py ]; then
 	echo -e "This script must be run from the \
@@ -18,10 +17,10 @@ cd ../
 CHAPSIM_POST_ROOT=${PWD}
 echo -e "Root directory: $CHAPSIM_POST_ROOT"
 
-if [ -z "${CHAPSIM_CONDA_ENV+x}" ]; then USE_CONDA=0; else USE_CONDA=1; fi
+if [ -z "${CHAPSIM_USE_CONDA+x}" ]; then USE_CONDA=0; else USE_CONDA=1; fi
 
 if [ $USE_CONDA -eq 1 ]; then
-	echo -e "Using conda environment: $CHAPSIM_CONDA_ENV"
+	echo -e "Using conda environment: CHAPSim_post"
 
 	source $CHAPSIM_CONDA_PATH/etc/profile.d/conda.sh 2>/dev/null
 
@@ -47,13 +46,16 @@ if [ $USE_CONDA -eq 1 ]; then
 		conda env update -f scripts/CHAPSim_post.yml  --prune
 	fi
 
-	conda activate $CONDA_ENV
+	conda activate CHAPSim_post
 
-	$CONDA_PREFIX/bin/python $CHAPSIM_POST_ROOT/setup.py install
+	PYBIN=$(which python3)
+	test_cmd $PYBIN
+	
+	$PYBIN $CHAPSIM_POST_ROOT/setup.py install
 
 	cd $CHAPSIM_POST_ROOT/scripts
 
-	$CONDA_PREFIX/bin/python -c "import CHAPSim_post" > /dev/null
+	$PYBIN -c "import CHAPSim_post" > /dev/null
 
 	test_return "CHAPSim_post import test failed" 
 	conda deactivate
