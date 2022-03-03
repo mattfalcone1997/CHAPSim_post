@@ -89,7 +89,7 @@ cmake -GNinja -DENABLE_osmesa=ON \
 
 test_return "Issue configuring install of VTK dependencies"
 
-ninja
+ninja -v
 
 test_return "Issue building VTK dependencies"
 
