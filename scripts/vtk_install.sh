@@ -64,8 +64,6 @@ if [ $CMAKE_MINOR_VERSION -lt 12 ]; then
     exit 1
 fi
 
-exit 0
-
 # Installing vtk dependencies
 
 VTK_DEPS=$VTK_INSTALL_ROOT/deps
