@@ -55,12 +55,11 @@ CMAKE_MAJOR_VERSION=$(echo $CMAKE_VERSION | tr "." " " | gawk '{print $1}')
 CMAKE_MINOR_VERSION=$(echo $CMAKE_VERSION | tr "." " " | gawk '{print $2}')
 
 if [ $CMAKE_MAJOR_VERSION -lt 3 ]; then
-    echo "cmake version required is 3.12 or higher"
-    exit 1
+    echo "cmake version required is 3.18 or higher"
 fi
 
 if [ $CMAKE_MINOR_VERSION -lt 12 ]; then
-    echo "cmake version required is 3.12 or higher"
+    echo "cmake version required is 3.18 or higher"
     exit 1
 fi
 
@@ -68,13 +67,18 @@ fi
 
 VTK_DEPS=$VTK_INSTALL_ROOT/deps
 
+if [ -d $VTK_DEPS ]; then
+    rm -rf $VTK_DEPS
+fi
+
 mkdir -p $VTK_DEPS
+
 
 cd $VTK_DEPS
 LIB_PATH=$VTK_DEPS/build/install
 
 git clone --recursive https://gitlab.kitware.com/paraview/paraview-superbuild.git
-mkdir build && cd build
+mkdir -p build && cd build
 cmake -GNinja -DENABLE_osmesa=ON \
                 -DENABLE_mpi=ON \
                 -DENABLE_hdf5=ON \
