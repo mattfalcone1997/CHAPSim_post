@@ -18,7 +18,7 @@ fi
 if [ ! -z ${VTK_CONDA_ENV+x} ]; then
 
     chk_dir $VTK_CONDA_PATH
-    
+
     echo -e "Path to conda is $VTK_CONDA_PATH"
     echo -e "Using conda environment: $VTK_CONDA_ENV"
 
@@ -44,7 +44,7 @@ PYBIN=$(which python3)
 
 test_cmd $PYBIN
 
-chk_dir $VTK_INSTALL_ROOT
+mkdir -p $VTK_INSTALL_ROOT
 
 #==========================================================
 
