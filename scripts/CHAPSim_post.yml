@@ -1,4 +1,4 @@
-name: CHAPSim_post_new
+name: CHAPSim_post
 channels:
   - defaults
   - conda-forge

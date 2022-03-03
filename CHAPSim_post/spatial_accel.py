@@ -107,6 +107,7 @@ class TEST_flow_quant(blayer_TEST_base):
         self._get_ini_thickesses(iter)
         self._get_Cf(iter)
         self._get_interp_test()
+        self._get_eps_calc()
         if iter is not None:
             self._get_avg_data(time)
     
@@ -192,6 +193,12 @@ class TEST_flow_quant(blayer_TEST_base):
         self.fluctInterpDF = pd.DataFrame(array,
                                         columns=columns,
                                         index=index)
+    def _get_eps_calc(self):
+        file = os.path.join(self._debug_folder,'CHK_quant_eps_calc.csv')
+        
+        self.epsDF = pd.read_csv(file).dropna(axis=1).pivot_table(index='Iteration').squeeze()
+        
+        
     def _get_avg_data(self,time):
         if self._blayer_folder is None:
             self.AVGdata = None
@@ -360,17 +367,17 @@ class TEST_initialiseBlayer(blayer_TEST_base):
         self.y_scalesDF = pd.DataFrame(file_array[:,1:4],
                                         columns=columns,
                                         index=index)
-        columns = ['logistic','spaldings','velo defect']
-        self.velo_compsDF = pd.DataFrame(file_array[:,4:7],
+        columns = ['spaldings','velo defect']
+        self.velo_compsDF = pd.DataFrame(file_array[:,4:6],
                                         columns=columns,
                                         index=index)
         
         columns = ['u plus','u','u_check']
-        self.veloDF = pd.DataFrame(file_array[:,7:10],
+        self.veloDF = pd.DataFrame(file_array[:,6:9],
                                         columns=columns,
                                         index=index)
         columns = ['delta v', 'u tau', 'Cf']
-        self.wall_unitDF = pd.DataFrame(file_array[:,10:13],
+        self.wall_unitDF = pd.DataFrame(file_array[:,9:12],
                                         columns=columns,
                                         index=index)
     def _get_fluct_ini(self):
@@ -414,7 +421,10 @@ class TEST_FreestreamWall(blayer_TEST_base):
     def __init__(self,path_to_folder,iter=None):
         super().__init__(path_to_folder)
         self._get_Q_freestream(iter)
-        self._get_G_freestream(iter)
+        try:
+            self._get_G_freestream(iter)
+        except Exception as e:
+            pass
         
     def _get_Q_freestream(self,iter=None):
         if iter is None:
@@ -430,13 +440,13 @@ class TEST_FreestreamWall(blayer_TEST_base):
                                         columns=columns,
                                         index=index)
         
-        columns = ['disp grad local', 'disp grad global','delta','dx']
-        self.DispGradDF = pd.DataFrame(file_array[:,6:10],
+        columns = ['disp grad', 'delta','dx']
+        self.DispGradDF = pd.DataFrame(file_array[:,6:9],
                                         columns=columns,
                                         index=index)
         
         columns = ['U vel _grad', 'W velo grad']
-        self.VeloGrad = pd.DataFrame(file_array[:,10:12],
+        self.VeloGrad = pd.DataFrame(file_array[:,9:11],
                                         columns=columns,
                                         index=index)
                 
@@ -454,13 +464,13 @@ class TEST_FreestreamWall(blayer_TEST_base):
                                         columns=columns,
                                         index=index)
         
-        columns = ['ddelta_dx_l', 'ddelta_dx_g','delta','dx']
-        self.GDispGradDF = pd.DataFrame(file_array[:,5:9],
+        columns = ['ddelta_dx', 'delta','dx']
+        self.GDispGradDF = pd.DataFrame(file_array[:,5:8],
                                         columns=columns,
                                         index=index)
         
         columns = ['U_velo_grad', 'W_velo_grad']
-        self.GVeloGrad = pd.DataFrame(file_array[:,9:],
+        self.GVeloGrad = pd.DataFrame(file_array[:,8:],
                                         columns=columns,
                                         index=index)
         
@@ -535,7 +545,7 @@ class TEST_recycle_rescale(blayer_TEST_base):
         index = self._meta_data.CoordDF['y']
         columns = ['inner','outer','plane']
         
-        self.UmeanDF = pd.DataFrame(file_array[:,3:],
+        self.UmeanDF = pd.DataFrame(file_array[:,-3:],
                                         columns=columns,
                                         index=index)
         
@@ -549,7 +559,34 @@ class TEST_recycle_rescale(blayer_TEST_base):
         file_array = np.loadtxt(file)
         
         columns = ['inner','outer','plane']
-        self.UfluctDF = pd.DataFrame(file_array[:,2:],
+        self.UfluctDF = pd.DataFrame(file_array[:,-3:],
+                                        columns=columns,
+                                        index=index)
+        if iter is None:
+            file = os.path.join(self._debug_folder,'CHK_V_VELO_INTERP.dat')
+        else:
+            file = os.path.join(self._debug_folder,'CHK_V_VELO_INTERP.%d.dat'%iter)
+            assert os.path.isfile(file)
+            
+        file_array = np.loadtxt(file)
+        index = self._meta_data.CoordDF['y'][1:]
+        columns = ['inner','outer','plane']
+        
+        self.VmeanDF = pd.DataFrame(file_array[:,-3:],
+                                        columns=columns,
+                                        index=index)
+        
+        if iter is None:
+            file = os.path.join(self._debug_folder,'CHK_V_VELO_INTERP_FLUCT.dat')
+        else:
+            file = os.path.join(self._debug_folder,'CHK_V_VELO_INTERP_FLUCT.%d.dat'%iter)
+            assert os.path.isfile(file)
+        
+    
+        file_array = np.loadtxt(file)
+        
+        columns = ['inner','outer','plane']
+        self.VfluctDF = pd.DataFrame(file_array[:,-3:],
                                         columns=columns,
                                         index=index)
             
