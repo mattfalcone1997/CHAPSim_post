@@ -84,16 +84,19 @@ cmake -GNinja -DENABLE_osmesa=ON \
                 -DENABLE_hdf5=ON \
                 -DENABLE_ffmpeg=ON \
                 -DENABLE_paraview=OFF \
-                -DENABLE_python=OFF \
+                -DUSE_SYSTEM_python=ON \
                 -Dmesa_USE_SWR=OFF  \
                 ../paraview-superbuild
 
 test_return "Issue configuring install of VTK dependencies"
 
+sleep 5
+
 ninja -v
 
 test_return "Issue building VTK dependencies"
 
+sleep 5
 # installing vtk
 
 VTK_BUILD_PATH=$VTK_INSTALL_ROOT/build
@@ -128,6 +131,8 @@ cmake -GNinja\
     -S ../ -B .
     
 test_return "Issue configuring install of VTK"
+
+sleep 5
 
 ninja -v
 
