@@ -79,7 +79,7 @@ LIB_PATH=$VTK_DEPS/build/install
 
 git clone --recursive -b v5.10.0-RC1 https://gitlab.kitware.com/paraview/paraview-superbuild.git
 mkdir -p build && cd build
-cmake -GNinja -DENABLE_egl=ON \
+cmake -GNinja -DENABLE_mesa=ON \
                 -DENABLE_mpi=OFF \
                 -DENABLE_hdf5=ON \
                 -DENABLE_ffmpeg=ON \
