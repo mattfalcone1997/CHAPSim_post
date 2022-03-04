@@ -152,14 +152,19 @@ def fluct_calc_tg_f4(np.ndarray[np.float32_t, ndim =3] inst_array,
 
 def fluct_calc_io(np.ndarray inst_array, np.ndarray avg_array):
 
-    if isinstance(inst_array,np.float64):
+    if inst_array.dtype == np.float64:
         return  fluct_calc_io_f8(inst_array,avg_array)
-    elif isinstance(inst_array,np.float32): 
+    elif inst_array.dtype == np.float32: 
         return  fluct_calc_io_f4(inst_array,avg_array)
-
+    else:
+        msg = f"fluct_calc cannot handle type {inst_array.dtype}"
+        raise TypeError(msg)
 def fluct_calc_tg(np.ndarray inst_array, np.ndarray avg_array):
 
-    if isinstance(inst_array,np.float64):
+    if inst_array.dtype == np.float64:
         return  fluct_calc_tg_f8(inst_array,avg_array)
-    elif isinstance(inst_array,np.float32): 
+    elif inst_array.dtype == np.float32: 
         return  fluct_calc_tg_f4(inst_array,avg_array)
+    else:
+        msg = f"fluct_calc cannot handle type {inst_array.dtype}"
+        raise TypeError(msg)

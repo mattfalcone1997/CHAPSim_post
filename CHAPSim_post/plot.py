@@ -584,10 +584,10 @@ def _default_update_new(name,type_kw,**kwargs):
         raise TypeError(f"{name} needs to be a dictionary")
 
     for key, val in kwargs.items():
-        if key not in contour_kw.keys():
-            contour_kw[key] = val    
+        if key not in type_kw.keys():
+            type_kw[key] = val    
 
-    return contour_kw
+    return type_kw
 
 def _default_update_replace(name,type_kw,**kwargs):
     if type_kw is None:
@@ -653,7 +653,7 @@ def update_line_kw(line_kw,**kwargs):
 
 
 def update_subplots_kw(subplots_kw,**kwargs):  
-    return _default_update_replace('subplots_kw',subplots_kw,**kwargs)
+    return _default_update_new('subplots_kw',subplots_kw,**kwargs)
 
 def _check__mpl_kwargs(artist,kwargs):
     kw_copy = copy.deepcopy(kwargs)
@@ -669,7 +669,7 @@ def _check__mpl_kwargs(artist,kwargs):
             
         
 def create_fig_ax_with_squeeze(fig=None,ax=None,**kwargs):
-    
+
     if fig is None:
         fig, ax = subplots(**kwargs)
     elif ax is None:

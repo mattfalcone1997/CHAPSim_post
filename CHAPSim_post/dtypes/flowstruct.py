@@ -1513,6 +1513,7 @@ class FlowStruct3D(FlowStructND):
         
         flowstruct = self[time,[comp]]
         flowstruct = flowstruct.slice[slicer]
+
         fig, ax = flowstruct.plot_contour(comp,time=time,rotate=rotate,
                                             fig=fig,ax=ax,contour_kw=contour_kw,
                                             **kwargs)
