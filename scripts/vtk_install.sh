@@ -77,7 +77,7 @@ mkdir -p $VTK_DEPS
 cd $VTK_DEPS
 LIB_PATH=$VTK_DEPS/build/install
 
-git clone --recursive -b v5.10-RC1 https://gitlab.kitware.com/paraview/paraview-superbuild.git
+git clone --recursive -b v5.10.0-RC1 https://gitlab.kitware.com/paraview/paraview-superbuild.git
 mkdir -p build && cd build
 cmake -GNinja -DENABLE_osmesa=ON \
                 -DENABLE_mpi=OFF \
