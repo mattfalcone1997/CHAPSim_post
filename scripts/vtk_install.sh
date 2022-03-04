@@ -85,7 +85,7 @@ cmake -GNinja -DENABLE_osmesa=ON \
                 -DENABLE_ffmpeg=ON \
                 -DENABLE_paraview=OFF \
                 -DENABLE_python=OFF \
-                -Dmesa_USE_SWR=OFF
+                -Dmesa_USE_SWR=OFF  \
                 ../paraview-superbuild
 
 test_return "Issue configuring install of VTK dependencies"
