@@ -60,7 +60,7 @@ def velo_interp3D(np.ndarray[np.float_t, ndim=3] flow_array,
 @cython.cdivision(True)
 @cython.boundscheck(False) 
 @cython.wraparound(False) 
-def fluct_calc_io(np.ndarray[np.float64_t, ndim =3] inst_array,
+def fluct_calc_io_f8(np.ndarray[np.float64_t, ndim =3] inst_array,
                     np.ndarray[np.float64_t, ndim=2] avg_array):
 
     cdef Py_ssize_t NCL3 = inst_array.shape[0]
@@ -69,7 +69,7 @@ def fluct_calc_io(np.ndarray[np.float64_t, ndim =3] inst_array,
 
     cdef Py_ssize_t i, j, k
 
-    cdef np.ndarray[double, ndim =3] fluct_array
+    cdef np.ndarray[np.float64_t, ndim =3] fluct_array
 
     fluct_array = np.zeros_like(inst_array)
 
@@ -80,11 +80,33 @@ def fluct_calc_io(np.ndarray[np.float64_t, ndim =3] inst_array,
 
     return fluct_array
 
+@cython.cdivision(True)
+@cython.boundscheck(False) 
+@cython.wraparound(False) 
+def fluct_calc_io_f4(np.ndarray[np.float32_t, ndim =3] inst_array,
+                    np.ndarray[np.float32_t, ndim=2] avg_array):
+
+    cdef Py_ssize_t NCL3 = inst_array.shape[0]
+    cdef Py_ssize_t NCL2 = inst_array.shape[1]
+    cdef Py_ssize_t NCL1 = inst_array.shape[2]
+
+    cdef Py_ssize_t i, j, k
+
+    cdef np.ndarray[np.float32_t, ndim =3] fluct_array
+
+    fluct_array = np.zeros_like(inst_array)
+
+    for i in prange(NCL3,nogil=True):
+        for j in prange(NCL2):
+            for k in prange(NCL1):
+                fluct_array[i,j,k] = inst_array[i,j,k] - avg_array[j,k]
+
+    return fluct_array
 
 @cython.cdivision(True)
 @cython.boundscheck(False) 
 @cython.wraparound(False) 
-def fluct_calc_tg(np.ndarray[np.float64_t, ndim =3] inst_array,
+def fluct_calc_tg_f8(np.ndarray[np.float64_t, ndim =3] inst_array,
                     np.ndarray[np.float64_t, ndim=1] avg_array):
 
     cdef Py_ssize_t NCL3 = inst_array.shape[0]
@@ -93,7 +115,7 @@ def fluct_calc_tg(np.ndarray[np.float64_t, ndim =3] inst_array,
 
     cdef Py_ssize_t i, j, k
 
-    cdef np.ndarray[double, ndim =3] fluct_array
+    cdef np.ndarray[np.float64_t, ndim =3] fluct_array
 
     fluct_array = np.zeros_like(inst_array)
 
@@ -103,3 +125,41 @@ def fluct_calc_tg(np.ndarray[np.float64_t, ndim =3] inst_array,
                 fluct_array[i,j,k] = inst_array[i,j,k] - avg_array[j]
 
     return fluct_array
+
+
+@cython.cdivision(True)
+@cython.boundscheck(False) 
+@cython.wraparound(False) 
+def fluct_calc_tg_f4(np.ndarray[np.float32_t, ndim =3] inst_array,
+                    np.ndarray[np.float32_t, ndim=1] avg_array):
+
+    cdef Py_ssize_t NCL3 = inst_array.shape[0]
+    cdef Py_ssize_t NCL2 = inst_array.shape[1]
+    cdef Py_ssize_t NCL1 = inst_array.shape[2]
+
+    cdef Py_ssize_t i, j, k
+
+    cdef np.ndarray[np.float32_t, ndim =3] fluct_array
+
+    fluct_array = np.zeros_like(inst_array)
+
+    for i in prange(NCL3,nogil=True):
+        for j in prange(NCL2):
+            for k in prange(NCL1):
+                fluct_array[i,j,k] = inst_array[i,j,k] - avg_array[j]
+
+    return fluct_array
+
+def fluct_calc_io(np.ndarray inst_array, np.ndarray avg_array):
+
+    if isinstance(inst_array,np.float64):
+        return  fluct_calc_io_f8(inst_array,avg_array)
+    elif isinstance(inst_array,np.float32): 
+        return  fluct_calc_io_f4(inst_array,avg_array)
+
+def fluct_calc_tg(np.ndarray inst_array, np.ndarray avg_array):
+
+    if isinstance(inst_array,np.float64):
+        return  fluct_calc_tg_f8(inst_array,avg_array)
+    elif isinstance(inst_array,np.float32): 
+        return  fluct_calc_tg_f4(inst_array,avg_array)
