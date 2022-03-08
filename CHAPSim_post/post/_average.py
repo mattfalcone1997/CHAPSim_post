@@ -490,8 +490,8 @@ class CHAPSim_AVG_io(_AVG_developing):
         self.PR_Velo_grad_tensorDF.Translate(translation)
         self.DUDX2_tensorDF.Translate(translation)
         
-        self.CoordDF.Translate([0,*translation])
-        self.Coord_ND_DF.Translate([0,*translation])
+        self.CoordDF.Translate([*translation[::-1],0])
+        self.Coord_ND_DF.Translate([*translation[::-1],0])
         
     def _return_index(self,x_val):
         return indexing.coord_index_calc(self.CoordDF,'x',x_val)
