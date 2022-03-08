@@ -922,7 +922,12 @@ class CHAPSim_momentum_budget_tg(_momentum_budget_base,_budget_base):
             budget = self.budgetDF[PhyTime,comp]
 
             int_budget = self.Domain.Integrate_cumult(self.CoordDF,budget)
-            ax.cplot(y_coords,int_budget,**line_kw)
+            fig, ax = self.budgetDF.plot_line_data(int_budget,
+                                                    time=PhyTime,
+                                                    channel_half=True,
+                                                    fig=fig,
+                                                    ax=ax,
+                                                    line_kw=line_kw)
 
         if mpl.rcParams['text.usetex'] == True:
             ax.set_ylabel(r"Loss\ \ \ \ \ \ \ \ Gain")
