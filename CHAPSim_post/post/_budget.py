@@ -810,18 +810,24 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
         fig, ax = self._create_budget_axes(x_list,fig,ax,**kwargs)
         line_kw= cplt.update_line_kw(line_kw)
 
-        x_indices = self.CoordDF.index_calc('x',x_list)
         y_coords = self.CoordDF['y']
-        for i,x_loc in enumerate(x_indices):
+        for i,x_loc in enumerate(x_list):
             for comp in budget_terms:
                 
                 line_kw['label'] = self.title_with_math(comp)
+                
                 budget = self.budgetDF[PhyTime,comp]
-
                 int_budget = self.Domain.Integrate_cumult(self.CoordDF,budget)
-                ax[i].cplot(y_coords,int_budget[:,x_loc],**line_kw)
-
-
+                
+                fig, ax[i] = self.budgetDF.plot_line_data(int_budget,
+                                                          'y',
+                                                          x_loc,
+                                                          time=PhyTime,
+                                                          channel_half=True,
+                                                          fig=fig,
+                                                          ax=ax[i],
+                                                          line_kw=line_kw)
+                                                          
             if mpl.rcParams['text.usetex'] == True:
                 ax[i].set_ylabel(r"Loss\ \ \ \ \ \ \ \ Gain")
             else:
