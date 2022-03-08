@@ -740,11 +740,14 @@ class FlowStructND(_FlowStruct_base):
         if data_layout is None:
             raise Exception
         
+        
 
             
         for i, data in enumerate(data_layout):
             if not data in self.CoordDF.index:
                 msg = "Coord index must be in the coordstruct"
+                raise ValueError(msg)
+            
             if self.CoordDF[data].size != self.shape[i]:
                 coord_shape = tuple(d.size for _,d in self.CoordDF)
                 msg = ("There is an issue with the data layout\n"
@@ -765,7 +768,13 @@ class FlowStructND(_FlowStruct_base):
         self._wall_normal_line = wall_normal_line
         self._dim = self._data[0].ndim
 
-    
+
+        # remove coordinates not in data layout
+        for comp in self.CoordDF.index:
+            if comp not in self._data_layout:
+                del self.CoordDF[comp]
+                del self.Coord_ND_DF[comp]
+        
     def plot_line(self,comp: str,
                   time: Number =None,
                   label: str =None,
