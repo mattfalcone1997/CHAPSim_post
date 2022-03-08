@@ -245,7 +245,16 @@ class coordstruct(datastruct):
         coord_set = set(list('xyz'))
         coord = "".join(coord_set.difference(slice_set))
         return plane, coord
-
+    
+    def Translate(self,translation):
+        if not len(translation) == len(self.index):
+            msg = ("Length of translation vector must"
+                   " be the same as the coordstruct dimension")
+            raise ValueError(msg)
+        index = self.CoordDF.index
+        for i,comp in enumerate(index):
+            self[comp] += translation[i]
+            
     def check_line(self,line):
         if line not in self.index:
             msg = f"The line must be in {self.index}"

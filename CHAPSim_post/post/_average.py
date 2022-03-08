@@ -58,7 +58,21 @@ class _AVG_base(Common,ABC):
     @abstractmethod
     def ycoords_from_norm_coords(self,*args,**kwargs):
         pass
-
+    
+    def Translate(self,translation):
+        
+        self.flow_AVGDF.Translate(translation)
+        self.PU_vectorDF.Translate(translation)
+        self.UU_tensorDF.Translate(translation)
+        self.UUU_tensorDF.Translate(translation)
+        self.Velo_grad_tensorDF.Translate(translation)
+        self.PR_Velo_grad_tensorDF.Translate(translation)
+        self.DUDX2_tensorDF.Translate(translation)
+        
+        self.CoordDF.Translate(translation)
+        self.Coord_ND_DF.Translate(translation)
+        
+    
     @property
     def shape(self):
         avg_index = self.flow_AVGDF.index[0]

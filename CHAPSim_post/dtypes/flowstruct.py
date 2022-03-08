@@ -639,7 +639,16 @@ class FlowStructND(_FlowStruct_base):
             return VTKstruct3D(self,cell_data = use_cell_data)
         else:
             raise Exception
-
+        
+    def Translate(self,translation):
+        if not len(translation) == self._dim:
+            msg = ("Length of translation vector must"
+                   " be the same as the FlowStruct dimension")
+            raise ValueError(msg)
+        
+        self.CoordDF.Translate(translation)
+        self.Coord_ND_DF.Translate(translation)
+            
     def to_vtk(self,file_name: str):
         """
         Outputs .vts file of FlowStruct
