@@ -93,22 +93,11 @@ _avg_tg_base_class = CHAPSim_AVG_temp
 _avg_tg_class = CHAPSim_AVG_temp
 
 class CHAPSim_AVG_temp_conv(CHAPSim_AVG_temp):
-
-    @classmethod
-    def with_phase_average(cls,*args,**kwargs):
-        obj = super().with_phase_average(*args, **kwargs)
-        obj.CoordDF['x'] = obj.conv_distance_calc()
-        return obj
-
-    # @property
-    # def CoordDF(self):
-    #     CoordDF = super().CoordDF
-    #     CoordDF['x'] = self.conv_distance_calc()
-    #     return CoordDF
-
-    def _extract_avg(self,*args,**kwargs):
-        super()._extract_avg(*args,**kwargs)
-
+        
+    def __init__(self,other_avg):
+        state = other_avg.__getstate__()
+        self.__setstate__(state)
+        
         self.CoordDF['x'] = self.conv_distance_calc()
 
     def _return_index(self,x_val):
@@ -118,36 +107,6 @@ class CHAPSim_AVG_temp_conv(CHAPSim_AVG_temp):
         return super()._return_index(time)
     def _return_xaxis(self):
         return self.CoordDF['x']
-
-    def filter_times(self,times):
-        filter_times = ["%.9g"% time for time in times]
-        time_list = list(set(self._times).intersection(set(filter_times)))
-        time_list = sorted(float(x) for x in time_list)
-        # time_list = ["%.9g"%x for x in time_list]
-        index_list = [self._return_time_index(x) for x in time_list]
-        
-        self._times = time_list
-
-        for index in self.flow_AVGDF.index:
-            self.flow_AVGDF[index] = self.flow_AVGDF[index][:,index_list]
-
-        for index in self.UU_tensorDF.index:
-            self.UU_tensorDF[index] = self.UU_tensorDF[index][:,index_list]
-        
-        for index in self.UUU_tensorDF.index:
-            self.UUU_tensorDF[index] = self.UUU_tensorDF[index][:,index_list]
-
-        for index in self.PU_vectorDF.index:
-            self.PU_vectorDF[index] = self.PU_vectorDF[index][:,index_list]
-
-        for index in self.Velo_grad_tensorDF.index:
-            self.Velo_grad_tensorDF[index] = self.Velo_grad_tensorDF[index][:,index_list]
-        
-        for index in self.PR_Velo_grad_tensorDF.index:
-            self.PR_Velo_grad_tensorDF[index] = self.PR_Velo_grad_tensorDF[index][:,index_list]
-
-        for index in self.DUDX2_tensorDF.index:
-            self.DUDX2_tensorDF[index] = self.DUDX2_tensorDF[index][:,index_list]
 
     def plot_shape_factor(self,*args,**kwargs):
         fig, ax = super().plot_shape_factor(*args,**kwargs)    
