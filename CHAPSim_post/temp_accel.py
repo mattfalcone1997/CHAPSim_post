@@ -129,6 +129,7 @@ class CHAPSim_AVG_temp_conv(CHAPSim_AVG_temp):
         x_vals = indexing.true_coords_from_coords(self.CoordDF,'x',x_vals)
         lines = ax.get_lines()[-len(x_vals):]
         for line,x in zip(lines,x_vals):
+            line.set_xdata(self.CoordDF['x'])
             line.set_label(r"$x_{conv}=%.3g$"%float(x))
         
         ax.get_legend().remove()
@@ -140,6 +141,7 @@ class CHAPSim_AVG_temp_conv(CHAPSim_AVG_temp):
 
     def plot_Reynolds_x(self,*args,**kwargs):
         fig, ax = super().plot_Reynolds_x(*args,**kwargs)
+        ax.get_lines()[-1].set_xdata(self.CoordDF['x'])
         ax.set_xlabel(r"$x_{conv}$")
         ax.relim()
         ax.autoscale_view()
@@ -148,6 +150,7 @@ class CHAPSim_AVG_temp_conv(CHAPSim_AVG_temp):
 
     def plot_bulk_velocity(self,*args,**kwargs):
         fig, ax = super().plot_bulk_velocity(*args,**kwargs)
+        ax.get_lines()[-1].set_xdata(self.CoordDF['x'])
         ax.set_xlabel(r"$x_{conv}$")
         ax.relim()
         ax.autoscale_view()
@@ -155,6 +158,7 @@ class CHAPSim_AVG_temp_conv(CHAPSim_AVG_temp):
 
     def plot_skin_friction(self,*args,**kwargs):
         fig, ax = super().plot_skin_friction(*args,**kwargs)
+        ax.get_lines()[-1].set_xdata(self.CoordDF['x'])
         ax.set_xlabel(r"$x_{conv}$")
         ax.relim()
         ax.autoscale_view()
@@ -180,6 +184,7 @@ class CHAPSim_AVG_temp_conv(CHAPSim_AVG_temp):
         lines = ax.get_lines()[-len(x_vals):]
         for line,x in zip(lines,x_vals):
             line.set_label(r"$x_{conv}=%.3g$"%float(x))
+            
         ax.get_legend().remove()
         ncol = cplt.get_legend_ncols(len(lines))
         ax.clegend(vertical=False,ncol=ncol)
