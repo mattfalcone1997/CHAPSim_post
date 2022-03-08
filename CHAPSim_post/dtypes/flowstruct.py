@@ -645,9 +645,11 @@ class FlowStructND(_FlowStruct_base):
             msg = ("Length of translation vector must"
                    " be the same as the FlowStruct dimension")
             raise ValueError(msg)
+        
         reorder = np.argsort(self._data_layout)
         coord_order = np.arange(self._dim)[np.argsort(self.CoordDF.index)]
         
+        translation = np.array(translation)
         self.CoordDF.Translate(translation[reorder][coord_order])
         self.Coord_ND_DF.Translate(translation[reorder][coord_order])
             
