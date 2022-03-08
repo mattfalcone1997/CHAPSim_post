@@ -21,6 +21,7 @@ import CHAPSim_post as cp
 import copy
 
 from pandas._libs.index import ObjectEngine
+import pandas as pd
 from pandas.core.indexes.multi import MultiIndexPyIntEngine, MultiIndexUIntEngine
 from abc import abstractmethod, abstractproperty, ABC
 # from .coords import AxisData
@@ -227,8 +228,10 @@ class Index(IndexBase):
 
     def _update_internals(self):
         values = np.array(self._index,dtype=object)
-        self.__engine = ObjectEngine(lambda: values,len(values))
-
+        if pd.__version__ < '1.4': 
+            self.__engine = ObjectEngine(values,len(values))
+        else:
+            self.__engine = ObjectEngine(values)
 class MultiIndex(IndexBase):
     def __init__(self,indices):
         if not all(isinstance(index,tuple) for index in indices):
