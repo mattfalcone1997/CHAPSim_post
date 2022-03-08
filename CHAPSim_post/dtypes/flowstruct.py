@@ -645,9 +645,10 @@ class FlowStructND(_FlowStruct_base):
             msg = ("Length of translation vector must"
                    " be the same as the FlowStruct dimension")
             raise ValueError(msg)
+        reorder = np.argsort(self._dim, order=self.CoordDF.index)
         
-        self.CoordDF.Translate(translation)
-        self.Coord_ND_DF.Translate(translation)
+        self.CoordDF.Translate(translation[reorder])
+        self.Coord_ND_DF.Translate(translation[reorder])
             
     def to_vtk(self,file_name: str):
         """
