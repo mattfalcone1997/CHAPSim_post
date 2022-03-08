@@ -58,19 +58,6 @@ class _AVG_base(Common,ABC):
     @abstractmethod
     def ycoords_from_norm_coords(self,*args,**kwargs):
         pass
-    
-    def Translate(self,translation):
-        
-        self.flow_AVGDF.Translate(translation)
-        self.PU_vectorDF.Translate(translation)
-        self.UU_tensorDF.Translate(translation)
-        self.UUU_tensorDF.Translate(translation)
-        self.Velo_grad_tensorDF.Translate(translation)
-        self.PR_Velo_grad_tensorDF.Translate(translation)
-        self.DUDX2_tensorDF.Translate(translation)
-        
-        self.CoordDF.Translate([0,*translation])
-        self.Coord_ND_DF.Translate([0,*translation])
         
     
     @property
@@ -493,6 +480,19 @@ class CHAPSim_AVG_io(_AVG_developing):
     def _shape_devel(self):
         return self.shape
 
+    def Translate(self,translation):
+        
+        self.flow_AVGDF.Translate(translation)
+        self.PU_vectorDF.Translate(translation)
+        self.UU_tensorDF.Translate(translation)
+        self.UUU_tensorDF.Translate(translation)
+        self.Velo_grad_tensorDF.Translate(translation)
+        self.PR_Velo_grad_tensorDF.Translate(translation)
+        self.DUDX2_tensorDF.Translate(translation)
+        
+        self.CoordDF.Translate([0,*translation])
+        self.Coord_ND_DF.Translate([0,*translation])
+        
     def _return_index(self,x_val):
         return indexing.coord_index_calc(self.CoordDF,'x',x_val)
 
