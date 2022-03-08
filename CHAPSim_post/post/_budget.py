@@ -810,7 +810,6 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
         fig, ax = self._create_budget_axes(x_list,fig,ax,**kwargs)
         line_kw= cplt.update_line_kw(line_kw)
 
-        y_coords = self.CoordDF['y']
         for i,x_loc in enumerate(x_list):
             for comp in budget_terms:
                 
@@ -827,7 +826,10 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
                                                           fig=fig,
                                                           ax=ax[i],
                                                           line_kw=line_kw)
-                                                          
+            
+            title = self.Domain.create_label(r"$x = %.2g$"%x_loc)
+            ax[i].set_title(title,loc='right')                                              
+            
             if mpl.rcParams['text.usetex'] == True:
                 ax[i].set_ylabel(r"Loss\ \ \ \ \ \ \ \ Gain")
             else:
@@ -976,7 +978,7 @@ class CHAPSim_momentum_budget_temp(CHAPSim_momentum_budget_tg,_budget_base):
             ax[i].set_title(r"$%s = %.3g$"%(time_label,time),loc='right')
 
         handles = ax[0].get_lines()
-        labels = [line.get_label() for line in handles]
+        labels = [line.get_label() for line in   handles]
 
         handles = cplt.flip_leg_col(handles,4)
         labels = cplt.flip_leg_col(labels,4)
