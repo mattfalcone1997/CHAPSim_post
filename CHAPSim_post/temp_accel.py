@@ -8,6 +8,7 @@ from . import post as cp
 from . import dtypes as cd
 from . import plot as cplt
 from .utils import indexing
+import types
 import numpy as np
 
 import scipy
@@ -87,6 +88,11 @@ class CHAPSim_AVG_temp(cp.CHAPSim_AVG_temp):
         #ax.grid()
         fig.tight_layout()
         return fig,ax
+    
+    def _get_data_attr(self):
+        data_dict__ = {x : self.__dict__[x] for x in self.__dict__ \
+                        if not isinstance(x,types.MethodType)}
+        return data_dict__
 
 _avg_tg_base_class = CHAPSim_AVG_temp
 
@@ -95,8 +101,8 @@ _avg_tg_class = CHAPSim_AVG_temp
 class CHAPSim_AVG_temp_conv(CHAPSim_AVG_temp):
         
     def __init__(self,other_avg):
-        state = other_avg.__getstate__()
-        self.__setstate__(state)
+        
+        self.__dict__.update(other_avg._get_data_attr())
         
         self.CoordDF['x'] = self.conv_distance_calc()
 
