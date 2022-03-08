@@ -251,8 +251,8 @@ class coordstruct(datastruct):
             msg = ("Length of translation vector must"
                    " be the same as the coordstruct dimension")
             raise ValueError(msg)
-        index = self.CoordDF.index
-        for i,comp in enumerate(index):
+    
+        for i,comp in enumerate(self.index):
             self[comp] += translation[i]
             
     def check_line(self,line):
