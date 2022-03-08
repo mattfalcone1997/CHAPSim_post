@@ -69,8 +69,8 @@ class _AVG_base(Common,ABC):
         self.PR_Velo_grad_tensorDF.Translate(translation)
         self.DUDX2_tensorDF.Translate(translation)
         
-        self.CoordDF.Translate(translation)
-        self.Coord_ND_DF.Translate(translation)
+        self.CoordDF.Translate([0,*translation])
+        self.Coord_ND_DF.Translate([0,*translation])
         
     
     @property
