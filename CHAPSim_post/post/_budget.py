@@ -726,7 +726,7 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
 
     def _pressure_grad(self, PhyTime, comp):
         
-        pressure = self.avg_data.flow_AVGDF[PhyTime,'P']
+        pressure = self.avg_data.flow_AVGDF[PhyTime,'p']
         dir = chr(ord(comp)-ord('u') + ord('x'))
 
         return -1.0*self.Domain.Grad_calc(self.avg_data.CoordDF,pressure,dir)
@@ -1083,7 +1083,7 @@ class CHAPSim_FIK_io(_FIK_developing_base):
 
         bulk = self._scale_vel(PhyTime)
 
-        pressure = self.avg_data.flow_AVGDF[PhyTime,'P']
+        pressure = self.avg_data.flow_AVGDF[PhyTime,'p']
         pressure_grad_x = self.Domain.Grad_calc(self.avg_data.CoordDF,pressure,'x')
 
         p_prime2 = pressure_grad_x - self.Domain.Integrate_tot(self.CoordDF,pressure_grad_x)
