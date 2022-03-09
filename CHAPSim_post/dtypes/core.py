@@ -229,9 +229,10 @@ class Index(IndexBase):
     def _update_internals(self):
         values = np.array(self._index,dtype=object)
         if pd.__version__ < '1.4': 
-            self.__engine = ObjectEngine(values,len(values))
+            self.__engine = ObjectEngine(lambda: values,len(values))
         else:
             self.__engine = ObjectEngine(values)
+            
 class MultiIndex(IndexBase):
     def __init__(self,indices):
         if not all(isinstance(index,tuple) for index in indices):
