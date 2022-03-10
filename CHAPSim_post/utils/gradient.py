@@ -266,7 +266,7 @@ def cumIntegrate_y(CoordDF,flow_array,channel=True):
                                                                         True)
         
         flow_inty1 = integrate.CumulatIntegrateTrapz(flow_sub1,coord_sub1,axis=axis)
-        flow_inty2 = integrate.CumulatIntegrateTrapz(flow_sub2[::-1,:],coord_sub2[::-1],axis=axis)
+        flow_inty2 = integrate.CumulatIntegrateTrapz(flow_sub2[::-1],coord_sub2[::-1],axis=axis)
 
         return np.concatenate([flow_inty2[::-1],flow_inty1],axis=axis)
     else:
