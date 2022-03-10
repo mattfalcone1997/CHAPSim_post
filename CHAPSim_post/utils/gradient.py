@@ -262,8 +262,8 @@ def cumIntegrate_y(CoordDF,flow_array,channel=True):
     if channel:
         coord_sub1, coord_sub2,\
             flow_sub1, flow_sub2, reverser = _getChannelParams(coords,
-                                                                         flow_array,
-                                                                        True)
+                                                                flow_array,
+                                                                True)
         
         flow_inty1 = integrate.CumulatIntegrateTrapz(flow_sub1,coord_sub1,axis=axis)
         flow_inty2 = integrate.CumulatIntegrateTrapz(flow_sub2[::-1],coord_sub2[::-1],axis=axis)
