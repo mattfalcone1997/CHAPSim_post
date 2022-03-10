@@ -756,13 +756,12 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
             comp_uv = comp_uv[::-1]
         uv = self.avg_data.UU_tensorDF[PhyTime,comp_uv]
 
-        return -1 * gradient.Grad_calc(self.CoordDF,uv,'y')
-        # uu = self.avg_data.UU_tensorDF[PhyTime,comp_uu]
-        # uv = self.avg_data.UU_tensorDF[PhyTime,comp_uv]
+        uu = self.avg_data.UU_tensorDF[PhyTime,comp_uu]
+        uv = self.avg_data.UU_tensorDF[PhyTime,comp_uv]
 
-        # advection_pre = np.stack([uu,uv],axis=0)
+        advection_pre = np.stack([uu,uv],axis=0)
 
-        # return -1*self.Domain.Vector_div_io(self.avg_data.CoordDF,advection_pre)
+        return -1*self.Domain.Vector_div_io(self.avg_data.CoordDF,advection_pre)
 
     
     def plot_budget(self, x_list,PhyTime=None,budget_terms=None, fig=None, ax =None,line_kw=None,**kwargs):
