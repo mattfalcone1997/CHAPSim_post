@@ -179,8 +179,8 @@ def _getChannelParams(coords,flow_array,staggered):
     base_slicer2 = slice(middle_index)
     
     if staggered:
-        coords1 =  coords[(middle_index-1):]
-        coords2 =  coords[:(middle_index-1)]
+        coords1 =  coords[(middle_index):]
+        coords2 =  coords[:(middle_index+1)]
     else:
         coords1 =  coords[middle_index:]
         coords2 =  coords[:middle_index]
