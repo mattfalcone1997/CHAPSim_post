@@ -206,7 +206,13 @@ def _get_integrate_axis(flow_array):
         return 1
     else:
         raise Exception
-        
+    
+def _get_array_flipper(flow_array,axis):
+    if axis == 0 or axis ==1:
+        return flow_array[::-1]
+    elif axis == 2:
+        return flow_array[:,::-1]
+    
 def totIntegrate_y(CoordDF,flow_array,channel=True):
 
     coords = CoordDF['y']
@@ -229,6 +235,7 @@ def totIntegrate_y(CoordDF,flow_array,channel=True):
         
         flow_sub1 = flow_array[flow_slicer1]
         flow_sub2 = flow_array[flow_slicer2]
+        
         coord_sub2 = coords[:middle_index]
 
         if staggered:
@@ -249,27 +256,12 @@ def totIntegrate_y(CoordDF,flow_array,channel=True):
 def cumIntegrate_y(CoordDF,flow_array,channel=True):
     
     coords = CoordDF['y']
-
-    middle_index = (coords.size+1) // 2
+    axis = _get_integrate_axis(flow_array)
         
-    if flow_array.ndim ==1:
-        axis=0
-        coord_mul = coords
-        slicer = slice(None,None,-1)
-        flow_slicer1 = slice(middle_index-1,None)
-        flow_slicer2 = slice(middle_index)
-        
-    elif flow_array.ndim == 2:
-        axis=0
-        coord_mul = coords
-        slicer = slice(None,None,-1)
-        flow_slicer1 = slice(middle_index-1,None)
-        flow_slicer2 = slice(middle_index)
-        
-    elif flow_array.ndim == 3:
-        axis = 1
-        coord_mul = coords[np.new_axis,:,np.new_axis]
-        slicer = (slice(None),slice(None,None,-1))
+    coord_mul, flow_slicer1, flow_slicer2 = _getIntegrateParams(coords,
+                                                            flow_array,
+                                                            staggered,
+                                                            True)
         
 
     if coords.size+1 != flow_array.shape[axis]:
@@ -282,9 +274,10 @@ def cumIntegrate_y(CoordDF,flow_array,channel=True):
     if channel:
         middle_index = (coords.size+1) // 2
         
-        flow_sub1 = flow_array[middle_index:]
-        flow_sub2 = flow_array[:middle_index]
-        coord_sub2 = coords[:middle_index]
+        flow_sub1 = flow_array[flow_slicer1]
+        flow_sub2 = flow_array[flow_slicer2]
+        flow_sub2 = _get_array_flipper(flow_sub2)
+        coord_sub2 = coords[:middle_index][::-1]
 
         if staggered:
             coord_sub1 = coords[middle_index-1:]
@@ -292,7 +285,7 @@ def cumIntegrate_y(CoordDF,flow_array,channel=True):
             coord_sub1 = coords[middle_index:]
         
         flow_inty1 = integrate.CumulatIntegrateTrapz(flow_sub1,coord_sub1,axis=axis)
-        flow_inty2 = integrate.CumulatIntegrateTrapz(flow_sub2[slicer],coord_sub2[::-1],axis=axis)
+        flow_inty2 = integrate.CumulatIntegrateTrapz(flow_sub2,coord_sub2,axis=axis)
 
         return np.concatenate([flow_inty2,flow_inty1])
     else:
