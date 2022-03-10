@@ -4327,7 +4327,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2CumulatIntegrateTrap
  *         msg = "This axis cannot be larger than the dimensions of the array"
  *         raise ValueError(msg)             # <<<<<<<<<<<<<<
  * 
- *     if input_array.shape[axis] + 1 != x.size:
+ *     if (input_array.shape[axis] + 1) != x.size:
  */
     __pyx_t_3 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_v_msg); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 163, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
@@ -4347,7 +4347,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2CumulatIntegrateTrap
   /* "CHAPSim_post/_libs/integrate.pyx":165
  *         raise ValueError(msg)
  * 
- *     if input_array.shape[axis] + 1 != x.size:             # <<<<<<<<<<<<<<
+ *     if (input_array.shape[axis] + 1) != x.size:             # <<<<<<<<<<<<<<
  *         msg = (" x array must be equal to the axis size +1"
  *                 f"{input_array.shape[axis]} and {x.size}")
  */
@@ -4364,7 +4364,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2CumulatIntegrateTrap
 
     /* "CHAPSim_post/_libs/integrate.pyx":166
  * 
- *     if input_array.shape[axis] + 1 != x.size:
+ *     if (input_array.shape[axis] + 1) != x.size:
  *         msg = (" x array must be equal to the axis size +1"             # <<<<<<<<<<<<<<
  *                 f"{input_array.shape[axis]} and {x.size}")
  *         raise ValueError(msg)
@@ -4379,7 +4379,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2CumulatIntegrateTrap
     PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_kp_u_x_array_must_be_equal_to_the_ax);
 
     /* "CHAPSim_post/_libs/integrate.pyx":167
- *     if input_array.shape[axis] + 1 != x.size:
+ *     if (input_array.shape[axis] + 1) != x.size:
  *         msg = (" x array must be equal to the axis size +1"
  *                 f"{input_array.shape[axis]} and {x.size}")             # <<<<<<<<<<<<<<
  *         raise ValueError(msg)
@@ -4412,7 +4412,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2CumulatIntegrateTrap
 
     /* "CHAPSim_post/_libs/integrate.pyx":166
  * 
- *     if input_array.shape[axis] + 1 != x.size:
+ *     if (input_array.shape[axis] + 1) != x.size:
  *         msg = (" x array must be equal to the axis size +1"             # <<<<<<<<<<<<<<
  *                 f"{input_array.shape[axis]} and {x.size}")
  *         raise ValueError(msg)
@@ -4439,7 +4439,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2CumulatIntegrateTrap
     /* "CHAPSim_post/_libs/integrate.pyx":165
  *         raise ValueError(msg)
  * 
- *     if input_array.shape[axis] + 1 != x.size:             # <<<<<<<<<<<<<<
+ *     if (input_array.shape[axis] + 1) != x.size:             # <<<<<<<<<<<<<<
  *         msg = (" x array must be equal to the axis size +1"
  *                 f"{input_array.shape[axis]} and {x.size}")
  */

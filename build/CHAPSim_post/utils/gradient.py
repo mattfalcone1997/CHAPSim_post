@@ -170,19 +170,48 @@ Gradient_method = Gradient()
 
 Grad_calc = Gradient_method.Grad_calc
 
-def totIntegrate_y(CoordDF,flow_array,channel=True):
-    
-    coords = CoordDF['y']
+def _getIntegrateParams(coords,flow_array,staggered):
+    middle_index = (coords.size+1) // 2
+    if staggered:
+        base_slicer1 = slice(middle_index-1,None)
+        base_slicer2 = slice(middle_index)
+    else:
+        base_slicer1 = slice(middle_index,None)
+        base_slicer2 = slice(middle_index)
+        
     if flow_array.ndim ==1:
-        axis=0
         coord_mul = coords
+        
+        flow_slicer1 = base_slicer1
+        flow_slicer2 = base_slicer2
+        
     elif flow_array.ndim == 2:
-        axis=0
         coord_mul = coords
+        
+        flow_slicer1 = base_slicer1
+        flow_slicer2 = base_slicer2
+        
     elif flow_array.ndim == 3:
-        axis = 1
         coord_mul = coords[np.new_axis,:,np.new_axis]
         
+        flow_slicer1 = (slice(None),base_slicer1)
+        flow_slicer2 = (slice(None),base_slicer2)
+        
+    return  coord_mul, flow_slicer1, flow_slicer2
+
+def _get_integrate_axis(flow_array):
+    if flow_array.ndim == 1 or flow_array.ndim == 2:
+        return 0
+    elif flow_array.ndim ==3 :
+        return 1
+    else:
+        raise Exception
+        
+def totIntegrate_y(CoordDF,flow_array,channel=True):
+
+    coords = CoordDF['y']
+    axis = _get_integrate_axis(flow_array)
+    
     if coords.size == flow_array.shape[axis]:
         staggered = False
     elif coords.size+1 == flow_array.shape[axis]:
@@ -190,12 +219,16 @@ def totIntegrate_y(CoordDF,flow_array,channel=True):
     else:
         msg = "Coordinate array is the wrong size"
         raise ValueError(msg)
+    
+    coord_mul, flow_slicer1, flow_slicer2 = _getIntegrateParams(coords,
+                                                                flow_array,
+                                                                staggered)
         
     if channel:
         middle_index = (coords.size+1) // 2
         
-        flow_sub1 = flow_array[middle_index:]
-        flow_sub2 = flow_array[:middle_index]
+        flow_sub1 = flow_array[flow_slicer1]
+        flow_sub2 = flow_array[flow_slicer2]
         coord_sub2 = coords[:middle_index]
 
         if staggered:
@@ -216,14 +249,23 @@ def totIntegrate_y(CoordDF,flow_array,channel=True):
 def cumIntegrate_y(CoordDF,flow_array,channel=True):
     
     coords = CoordDF['y']
+
+    middle_index = (coords.size+1) // 2
+        
     if flow_array.ndim ==1:
         axis=0
         coord_mul = coords
         slicer = slice(None,None,-1)
+        flow_slicer1 = slice(middle_index-1,None)
+        flow_slicer2 = slice(middle_index)
+        
     elif flow_array.ndim == 2:
         axis=0
         coord_mul = coords
         slicer = slice(None,None,-1)
+        flow_slicer1 = slice(middle_index-1,None)
+        flow_slicer2 = slice(middle_index)
+        
     elif flow_array.ndim == 3:
         axis = 1
         coord_mul = coords[np.new_axis,:,np.new_axis]
