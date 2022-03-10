@@ -6,45 +6,37 @@ if __name__ == "__main__":
     import os
     from Cython.Build import cythonize
 
-    sources = ["CHAPSim_post/_libs/autocorr_parallel.pyx",
-                "CHAPSim_post/_libs/gradient_parallel.pyx",
-                "CHAPSim_post/_libs/file_handler.pyx",
-                "CHAPSim_post/_libs/post.pyx",
-                "CHAPSim_post/_libs/integrate.pyx",
-                "CHAPSim_post/_libs/gradient.pyx"]
+    def create_cython_ext(folder,**other_args):
+        sources = [os.path.join(folder,file) for file in os.listdir(folder) \
+                        if os.path.splitext(file)[-1] == '.pyx']
+        names = [os.path.splitext(source)[0].replace('/','.')\
+                    for source in sources]
+
+        ext_list = []
+        for name, source in zip(names,sources):
+            ext_list.append(Extension(name=name,
+                                      sources=[source],
+                                      **other_args))
+            
+        return ext_list
+        
+        
+    cy_parallel = create_cython_ext("CHAPSim_post/_libs",
+                                    extra_compile_args = ["-fopenmp","-O3"],
+                                    extra_link_args = ["-fopenmp","-O3"])
     
-    cy_parallel = []
-    cy_parallel_legacy = []
+    cy_parallel_legacy = create_cython_ext("CHAPSim_post/legacy/_libs",
+                                    extra_compile_args = ["-fopenmp","-O3"],
+                                    extra_link_args = ["-fopenmp","-O3"])
 
-    sources_legacy = ["CHAPSim_post/legacy/_libs/autocorr_parallel%d.pyx"%x for x in [32,64]]
-    names_legacy = [source.replace('/','.') for source in sources_legacy]
-
-
-
-
-    for source in sources:
-        module = os.path.splitext(os.path.basename(source))[0]
-        name = "CHAPSim_post._libs" + "." + module
-        cy_parallel.append( Extension(name = name,
-                                     sources = [source],
-                                     extra_compile_args = ["-fopenmp","-O3"],
-                                     extra_link_args = ["-fopenmp","-O3"]))
-
-    for source, name in zip(sources_legacy,names_legacy):
-        cy_parallel_legacy.append( Extension(name = name,
-                                     sources = [source],
-                                     extra_compile_args = ["-fopenmp","-O3"],
-                                     extra_link_args = ["-fopenmp","-O3"]))
-
-
-    ext_list = cythonize(cy_parallel+cy_parallel_legacy)
+    ext_list = cythonize(cy_parallel+cy_parallel_legacy,
+                         compiler_directives={'language_level':3})
 
     config = Configuration(package_name='CHAPSim_post',
                             description="Package containing post-processing routines for the CHAPSim DNS Solver",
                             package_path="CHAPSim_post",
                             ext_modules = ext_list)
-
-
+    
     config.add_subpackage(subpackage_name='post',
                         subpackage_path="CHAPSim_post/post")
     
@@ -57,14 +49,17 @@ if __name__ == "__main__":
     config.add_subpackage(subpackage_name="POD",
                         subpackage_path="CHAPSim_post/POD")
 
-    config.add_subpackage(subpackage_name='CHAPSim_post.legacy')
+    config.add_subpackage(subpackage_name='legacy',
+                        subpackage_path="CHAPSim_post/legacy")
+    
+    # config.add_subpackage(subpackage_name='legacy.post',
+    #                          subpackage_path="CHAPSim_post/legacy/post")
 
-    config.add_subpackage(subpackage_name='CHAPSim_post.legacy.post')
+    # config.add_subpackage(subpackage_name="legacy.utils",
+    #                     subpackage_path="CHAPSim_post/legacy/utils")
 
-    config.add_subpackage(subpackage_name="CHAPSim_post.legacy.utils")
-
-    config.add_subpackage(subpackage_name="CHAPSim_post.legacy.POD")                        
-
+    # config.add_subpackage(subpackage_name="legacy.POD",
+    #                     subpackage_path="CHAPSim_post/legacy/POD")                     
 
 
 

@@ -5,22 +5,26 @@ import cython
 
 from libc.stdio cimport *
 from libc.stdlib cimport *
+from CHAPSim_post._libs.array_utils cimport *
+from CHAPSim_post._libs.array_utils import *
 
-cdef void _perform_gradient_varx(double* input_array,
-                                double* x_array,
+cdef void _perform_gradient_varx(double *input_array,
+                                double *x_array,
                                 int axis,
-                                int* sizes,
-                                int* strides,
+                                int *sizes,
+                                int *strides,
                                 int dim,
-                                double* gradient_array) nogil:
+                                double *gradient_array) nogil:
 
-    cdef int total_size = _get_total_size(dim, sizes)
+    cdef int total_size = get_total_size(dim, &sizes[0])
     cdef int minus_index, minus2_index, plus_index, plus2_index
     cdef int axis_index
-    cdef int axis_stride = _get_axis_stride(dim,axis,sizes)
+    cdef int axis_stride = get_axis_stride(dim,axis,sizes)
 
 
-    cdef double *a, *b, *c
+    cdef double *a
+    cdef double *b
+    cdef double *c
     cdef int i
 
     a = <double*> malloc(sizes[axis]*sizeof(double))
@@ -30,7 +34,7 @@ cdef void _perform_gradient_varx(double* input_array,
     _get_grad_coeffs_varx(axis,sizes,x_array, a, b, c)
 
     for i in prange(total_size):
-        axis_index = _get_axis_index(i,strides,axis)
+        axis_index = get_axis_index(i,strides,axis)
 
         minus_index = i - axis_stride
         plus_index = i + axis_stride
@@ -54,24 +58,24 @@ cdef void _perform_gradient_varx(double* input_array,
     free(b)
     free(c)
 
-cdef void _perform_gradient_constx(double* input_array,
+cdef void _perform_gradient_constx(double *input_array,
                                     double dx,
                                     int axis,
-                                    int* sizes,
-                                    int* strides,
+                                    int *sizes,
+                                    int *strides,
                                     int dim,
-                                    double* gradient_array) nogil:
+                                    double *gradient_array) nogil:
 
-    cdef int total_size = _get_total_size(dim, sizes)
+    cdef int total_size = get_total_size(dim, sizes)
     cdef int minus_index, minus2_index, plus_index, plus2_index
     cdef int a, b, c, axis_index
-    cdef int axis_stride = _get_axis_stride(dim,axis,sizes)
+    cdef int axis_stride = get_axis_stride(dim,axis,sizes)
 
     cdef double idx = 1.0/dx 
     cdef int i
 
     for i in prange(total_size):
-        axis_index = _get_axis_index(i,strides,axis)
+        axis_index = get_axis_index(i,strides,axis)
         
         minus_index = i - axis_stride
         plus_index = i + axis_stride
@@ -91,18 +95,12 @@ cdef void _perform_gradient_constx(double* input_array,
             gradient_array[i] = 0.5*idx*(input_array[plus_index] \
                                     - input_array[minus_index])
 
-
-ctypedef enum index_flag:
-    MINUS = 1
-    ZERO = 2
-    PLUS = 3
-
 cdef void _get_grad_coeffs_varx(int axis,
-                                int* sizes,
-                                double* x_array,
-                                double* a,
-                                double* b,
-                                double* c) nogil:
+                                int *sizes,
+                                double *x_array,
+                                double *a,
+                                double *b,
+                                double *c) nogil:
     
 
     cdef double dx1, dx2
@@ -133,51 +131,6 @@ cdef void _get_grad_coeffs_varx(int axis,
             b[i] = (dx2 - dx1) / (dx1 * dx2)
             c[i] = dx1 / (dx2 * (dx1 + dx2))
 
-
-
-
-cdef int _get_axis_index(int index,
-                         int* strides,
-                         int axis) nogil:
-
-    cdef int i, larger_subtract =1
-    cdef int axis_index = index
-    cdef int axis_num
-    for i in range(0,axis):
-        axis_num = axis_index / strides[i]
-        axis_index -= axis_num*strides[i]
-
-    return axis_index/strides[axis]
-
-cdef int _get_total_size(int dim,
-                        int* sizes) nogil :
-    cdef int size = 1
-    cdef int i
-
-    for i in range(dim):
-        size *= sizes[i]
-    
-    return size
-
-cdef int _get_axis_stride(int dim,
-                        int axis,
-                        int* sizes) nogil:
-    cdef int stride = 1
-    for j in range(axis+1,dim):
-            stride *= sizes[j]
-    
-    return stride
-
-cdef void _get_strides(int dim,
-                        int* sizes,
-                        int* strides):
-    cdef int i, j
-    cdef int stride_int_
-    for i in range(dim):
-        strides[i] = 1
-        for j in range(i+1,dim):
-            strides[i] *= sizes[j]
-
 @cython.cdivision(True)
 @cython.boundscheck(False) 
 @cython.wraparound(False) 
@@ -188,16 +141,17 @@ def gradient_calc(np.ndarray input_array,
     cdef int dim = input_array.ndim
     cdef int dtype = input_array.itemsize
     cdef double dx
-    cdef int *strides, *sizes
-    cdef np.ndarray[dtype=double,ndim=1] grad_array = np.zeros(input_array.size)
 
+    cdef np.ndarray[dtype=int,ndim=1] strides = np.zeros(dim,dtype=int)
+    cdef np.ndarray[dtype=int,ndim=1] sizes = np.zeros(dim,dtype=int)
+
+    cdef np.ndarray[dtype=double,ndim=1] grad_array = np.zeros(input_array.size)
     cdef np.ndarray[dtype=double,ndim=1] input_copy = input_array.flatten()
 
     cdef coord_diff = np.diff(coord_array)
     cdef int const_dx = int(np.allclose(coord_diff,coord_diff[0]))
     
-    strides = <int*> malloc(dim*sizeof(int))
-    sizes = <int*> malloc(dim*sizeof(int))
+    get_array_details(input_array, strides, sizes)
 
     for i in range(dim):
         strides[i] = input_array.strides[i]/input_array.itemsize
@@ -209,8 +163,8 @@ def gradient_calc(np.ndarray input_array,
             _perform_gradient_constx(&input_copy[0],
                                     dx,
                                     axis,
-                                    sizes,
-                                    strides,
+                                    &sizes[0],
+                                    &strides[0],
                                     dim,
                                     &grad_array[0])
 
@@ -218,12 +172,10 @@ def gradient_calc(np.ndarray input_array,
             _perform_gradient_varx(&input_copy[0],
                                     &coord_array[0],
                                     axis,
-                                    sizes,
-                                    strides,
+                                    &sizes[0],
+                                    &strides[0],
                                     dim,
                                     &grad_array[0])
 
-    free(strides)
-    free(sizes)
     shape = [input_array.shape[i] for i in range(dim)]
     return grad_array.reshape(shape)

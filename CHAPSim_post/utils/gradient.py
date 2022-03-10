@@ -11,7 +11,7 @@ import sympy
 
 import CHAPSim_post as cp
 
-from CHAPSim_post._libs import gradient
+from CHAPSim_post._libs import gradient, integrate
 
 from scipy import interpolate
 import scipy
@@ -171,77 +171,90 @@ Gradient_method = Gradient()
 Grad_calc = Gradient_method.Grad_calc
 
 def totIntegrate_y(CoordDF,flow_array,channel=True):
-    if flow_array.ndim == 1:
-        return totIntegrate_y_1D(CoordDF,flow_array,channel=channel)
-    elif flow_array.ndim ==2:
-        shape = flow_array.shape[1]
-        int_val = np.zeros(shape)
-        for i in range(int_val.shape[0]):
-            int_val[i] = totIntegrate_y_1D(CoordDF,flow_array[:,i],channel=channel)
-    elif flow_array.ndim ==3:
-        shape = (flow_array.shape[0],flow_array.shape[2])
-        int_val = np.zeros(shape)
-        for j in range(int_val.shape[0]):
-            for i in range(int_val.shape[1]):
-                int_val[j,i] = totIntegrate_y_1D(CoordDF,flow_array[j,:,i],channel=channel)
-    return int_val
-
-def totIntegrate_y_1D(CoordDF,flow_array,channel=True):
-    coord_array = CoordDF['y']
     
-    if flow_array.ndim != 1:
-        msg = "This flunction can only be used on a 1D array"
-        raise ValueError(msg)
-
-    if channel:
-        middle_index = (coord_array.size+1) // 2
-        coord_sub1 = coord_array[middle_index:]
-        flow_sub1 = flow_array[middle_index:]
-        coord_sub2 = coord_array[:middle_index]
-        flow_sub2 = flow_array[:middle_index]        
-
-        if coord_array.size % 2 !=0:
-            initial = flow_array[middle_index]
-        else:
-            interp = interpolate.interp1d(coord_array,flow_array,kind='cubic')
-            initial = interp([0.0])[0]
-            coord_sub1 = np.insert(coord_sub1,0,0.)
-            coord_sub2 = np.insert(coord_sub2,-1,0.)
-            flow_sub1 = np.insert(flow_sub1,0,initial)
-            flow_sub2 = np.insert(flow_sub2,-1,initial)
-
-
-
-        flow_inty1 = simps(flow_sub1,coord_sub1)
-        flow_inty2 = simps(flow_sub2[::-1],coord_sub2[::-1])
-
-        flow_inty = 0.5*(flow_inty1 - flow_inty2)
+    coords = CoordDF['y']
+    if flow_array.ndim ==1:
+        axis=0
+        coord_mul = coords
+    elif flow_array.ndim == 2:
+        axis=0
+        coord_mul = coords
+    elif flow_array.ndim == 3:
+        axis = 1
+        coord_mul = coords[np.new_axis,:,np.new_axis]
+        
+    if coords.size == flow_array.shape[axis]:
+        staggered = False
+    elif coords.size+1 == flow_array.shape[axis]:
+        staggered = True
     else:
-        interp = interpolate.interp1d(coord_array,flow_array)
-        initial = interp([0.0])[0]
+        msg = "Coordinate array is the wrong size"
+        raise ValueError(msg)
+        
+    if channel:
+        middle_index = (coords.size+1) // 2
+        
+        flow_sub1 = flow_array[middle_index:]
+        flow_sub2 = flow_array[:middle_index]
+        coord_sub2 = coords[:middle_index]
 
-        coord_sub = np.insert(coord_array,0,0.)
-        flow_sub = np.insert(flow_array,0,initial)
+        if staggered:
+            coord_sub1 = coords[middle_index-1:]
+        else:
+            coord_sub1 = coords[middle_index:]
+        
+        flow_inty1 = integrate.IntegrateTrapz(flow_sub1,coord_sub1,axis=axis,staggered=staggered)
 
-        flow_inty = simps(flow_sub*coord_sub,coord_sub)
-
-    return flow_inty
-
+        flow_inty2 = integrate.IntegrateTrapz(flow_sub2,coord_sub2,axis=axis,staggered=staggered)
+        return flow_inty1 + flow_inty2
+    else:
+        return (1.0 / coords[-1])*integrate.IntegrateTrapz(flow_array,coord_mul*coords,axis=axis,staggered=staggered)
+    
+    
 
 
 def cumIntegrate_y(CoordDF,flow_array,channel=True):
-    if flow_array.ndim == 1:
-        return cumIntegrate_y_1D(CoordDF,flow_array,channel=channel)
-    elif flow_array.ndim ==2:
-        int_array = np.zeros_like(flow_array)
-        for i in range(int_array.shape[1]):
-            int_array[:,i] = cumIntegrate_y_1D(CoordDF,flow_array[:,i],channel=channel)
-    elif flow_array.ndim ==3:
-        int_array = np.zeros_like(flow_array)
-        for j in range(int_array.shape[0]):
-            for i in range(int_array.shape[2]):
-                int_array[j,:,i] = cumIntegrate_y_1D(CoordDF,flow_array[j,:,i],channel=channel)
-    return int_array
+    
+    coords = CoordDF['y']
+    if flow_array.ndim ==1:
+        axis=0
+        coord_mul = coords
+        slicer = slice(None,None,-1)
+    elif flow_array.ndim == 2:
+        axis=0
+        coord_mul = coords
+        slicer = slice(None,None,-1)
+    elif flow_array.ndim == 3:
+        axis = 1
+        coord_mul = coords[np.new_axis,:,np.new_axis]
+        slicer = (slice(None),slice(None,None,-1))
+        
+
+    if coords.size+1 != flow_array.shape[axis]:
+        staggered = True
+    else:
+        msg = ("The cumulative integration"
+               " method must use the staggered data")
+        raise ValueError(msg)
+        
+    if channel:
+        middle_index = (coords.size+1) // 2
+        
+        flow_sub1 = flow_array[middle_index:]
+        flow_sub2 = flow_array[:middle_index]
+        coord_sub2 = coords[:middle_index]
+
+        if staggered:
+            coord_sub1 = coords[middle_index-1:]
+        else:
+            coord_sub1 = coords[middle_index:]
+        
+        flow_inty1 = integrate.CumulatIntegrateTrapz(flow_sub1,coord_sub1,axis=axis)
+        flow_inty2 = integrate.CumulatIntegrateTrapz(flow_sub2[slicer],coord_sub2[::-1],axis=axis)
+
+        return np.concatenate([flow_inty2,flow_inty1])
+    else:
+        return (1./coord_mul)*integrate.CumulatIntegrateTrapz(flow_array*coord_mul,coords,axis=axis)
 
 # def _cum_integrator(f_array,x_array):
 #     # return cumtrapz(f_array,x_array)

@@ -391,7 +391,7 @@ class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
 
         for comp in budget_terms:
             budget_term = self.budgetDF[PhyTime,comp]
-            int_budget = 0.5*self.Domain.Integrate_tot(self.CoordDF,budget_term)
+            int_budget = 0.5*self.Domain.Integrate_tot(self.Coord_ND_DF,budget_term)
             label = r"$\int^{\delta}_{-\delta}$ %s $dy$"%comp.title()
             ax.cplot(x_coords,int_budget,label=label,**line_kw)
 
@@ -629,7 +629,7 @@ class CHAPSim_budget_temp(CHAPSim_budget_tg):
 
         for comp in budget_terms:
             budget_term = self.budgetDF[None,comp]
-            int_budget = 0.5*self.Domain.Integrate_tot(self.CoordDF,budget_term)
+            int_budget = 0.5*self.Domain.Integrate_tot(self.Coord_ND_DF,budget_term)
             label = r"$\int^{\delta}_{-\delta}$ %s $dy$"%comp.title()
             ax.cplot(times,int_budget,label=label,**line_kw)
 
@@ -816,7 +816,7 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
                 line_kw['label'] = self.title_with_math(comp)
                 
                 budget = self.budgetDF[PhyTime,comp]
-                int_budget = self.Domain.Integrate_cumult(self.CoordDF,budget)
+                int_budget = self.Domain.Integrate_cumult(self.Coord_ND_DF,budget)
                 
                 fig, ax[i] = self.budgetDF.plot_line_data(int_budget,
                                                           'y',
@@ -923,7 +923,7 @@ class CHAPSim_momentum_budget_tg(_momentum_budget_base,_budget_base):
             line_kw['label'] = self.title_with_math(comp)
             budget = self.budgetDF[PhyTime,comp]
 
-            int_budget = self.Domain.Integrate_cumult(self.CoordDF,budget)
+            int_budget = self.Domain.Integrate_cumult(self.Coord_ND_DF,budget)
             fig, ax = self.budgetDF.plot_line_data(int_budget,
                                                     time=PhyTime,
                                                     channel_half=True,
@@ -1045,7 +1045,7 @@ class _FIK_developing_base(_budget_base):
         for i,y in enumerate(y_coords):
             turbulent[i] =    6*y*uv[i,:]
 
-        return self.Domain.Integrate_tot(self.CoordDF,turbulent)/bulk**2
+        return self.Domain.Integrate_tot(self.Coord_ND_DF,turbulent)/bulk**2
 
     @abstractmethod
     def _inertia_extract(self,PhyTime):
@@ -1099,7 +1099,7 @@ class CHAPSim_FIK_io(_FIK_developing_base):
         pressure = self.avg_data.flow_AVGDF[PhyTime,'p']
         pressure_grad_x = self.Domain.Grad_calc(self.avg_data.CoordDF,pressure,'x')
 
-        p_prime2 = pressure_grad_x - self.Domain.Integrate_tot(self.CoordDF,pressure_grad_x)
+        p_prime2 = pressure_grad_x - self.Domain.Integrate_tot(self.Coord_ND_DF,pressure_grad_x)
 
         u_mean2 = self.avg_data.flow_AVGDF[PhyTime,'u']**2
         uu = self.avg_data.UU_tensorDF[PhyTime,'uu']
@@ -1115,7 +1115,7 @@ class CHAPSim_FIK_io(_FIK_developing_base):
                     self.Domain.Grad_calc(self.avg_data.CoordDF,U_mean,'x'),'x')
 
         I_x = d_UU_dx + d_uv_dy - (1/REN)*d2u_dx2
-        I_x_prime  = I_x -  self.Domain.Integrate_tot(self.CoordDF,I_x)
+        I_x_prime  = I_x -  self.Domain.Integrate_tot(self.Coord_ND_DF,I_x)
 
 
         out = np.zeros_like(U_mean)
@@ -1123,7 +1123,7 @@ class CHAPSim_FIK_io(_FIK_developing_base):
             out[i] = (p_prime2 + I_x_prime)[i,:]*y**2
 
 
-        return -3.0*self.Domain.Integrate_tot(self.CoordDF,out)/(bulk**2)
+        return -3.0*self.Domain.Integrate_tot(self.Coord_ND_DF,out)/(bulk**2)
 
     def plot(self,*args,**kwargs):
         fig, ax = super().plot(*args,**kwargs)
@@ -1164,20 +1164,20 @@ class CHAPSim_FIK_temp(_FIK_developing_base):
 
         dpdx = (1/REN)*d2u_dy2 - duv_dy  - dudt
 
-        dp_prime_dx = dpdx - self.Domain.Integrate_tot(self.CoordDF,
+        dp_prime_dx = dpdx - self.Domain.Integrate_tot(self.Coord_ND_DF,
                                             (1/REN)*d2u_dy2 - duv_dy) 
 
         UV = self.avg_data.flow_AVGDF[PhyTime,'u']*self.avg_data.flow_AVGDF[PhyTime,'v']
         I_x = self.Domain.Grad_calc(self.avg_data.CoordDF,UV,'y')
 
-        I_x_prime = I_x - self.Domain.Integrate_tot(self.CoordDF,I_x)
+        I_x_prime = I_x - self.Domain.Integrate_tot(self.Coord_ND_DF,I_x)
 
         
         out = np.zeros(U_mean.shape)
         for i,y in enumerate(y_coords):
             out[i] = (I_x_prime + dp_prime_dx + dudt)[i,:]*y**2
 
-        return -3.0*self.Domain.Integrate_tot(self.CoordDF,out)/(bulk**2)
+        return -3.0*self.Domain.Integrate_tot(self.Coord_ND_DF,out)/(bulk**2)
 
     def plot(self,budget_terms=None,*args,**kwargs):
         fig, ax = super().plot(budget_terms,PhyTime=None,*args,**kwargs)
