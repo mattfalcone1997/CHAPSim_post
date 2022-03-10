@@ -171,7 +171,9 @@ Gradient_method = Gradient()
 Grad_calc = Gradient_method.Grad_calc
 
 def _getChannelParams(coords,flow_array,staggered):
-    middle_index = (coords.size+1) // 2
+    axis = _get_integrate_axis(flow_array)
+    
+    middle_index = (flow_array.shape[axis]+1) // 2
     
     base_slicer1 = slice(middle_index,None)
     base_slicer2 = slice(middle_index)
@@ -214,12 +216,7 @@ def _get_integrate_axis(flow_array):
         return 1
     else:
         raise Exception
-    
-def _get_array_flipper(flow_array,axis):
-    if axis == 0 or axis ==1:
-        return flow_array[::-1]
-    elif axis == 2:
-        return flow_array[:,::-1]
+
     
 def totIntegrate_y(CoordDF,flow_array,channel=True):
 
