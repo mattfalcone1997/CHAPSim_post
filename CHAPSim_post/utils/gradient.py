@@ -260,7 +260,6 @@ def cumIntegrate_y(CoordDF,flow_array,channel=True):
         
     coord_mul, flow_slicer1, flow_slicer2 = _getIntegrateParams(coords,
                                                             flow_array,
-                                                            True,
                                                             True)
         
 
