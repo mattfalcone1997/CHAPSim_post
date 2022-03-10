@@ -254,10 +254,8 @@ def cumIntegrate_y(CoordDF,flow_array,channel=True):
     
     coords = CoordDF['y']
     axis = _get_integrate_axis(flow_array)
-    
-        
 
-    if coords.size != flow_array.shape[axis] + 1:
+    if coords.size != flow_array.shape[axis]+1:
         msg = ("The cumulative integration"
                " method must use the staggered data."
                f" Sizes {coords.size} {flow_array.shape[axis]}")
@@ -267,7 +265,10 @@ def cumIntegrate_y(CoordDF,flow_array,channel=True):
         coord_sub1, coord_sub2, flow_sub1, flow_sub2 = _getChannelParams(coords,
                                                                          flow_array,
                                                                         True)
-
+        print(flow_sub1.shape)
+        print(flow_sub2.shape)
+        print(coord_sub1.shape)
+        print(coord_sub2.shape)
         
         flow_inty1 = integrate.CumulatIntegrateTrapz(flow_sub1,coord_sub1,axis=axis)
         flow_inty2 = integrate.CumulatIntegrateTrapz(flow_sub2,coord_sub2,axis=axis)

@@ -163,7 +163,7 @@ def CumulatIntegrateTrapz(np.ndarray input_array,np.ndarray x, int axis=0):
         raise ValueError(msg)
 
     if (input_array.shape[axis] + 1) != x.size:
-        msg = (" x array must be equal to the axis size +1"
+        msg = (" x array must be equal to the axis size +1 "
                 f"{input_array.shape[axis]} and {x.size}")
         raise ValueError(msg)
 

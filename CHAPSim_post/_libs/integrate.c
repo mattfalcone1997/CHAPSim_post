@@ -1839,7 +1839,7 @@ static const char __pyx_k_CHAPSim_post__libs_integrate[] = "CHAPSim_post._libs.i
 static const char __pyx_k_CHAPSim_post__libs_array_utils[] = "CHAPSim_post._libs.array_utils";
 static const char __pyx_k_This_axis_cannot_be_larger_than[] = "This axis cannot be larger than the dimensions of the array";
 static const char __pyx_k_numpy_core_multiarray_failed_to[] = "numpy.core.multiarray failed to import";
-static const char __pyx_k_x_array_must_be_equal_to_the_ax[] = " x array must be equal to the axis size +1";
+static const char __pyx_k_x_array_must_be_equal_to_the_ax[] = " x array must be equal to the axis size +1 ";
 static const char __pyx_k_CHAPSim_post__libs_integrate_pyx[] = "CHAPSim_post/_libs/integrate.pyx";
 static const char __pyx_k_If_staggered_is_selected_the_x_a[] = "If staggered is selected the x array must be equal to the axis size +1. Sizes ";
 static const char __pyx_k_Integrate_can_only_handle_type_f[] = "Integrate can only handle type flost32 and float64";
@@ -4348,7 +4348,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2CumulatIntegrateTrap
  *         raise ValueError(msg)
  * 
  *     if (input_array.shape[axis] + 1) != x.size:             # <<<<<<<<<<<<<<
- *         msg = (" x array must be equal to the axis size +1"
+ *         msg = (" x array must be equal to the axis size +1 "
  *                 f"{input_array.shape[axis]} and {x.size}")
  */
   __pyx_t_3 = __Pyx_PyInt_From_long(((__pyx_v_input_array->dimensions[__pyx_v_axis]) + 1)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 165, __pyx_L1_error)
@@ -4365,7 +4365,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2CumulatIntegrateTrap
     /* "CHAPSim_post/_libs/integrate.pyx":166
  * 
  *     if (input_array.shape[axis] + 1) != x.size:
- *         msg = (" x array must be equal to the axis size +1"             # <<<<<<<<<<<<<<
+ *         msg = (" x array must be equal to the axis size +1 "             # <<<<<<<<<<<<<<
  *                 f"{input_array.shape[axis]} and {x.size}")
  *         raise ValueError(msg)
  */
@@ -4374,13 +4374,13 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2CumulatIntegrateTrap
     __pyx_t_6 = 0;
     __pyx_t_7 = 127;
     __Pyx_INCREF(__pyx_kp_u_x_array_must_be_equal_to_the_ax);
-    __pyx_t_6 += 42;
+    __pyx_t_6 += 43;
     __Pyx_GIVEREF(__pyx_kp_u_x_array_must_be_equal_to_the_ax);
     PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_kp_u_x_array_must_be_equal_to_the_ax);
 
     /* "CHAPSim_post/_libs/integrate.pyx":167
  *     if (input_array.shape[axis] + 1) != x.size:
- *         msg = (" x array must be equal to the axis size +1"
+ *         msg = (" x array must be equal to the axis size +1 "
  *                 f"{input_array.shape[axis]} and {x.size}")             # <<<<<<<<<<<<<<
  *         raise ValueError(msg)
  * 
@@ -4413,7 +4413,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2CumulatIntegrateTrap
     /* "CHAPSim_post/_libs/integrate.pyx":166
  * 
  *     if (input_array.shape[axis] + 1) != x.size:
- *         msg = (" x array must be equal to the axis size +1"             # <<<<<<<<<<<<<<
+ *         msg = (" x array must be equal to the axis size +1 "             # <<<<<<<<<<<<<<
  *                 f"{input_array.shape[axis]} and {x.size}")
  *         raise ValueError(msg)
  */
@@ -4424,7 +4424,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2CumulatIntegrateTrap
     __pyx_t_4 = 0;
 
     /* "CHAPSim_post/_libs/integrate.pyx":168
- *         msg = (" x array must be equal to the axis size +1"
+ *         msg = (" x array must be equal to the axis size +1 "
  *                 f"{input_array.shape[axis]} and {x.size}")
  *         raise ValueError(msg)             # <<<<<<<<<<<<<<
  * 
@@ -4440,7 +4440,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_9integrate_2CumulatIntegrateTrap
  *         raise ValueError(msg)
  * 
  *     if (input_array.shape[axis] + 1) != x.size:             # <<<<<<<<<<<<<<
- *         msg = (" x array must be equal to the axis size +1"
+ *         msg = (" x array must be equal to the axis size +1 "
  *                 f"{input_array.shape[axis]} and {x.size}")
  */
   }
