@@ -176,14 +176,15 @@ def _getChannelParams(coords,flow_array,staggered):
     middle_index = (flow_array.shape[axis]+1) // 2
     
     base_slicer1 = slice(middle_index,None)
-    base_slicer2 = slice(middle_index)
+    base_slicer2 = slice(None,middle_index)
+    reverser2 = slice(None,None,-1)
     
     if staggered:
         coords1 =  coords[(middle_index):]
-        coords2 =  coords[:(middle_index+1)]
+        coords2 =  coords[:(middle_index+1)][::-1]
     else:
         coords1 =  coords[middle_index:]
-        coords2 =  coords[:middle_index]
+        coords2 =  coords[:middle_index][::-1]
         
     if flow_array.ndim ==1:
         flow_slicer1 = base_slicer1
@@ -196,8 +197,8 @@ def _getChannelParams(coords,flow_array,staggered):
     elif flow_array.ndim == 3:
         flow_slicer1 = (slice(None),base_slicer1)
         flow_slicer2 = (slice(None),base_slicer2)
-        
-    return  coords1, coords2, flow_array[flow_slicer1], flow_array[flow_slicer2]
+        reverser2 = (None,reverser2)
+    return  coords1, coords2, flow_array[flow_slicer1], flow_array[flow_slicer2][reverser2]
 
 def _getPipeCoords(coords,flow_array):
     if flow_array.ndim ==1 or flow_array.ndim == 2:
