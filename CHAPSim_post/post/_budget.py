@@ -3,7 +3,7 @@ import matplotlib as mpl
 import itertools
 from abc import ABC, abstractmethod
 
-from CHAPSim_post.utils import  misc_utils, indexing
+from CHAPSim_post.utils import  misc_utils, indexing, gradient
 
 import CHAPSim_post.plot as cplt
 import CHAPSim_post.dtypes as cd
@@ -754,13 +754,15 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
             comp_uu = comp_uu[::-1]
         if comp_uv[0] > comp_uv[1]:
             comp_uv = comp_uv[::-1]
-        
-        uu = self.avg_data.UU_tensorDF[PhyTime,comp_uu]
         uv = self.avg_data.UU_tensorDF[PhyTime,comp_uv]
 
-        advection_pre = np.stack([uu,uv],axis=0)
+        return -1 * gradient.Grad_calc(self.CoordDF,uv,'y')
+        # uu = self.avg_data.UU_tensorDF[PhyTime,comp_uu]
+        # uv = self.avg_data.UU_tensorDF[PhyTime,comp_uv]
 
-        return -1*self.Domain.Vector_div_io(self.avg_data.CoordDF,advection_pre)
+        # advection_pre = np.stack([uu,uv],axis=0)
+
+        # return -1*self.Domain.Vector_div_io(self.avg_data.CoordDF,advection_pre)
 
     
     def plot_budget(self, x_list,PhyTime=None,budget_terms=None, fig=None, ax =None,line_kw=None,**kwargs):
