@@ -275,7 +275,7 @@ def cumIntegrate_y(CoordDF,flow_array,channel=True):
         
         flow_sub1 = flow_array[flow_slicer1]
         flow_sub2 = flow_array[flow_slicer2]
-        flow_sub2 = _get_array_flipper(flow_sub2)
+        flow_sub2 = _get_array_flipper(flow_sub2,axis)
         
         print(flow_sub1.shape, flow_sub2.shape,flow_array.shape)
         coord_sub2 = coords[:middle_index][::-1]
