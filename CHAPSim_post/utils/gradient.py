@@ -181,10 +181,10 @@ def _getChannelParams(coords,flow_array,staggered):
     
     if staggered:
         coords1 =  coords[(middle_index):].copy()
-        coords2 =  coords[:(middle_index+1)].copy()
+        coords2 =  coords[:(middle_index+1)][::-1].copy()
     else:
         coords1 =  coords[middle_index:].copy()
-        coords2 =  coords[:middle_index].copy()
+        coords2 =  coords[:middle_index][::-1].copy()
         
     if flow_array.ndim ==1:
         flow_slicer1 = base_slicer1
