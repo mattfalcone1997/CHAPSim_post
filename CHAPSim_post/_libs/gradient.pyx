@@ -142,8 +142,8 @@ def gradient_calc(np.ndarray input_array,
     cdef int dtype = input_array.itemsize
     cdef double dx
 
-    cdef np.ndarray[dtype=int,ndim=1] strides = np.zeros(dim,dtype=int)
-    cdef np.ndarray[dtype=int,ndim=1] sizes = np.zeros(dim,dtype=int)
+    cdef np.ndarray[dtype=int,ndim=1] strides 
+    cdef np.ndarray[dtype=int,ndim=1] sizes 
 
     cdef np.ndarray[dtype=double,ndim=1] grad_array = np.zeros(input_array.size)
     cdef np.ndarray[dtype=double,ndim=1] input_copy = input_array.flatten()
@@ -151,31 +151,26 @@ def gradient_calc(np.ndarray input_array,
     cdef coord_diff = np.diff(coord_array)
     cdef int const_dx = int(np.allclose(coord_diff,coord_diff[0]))
     
-    get_array_details(input_array, strides, sizes)
-
-    for i in range(dim):
-        strides[i] = input_array.strides[i]/input_array.itemsize
-        sizes[i] = input_array.shape[i]
+    strides, sizes = get_array_details(input_array)
     
-    with nogil:
-        if const_dx == 1:
-            dx = coord_array[1] - coord_array[0]
-            _perform_gradient_constx(&input_copy[0],
-                                    dx,
-                                    axis,
-                                    &sizes[0],
-                                    &strides[0],
-                                    dim,
-                                    &grad_array[0])
+    if const_dx == 1:
+        dx = coord_array[1] - coord_array[0]
+        _perform_gradient_constx(&input_copy[0],
+                                dx,
+                                axis,
+                                &sizes[0],
+                                &strides[0],
+                                dim,
+                                &grad_array[0])
 
-        else:
-            _perform_gradient_varx(&input_copy[0],
-                                    &coord_array[0],
-                                    axis,
-                                    &sizes[0],
-                                    &strides[0],
-                                    dim,
-                                    &grad_array[0])
+    else:
+        _perform_gradient_varx(&input_copy[0],
+                                &coord_array[0],
+                                axis,
+                                &sizes[0],
+                                &strides[0],
+                                dim,
+                                &grad_array[0])
 
     shape = [input_array.shape[i] for i in range(dim)]
     return grad_array.reshape(shape)
