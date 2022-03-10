@@ -177,7 +177,7 @@ def _getChannelParams(coords,flow_array,staggered):
     
     base_slicer1 = slice(middle_index,None)
     base_slicer2 = slice(None,middle_index)
-    # reverser2 = slice(None,None,-1)
+    reverser2 = slice(None,None,-1)
     
     if staggered:
         coords1 =  coords[(middle_index):]
@@ -268,7 +268,7 @@ def cumIntegrate_y(CoordDF,flow_array,channel=True):
         flow_inty1 = integrate.CumulatIntegrateTrapz(flow_sub1,coord_sub1,axis=axis)
         flow_inty2 = integrate.CumulatIntegrateTrapz(flow_sub2,coord_sub2,axis=axis)
 
-        return np.concatenate([flow_inty2[reverser],flow_inty1])
+        return np.concatenate([flow_inty2,flow_inty1])
     else:
         coords_mul, coords_mul_inv = _getPipeCoords(coords, flow_array)
 
