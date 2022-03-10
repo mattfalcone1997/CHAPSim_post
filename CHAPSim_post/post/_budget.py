@@ -822,7 +822,7 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
                                                           'y',
                                                           x_loc,
                                                           time=PhyTime,
-                                                          channel_half=False,
+                                                          channel_half=True,
                                                           fig=fig,
                                                           ax=ax[i],
                                                           line_kw=line_kw)
@@ -926,7 +926,7 @@ class CHAPSim_momentum_budget_tg(_momentum_budget_base,_budget_base):
             int_budget = self.Domain.Integrate_cumult(self.Coord_ND_DF,budget)
             fig, ax = self.budgetDF.plot_line_data(int_budget,
                                                     time=PhyTime,
-                                                    channel_half=False,
+                                                    channel_half=True,
                                                     fig=fig,
                                                     ax=ax,
                                                     line_kw=line_kw)
