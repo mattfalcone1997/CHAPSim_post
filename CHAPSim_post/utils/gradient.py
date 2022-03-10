@@ -259,7 +259,8 @@ def cumIntegrate_y(CoordDF,flow_array,channel=True):
 
     if coords.size+1 != flow_array.shape[axis]:
         msg = ("The cumulative integration"
-               " method must use the staggered data")
+               " method must use the staggered data."
+               f" Sizes {coords.size} {flow_array.shape[axis]}")
         raise ValueError(msg)
         
     if channel:
