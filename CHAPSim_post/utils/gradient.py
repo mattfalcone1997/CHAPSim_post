@@ -197,7 +197,7 @@ def _getChannelParams(coords,flow_array,staggered):
     elif flow_array.ndim == 3:
         flow_slicer1 = (slice(None),base_slicer1)
         flow_slicer2 = (slice(None),base_slicer2)
-        reverser2 = (None,reverser2)
+        reverser2 = (slice(None),reverser2)
     return  coords1, coords2,\
             flow_array[flow_slicer1].copy(),\
             flow_array[flow_slicer2][ reverser2].copy(),\
