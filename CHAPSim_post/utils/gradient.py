@@ -170,35 +170,43 @@ Gradient_method = Gradient()
 
 Grad_calc = Gradient_method.Grad_calc
 
-def _getIntegrateParams(coords,flow_array,staggered):
+def _getChannelParams(coords,flow_array,staggered):
     middle_index = (coords.size+1) // 2
+    
+    base_slicer1 = slice(middle_index,None)
+    base_slicer2 = slice(middle_index)
+    
     if staggered:
-        base_slicer1 = slice(middle_index-1,None)
-        base_slicer2 = slice(middle_index)
+        coords1 =  coords[(middle_index-1):]
+        coords2 =  coords[:(middle_index-1)]
     else:
-        base_slicer1 = slice(middle_index,None)
-        base_slicer2 = slice(middle_index)
+        coords1 =  coords[middle_index:]
+        coords2 =  coords[:middle_index]
         
     if flow_array.ndim ==1:
-        coord_mul = coords
-        
         flow_slicer1 = base_slicer1
         flow_slicer2 = base_slicer2
         
     elif flow_array.ndim == 2:
-        coord_mul = coords
-        
         flow_slicer1 = base_slicer1
         flow_slicer2 = base_slicer2
         
     elif flow_array.ndim == 3:
-        coord_mul = coords[np.new_axis,:,np.new_axis]
-        
         flow_slicer1 = (slice(None),base_slicer1)
         flow_slicer2 = (slice(None),base_slicer2)
         
-    return  coord_mul, flow_slicer1, flow_slicer2
+    return  coords1, coords2, flow_array[flow_slicer1], flow_array[flow_slicer2]
 
+def _getPipeCoords(coords,flow_array):
+    if flow_array.ndim ==1 or flow_array.ndim == 2:
+        coord_mul = coords
+        coord_mul_rev = 1./coords[::-1]
+        
+    elif flow_array.ndim == 3:
+        coord_mul = coords[np.new_axis,:,np.new_axis]
+        coord_mul_rev = coords[np.new_axis,::-1,np.new_axis]
+        
+    return  coord_mul, coord_mul_rev
 def _get_integrate_axis(flow_array):
     if flow_array.ndim == 1 or flow_array.ndim == 2:
         return 0
@@ -226,29 +234,18 @@ def totIntegrate_y(CoordDF,flow_array,channel=True):
         msg = "Coordinate array is the wrong size"
         raise ValueError(msg)
     
-    coord_mul, flow_slicer1, flow_slicer2 = _getIntegrateParams(coords,
-                                                                flow_array,
-                                                                staggered)
-        
-    if channel:
-        middle_index = (coords.size+1) // 2
-        
-        flow_sub1 = flow_array[flow_slicer1]
-        flow_sub2 = flow_array[flow_slicer2]
-        
-        coord_sub2 = coords[:middle_index]
-
-        if staggered:
-            coord_sub1 = coords[middle_index-1:]
-        else:
-            coord_sub1 = coords[middle_index:]
+            
+    if channel:        
+        coord_sub1, coord_sub2, flow_sub1, flow_sub2 = _getChannelParams(coords,
+                                                                         flow_array,
+                                                                         staggered)
         
         flow_inty1 = integrate.IntegrateTrapz(flow_sub1,coord_sub1,axis=axis,staggered=staggered)
 
         flow_inty2 = integrate.IntegrateTrapz(flow_sub2,coord_sub2,axis=axis,staggered=staggered)
         return flow_inty1 + flow_inty2
     else:
-        return (1.0 / coords[-1])*integrate.IntegrateTrapz(flow_array,coord_mul*coords,axis=axis,staggered=staggered)
+        return (1./coords[-1])*integrate.IntegrateTrapz(coords[-1]*flow_array,coords,axis=axis,staggered=staggered)
     
     
 
@@ -257,40 +254,28 @@ def cumIntegrate_y(CoordDF,flow_array,channel=True):
     
     coords = CoordDF['y']
     axis = _get_integrate_axis(flow_array)
-        
-    coord_mul, flow_slicer1, flow_slicer2 = _getIntegrateParams(coords,
-                                                            flow_array,
-                                                            True)
+    
         
 
     if coords.size+1 != flow_array.shape[axis]:
-        staggered = True
-    else:
         msg = ("The cumulative integration"
                " method must use the staggered data")
         raise ValueError(msg)
         
     if channel:
-        middle_index = (coords.size+1) // 2
-        
-        flow_sub1 = flow_array[flow_slicer1]
-        flow_sub2 = flow_array[flow_slicer2]
-        flow_sub2 = _get_array_flipper(flow_sub2,axis)
-        
-        print(flow_sub1.shape, flow_sub2.shape,flow_array.shape)
-        coord_sub2 = coords[:middle_index][::-1]
+        coord_sub1, coord_sub2, flow_sub1, flow_sub2 = _getChannelParams(coords,
+                                                                         flow_array,
+                                                                        True)
 
-        if staggered:
-            coord_sub1 = coords[middle_index-1:]
-        else:
-            coord_sub1 = coords[middle_index:]
         
         flow_inty1 = integrate.CumulatIntegrateTrapz(flow_sub1,coord_sub1,axis=axis)
         flow_inty2 = integrate.CumulatIntegrateTrapz(flow_sub2,coord_sub2,axis=axis)
 
         return np.concatenate([flow_inty2,flow_inty1])
     else:
-        return (1./coord_mul)*integrate.CumulatIntegrateTrapz(flow_array*coord_mul,coords,axis=axis)
+        coords_mul, coords_mul_inv = _getPipeCoords(coords, flow_array)
+
+        return coords_mul_inv*integrate.CumulatIntegrateTrapz(flow_array*coords_mul,coords,axis=axis)
 
 # def _cum_integrator(f_array,x_array):
 #     # return cumtrapz(f_array,x_array)
