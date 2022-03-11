@@ -244,7 +244,7 @@ def totIntegrate_y(CoordDF,flow_array,channel=True):
         flow_inty1 = integrate.IntegrateTrapz(flow_sub1,coord_sub1,axis=axis,staggered=staggered)
 
         flow_inty2 = integrate.IntegrateTrapz(flow_sub2,coord_sub2,axis=axis,staggered=staggered)
-        return 0.5(flow_inty1 - flow_inty2)
+        return 0.5*(flow_inty1 - flow_inty2)
     else:
         return (1./coords[-1])*integrate.IntegrateTrapz(coords[-1]*flow_array,coords,axis=axis,staggered=staggered)
     

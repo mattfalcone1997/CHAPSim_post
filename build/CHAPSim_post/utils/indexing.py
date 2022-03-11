@@ -100,6 +100,7 @@ def coord_index_calc(CoordDF,comp,coord_list):
     
     min_coord = np.amin(coords)
     max_coord = np.amax(coords)
+
     index_list=[]
     for coord in coord_list:
         if coord < min_coord or coord > max_coord:
@@ -115,9 +116,9 @@ def coord_index_calc(CoordDF,comp,coord_list):
                     + "%s coordinate given: %g, max %s coordinate:" % (comp,coord,comp)\
                     + " %g. Ignoring values beyond this" % max(coords)
                 raise IndexError(msg) from None
-
-        min_array = np.abs(coords - coord)
-        index_list.append(np.argmin(min_array))
+        else:
+            min_array = np.abs(coords - coord)
+            index_list.append(np.argmin(min_array))
             
             
 

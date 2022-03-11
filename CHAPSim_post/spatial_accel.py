@@ -1,22 +1,21 @@
 
-import h5py
 import numpy as np
 import pandas as pd
 import os
 from abc import ABC
 import scipy
+
 if scipy.__version__ >= '1.6':
     from scipy.integrate import simpson as integrate_simps
 else:
     from scipy.integrate import simps as integrate_simps
 
-import sys
+from scipy.interpolate import interp1d
 
 from . import post as cp
 
 from . import plot as cplt
 
-from CHAPSim_post.utils import misc_utils,indexing
 from CHAPSim_post import POD
 import CHAPSim_post.dtypes as cd
 
@@ -50,6 +49,30 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         shape_factor = disp_thickness/mom_thickness
         
         return disp_thickness, mom_thickness, shape_factor
+    
+    def blayer_thickness_calc(self,PhyTime=None,method='99'):
+        PhyTime= self.check_PhyTime(PhyTime)
+        if method == '99':
+            return self._delta99_calc(PhyTime)
+        else:
+            msg = ("Invalid boundary layer thickness"
+                   " calculation method")
+            raise Exception(msg)
+        
+    def _delta99_calc(self,PhyTime):
+        u_mean = self.flow_AVGDF[PhyTime,'u']
+        y_coords = self.CoordDF['y']
+        
+        delta99 = np.zeros(u_mean.shape[-1])
+        for i in range(u_mean.shape[-1]):
+            u_99 = 0.99*u_mean[-1,i]
+            int = interp1d(u_mean[:,i], y_coords)
+            
+            delta99[i] = int(u_99)
+            
+        return delta99
+                
+        
     def _tau_calc(self,PhyTime):
         
         u_velo = self.flow_AVGDF[PhyTime,'u']
@@ -66,12 +89,9 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
 
     def _y_plus_calc(self,PhyTime):
 
-        _, delta_v_star = self._wall_unit_calc(PhyTime)
-        y_plus_shape=(delta_v_star.size,self.NCL[1])
-        y_plus = np.zeros(y_plus_shape)
         y_coord = self.CoordDF['y']
-        for i in range(len(delta_v_star)):
-            y_plus[i] = y_coord/delta_v_star[i]
+        _, delta_v_star = self._wall_unit_calc(PhyTime)
+        y_plus = y_coord[:,np.newaxis]*delta_v_star
         return y_plus
     
     def _get_uplus_yplus_transforms(self,PhyTime,x_val):
@@ -84,7 +104,32 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
 _avg_io_class = CHAPSim_AVG_io
 
 class CHAPSim_meta(cp.CHAPSim_meta):
-    pass
+    def __extract_meta(self,path_to_folder='.',abs_path=True,tgpost=False):
+        super().__extract_meta(path_to_folder,abs_path,False)
+        file = os.path.join(path_to_folder,
+                            '0_log_monitors',
+                            'CHK_U_INFTY.dat')
+        self.U_infty = np.loadtxt(file)[:,-1]
+        
+    def _hdf_extract(self, file_name, key=None):
+        if key is None:
+            key = self.__class__.__name__
+            
+        super()._hdf_extract(file_name, key)
+        hdf_obj = cd.hdfHandler(file_name,mode='r',key=key)
+        
+        self.U_infty = hdf_obj['U_infty'][:]
+        
+    def save_hdf(self,file_name,write_mode,key=None):
+        if key is None:
+            key = self.__class__.__name__
+            
+        super().save_hdf(file_name,write_mode,key=key)
+        hdf_obj = cd.hdfHandler(file_name,mode='a',key=key)
+        
+        hdf_obj.create_dataset('U_infty',data=self.U_infty)
+        
+        
 _meta_class = CHAPSim_meta
 
 class blayer_TEST_base(ABC):
