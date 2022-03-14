@@ -162,7 +162,7 @@ def IntegrateTrapz(np.ndarray input_array,np.ndarray x, int axis=0, bint stagger
     if input_array.dtype == np.float64:
         input_64 = input_array.copy().flatten()
         x_64 = x.copy()
-        out64 = np.zeros(shape,dtype=double)
+        out64 = np.zeros(shape,dtype=np.float64)
 
         if staggered:
             _trapezoid_staggered[double](&input_64[0],
@@ -188,7 +188,7 @@ def IntegrateTrapz(np.ndarray input_array,np.ndarray x, int axis=0, bint stagger
     elif input_array.dtype == np.float32: 
         input_32 = <np.ndarray[dtype=float,ndim=1]> input_array.copy().flatten() 
         x_32 = <np.ndarray[dtype=float,ndim=1]> x.copy()
-        out32 = np.zeros(shape,dtype=float)
+        out32 = np.zeros(shape,dtype=np.float32)
 
         if staggered:
             _trapezoid_staggered[float](&input_32[0],
