@@ -553,6 +553,9 @@ _fluct_temp_class = CHAPSim_fluct_temp
 class CHAPSim_budget_temp(cp.CHAPSim_budget_temp):
     pass
 
+class CHAPSim_k_budget_temp(cp.CHAPSim_k_budget_temp):
+    pass
+
 class CHAPSim_momentum_budget_temp(cp.CHAPSim_momentum_budget_temp):
     def __init__(self,comp,avg_data,PhyTime=None,apparent_Re=False):
         

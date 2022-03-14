@@ -438,6 +438,10 @@ _fluct_tg_class = CHAPSim_fluct_tg
 class CHAPSim_budget_io(cp.CHAPSim_budget_io):
     pass
 
+
+class CHAPSim_k_budget_io(cp.CHAPSim_k_budget_io):
+    pass
+
 class CHAPSim_momentum_budget_io(cp.CHAPSim_momentum_budget_io):
     def __init__(self,comp,avg_data,PhyTime=None,relative=False,apparent_Re=False):
         
