@@ -147,9 +147,9 @@ def IntegrateTrapz(np.ndarray input_array,np.ndarray x, int axis=0, bint stagger
     cdef int i, j=0
 
     if dim == 1:
-        shape = np.ones(1,dtype=int)
+        shape = np.ones(1,dtype=np.int32)
     else:
-        shape = np.zeros( <int> dim- <int> 1,dtype=int)
+        shape = np.zeros(dim- 1,dtype=np.int32)
         for i in range(dim):
             if i == axis:
                 continue                
