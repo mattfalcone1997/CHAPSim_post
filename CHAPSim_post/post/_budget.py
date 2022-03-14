@@ -555,6 +555,7 @@ class CHAPSim_budget_tg(ReynoldsBudget_base,_budget_base):
             fig, ax = self.budgetDF.plot_line(comp,time=PhyTime,
                                                 transform_xdata=y_plus,
                                                 transform_ydata=budget_scale,
+                                                channel_half=True,
                                                 fig=fig,ax=ax,line_kw=line_kw)
 
         if mpl.rcParams['text.usetex'] == True:
