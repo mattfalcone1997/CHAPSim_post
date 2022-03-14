@@ -603,7 +603,13 @@ class CHAPSim_budget_temp(CHAPSim_budget_tg):
         fig, ax = self._create_budget_axes(time_list,fig,ax,**kwargs)
 
         for i,time in enumerate(time_list):
-            fig, ax[i] = super().plot_budget(time,budget_terms=budget_terms,fig=fig,ax=ax[i],line_kw=line_kw)
+            fig, ax[i] = super().plot_budget(time,
+                                            budget_terms=budget_terms,
+                                            wall_units=wall_units,
+                                            fig=fig,
+                                            ax=ax[i],
+                                            line_kw=line_kw)
+            
             time_label = cp.styleParams.timeStyle
             ax[i].set_title(r"$%s = %.3g$"%(time_label,time),loc='right')
             
