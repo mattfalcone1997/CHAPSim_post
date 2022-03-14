@@ -229,7 +229,7 @@ def totIntegrate_y(CoordDF,flow_array,channel=True):
     
     if coords.size == flow_array.shape[axis]:
         staggered = False
-    elif coords.size+1 == flow_array.shape[axis]:
+    elif coords.size == flow_array.shape[axis]+1:
         staggered = True
     else:
         msg = "Coordinate array is the wrong size"

@@ -8,42 +8,66 @@ from CHAPSim_post._libs.array_utils cimport *
 from CHAPSim_post._libs.array_utils import *
 
 
-cdef floating _trapezoid_staggered(floating *input_array,
+cdef void _trapezoid_staggered(floating *input_array,
                                     floating *staggered_x,
                                     int axis,
                                     int *sizes,
                                     int *strides,
-                                    int dim) nogil:
+                                    int dim,
+                                    floating *out) nogil:
 
     cdef int total_size = get_total_size(dim, sizes)
     cdef int axis_stride = get_axis_stride(dim,axis,sizes)
+    cdef int new_size = axis_eliminate_size(sizes, dim, axis)
 
     cdef int axis_index
-    cdef floating delta_x, result=0
-    cdef int i
+    cdef floating delta_x
+    cdef int i, j=0, k
+
+    cdef floating *tmp_array
+
+    if floating is float:
+        tmp_array = <float *> malloc(total_size*sizeof(float))
+    else:
+        tmp_array = <double *> malloc(total_size*sizeof(double))
 
     for i in prange(total_size):
+
         axis_index = get_axis_index(i,strides,axis)
 
         delta_x = ( staggered_x[axis_index+1] - staggered_x[axis_index] )
-        result += input_array[i]*delta_x
+        tmp_array[i] = input_array[i]*delta_x
 
-    return result
+    for i in prange(new_size):
+        for j in range(sizes[axis]):
+            k = i + j*axis_stride
+            out[i] += tmp_array[k]
+    
 
-cdef floating _trapezoid_centered(floating *input_array,
+cdef void _trapezoid_centered(floating *input_array,
                                     floating *centered_x,
                                     int axis,
                                     int *sizes,
                                     int* strides,
-                                    int dim) nogil:
+                                    int dim,
+                                    floating *out) nogil:
     
     cdef int total_size = get_total_size(dim, sizes)
     cdef int axis_stride = get_axis_stride(dim,axis,sizes)
+    cdef int new_size = axis_eliminate_size(sizes, dim, axis)
 
     cdef int axis_index, plus_index
     cdef floating delta_x, input_mid, result=0
-    cdef int i
+    cdef int i, j, k
     cdef int loop_lim = total_size - axis_stride
+
+    cdef floating *tmp_array
+
+    if floating is float:
+        tmp_array = <float *> malloc(total_size*sizeof(float))
+    else:
+        tmp_array = <double *> malloc(total_size*sizeof(double))
+
 
     for i in prange(loop_lim):
         axis_index = get_axis_index(i,strides,axis)
@@ -52,9 +76,12 @@ cdef floating _trapezoid_centered(floating *input_array,
         input_mid = 0.5*(input_array[plus_index] + input_array[i])
         delta_x = ( centered_x[axis_index+1] - centered_x[axis_index] )
 
-        result += input_mid*delta_x
+        tmp_array[i] = input_mid*delta_x
 
-    return result
+    for i in prange(new_size):
+        for j in range(sizes[axis]):
+            k = i + j*axis_stride
+            out[i] += tmp_array[k]
 
 cdef floating _cum_trapezoid_staggered(floating *input_array,
                                     floating *staggered_x,
@@ -106,50 +133,84 @@ def IntegrateTrapz(np.ndarray input_array,np.ndarray x, int axis=0, bint stagger
     cdef np.ndarray[dtype=float,ndim=1] input_32
     cdef np.ndarray[dtype=double,ndim=1] x_64 
     cdef np.ndarray[dtype=float,ndim=1] x_32
+
+    cdef np.ndarray[dtype=double,ndim=1] out64 
+    cdef np.ndarray[dtype=float,ndim=1] out32
     
     cdef np.ndarray[dtype=int,ndim=1] strides
     cdef np.ndarray[dtype=int,ndim=1] sizes
 
+    
     strides, sizes = get_array_details(input_array)
 
-    if input_array.dtype == np.float64:
-        input_64 = <np.ndarray[dtype=double,ndim=1]> input_array.flatten()
+    cdef np.ndarray[dtype=int,ndim=1] shape 
+    cdef int i, j=0
 
-        x_64 = <np.ndarray[dtype=double,ndim=1]> x
+    if dim == 1:
+        shape = np.ones(1)
+    else:
+        shape = np.zeros(sim-1)
+        for i in range(dim):
+            if i == axis:
+                continue                
+
+            shape[j] = sizes[i]
+            j+=1
+
+    
+
+    if input_array.dtype == np.float64:
+        input_64 = input_array.copy().flatten()
+        x_64 = x.copy()
+        out64 = np.zeros(shape)
 
         if staggered:
-            return _trapezoid_staggered[double](&input_64[0],
-                                                &x_64[0],
-                                                axis,
-                                                &sizes[0],
-                                                &strides[0],
-                                                dim)
+            _trapezoid_staggered[double](&input_64[0],
+                                        &x_64[0],
+                                        axis,
+                                        &sizes[0],
+                                        &strides[0],
+                                        dim,
+                                        &out64[0])
         else:
-            return _trapezoid_centered[double](&input_64[0],
+            _trapezoid_centered[double](&input_64[0],
                                                 &x_64[0],
                                                 axis,
                                                 &sizes[0],
                                                 &strides[0],
-                                                dim)
+                                                dim,
+                                                &out64[0])
+        if dim == 1:
+            return out64[0]
+        else:
+            return out64
 
     elif input_array.dtype == np.float32: 
-        input_32 = <np.ndarray[dtype=float,ndim=1]> input_array.flatten() 
-        x_32 = <np.ndarray[dtype=float,ndim=1]> x       
-        if staggered:
-            return _trapezoid_staggered[float](&input_32[0],
-                                                &x_32[0],
-                                                axis,
-                                                &sizes[0],
-                                                &strides[0],
-                                                dim)
-        else:
-            return _trapezoid_centered[float](&input_32[0],
-                                                &x_32[0],
-                                                axis,
-                                                &sizes[0],
-                                                &strides[0],
-                                                dim)
+        input_32 = <np.ndarray[dtype=float,ndim=1]> input_array.copy().flatten() 
+        x_32 = <np.ndarray[dtype=float,ndim=1]> x.copy()
+        out32 = np.zeros(shape)  
 
+        if staggered:
+            _trapezoid_staggered[float](&input_32[0],
+                                        &x_32[0],
+                                        axis,
+                                        &sizes[0],
+                                        &strides[0],
+                                        dim,
+                                        &out32[0])
+        else:
+            _trapezoid_centered[float](&input_32[0],
+                                        &x_32[0],
+                                        axis,
+                                        &sizes[0],
+                                        &strides[0],
+                                        dim,
+                                        &out32[0])
+
+        if dim == 1:
+            return out32[0]
+        else:
+            return out32
     else:
         msg = "Integrate can only handle type flost32 and float64"
         raise TypeError(msg)

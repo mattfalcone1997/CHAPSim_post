@@ -18,6 +18,15 @@ def get_array_details(np.ndarray array):
 
     return strides, sizes
 
+cdef int axis_eliminate_size(int *sizes,int dim,int axis) nogil:
+    cdef int new_size = 1, i
+    for i in range(dim):
+        if i == axis:
+            continue
+        new_size*= sizes[i]
+
+    return new_size
+
 cdef int get_axis_index(int index,
                          int* strides,
                          int axis) nogil:

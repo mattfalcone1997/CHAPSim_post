@@ -1951,7 +1951,7 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_11array_utils_get_array_details(
  * 
  *     return strides, sizes             # <<<<<<<<<<<<<<
  * 
- * cdef int get_axis_index(int index,
+ * cdef int axis_eliminate_size(int *sizes,int dim,int axis) nogil:
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 19, __pyx_L1_error)
@@ -2005,6 +2005,106 @@ static PyObject *__pyx_pf_12CHAPSim_post_5_libs_11array_utils_get_array_details(
 /* "CHAPSim_post/_libs/array_utils.pyx":21
  *     return strides, sizes
  * 
+ * cdef int axis_eliminate_size(int *sizes,int dim,int axis) nogil:             # <<<<<<<<<<<<<<
+ *     cdef int new_size = 1, i
+ *     for i in range(dim):
+ */
+
+static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_axis_eliminate_size(int *__pyx_v_sizes, int __pyx_v_dim, int __pyx_v_axis) {
+  int __pyx_v_new_size;
+  int __pyx_v_i;
+  int __pyx_r;
+  int __pyx_t_1;
+  int __pyx_t_2;
+  int __pyx_t_3;
+  int __pyx_t_4;
+
+  /* "CHAPSim_post/_libs/array_utils.pyx":22
+ * 
+ * cdef int axis_eliminate_size(int *sizes,int dim,int axis) nogil:
+ *     cdef int new_size = 1, i             # <<<<<<<<<<<<<<
+ *     for i in range(dim):
+ *         if i == axis:
+ */
+  __pyx_v_new_size = 1;
+
+  /* "CHAPSim_post/_libs/array_utils.pyx":23
+ * cdef int axis_eliminate_size(int *sizes,int dim,int axis) nogil:
+ *     cdef int new_size = 1, i
+ *     for i in range(dim):             # <<<<<<<<<<<<<<
+ *         if i == axis:
+ *             continue
+ */
+  __pyx_t_1 = __pyx_v_dim;
+  __pyx_t_2 = __pyx_t_1;
+  for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
+    __pyx_v_i = __pyx_t_3;
+
+    /* "CHAPSim_post/_libs/array_utils.pyx":24
+ *     cdef int new_size = 1, i
+ *     for i in range(dim):
+ *         if i == axis:             # <<<<<<<<<<<<<<
+ *             continue
+ *         new_size*= sizes[i]
+ */
+    __pyx_t_4 = ((__pyx_v_i == __pyx_v_axis) != 0);
+    if (__pyx_t_4) {
+
+      /* "CHAPSim_post/_libs/array_utils.pyx":25
+ *     for i in range(dim):
+ *         if i == axis:
+ *             continue             # <<<<<<<<<<<<<<
+ *         new_size*= sizes[i]
+ * 
+ */
+      goto __pyx_L3_continue;
+
+      /* "CHAPSim_post/_libs/array_utils.pyx":24
+ *     cdef int new_size = 1, i
+ *     for i in range(dim):
+ *         if i == axis:             # <<<<<<<<<<<<<<
+ *             continue
+ *         new_size*= sizes[i]
+ */
+    }
+
+    /* "CHAPSim_post/_libs/array_utils.pyx":26
+ *         if i == axis:
+ *             continue
+ *         new_size*= sizes[i]             # <<<<<<<<<<<<<<
+ * 
+ *     return new_size
+ */
+    __pyx_v_new_size = (__pyx_v_new_size * (__pyx_v_sizes[__pyx_v_i]));
+    __pyx_L3_continue:;
+  }
+
+  /* "CHAPSim_post/_libs/array_utils.pyx":28
+ *         new_size*= sizes[i]
+ * 
+ *     return new_size             # <<<<<<<<<<<<<<
+ * 
+ * cdef int get_axis_index(int index,
+ */
+  __pyx_r = __pyx_v_new_size;
+  goto __pyx_L0;
+
+  /* "CHAPSim_post/_libs/array_utils.pyx":21
+ *     return strides, sizes
+ * 
+ * cdef int axis_eliminate_size(int *sizes,int dim,int axis) nogil:             # <<<<<<<<<<<<<<
+ *     cdef int new_size = 1, i
+ *     for i in range(dim):
+ */
+
+  /* function exit code */
+  __pyx_L0:;
+  return __pyx_r;
+}
+
+/* "CHAPSim_post/_libs/array_utils.pyx":30
+ *     return new_size
+ * 
  * cdef int get_axis_index(int index,             # <<<<<<<<<<<<<<
  *                          int* strides,
  *                          int axis) nogil:
@@ -2023,7 +2123,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_index(int __pyx_
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":25
+  /* "CHAPSim_post/_libs/array_utils.pyx":34
  *                          int axis) nogil:
  * 
  *     cdef int i, larger_subtract =1             # <<<<<<<<<<<<<<
@@ -2032,7 +2132,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_index(int __pyx_
  */
   __pyx_v_larger_subtract = 1;
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":26
+  /* "CHAPSim_post/_libs/array_utils.pyx":35
  * 
  *     cdef int i, larger_subtract =1
  *     cdef int axis_index = index             # <<<<<<<<<<<<<<
@@ -2041,7 +2141,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_index(int __pyx_
  */
   __pyx_v_axis_index = __pyx_v_index;
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":28
+  /* "CHAPSim_post/_libs/array_utils.pyx":37
  *     cdef int axis_index = index
  *     cdef int axis_num
  *     for i in range(0,axis):             # <<<<<<<<<<<<<<
@@ -2053,7 +2153,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_index(int __pyx_
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "CHAPSim_post/_libs/array_utils.pyx":29
+    /* "CHAPSim_post/_libs/array_utils.pyx":38
  *     cdef int axis_num
  *     for i in range(0,axis):
  *         axis_num = int(axis_index / strides[i])             # <<<<<<<<<<<<<<
@@ -2068,11 +2168,11 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_index(int __pyx_
       #ifdef WITH_THREAD
       __Pyx_PyGILState_Release(__pyx_gilstate_save);
       #endif
-      __PYX_ERR(0, 29, __pyx_L1_error)
+      __PYX_ERR(0, 38, __pyx_L1_error)
     }
     __pyx_v_axis_num = ((int)(((double)__pyx_v_axis_index) / ((double)(__pyx_v_strides[__pyx_v_i]))));
 
-    /* "CHAPSim_post/_libs/array_utils.pyx":30
+    /* "CHAPSim_post/_libs/array_utils.pyx":39
  *     for i in range(0,axis):
  *         axis_num = int(axis_index / strides[i])
  *         axis_index -= axis_num*strides[i]             # <<<<<<<<<<<<<<
@@ -2082,7 +2182,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_index(int __pyx_
     __pyx_v_axis_index = (__pyx_v_axis_index - (__pyx_v_axis_num * (__pyx_v_strides[__pyx_v_i])));
   }
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":32
+  /* "CHAPSim_post/_libs/array_utils.pyx":41
  *         axis_index -= axis_num*strides[i]
  * 
  *     return int(axis_index / strides[axis])             # <<<<<<<<<<<<<<
@@ -2097,13 +2197,13 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_index(int __pyx_
     #ifdef WITH_THREAD
     __Pyx_PyGILState_Release(__pyx_gilstate_save);
     #endif
-    __PYX_ERR(0, 32, __pyx_L1_error)
+    __PYX_ERR(0, 41, __pyx_L1_error)
   }
   __pyx_r = ((int)(((double)__pyx_v_axis_index) / ((double)(__pyx_v_strides[__pyx_v_axis]))));
   goto __pyx_L0;
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":21
- *     return strides, sizes
+  /* "CHAPSim_post/_libs/array_utils.pyx":30
+ *     return new_size
  * 
  * cdef int get_axis_index(int index,             # <<<<<<<<<<<<<<
  *                          int* strides,
@@ -2118,7 +2218,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_index(int __pyx_
   return __pyx_r;
 }
 
-/* "CHAPSim_post/_libs/array_utils.pyx":34
+/* "CHAPSim_post/_libs/array_utils.pyx":43
  *     return int(axis_index / strides[axis])
  * 
  * cdef int get_total_size(int dim,             # <<<<<<<<<<<<<<
@@ -2134,7 +2234,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_total_size(int __pyx_
   int __pyx_t_2;
   int __pyx_t_3;
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":36
+  /* "CHAPSim_post/_libs/array_utils.pyx":45
  * cdef int get_total_size(int dim,
  *                         int* sizes) nogil :
  *     cdef int size = 1             # <<<<<<<<<<<<<<
@@ -2143,7 +2243,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_total_size(int __pyx_
  */
   __pyx_v_size = 1;
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":39
+  /* "CHAPSim_post/_libs/array_utils.pyx":48
  *     cdef int i
  * 
  *     for i in range(dim):             # <<<<<<<<<<<<<<
@@ -2155,7 +2255,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_total_size(int __pyx_
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "CHAPSim_post/_libs/array_utils.pyx":40
+    /* "CHAPSim_post/_libs/array_utils.pyx":49
  * 
  *     for i in range(dim):
  *         size *= sizes[i]             # <<<<<<<<<<<<<<
@@ -2165,7 +2265,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_total_size(int __pyx_
     __pyx_v_size = (__pyx_v_size * (__pyx_v_sizes[__pyx_v_i]));
   }
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":42
+  /* "CHAPSim_post/_libs/array_utils.pyx":51
  *         size *= sizes[i]
  * 
  *     return size             # <<<<<<<<<<<<<<
@@ -2175,7 +2275,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_total_size(int __pyx_
   __pyx_r = __pyx_v_size;
   goto __pyx_L0;
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":34
+  /* "CHAPSim_post/_libs/array_utils.pyx":43
  *     return int(axis_index / strides[axis])
  * 
  * cdef int get_total_size(int dim,             # <<<<<<<<<<<<<<
@@ -2188,7 +2288,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_total_size(int __pyx_
   return __pyx_r;
 }
 
-/* "CHAPSim_post/_libs/array_utils.pyx":44
+/* "CHAPSim_post/_libs/array_utils.pyx":53
  *     return size
  * 
  * cdef int get_axis_stride(int dim,             # <<<<<<<<<<<<<<
@@ -2204,7 +2304,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_stride(int __pyx
   int __pyx_t_2;
   long __pyx_t_3;
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":47
+  /* "CHAPSim_post/_libs/array_utils.pyx":56
  *                         int axis,
  *                         int* sizes) nogil:
  *     cdef int stride = 1             # <<<<<<<<<<<<<<
@@ -2213,7 +2313,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_stride(int __pyx
  */
   __pyx_v_stride = 1;
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":48
+  /* "CHAPSim_post/_libs/array_utils.pyx":57
  *                         int* sizes) nogil:
  *     cdef int stride = 1
  *     for j in range(axis+1,dim):             # <<<<<<<<<<<<<<
@@ -2225,7 +2325,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_stride(int __pyx
   for (__pyx_t_3 = (__pyx_v_axis + 1); __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_j = __pyx_t_3;
 
-    /* "CHAPSim_post/_libs/array_utils.pyx":49
+    /* "CHAPSim_post/_libs/array_utils.pyx":58
  *     cdef int stride = 1
  *     for j in range(axis+1,dim):
  *             stride *= sizes[j]             # <<<<<<<<<<<<<<
@@ -2235,7 +2335,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_stride(int __pyx
     __pyx_v_stride = (__pyx_v_stride * (__pyx_v_sizes[__pyx_v_j]));
   }
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":51
+  /* "CHAPSim_post/_libs/array_utils.pyx":60
  *             stride *= sizes[j]
  * 
  *     return stride             # <<<<<<<<<<<<<<
@@ -2245,7 +2345,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_stride(int __pyx
   __pyx_r = __pyx_v_stride;
   goto __pyx_L0;
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":44
+  /* "CHAPSim_post/_libs/array_utils.pyx":53
  *     return size
  * 
  * cdef int get_axis_stride(int dim,             # <<<<<<<<<<<<<<
@@ -2258,7 +2358,7 @@ static int __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_stride(int __pyx
   return __pyx_r;
 }
 
-/* "CHAPSim_post/_libs/array_utils.pyx":53
+/* "CHAPSim_post/_libs/array_utils.pyx":62
  *     return stride
  * 
  * cdef void get_strides(int dim,             # <<<<<<<<<<<<<<
@@ -2279,7 +2379,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_strides(int __pyx_v_
   int __pyx_t_7;
   __Pyx_RefNannySetupContext("get_strides", 0);
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":58
+  /* "CHAPSim_post/_libs/array_utils.pyx":67
  *     cdef int i, j
  *     cdef int stride_int_
  *     for i in range(dim):             # <<<<<<<<<<<<<<
@@ -2291,7 +2391,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_strides(int __pyx_v_
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "CHAPSim_post/_libs/array_utils.pyx":59
+    /* "CHAPSim_post/_libs/array_utils.pyx":68
  *     cdef int stride_int_
  *     for i in range(dim):
  *         strides[i] = 1             # <<<<<<<<<<<<<<
@@ -2300,7 +2400,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_strides(int __pyx_v_
  */
     (__pyx_v_strides[__pyx_v_i]) = 1;
 
-    /* "CHAPSim_post/_libs/array_utils.pyx":60
+    /* "CHAPSim_post/_libs/array_utils.pyx":69
  *     for i in range(dim):
  *         strides[i] = 1
  *         for j in range(i+1,dim):             # <<<<<<<<<<<<<<
@@ -2311,7 +2411,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_strides(int __pyx_v_
     for (__pyx_t_6 = (__pyx_v_i + 1); __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
       __pyx_v_j = __pyx_t_6;
 
-      /* "CHAPSim_post/_libs/array_utils.pyx":61
+      /* "CHAPSim_post/_libs/array_utils.pyx":70
  *         strides[i] = 1
  *         for j in range(i+1,dim):
  *             strides[i] *= sizes[j]             # <<<<<<<<<<<<<<
@@ -2321,7 +2421,7 @@ static void __pyx_f_12CHAPSim_post_5_libs_11array_utils_get_strides(int __pyx_v_
     }
   }
 
-  /* "CHAPSim_post/_libs/array_utils.pyx":53
+  /* "CHAPSim_post/_libs/array_utils.pyx":62
  *     return stride
  * 
  * cdef void get_strides(int dim,             # <<<<<<<<<<<<<<
@@ -3511,6 +3611,7 @@ static int __Pyx_modinit_function_export_code(void) {
   __Pyx_RefNannySetupContext("__Pyx_modinit_function_export_code", 0);
   /*--- Function export code ---*/
   if (__Pyx_ExportFunction("get_axis_index", (void (*)(void))__pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_index, "int (int, int *, int)") < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__Pyx_ExportFunction("axis_eliminate_size", (void (*)(void))__pyx_f_12CHAPSim_post_5_libs_11array_utils_axis_eliminate_size, "int (int *, int, int)") < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   if (__Pyx_ExportFunction("get_total_size", (void (*)(void))__pyx_f_12CHAPSim_post_5_libs_11array_utils_get_total_size, "int (int, int *)") < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   if (__Pyx_ExportFunction("get_axis_stride", (void (*)(void))__pyx_f_12CHAPSim_post_5_libs_11array_utils_get_axis_stride, "int (int, int, int *)") < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   if (__Pyx_ExportFunction("get_strides", (void (*)(void))__pyx_f_12CHAPSim_post_5_libs_11array_utils_get_strides, "void (int, int *, int *)") < 0) __PYX_ERR(0, 1, __pyx_L1_error)

@@ -6,6 +6,7 @@ cimport numpy as np
 cdef int get_axis_index(int index,
                          int* strides,
                          int axis) nogil
+cdef int axis_eliminate_size(int *sizes,int dim,int axis) nogil
 
 cdef int get_total_size(int dim,
                         int* sizes) nogil 
