@@ -640,7 +640,7 @@ class CHAPSim_budget_temp(CHAPSim_budget_tg):
             ax.cplot(times,int_budget,label=label,**line_kw)
 
         time_label = cp.styleParams.timeStyle
-        ax.set_xlabel(r"$%s = %.3g$"%(time_label,time))
+        ax.set_xlabel(r"$%s$"%time_label)
         ncol = cplt.get_legend_ncols(len(budget_terms))
         ax.clegend(ncol=ncol,vertical=False)
 
