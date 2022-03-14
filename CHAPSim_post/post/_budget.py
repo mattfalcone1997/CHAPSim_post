@@ -213,7 +213,7 @@ class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
             diff2 = 'x'
         elif comp1 == 'w' and comp2 == 'w':
             pressure_diff = np.zeros(self.avg_data.shape)
-            return pressure_diff.flatten()
+            return pressure_diff
         else:
             raise ValueError
 
