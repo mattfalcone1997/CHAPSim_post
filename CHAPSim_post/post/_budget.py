@@ -648,7 +648,7 @@ class _k_budget(_budget_base,ABC):
         else:
             times = misc_utils.check_list_vals(times)
             times = [self.avg_data.check_PhyTime(time) for time in times]
-        
+
         for time in times:
             if time == times[0]:
                 self.budgetDF = self._k_budget_extract(time)
@@ -661,7 +661,7 @@ class _k_budget(_budget_base,ABC):
         vv_budgetDF = self._budget_extract(PhyTime,'vv')
         ww_budgetDF = self._budget_extract(PhyTime,'ww')
 
-        self.budgetDF = 0.5*(uu_budgetDF + vv_budgetDF + ww_budgetDF)
+        return 0.5*(uu_budgetDF + vv_budgetDF + ww_budgetDF)
 
 class CHAPSim_k_budget_io(_k_budget,CHAPSim_budget_io):
     pass
