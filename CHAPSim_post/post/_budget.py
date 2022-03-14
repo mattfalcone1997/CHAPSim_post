@@ -639,6 +639,8 @@ class CHAPSim_budget_temp(CHAPSim_budget_tg):
             label = r"$\int^{\delta}_{-\delta}$ %s $dy$"%comp.title()
             ax.cplot(times,int_budget,label=label,**line_kw)
 
+        time_label = cp.styleParams.timeStyle
+        ax.set_xlabel(r"$%s = %.3g$"%(time_label,time))
         ncol = cplt.get_legend_ncols(len(budget_terms))
         ax.clegend(ncol=ncol,vertical=False)
 
