@@ -541,7 +541,7 @@ class CHAPSim_budget_tg(ReynoldsBudget_base,_budget_base):
         else:
             return None, None
 
-    def plot_budget(self, PhyTime=None,budget_terms=None, wall_units=False,fig=None, ax =None,line_kw=None,**kwargs):
+    def plot_budget(self, PhyTime=None,budget_terms=None, wall_units=True,fig=None, ax =None,line_kw=None,**kwargs):
         PhyTime = self.avg_data.check_PhyTime(PhyTime)
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
         budget_terms = self._check_terms(budget_terms)
