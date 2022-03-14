@@ -107,7 +107,7 @@ class ReynoldsBudget_base(ABC):
 
         array_concat = [production,advection,turb_transport,pressure_diffusion,\
                         pressure_strain,viscous_diff,dissipation]
-
+        print([x.shape for x in array_concat])
         budget_array = np.stack(array_concat,axis=0)
         
         budget_index = ['production','advection','turbulent transport','pressure diffusion',\
