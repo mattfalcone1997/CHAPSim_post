@@ -23,7 +23,6 @@ class _budget_base(Common,ABC):
             times = [self.avg_data.check_PhyTime(time) for time in times]
         
         
-        self.comp = comp
         for time in times:
             if time == times[0]:
                 self.budgetDF = self._budget_extract(time,comp)
@@ -640,7 +639,7 @@ class CHAPSim_budget_temp(CHAPSim_budget_tg):
 
 class _k_budget(_budget_base,ABC):
 
-    def __init__(self,comp,avg_data,times = None):
+    def __init__(self,avg_data,times = None):
 
         self.avg_data = avg_data
 
@@ -650,8 +649,6 @@ class _k_budget(_budget_base,ABC):
             times = misc_utils.check_list_vals(times)
             times = [self.avg_data.check_PhyTime(time) for time in times]
         
-        
-        self.comp = comp
         for time in times:
             if time == times[0]:
                 self.budgetDF = self._k_budget_extract(time)
