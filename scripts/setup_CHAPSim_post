@@ -42,7 +42,7 @@ fi
 
 if [ $USE_CONDA -eq 1 ]; then
 
-	if [ $CONDA_ENV_EXISTS -eq 1 ]; then
+	if [ $CONDA_ENV_EXISTS -eq 0 ]; then
 		conda env create -f scripts/CHAPSim_post.yml
 	else
 		conda env update -f scripts/CHAPSim_post.yml  --prune
