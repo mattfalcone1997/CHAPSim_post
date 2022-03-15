@@ -603,10 +603,9 @@ class CHAPSim_budget_temp(CHAPSim_budget_tg):
             self.__transient = self._transient_extract(None,comp)
         
         index = self.avg_data._return_index(PhyTime)
-        transient = self.__transient[:,index].T
+        transient = self.__transient[:,index]
         budgetDF.concat(self._flowstruct_class(self._coorddata,
-                                            transient,
-                                            index=(PhyTime,'transient')))
+                                               {(PhyTime,'transient') : transient}))
         
         return budgetDF
         
