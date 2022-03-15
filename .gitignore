@@ -6,4 +6,4 @@ tests/*.png
 tests/*/*.png
 build/*
 docs/build/*
-CHAPSim_post._libs/*.c
+CHAPSim_post/_libs/*.c
