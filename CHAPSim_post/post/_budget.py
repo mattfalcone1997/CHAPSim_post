@@ -612,7 +612,7 @@ class CHAPSim_budget_temp(CHAPSim_budget_tg):
     def _transient_extract(self,PhyTime,comp):
         uu = self.avg_data.UU_tensorDF[PhyTime,comp]
         times= self.avg_data.times
-        return gradient.gradient_calc(uu,times,axis=1)
+        return -1.*gradient.gradient_calc(uu,times,axis=1)
         
         
     def plot_budget(self, time_list,budget_terms=None,wall_units=True, fig=None, ax =None,line_kw=None,**kwargs):
