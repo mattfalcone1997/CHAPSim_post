@@ -3,8 +3,8 @@ import matplotlib as mpl
 import itertools
 from abc import ABC, abstractmethod
 
-from CHAPSim_post.utils import  misc_utils, indexing, gradient
-
+from CHAPSim_post.utils import  misc_utils, indexing
+from CHAPSim_post._libs import gradient
 import CHAPSim_post.plot as cplt
 import CHAPSim_post.dtypes as cd
 import CHAPSim_post as cp
@@ -596,6 +596,25 @@ class Budget_tg_array(postArray,_budget_base):
 
 class CHAPSim_budget_temp(CHAPSim_budget_tg):
     _flowstruct_class = cd.FlowStruct1D_time
+    def _budget_extract(self,PhyTime,comp):
+        budgetDF = super()._budget_extract(PhyTime,comp)
+        
+        if PhyTime == self.avg_data.times[0]:  
+            self.__transient = self._transient_extract(PhyTime,comp)
+        
+        index = self.avg_data._return_index(PhyTime)
+        budgetDF.concat(self._flowstruct_class(self._coorddata,
+                                            self.__transient[:,index],
+                                            index=(PhyTime,'transient')))
+        
+        return budgetDF
+        
+    def _transient_extract(self,PhyTime,comp):
+        uu = self.avg_data.UU_tensorDF[PhyTime,comp]
+        times= self.avg_data.times
+        return gradient.gradient_calc(uu,times,axis=1)
+        
+        
     def plot_budget(self, time_list,budget_terms=None,wall_units=True, fig=None, ax =None,line_kw=None,**kwargs):
         
         budget_terms = self._check_terms(budget_terms)
