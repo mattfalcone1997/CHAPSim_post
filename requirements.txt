@@ -22,3 +22,4 @@ imageio-ffmpeg
 ez_setup
 moviepy
 decorator==4.4.2
+virtualenv
