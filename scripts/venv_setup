@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+
+import os
+import os.path
+from subprocess import run, STDOUT
+import sys
+from threading import Thread
+from urllib.parse import urlparse
+from urllib.request import urlretrieve
+import venv
+from shutil import copy, which
+
+class virtualEnvCreator:
+    def __init__(self,env_name,path,CHAPSim_post_root):
+        self._env_name = env_name
+        self._path = path
+        self._root = CHAPSim_post_root
+        
+        if not os.path.isdir(self._path):
+            msg = "Virtual environment path must exist"
+            raise FileNotFoundError(msg)
+            
+        if not os.path.isdir(self._root):
+            msg = "CHAPSim_post root path must exist"
+            raise FileNotFoundError(msg)
+            
+        if not os.path.isfile(os.path.join(self._root,'setup.py')) and \
+                os.path.isfile(os.path.join(self._root,'requirements.txt')):
+            msg = "There must be a setup.py and requirements.txt in CHAPSim_post root path"
+            raise FileNotFoundError(msg)
+    
+    def _check_cmds(self):
+        if not which('virtualenv'):
+            msg = "Executable virtualenv required"
+            raise Exception(msg)
+            
+    def create(self):
+        os.chdir(self._path)
+        
+        self._check_cmds()
+        args = ['virtualenv',self._env_name]
+        run(args)
+        base = os.path.join(self._path,self._env_name,'bin')
+        
+        pip_path = os.path.join(base,'pip')
+        python_path = os.path.join(base,'python')
+        
+        os.chdir(self._root)
+        args = [pip_path,'install','-r','requirements.txt']
+        run(args)
+        
+        args = [python_path,'setup.py','install']
+        run(args)
+        
+        
+        
+
+def main(args=None):
+    compatible = True
+    if sys.version_info < (3, 3):
+        compatible = False
+    elif not hasattr(sys, 'base_prefix'):
+        compatible = False
+    if not compatible:
+        raise ValueError('This script is only for use with '
+                         'Python 3.3 or later')
+    else:
+        import argparse
+
+        parser = argparse.ArgumentParser(prog=__name__,
+                                         description='Creates virtual Python '
+                                                     'environments in one or '
+                                                     'more target '
+                                                     'directories.')
+                                                     
+        parser.add_argument('env_name', action='store',
+                            help='virtual environment name')
+        parser.add_argument('--path', default=os.getcwd(),
+                            action='store', dest='path',
+                            help="path to environment")                                 
+        parser.add_argument('--chapsim_post', default=False, required=True,action='store',
+                            dest='chapsim_path', help='Path to root CHAPSim_post directory')
+                                                 
+        options = parser.parse_args(args)
+
+        builder = virtualEnvCreator(options.env_name,
+                                    options.path,
+                                    options.chapsim_path)
+        builder.create()
+            
+
+if __name__ == '__main__':
+    rc = 1
+    try:
+        main()
+        rc = 0
+    except Exception as e:
+        print('Error: %s' % e, file=sys.stderr)
+    sys.exit(rc)
+                
