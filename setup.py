@@ -5,14 +5,11 @@ if __name__ == "__main__":
     from numpy.distutils.core import Extension
     import os
     from Cython.Build import cythonize
-
+    
     def create_cython_ext(folder,**other_args):
-        folder = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                              folder)
-
         sources = [os.path.join(folder,file) for file in os.listdir(folder) \
                         if os.path.splitext(file)[-1] == '.pyx']
-        names = [os.path.splitext(source[1:])[0].replace('/','.')\
+        names = [os.path.splitext(source)[0].replace('/','.')\
                     for source in sources]
 
         ext_list = []
@@ -23,7 +20,9 @@ if __name__ == "__main__":
             
         return ext_list
         
-    
+    path = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(path)
+        
     cy_parallel = create_cython_ext("CHAPSim_post/_libs",
                                     extra_compile_args = ["-fopenmp","-O3"],
                                     extra_link_args = ["-fopenmp","-O3"])
