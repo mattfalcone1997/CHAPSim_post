@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
         sources = [os.path.join(folder,file) for file in os.listdir(folder) \
                         if os.path.splitext(file)[-1] == '.pyx']
-        names = [os.path.splitext(source)[0].replace('/','.')\
+        names = [os.path.splitext(source[1:])[0].replace('/','.')\
                     for source in sources]
 
         ext_list = []
