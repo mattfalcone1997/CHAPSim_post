@@ -1,8 +1,9 @@
 #!/bin/bash
 
-VTK_INSTALL_ROOT=${PWD}/test
-VTK_CONDA_PATH=$HOME/SOFTWARE/anaconda
+VTK_INSTALL_ROOT=$HOME/data/SOFTWARE/VTK
+VTK_CONDA_PATH=$HOME/SOFTWARE/anaconda3
 VTK_CONDA_ENV=CHAPSim_post
+
 
 ###############################################################################
 # test setup
@@ -69,7 +70,7 @@ tar xvf VTK-$FULL_VERSION.tar.gz
 
 
 cd VTK-$VERSION_MAIN
-mkdir $VTK_BUILD_PATH && cd $VTK_BUILD_PATH
+mkdir -p $VTK_BUILD_PATH && cd $VTK_BUILD_PATH
 
 #configuring and building vtk
 cmake -GNinja\
@@ -80,7 +81,8 @@ cmake -GNinja\
     -DVTK_WRAP_PYTHON=ON \
     -DVTK_OPENGL_HAS_OSMESA=ON \
     -DVTK_OPENGL_HAS_EGL=OFF \
-    -DOSMESA_ROOT=$LIB_PATH \
+    -DOSMESA_INCLUDE_DIR=$VTK_CONDA_PATH/include \
+    -DOSMESA_LIBRARY=$VTK_CONDA_PATH/lib \
     -DVTK_USE_X=OFF \
     -DPython3_EXECUTABLE=$PYBIN \
     -DCMAKE_INSTALL_LIBDIR=${PWD} \
