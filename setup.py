@@ -22,7 +22,7 @@ if __name__ == "__main__":
         
     path = os.path.dirname(os.path.abspath(__file__))
     os.chdir(path)
-        
+
     cy_parallel = create_cython_ext("CHAPSim_post/_libs",
                                     extra_compile_args = ["-fopenmp","-O3"],
                                     extra_link_args = ["-fopenmp","-O3"])
