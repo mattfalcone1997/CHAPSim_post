@@ -120,7 +120,7 @@ class _Inst_base(Common,ABC):
     
     def _hdf_extract(self,file_name,key=None):
         if key is None:
-            key = 'CHAPSim_Inst'
+            key = self.__class__.__name__
 
         hdf_obj = cd.hdfHandler(file_name,'r',key=key)
         hdf_obj.check_type_id(self.__class__)
