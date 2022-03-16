@@ -7,6 +7,9 @@ if __name__ == "__main__":
     from Cython.Build import cythonize
 
     def create_cython_ext(folder,**other_args):
+        folder = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              folder)
+
         sources = [os.path.join(folder,file) for file in os.listdir(folder) \
                         if os.path.splitext(file)[-1] == '.pyx']
         names = [os.path.splitext(source)[0].replace('/','.')\
@@ -20,7 +23,7 @@ if __name__ == "__main__":
             
         return ext_list
         
-        
+    
     cy_parallel = create_cython_ext("CHAPSim_post/_libs",
                                     extra_compile_args = ["-fopenmp","-O3"],
                                     extra_link_args = ["-fopenmp","-O3"])
