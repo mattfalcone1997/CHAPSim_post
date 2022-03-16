@@ -44,6 +44,9 @@ mkdir -p $VTK_INSTALL_ROOT
 
 # Installing vtk dependencies
 conda install -y -c conda-forge mesa ffmpeg matplotlib numpy 
+
+test_return "Issue downloading vtk"
+
 LIB_PATH=$VTK_CONDA_PATH/lib
 # installing vtk
 
