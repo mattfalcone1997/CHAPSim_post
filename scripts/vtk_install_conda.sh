@@ -45,7 +45,7 @@ rm -rf $VTK_INSTALL_ROOT/*
 #==========================================================
 
 # Installing vtk dependencies
-conda install -y -c conda-forge -c menpo osmesa ffmpeg matplotlib numpy 
+conda install -y -c conda-forge -c menpo libgcrypt osmesa ffmpeg matplotlib numpy 
 
 test_return "Issue downloading vtk"
 
@@ -90,6 +90,7 @@ cmake CC=/usr/bin/gcc CXX=/usr/bin/g++ \
     -DVTK_USE_X=OFF \
     -DPython3_EXECUTABLE=$PYBIN \
     -DCMAKE_INSTALL_LIBDIR=${PWD} \
+    -DCMAKE_LIBRARY_PATH=$LIB_PATH/lib \
     -S $VTK_MAIN_DIR -B $VTK_BUILD_PATH
     
 test_return "Issue configuring install of VTK"
@@ -103,29 +104,25 @@ test_return "Issue building VTK"
 #setting up python wheels
 $PYBIN setup.py bdist_wheel
 
-test_return
+test_return "Issue setting up python setup.py"
 
 #Installing, if using conda it will install it as a local conda package
 
-if [ -z ${USE_CONDA+x} ]; then
-    $PYBIN -m pip install dist/vtk-*.whl
-    test_return "Issue creating vtk python wheel"
-else
-    mkdir -p recipes
-    cd recipes
-    echo -e "\#!/bin/bash\n\n$PYBIN -m pip install $VTK_BUILD_PATH/dist/vtk-*.whl" > build.sh
-    echo -e "package:\n\tname: vtk\n\tversion: 9.0" > meta.yaml
 
-    conda build .
+mkdir -p recipes
+cd recipes
+echo -e "\#!/bin/bash\n\n$PYBIN -m pip install $VTK_BUILD_PATH/dist/vtk-*.whl" > build.sh
+echo -e "package:\n\tname: vtk\n\tversion: $VERSION_MAIN" > meta.yaml
 
-    test_return "Issue in conda build step"
+conda build .
 
-    conda install --use-local vtk
+test_return "Issue in conda build step"
 
-    test_return "Issue with local install of vtk conda package"
+conda install --use-local vtk
 
-    conda deactivate
+test_return "Issue with local install of vtk conda package"
 
-fi
+conda deactivate
+
 
 
