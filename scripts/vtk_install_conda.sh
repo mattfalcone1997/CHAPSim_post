@@ -86,7 +86,7 @@ cmake CC=/usr/bin/gcc CXX=/usr/bin/g++ \
     -DVTK_OPENGL_HAS_OSMESA=ON \
     -DVTK_OPENGL_HAS_EGL=OFF \
     -DOSMESA_INCLUDE_DIR=$LIB_PATH/include \
-    -DOSMESA_LIBRARY=$LIB_PATH/lib \
+    -DOSMESA_LIBRARY=$LIB_PATH/lib/libOSMesa.so \
     -DVTK_USE_X=OFF \
     -DPython3_EXECUTABLE=$PYBIN \
     -DCMAKE_INSTALL_LIBDIR=${PWD} \
