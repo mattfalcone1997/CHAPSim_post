@@ -69,12 +69,15 @@ test_return "Issue downloading vtk"
 
 tar xvf VTK-$FULL_VERSION.tar.gz
 
+NSLOTS=$(grep -c ^processor /proc/cpuinfo)
+CPU= $(( $NSLOTS / 2 ))
+
 cd VTK-$FULL_VERSION
 mkdir -p $VTK_BUILD_PATH && cd $VTK_BUILD_PATH
 
 #configuring and building vtk
 cmake CC=/usr/bin/gcc CXX=/usr/bin/g++ \
-    -GNinja\
+    -G"Unix Makefiles"\
     -DFFMPEG_ROOT=$LIB_PATH \
     -DVTK_BUILD_TESTING=OFF \
     -DVTK_WHEEL_BUILD=ON \
@@ -93,7 +96,7 @@ test_return "Issue configuring install of VTK"
 
 sleep 5
 
-ninja -v 
+make -j$CPU
 
 test_return "Issue building VTK"
 
