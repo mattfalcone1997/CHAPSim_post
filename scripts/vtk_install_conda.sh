@@ -69,7 +69,7 @@ test_return "Issue downloading vtk"
 tar xvf VTK-$FULL_VERSION.tar.gz
 
 
-cd VTK-$VERSION_MAIN
+cd VTK-$FULL_VERSION
 mkdir -p $VTK_BUILD_PATH && cd $VTK_BUILD_PATH
 
 #configuring and building vtk
