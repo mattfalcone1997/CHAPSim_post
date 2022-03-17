@@ -49,7 +49,7 @@ conda install -y -c conda-forge -c menpo osmesa ffmpeg matplotlib numpy
 
 test_return "Issue downloading vtk"
 
-LIB_PATH=$VTK_CONDA_PATH/lib
+LIB_PATH=$VTK_CONDA_PATH/envs/$VTK_CONDA_ENV
 # installing vtk
 
 VERSION_MAIN=9.1
