@@ -78,7 +78,8 @@ mkdir -p $VTK_BUILD_PATH && cd $VTK_BUILD_PATH
 #configuring and building vtk
 cmake CC=/usr/bin/gcc CXX=/usr/bin/g++ \
     -G"Unix Makefiles"\
-    -DFFMPEG_ROOT=$LIB_PATH \
+    -DFFMPEG_INCLUDE_DIRS=$LIB_PATH/include \
+    -DFFMPEG_LIBRARIES=$LIB_PATH/lib \
     -DVTK_BUILD_TESTING=OFF \
     -DVTK_WHEEL_BUILD=ON \
     -DVTK_PYTHON_VERSION=3 \
