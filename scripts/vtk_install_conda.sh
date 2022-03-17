@@ -39,8 +39,9 @@ PYBIN=$(which python3)
 
 test_cmd $PYBIN
 
-mkdir -p $VTK_INSTALL_ROOT
 
+mkdir -p $VTK_INSTALL_ROOT
+rm -rf $VTK_INSTALL_ROOT/* 
 #==========================================================
 
 # Installing vtk dependencies
