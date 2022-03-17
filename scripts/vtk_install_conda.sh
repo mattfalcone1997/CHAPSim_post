@@ -95,7 +95,7 @@ test_return "Issue configuring install of VTK"
 
 sleep 5
 
-make -j$CPU
+make 
 
 test_return "Issue building VTK"
 
