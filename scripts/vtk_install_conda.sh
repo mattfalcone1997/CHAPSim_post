@@ -69,7 +69,8 @@ test_return "Issue downloading vtk"
 
 tar xvf VTK-$FULL_VERSION.tar.gz
 
-
+NSLOTS=$(grep -c ^processor /proc/cpuinfo) /2
+CPU= $(( $NSLOTS / 2 ))
 cd VTK-$FULL_VERSION
 mkdir -p $VTK_BUILD_PATH && cd $VTK_BUILD_PATH
 
@@ -94,7 +95,7 @@ test_return "Issue configuring install of VTK"
 
 sleep 5
 
-make 
+make -j$CPU
 
 test_return "Issue building VTK"
 
