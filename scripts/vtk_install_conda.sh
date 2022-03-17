@@ -74,7 +74,7 @@ mkdir -p $VTK_BUILD_PATH && cd $VTK_BUILD_PATH
 
 #configuring and building vtk
 cmake CC=/usr/bin/gcc CXX=/usr/bin/g++ \
-    -Gninja\
+    -GNinja\
     -DFFMPEG_ROOT=$LIB_PATH \
     -DVTK_BUILD_TESTING=OFF \
     -DVTK_WHEEL_BUILD=ON \
