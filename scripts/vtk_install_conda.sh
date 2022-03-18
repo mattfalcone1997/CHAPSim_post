@@ -45,7 +45,7 @@ rm -rf $VTK_INSTALL_ROOT/*
 #==========================================================
 
 # Installing vtk dependencies
-conda install -y -c conda-forge -c conda-forge libgcrypt mesalib ffmpeg matplotlib numpy 
+conda install -y -c conda-forge -c conda-forge conda-build libgcrypt mesalib ffmpeg matplotlib numpy 
 
 test_return "Issue downloading vtk"
 
@@ -112,14 +112,14 @@ test_return "Issue setting up python setup.py"
 
 mkdir -p recipes
 cd recipes
-echo -e "\#!/bin/bash\n\n$PYBIN -m pip install $VTK_BUILD_PATH/dist/vtk-*.whl" > build.sh
-echo -e "package:\n\tname: vtk\n\tversion: $VERSION_MAIN" > meta.yaml
+echo -e "#!/bin/bash\n\n$PYBIN -m pip install $VTK_BUILD_PATH/dist/vtk-*.whl" > build.sh
+echo -e "package:\n  name: vtk\n  version: $VERSION_MAIN" > meta.yaml
 
 conda build .
 
 test_return "Issue in conda build step"
 
-conda install --use-local vtk
+conda install --use-local -y vtk
 
 test_return "Issue with local install of vtk conda package"
 

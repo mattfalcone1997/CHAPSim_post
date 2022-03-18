@@ -3,6 +3,7 @@ if __name__ == "__main__":
     from numpy.distutils.core import setup
     from numpy.distutils.misc_util import Configuration
     from numpy.distutils.core import Extension
+    import numpy
     import os
     from Cython.Build import cythonize
     
@@ -11,7 +12,11 @@ if __name__ == "__main__":
                         if os.path.splitext(file)[-1] == '.pyx']
         names = [os.path.splitext(source)[0].replace('/','.')\
                     for source in sources]
-
+        include_dirs = [numpy.get_include()],
+        if 'include_dirs' in other_args:
+            other_args['include_dirs'] += include_dirs
+        else:
+            other_args['include_dirs'] = include_dirs
         ext_list = []
         for name, source in zip(names,sources):
             ext_list.append(Extension(name=name,
