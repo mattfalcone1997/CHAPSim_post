@@ -45,7 +45,7 @@ rm -rf $VTK_INSTALL_ROOT/*
 #==========================================================
 
 # Installing vtk dependencies
-conda install -y -c conda-forge -c menpo libgcrypt osmesa ffmpeg matplotlib numpy 
+conda install -y -c conda-forge -c conda-forge libgcrypt mesalib ffmpeg matplotlib numpy 
 
 test_return "Issue downloading vtk"
 

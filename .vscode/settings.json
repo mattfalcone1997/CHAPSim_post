@@ -2,5 +2,5 @@
     "python.pythonPath": "/home/mfalcone/SOFTWARE/anaconda/envs/CHAPSim_post/bin/python",
     "restructuredtext.confPath": "${workspaceFolder}/docs/source",
     "esbonio.server.enabled": true,
-    "esbonio.sphinx.confDir": "/home/mfalcone/Documents/Python/CHAPSim_post_new/docs/source"
+    "esbonio.sphinx.confDir": "${workspaceFolder}/docs/source"
 }
