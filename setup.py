@@ -12,7 +12,7 @@ if __name__ == "__main__":
                         if os.path.splitext(file)[-1] == '.pyx']
         names = [os.path.splitext(source)[0].replace('/','.')\
                     for source in sources]
-        include_dirs = [numpy.get_include()],
+        include_dirs = [numpy.get_include()]
         if 'include_dirs' in other_args:
             other_args['include_dirs'] += include_dirs
         else:
