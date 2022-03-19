@@ -24,7 +24,15 @@ import matplotlib.tri as mtri
 from numpy.core.fromnumeric import swapaxes
 from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.interpolate import interpn,interp1d
-from skimage import measure
+
+try:
+    from skimage import measure
+    _has_isosurface = True
+except ImportError:
+    _has_isosurface = False
+    msg = ("An issue importing skimage for creating isosurfaces,"
+           " this has been disabled")
+    warnings.warn(msg)
 
 
 if which('pdflatex') is not None:
@@ -481,6 +489,10 @@ class Axes3DCHAPSim(Axes3D):
         self.set_zlim(lims)
 
     def plot_isosurface(self,X,Y,Z,data,level,scaling=None,**kwargs):
+        if not _has_isosurface:
+            msg = "This function cannot be used, see previous warning"
+            raise RuntimeError(msg)
+        
         had_data = self.has_data()
 
         if scaling is not None:
