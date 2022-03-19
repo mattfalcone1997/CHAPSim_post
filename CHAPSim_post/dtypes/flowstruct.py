@@ -662,7 +662,7 @@ class FlowStructND(_FlowStruct_base):
         file_name : str
             file path for saving
         """
-        self.VTK.to_vtk(file_name)
+        self.VTK.save_vtk(file_name)
 
     def to_hdf(self,filepath: str,
                mode: str ='a',
