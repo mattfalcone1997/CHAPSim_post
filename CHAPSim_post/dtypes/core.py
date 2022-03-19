@@ -325,7 +325,7 @@ class MultiIndex(IndexBase):
             if len(self.get_outer_index()) > 1:
                 raise err from None
             else:
-                if key != 'None':
+                if key != 'None' or warn is not None:
                     warnings.warn(warn,stacklevel=4)
                 key = self.get_outer_index()[0]
 
