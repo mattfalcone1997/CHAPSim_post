@@ -346,7 +346,7 @@ class CHAPSim_fluct_tg(CHAPSim_fluct_base):
             
         self._meta_data = inst_data._meta_data
 
-        self.fluctDF = self._fluctDF_calc(inst_data,inst_data._avg_data)
+        self.fluctDF = self._fluctDF_calc(inst_data,self.avg_data)
 
     def _hdf_extract(self, filename,key=None):
         if key is None:
