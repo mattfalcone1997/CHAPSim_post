@@ -339,8 +339,11 @@ class CHAPSim_fluct_tg(CHAPSim_fluct_base):
                 else:
                     inst_data += self._module._inst_tg_class(time_inst_data,path_to_folder=path_to_folder,avg_data=avg_data,abs_path=abs_path)
     
-
-        self.avg_data = inst_data._avg_data
+        if avg_data is None:
+            self.avg_data = inst_data._avg_data
+        else:
+            self.avg_data = avg_data
+            
         self._meta_data = inst_data._meta_data
 
         self.fluctDF = self._fluctDF_calc(inst_data,inst_data._avg_data)

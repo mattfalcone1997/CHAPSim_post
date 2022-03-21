@@ -94,9 +94,8 @@ class CHAPSim_AVG_temp(cp.CHAPSim_AVG_temp):
                         if not isinstance(x,types.MethodType)}
         return data_dict__
 
-_avg_tg_base_class = CHAPSim_AVG_temp
-
-_avg_tg_class = CHAPSim_AVG_temp
+_avg_temp_class = CHAPSim_AVG_temp
+_avg_tg_class = cp.CHAPSim_AVG_tg
 
 class CHAPSim_AVG_temp_conv(CHAPSim_AVG_temp):
         

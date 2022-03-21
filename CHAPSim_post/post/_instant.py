@@ -790,7 +790,6 @@ class CHAPSim_Inst_tg(_Inst_base):
             new_flow_array = flow_info
             x_size = NCL1
             
-        print(new_flow_array.shape,flow_info.shape,NCL3, NCL2, x_size)
         return  super()._velo_interp(new_flow_array, NCL3, NCL2, x_size)
 
 
