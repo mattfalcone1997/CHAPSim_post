@@ -489,9 +489,9 @@ class _Inst_base(Common,ABC):
         for i, (u, x) in enumerate(comp_iter):
             velo_field = self.InstDF[PhyTime,u]
 
-            velo_grad[:,:,:,i] = gradient.Grad_calc(self.CoordDF,velo_field,x)
+            velo_grad[:,:,:,i] = gradient.Grad_calc(self.InstDF.CoordDF,velo_field,x)
         
-        velo_grad = velo_grad.reshape((*self.shape,3,3))
+        velo_grad = velo_grad.reshape((*self.InstDF.shape,3,3))
         velo_grad_T = np.einsum('ijklm -> ijkml',velo_grad)
         strain_rate = 0.5*( velo_grad + velo_grad_T)
         
@@ -513,7 +513,7 @@ class _Inst_base(Common,ABC):
         
         del S2_Omega2_eigvals        
         
-        return cd.FlowStruct3D(self._coorddata,{(PhyTime,'lambda_2'):lambda2})
+        return cd.FlowStruct3D(self.InstDF._coorddata,{(PhyTime,'lambda_2'):lambda2})
 
     @docstring.sub
     def plot_lambda2(self,vals_list,x_split_pair=None,PhyTime=None,y_limit=None,y_mode='half_channel',Y_plus=True,colors=None,surf_kw=None,fig=None,ax=None,**kwargs):
@@ -638,17 +638,21 @@ class _Inst_base(Common,ABC):
 
         PhyTime = self.check_PhyTime(PhyTime)
 
-        vorticity = np.zeros((3,*self.shape),dtype='f8')
+        vorticity = np.zeros((3,*self.InstDF.shape),dtype='f8')
         u_velo = self.InstDF[PhyTime,'u']
         v_velo = self.InstDF[PhyTime,'v']
         w_velo = self.InstDF[PhyTime,'w']
 
-        vorticity[0] = gradient.Grad_calc(self.CoordDF,w_velo,'y') - gradient.Grad_calc(self.CoordDF,v_velo,'z')      
-        vorticity[1] = gradient.Grad_calc(self.CoordDF,u_velo,'z') - gradient.Grad_calc(self.CoordDF,w_velo,'x')      
-        vorticity[2] = gradient.Grad_calc(self.CoordDF,v_velo,'x') - gradient.Grad_calc(self.CoordDF,u_velo,'y')     
+        vorticity[0] = gradient.Grad_calc(self.InstDF.CoordDF,w_velo,'y') - \
+                        gradient.Grad_calc(self.InstDF.CoordDF,v_velo,'z')    
+                          
+        vorticity[1] = gradient.Grad_calc(self.InstDF.CoordDF,u_velo,'z') - \
+                        gradient.Grad_calc(self.InstDF.CoordDF,w_velo,'x')      
+        vorticity[2] = gradient.Grad_calc(self.InstDF.CoordDF,v_velo,'x') - \
+                        gradient.Grad_calc(self.InstDF.CoordDF,u_velo,'y')     
 
         index = [(PhyTime,x) for x in ['x','y','z']]
-        return cd.FlowStruct3D(self._coorddata,vorticity,index=index)
+        return cd.FlowStruct3D(self.InstDF._coorddata,vorticity,index=index)
 
     @docstring.sub
     def plot_vorticity_contour(self,comp,plane,axis_vals,PhyTime=None,x_split_list=None,y_mode='half_channel',pcolor_kw=None,fig=None,ax=None,**kwargs):
