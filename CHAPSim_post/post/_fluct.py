@@ -304,7 +304,7 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
             key= self.__class__.__name__
 
         self.avg_data = self._module._avg_io_class.from_hdf(filename,key=key+"/avg_data")
-        self._avg_data = self._module._meta_class.from_hdf(filename,key=key+"/meta_data")
+        self._meta_data = self._module._meta_class.from_hdf(filename,key=key+"/meta_data")
         self.fluctDF = cd.FlowStruct3D.from_hdf(filename,key=key+'/fluctDF')
 
     def _fluctDF_calc(self, inst_data, avg_data):
@@ -353,7 +353,7 @@ class CHAPSim_fluct_tg(CHAPSim_fluct_base):
             key= self.__class__.__name__
 
         self.avg_data = self._module._avg_tg_class.from_hdf(filename,key=key+"/avg_data")
-        self._avg_data = self._module._meta_class.from_hdf(filename,key=key+"/meta_data")
+        self._meta_data = self._module._meta_class.from_hdf(filename,key=key+"/meta_data")
         self.fluctDF = cd.FlowStruct3D.from_hdf(filename,key=key+'/fluctDF')
 
 
@@ -397,7 +397,7 @@ class CHAPSim_fluct_temp(CHAPSim_fluct_base):
             key= self.__class__.__name__
 
         self.avg_data = self._module._avg_temp_class.from_hdf(filename,key=key+"/avg_data")
-        self._avg_data = self._module._meta_class.from_hdf(filename,key=key+"/meta_data")
+        self._meta_data = self._module._meta_class.from_hdf(filename,key=key+"/meta_data")
         self.fluctDF = cd.FlowStruct3D.from_hdf(filename,key=key+'/fluctDF')
 
 

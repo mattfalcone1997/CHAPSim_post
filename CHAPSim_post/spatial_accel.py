@@ -106,10 +106,13 @@ _avg_io_class = CHAPSim_AVG_io
 class CHAPSim_meta(cp.CHAPSim_meta):
     def __extract_meta(self,path_to_folder='.',abs_path=True,tgpost=False):
         super().__extract_meta(path_to_folder,abs_path,False)
+        
         file = os.path.join(path_to_folder,
                             '0_log_monitors',
                             'CHK_U_INFTY.dat')
-        self.U_infty = np.loadtxt(file)[:,-1]
+        if os.path.isfile(file):
+            self.U_infty = np.loadtxt(file)[:,-1]
+            
         
     def _hdf_extract(self, file_name, key=None):
         if key is None:
