@@ -142,6 +142,7 @@ class AxisData:
         out['CoordDF'] = self.coord_centered.__mathandle__()
         if self.contains_staggered:
             out['Coord_ND_DF'] = self.coord_staggered.__mathandle__()
+        print(out)
         return out
     
     def create_vtkStructuredGrid(self,staggered = True):
