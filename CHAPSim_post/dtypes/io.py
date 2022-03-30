@@ -232,7 +232,7 @@ class hdfHandler:
         
 class matHandler:
     def __init__(self, file_name):
-        self._file_name = os.path.basename(file_name) + ".mat"
+        self._file_name = os.path.splitext(file_name)[0] + ".mat"
         self.__mat_dict = dict()
         
     def __setitem__(self,key,value):
