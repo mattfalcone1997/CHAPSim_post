@@ -272,3 +272,6 @@ class coordstruct(datastruct):
             raise KeyError(msg)
 
         return line
+    
+    def __mathandle__(self):
+        return super().__mathandle__()
