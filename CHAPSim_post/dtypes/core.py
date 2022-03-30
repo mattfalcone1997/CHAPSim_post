@@ -536,6 +536,9 @@ class datastruct:
                 out[i] = full_array
             
             out['times'] = np.array(self.outer_index)
+        else:
+            for i in self.inner_index:
+                out[i] = self[i]
         return out
                 
             
