@@ -11,4 +11,5 @@ This module that contains all of the main classes for the visualisation and stor
 from .flowstruct import *
 from .vtk import *
 from .coords import *
+from .io import *
 from .core import datastruct, metastruct, hdfHandler
