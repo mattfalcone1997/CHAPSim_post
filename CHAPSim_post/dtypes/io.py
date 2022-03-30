@@ -231,10 +231,8 @@ class hdfHandler:
             pass
         
 class matHandler:
-    def __init__(self, file_name, write_mode, struct_name):
+    def __init__(self, file_name):
         self._file_name = os.path.basename(file_name) + ".mat"
-        self._write_mode = write_mode
-        self._struct_name = struct_name
         self.__mat_dict = dict()
         
     def __setitem__(self,key,value):
@@ -265,8 +263,7 @@ class matHandler:
         raise TypeError(msg)
     
     def save(self):
-        mdict = {self._struct_name: self.__mat_dict}
-        io.savemat(self._file_name,mdict,appendmat=True)
+        io.savemat(self._file_name,self.__mat_dict,appendmat=True)
         
         
         
