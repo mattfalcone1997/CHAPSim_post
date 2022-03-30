@@ -43,6 +43,9 @@ class GeomHandler():
     
     def to_hdf_attr(self,h5_obj):
         h5_obj.attrs["GeomType"] = self._geomTYPE
+        
+    def __mathandle__(self):
+        return {"GeomType" : self._geomTYPE}
     
     @classmethod
     def from_hdf_attr(cls,h5_obj):
@@ -132,6 +135,14 @@ class AxisData:
 
         hdf_obj = hdfHandler(filename,mode='r',key=key)
         self._domain_handler.to_hdf_attr(hdf_obj)
+    
+    def __mathandle__(self):
+        out = dict()
+        out['axis_data'] = self._domain_handler.__mathandle__()
+        out['CoordDF'] = self.coord_centered.__mathandle__()
+        if self.contains_staggered:
+            out['Coord_ND_DF'] = self.coord_staggered.__mathandle__()
+        return out
     
     def create_vtkStructuredGrid(self,staggered = True):
         if staggered:

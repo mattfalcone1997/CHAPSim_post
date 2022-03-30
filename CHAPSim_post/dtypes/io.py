@@ -4,7 +4,8 @@ import numpy as np
 import copy
 import warnings
 import CHAPSim_post as cp
-
+from scipy import io
+from numbers import Number
 class hdfHandler:
 
     _available_ext = ['.h5','.hdf5']
@@ -230,19 +231,42 @@ class hdfHandler:
             pass
         
 class matHandler:
-    def __init__(self, file_name, write_mode):
-        
-        self._file_name = file_name
+    def __init__(self, file_name, write_mode, struct_name):
+        self._file_name = os.path.basename(file_name) + ".mat"
         self._write_mode = write_mode
+        self._struct_name = struct_name
+        self.__mat_dict = dict()
+        
+    def __setitem__(self,key,value):
+        
+        v = self._convert(value)
+        if not isinstance(key,str):
+            msg = "Key must be a str"
+            raise TypeError(msg)
+        
+        self.__mat_dict[key] = v
     
-    def get_input(self,name, dstruct):
-        self._dstruct = dstruct
-        self._key = name
+    def __mathandle__(self):
+        return self.__mat_dict
+    
+    def _convert(self,value):
+        if hasattr(value,"__mathandle__"):
+            v = value.__mathandle__()
+            if not isinstance(v,(dict,np.ndarray,Number)):
+                msg = (f"Class {value.__class__.__name__} does not have"
+                       " __mathandle__ class that returns a dict or numpy array")
+                raise AttributeError(msg)
+            return v
+        if isinstance(value, (np.ndarray,dict)):
+            return value
         
-    def _create_record(self,name,dstruct):
-        pass
-        
+        msg = ("inputs must be classes with __mathandle__ function,"
+               " numpy arrays, or dictionaries")
+        raise TypeError(msg)
+    
     def save(self):
-        pass
+        mdict = {self._struct_name: self.__mat_dict}
+        io.savemat(self._file_name,mdict,appendmat=True)
+        
         
         

@@ -527,7 +527,20 @@ class datastruct:
 
     def to_dict(self):
         return dict(self)
-
+    
+    def __mathandle__(self):
+        out = dict()
+        if self._is_multidim():
+            for i in self.inner_index:
+                full_array = np.stack([ self[t,i] for t in self.outer_index ],axis=0)
+                out[i] = full_array
+            
+            out['times'] = np.array(self.outer_index)
+        return out
+                
+            
+            
+        
     def _construct_shapes_array(self):
         shapes =  [x.shape for _,x in self]
         max_dim = max([len(x) for x in shapes])
@@ -990,7 +1003,10 @@ class metastruct():
 
 
         self._update_keys()
-
+        
+    def __mathandle__(self):
+        return self._meta
+    
     @property
     def index(self):
         return self._meta.keys()

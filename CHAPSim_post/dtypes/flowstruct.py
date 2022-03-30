@@ -699,7 +699,13 @@ class FlowStructND(_FlowStruct_base):
         
         
         return hdf_obj
-
+    
+    def __mathandle__(self):
+        data = super().__mathandle__()
+        coords = self._coorddata.__mathandle__()
+        return dict(data=data,
+                    coords=coords)
+        
     def _file_extract(self, filename, key=None):
         hdf_obj =  super()._file_extract(filename, key=key)
         key = hdf_obj.name
