@@ -13,6 +13,7 @@ import pandas as pd
 from pyvista import StructuredGrid
 
 import CHAPSim_post.dtypes as cd
+from CHAPSim_post.dtypes.coords import AxisData
 
 from CHAPSim_post.utils import misc_utils, gradient
 from CHAPSim_post import styleParams, plot as cplt
@@ -916,25 +917,6 @@ class coorddata(cd.AxisData):
 
     # def __deepcopy__(self,memo):
     #     return self.copy()
-
-    def __eq__(self,other_obj):
-        if not isinstance(other_obj,self.__class__):
-            msg = "This operation can only be done on other objects of this type"
-            raise TypeError(msg)
-
-        if self._domain_handler.is_polar != other_obj._domain_handler.is_polar:
-            return False
-
-        if self.coord_centered != other_obj.coord_centered:
-            return False
-
-        if self.coord_staggered != other_obj.coord_staggered:
-            return False
-
-        return True
-
-    def __ne__(self,other_obj):
-        return not self.__eq__(other_obj)
 
     # @property
     # def Coord_ND_DF(self):
