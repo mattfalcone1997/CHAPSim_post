@@ -12,4 +12,4 @@ from .flowstruct import *
 from .vtk import *
 from .coords import *
 from .io import *
-from .core import datastruct, metastruct, hdfHandler
+from .core import datastruct, metastruct
