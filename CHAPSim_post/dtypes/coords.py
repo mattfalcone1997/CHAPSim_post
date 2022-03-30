@@ -180,7 +180,7 @@ class AxisData:
     
     
     def __eq__(self,other_obj):
-        if not isinstance(other_obj,self.__class__):
+        if not isinstance(other_obj,AxisData):
             msg = "This operation can only be done on other objects of this type"
             raise TypeError(msg)
 
