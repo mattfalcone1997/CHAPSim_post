@@ -39,7 +39,7 @@ class styleParameters:
         self.polar_to_cart.update(_cylind_to_cart)
         
     def format_location(self,text):
-        floats = re.findall("\d+\.\d+|\d+",text)
+        floats = re.findall("\d+\.\d+|\d+|\-\d+\.\d+|\-\d+",text)
         new_numbers = [float(x) for x in floats ]
         new_strs = [self.locationStyle(x) for x in new_numbers]
         for f, nf in zip(floats,new_strs):
