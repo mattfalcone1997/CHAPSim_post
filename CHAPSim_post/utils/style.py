@@ -44,7 +44,7 @@ class styleParameters:
         new_strs = [self.locationStyle(x) for x in new_numbers]
         print(text,floats,new_strs)
         for f, nf in zip(floats,new_strs):
-            text.replace(f,nf)
+            text = text.replace(f,nf)
         print(text)
         return text
 class y_styler:
