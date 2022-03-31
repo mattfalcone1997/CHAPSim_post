@@ -155,7 +155,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
             x_transform = lambda y:  -1*(y - 1.0)/delta_v[x_index]
             y_transform = lambda u: (u - wall_velo)/u_tau[x_index]
         else:
-            x_transform = lambda y:  (y + 1.0)/delta_v[x_index]
+            x_transform = lambda y:  (y - 1.0)/delta_v[x_index]
             y_transform = lambda u: (u - wall_velo)/u_tau[x_index]
         
         return x_transform, y_transform

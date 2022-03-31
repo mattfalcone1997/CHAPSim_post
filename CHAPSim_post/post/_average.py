@@ -767,7 +767,7 @@ class CHAPSim_AVG_io(_AVG_developing):
             x_transform = lambda y:  -1*(y - 1.0)/delta_v[x_index]
             y_transform = lambda u: u/u_tau[x_index]
         else:
-            x_transform = lambda y:  (y + 1.0)/delta_v[x_index]
+            x_transform = lambda y:  (y - 1.0)/delta_v[x_index]
             y_transform = lambda u: u/u_tau[x_index]
         
         return x_transform, y_transform
