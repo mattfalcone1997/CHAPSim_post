@@ -782,7 +782,7 @@ class CHAPSim_AVG_io(_AVG_developing):
             label = self.Domain.create_label(r"$x = %.3g$"%x)
             x_transform, y_transform = self._get_uplus_yplus_transforms(PhyTime, x)
             fig, ax = self.flow_AVGDF.plot_line('u','y',
-                                                x_vals,
+                                                x,
                                                 transform_xdata = x_transform,
                                                 transform_ydata = y_transform,
                                                 labels=[label],
