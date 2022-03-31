@@ -146,23 +146,19 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         
         return disp_thickness, mom_thickness, shape_factor
         
-    # def plot_flow_wall_units(self,x_vals,PhyTime=None,*args,**kwargs):
+    def _get_uplus_yplus_transforms(self,PhyTime,x_val):
+        u_tau, delta_v = self.wall_unit_calc(PhyTime)
+        x_index = self.CoordDF.index_calc('x',x_val)[0]
+        wall_velo = self._meta_data.wall_velocity[x_index]
         
-    #     fig, ax = super().plot_flow_wall_units(x_vals,*args,**kwargs)
-
-    #     wall_velo = self._meta_data.wall_velocity
-    #     u_tau_star, _ = self.wall_unit_calc(PhyTime)
-
-    #     lines = ax.get_lines()[-len(x_vals)-1:-1]
-    #     for line, x_val in zip(lines,x_vals):
-    #         y_data = line.get_ydata()
-    #         x = self._return_index(x_val)
-    #         y_data = y_data - wall_velo[x]/u_tau_star[x]
-    #         line.set_ydata(y_data)
-
-    #     ax.relim()
-    #     ax.autoscale_view()
-    #     return fig, ax
+        if self.Domain.is_polar:
+            x_transform = lambda y:  -1*(y - 1.0)/delta_v[x_index]
+            y_transform = lambda u: (u - wall_velo)/u_tau[x_index]
+        else:
+            x_transform = lambda y:  (y + 1.0)/delta_v[x_index]
+            y_transform = lambda u: (u - wall_velo)/u_tau[x_index]
+        
+        return x_transform, y_transform
 
     def plot_mean_flow(self,comp,x_vals,PhyTime=None,relative=False,fig=None,ax=None,line_kw=None,**kwargs):
         
