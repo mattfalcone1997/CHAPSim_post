@@ -37,10 +37,11 @@ class styleParameters:
 
         self.cart_to_polar.update(_cart_to_cylind_str)
         self.polar_to_cart.update(_cylind_to_cart)
+        
     def format_location(self,text):
         floats = re.findall("\d+\.\d+|\d+",text)
         new_numbers = [float(x) for x in floats ]
-        new_strs = [f"{self.locationStyle}"%x for x in new_numbers]
+        new_strs = [self.locationStyle(x) for x in new_numbers]
         print(floats)
         print(new_strs)
         for f, nf in zip(floats,new_strs):
@@ -83,5 +84,5 @@ defaultCoordLabel_channel = lambda label: r"%s/\delta"%label
 defaultCoordLabel_pipe = lambda label: r"%s^*"%label
 
 defaultAVGStyle = lambda label: r"\overline{%s}"%label
-defaultLocationStyle = r"%.2g"
+defaultLocationStyle = lambda x: r"%.2g"%x
 defaultTimeStyle = r"t^*"
