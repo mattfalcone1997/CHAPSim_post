@@ -45,7 +45,7 @@ class styleParameters:
         print(text,floats,new_strs)
         for f, nf in zip(floats,new_strs):
             text.replace(f,nf)
-        
+        print(text)
         return text
 class y_styler:
     def __init__(self,ydata_transform,ylims):
