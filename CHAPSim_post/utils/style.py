@@ -1,5 +1,5 @@
 
-
+import re
 from .misc_utils import Params
 
 
@@ -29,6 +29,7 @@ class styleParameters:
         self.timeStyle = defaultTimeStyle
         self.CoordLabel_channel = defaultCoordLabel_channel
         self.CoordLabel_pipe = defaultCoordLabel_pipe
+        self.locationStyle = defaultLocationStyle
         self.AVGStyle = defaultAVGStyle
 
         self.cart_to_polar = Params()
@@ -36,7 +37,14 @@ class styleParameters:
 
         self.cart_to_polar.update(_cart_to_cylind_str)
         self.polar_to_cart.update(_cylind_to_cart)
-                
+    def format_location(self,text):
+        floats = re.findall("\d+\.\d+",text)
+        new_numbers = [float(x) for x in floats ]
+        new_strs = [f"{self.locationStyle}"%x for x in new_numbers]
+        for f, nf in zip(floats,new_strs):
+            text.replace(f,nf)
+        
+        return text
 class y_styler:
     def __init__(self,ydata_transform,ylims):
         self._ylims = ylims
@@ -73,5 +81,5 @@ defaultCoordLabel_channel = lambda label: r"%s/\delta"%label
 defaultCoordLabel_pipe = lambda label: r"%s^*"%label
 
 defaultAVGStyle = lambda label: r"\overline{%s}"%label
-
+defaultLocationStyle = r"%.2g"
 defaultTimeStyle = r"t^*"

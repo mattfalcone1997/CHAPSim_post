@@ -451,7 +451,7 @@ class DomainHandler(cd.GeomHandler):
         for i in range(len(text_list)):
             text_list[i] = self._get_coord_symbol(text_list[i])
             text_list[i] = self._get_velocity_symbol(text_list[i])
-
+        text = styleParams.format_location(text)
         return "".join(text_list)
 
     def styleYdata(self,data):
