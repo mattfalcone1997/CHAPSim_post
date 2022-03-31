@@ -42,7 +42,7 @@ class styleParameters:
         floats = re.findall("\d+\.\d+|\d+",text)
         new_numbers = [float(x) for x in floats ]
         new_strs = [self.locationStyle(x) for x in new_numbers]
-        print(floats)
+        print(text,floats)
         print(new_strs)
         for f, nf in zip(floats,new_strs):
             text.replace(f,nf)
