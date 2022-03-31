@@ -158,7 +158,8 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
             x_transform = lambda y:  (y + 1.0)/delta_v[x_index]
             y_transform = lambda u: (u - wall_velo)/u_tau[x_index]
         
-        return self.flow_AVGDF._get_identity_transform()
+        id_trans = self.flow_AVGDF._get_identity_transform()
+        return id_trans, id_trans
 
     def plot_mean_flow(self,comp,x_vals,PhyTime=None,relative=False,fig=None,ax=None,line_kw=None,**kwargs):
         
