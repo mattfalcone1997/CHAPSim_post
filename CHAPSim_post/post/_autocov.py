@@ -110,7 +110,7 @@ class CHAPSim_autocov_io(_autocov_base):
                     raise ValueError(msg)
                 R_x = R_x*coe3 + local_R_x*coe2
                 R_z = R_z*coe3 + local_R_z*coe2
-            print(i, timing, time.time() - time2,time2-time1,flush=True)
+            print(f"{i+1}/{len(times)}", timing, time.time() - time2,time2-time1,flush=True)
 
         if cp.rcParams['SymmetryAVG'] and self.metaDF['iCase'] ==1:
             vy_count = comp.count('v')
@@ -344,7 +344,7 @@ class CHAPSim_autocov_tg(_autocov_base):
                 R_x = R_x*coe3 + local_R_x*coe2
                 R_z = R_z*coe3 + local_R_z*coe2
 
-            print(i, timing, time.time() - time2,time2-time1,flush=True)
+            print(f"{i+1}/{len(times)}", timing, time.time() - time2,time2-time1,flush=True)
 
         if cp.rcParams['SymmetryAVG'] and self.metaDF['iCase'] ==1:
             vy_count = comp.count('v')
