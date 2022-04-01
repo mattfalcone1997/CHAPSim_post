@@ -661,7 +661,7 @@ def update_quiver_kw(quiver_kw,**kwargs):
     return _default_update_new('quiver_kw',quiver_kw,**kwargs)
 
 def update_line_kw(line_kw,**kwargs):
-    return  _default_update_replace('line_kw',line_kw,**kwargs)
+    return  _default_update_new('line_kw',line_kw,**kwargs)
 
 
 def update_subplots_kw(subplots_kw,**kwargs):  
