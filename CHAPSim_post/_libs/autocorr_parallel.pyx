@@ -11,8 +11,8 @@ DTYPE = np.float64
 @cython.cdivision(True)
 @cython.boundscheck(False) 
 @cython.wraparound(False) 
-def autocov_calc_io_z( np.ndarray[DTYPE_t,ndim=3] fluct1,
-                    np.ndarray[DTYPE_t,ndim=3] fluct2,
+def autocov_calc_io_z( np.ndarray[np.float64_t,ndim=3] fluct1,
+                    np.ndarray[np.float64_t,ndim=3] fluct2,
                     np.int32_t max_z_sep):
     
     cdef Py_ssize_t i, j, k, l
@@ -39,8 +39,8 @@ def autocov_calc_io_z( np.ndarray[DTYPE_t,ndim=3] fluct1,
 @cython.cdivision(True)
 @cython.boundscheck(False) 
 @cython.wraparound(False) 
-def autocov_calc_io_x( np.ndarray[DTYPE_t,ndim=3] fluct1,
-                    np.ndarray[DTYPE_t,ndim=3] fluct2,
+def autocov_calc_io_x( np.ndarray[np.float64_t,ndim=3] fluct1,
+                    np.ndarray[np.float64_t,ndim=3] fluct2,
                     np.int32_t max_x_sep):
     
 
@@ -64,8 +64,8 @@ def autocov_calc_io_x( np.ndarray[DTYPE_t,ndim=3] fluct1,
 @cython.cdivision(True)
 @cython.boundscheck(False) 
 @cython.wraparound(False) 
-def autocov_calc_tg_z( np.ndarray[DTYPE_t,ndim=3] fluct1,
-                    np.ndarray[DTYPE_t,ndim=3] fluct2,
+def autocov_calc_tg_z( np.ndarray[np.float64_t,ndim=3] fluct1,
+                    np.ndarray[np.float64_t,ndim=3] fluct2,
                     np.int32_t max_z_sep):
     
     cdef Py_ssize_t i, j, k, l
@@ -89,8 +89,8 @@ def autocov_calc_tg_z( np.ndarray[DTYPE_t,ndim=3] fluct1,
 @cython.cdivision(True)
 @cython.boundscheck(False) 
 @cython.wraparound(False) 
-def autocov_calc_tg_x( np.ndarray[DTYPE_t,ndim=3] fluct1,
-                    np.ndarray[DTYPE_t,ndim=3] fluct2,
+def autocov_calc_tg_x( np.ndarray[np.float64_t,ndim=3] fluct1,
+                    np.ndarray[np.float64_t,ndim=3] fluct2,
                     np.int32_t max_x_sep):
     
 
