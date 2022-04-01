@@ -591,7 +591,7 @@ def subplots(nrows=1, ncols=1, sharex=False, sharey=False, squeeze=True, subplot
 
 def _default_update_new(name,type_kw,**kwargs):
     if type_kw is None:
-        contour_kw = {}
+        type_kw = {}
     elif not isinstance(type_kw,dict):
         raise TypeError(f"{name} needs to be a dictionary")
 
