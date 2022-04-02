@@ -268,7 +268,7 @@ class CHAPSim_autocov_io(_autocov_base):
 
             
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,4*len(axis_vals)])
-        fig, ax = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
+        fig, ax, _ = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
 
         xlabel = self.Domain.create_label(r"$\Delta %s/\delta$" %comp)
         ylabel = self.Domain.create_label(r"$y$")
@@ -303,7 +303,10 @@ class CHAPSim_autocov_io(_autocov_base):
             fig.colorbar(a,ax=a.axes)
             fig.tight_layout()
             
-        return fig, ax
+        if single_output:
+            return fig, ax[0]
+        else:
+            return fig, ax
 class CHAPSim_autocov_tg(_autocov_base):
     _tgpost = True
     def _autocov_extract(self,comp,path_to_folder=".",time0=None,ntimes=None,abs_path=True,max_x_sep=None,max_z_sep=None):
