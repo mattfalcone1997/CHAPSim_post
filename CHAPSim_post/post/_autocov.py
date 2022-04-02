@@ -280,7 +280,7 @@ class CHAPSim_autocov_io(_autocov_base):
             if not show_positive:
                 Ruu_slice[None,comp] = np.ma.masked_array(Ruu_slice[None,comp])
                 Ruu_slice[None,comp].mask = Ruu_slice[None,comp] > 0
-                
+            print(val,Ruu_slice[None,comp])
             fig, ax[i] = Ruu_slice.plot_contour(comp,
                                                 None,
                                                 fig=fig,
