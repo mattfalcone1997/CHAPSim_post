@@ -273,6 +273,9 @@ class CHAPSim_autocov_io(_autocov_base):
         xlabel = self.Domain.create_label(r"$\Delta %s/\delta$" %comp)
         ylabel = self.Domain.create_label(r"$y$")
         
+        min_val = np.inf
+        max_val = -np.inf
+        
         for i, val in enumerate(axis_vals):
             
             Ruu_slice = Ruu_DF.slice[:,:,val].copy()
@@ -287,12 +290,17 @@ class CHAPSim_autocov_io(_autocov_base):
                                                 ax=ax[i],
                                                 contour_kw=contour_kw,
                                                 rotate=True)
+            lmin, lmax = ax[i].get_clim()
             
+            min_val = min(min_val,lmin)
+            max_val = max(max_val,lmax)
+                        
             ax[i].axes.set_xlabel(xlabel)
             ax[i].axes.set_ylabel(ylabel)
             
 
         for a in ax:
+            a.set_clim([min_val,max_val])
             fig.colorbar(a,ax=a.axes)
             fig.tight_layout()
             
