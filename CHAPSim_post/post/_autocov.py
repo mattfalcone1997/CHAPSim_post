@@ -243,7 +243,10 @@ class CHAPSim_autocov_io(_autocov_base):
                 ax[j].set_xlabel(xlabel)
                 ax[j].set_title(r"$%s=%.3g$"%(title_symbol,y_vals[j]),loc='right')
         
-        return fig, ax
+        if single_output:
+            return fig, ax[0]
+        else:
+            return fig, ax
     
     def plot_contour_zy(self,comp,axis_vals,norm=True,show_positive=True,contour_kw=None,fig=None,ax=None,**kwargs):
         if not comp in ('x','z'):

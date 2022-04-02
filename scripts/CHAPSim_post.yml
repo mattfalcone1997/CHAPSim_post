@@ -26,3 +26,4 @@ dependencies:
   - moviepy
   - decorator
   - virtualenv
+  - pytables
