@@ -268,7 +268,7 @@ class CHAPSim_autocov_io(_autocov_base):
 
             
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,4*len(axis_vals)])
-        fig, ax, _ = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
+        fig, ax, single_output = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
 
         xlabel = self.Domain.create_label(r"$\Delta %s/\delta$" %comp)
         ylabel = self.Domain.create_label(r"$y$")
