@@ -294,8 +294,8 @@ class CHAPSim_autocov_io(_autocov_base):
             min_val = min(min_val,lmin)
             max_val = max(max_val,lmax)
             
-            ax[i].set_xlabel(xlabel)
-            ax[i].set_ylabel(ylabel)
+            ax[i].axes.set_xlabel(xlabel)
+            ax[i].axes.set_ylabel(ylabel)
             
 
         for a in ax:
