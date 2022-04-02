@@ -259,7 +259,7 @@ class CHAPSim_autocov_io(_autocov_base):
         else:
             Ruu_DF = self.Rz_DF[None,[comp]].copy()
             
-        contour_kw = cplt.contour_kw(contour_kw)
+        contour_kw = cplt.update_contour_kw(contour_kw)
         
         if norm:
             Ruu_0=Ruu_DF[None,comp][0]
