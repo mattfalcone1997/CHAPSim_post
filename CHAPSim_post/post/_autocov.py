@@ -270,7 +270,8 @@ class CHAPSim_autocov_io(_autocov_base):
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,4*len(axis_vals)])
         fig, ax, single_output = cplt.create_fig_ax_without_squeeze(len(axis_vals),fig=fig,ax=ax,**kwargs)
 
-        xlabel = self.Domain.create_label(r"$\Delta %s/\delta$" %comp)
+        titles = [self.Domain.create_label(r"$x = %f$"%x) for x in axis_vals]
+        xlabel = self.Domain.create_label(r"$\Delta %s$" %comp)
         ylabel = self.Domain.create_label(r"$y$")
         
         min_val = np.inf
@@ -298,6 +299,7 @@ class CHAPSim_autocov_io(_autocov_base):
             ax[i].axes.set_xlabel(xlabel)
             ax[i].axes.set_ylabel(ylabel)
             
+            ax[i].axes.set_title(titles[i])
 
         for a in ax:
             a.set_clim([min_val,max_val])
