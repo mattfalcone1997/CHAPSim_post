@@ -299,7 +299,7 @@ class CHAPSim_autocov_io(_autocov_base):
             ax[i].axes.set_xlabel(xlabel)
             ax[i].axes.set_ylabel(ylabel)
             
-            ax[i].axes.set_title(titles[i])
+            ax[i].axes.set_title(titles[i],loc='right')
 
         for a in ax:
             a.set_clim([min_val,max_val])
