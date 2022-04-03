@@ -117,10 +117,10 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
         self._meta_data = self._module._meta_class(path_to_folder,abs_path)
 
         try:
-            self.avg_data = self._module._avg_io_class(max(times),self._meta_data,path_to_folder,time0,abs_path)
+            self.avg_data = self._module._avg_io_class(max(times),path_to_folder=path_to_folder,time0=time0,abs_path=abs_path)
         except Exception:
             times.remove(max(times))
-            self.avg_data = self._module._avg_io_class(max(times),self._meta_data,path_to_folder,time0)
+            self.avg_data = self._module._avg_io_class(max(times),path_to_folder=path_to_folder,time0=time0,abs_path=abs_path)
 
         
         if xy_inner:
