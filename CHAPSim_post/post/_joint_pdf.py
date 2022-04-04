@@ -96,10 +96,10 @@ class CHAPSim_joint_PDF_base(Common,ABC):
             v_array = self.v_arrayDF[xy]
             pdf_array = self.pdf_arrayDF[xy]
             U_mesh,V_mesh = np.meshgrid(u_array,v_array) 
-            C = ax[i].contour(U_mesh,V_mesh,pdf_array,**contour_kw)#seaborn.kdeplot(x=x_vals,y=y_vals,ax=ax[i],**pdf_kwargs)
-            ax[i].set_xlabel(r"$u'$")
-            ax[i].set_ylabel(r"$v'$")
-            ax[i].set_title(r"$x/\delta=%g$, $%s=%g$"%(xy[0],y_unit,xy[1]),loc='right')
+            ax[i] = ax[i].contour(U_mesh,V_mesh,pdf_array,**contour_kw)#seaborn.kdeplot(x=x_vals,y=y_vals,ax=ax[i],**pdf_kwargs)
+            ax[i].axes.set_xlabel(r"$u'$")
+            ax[i].axes.set_ylabel(r"$v'$")
+            ax[i].axes.set_title(r"$x/\delta=%g$, $%s=%g$"%(xy[0],y_unit,xy[1]),loc='right')
             i+=1
         fig.tight_layout()
         return fig, ax
