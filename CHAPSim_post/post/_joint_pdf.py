@@ -141,7 +141,7 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
         x_index = indexing.coord_index_calc(self.avg_data.CoordDF,'x',x_coord_list)
 
         self._x_loc_norm = x_coord_list if not use_ini else [0]*len(y_coord_list)
-        y_index = indexing.y_coord_index_norm(self.avg_data,y_coord_list,self._x_loc_norm,y_mode)
+        y_index = self.avg_data.y_coord_index_norm(y_coord_list,x_vals=self._x_loc_norm,mode=y_mode)
         
         y_index = np.diag(np.array(y_index))
         u_prime_array = [ [] for _ in range(len(y_index)) ]

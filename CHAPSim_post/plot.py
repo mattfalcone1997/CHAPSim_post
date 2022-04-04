@@ -108,7 +108,6 @@ mpl.rcParams['image.cmap'] = "jet"
 mpl.rcParams['xtick.top'] = True
 mpl.rcParams['ytick.right'] = True
 
-
 class CHAPSimFigure(mpl.figure.Figure):
 
     def clegend(self,*args, **kwargs):
@@ -614,7 +613,6 @@ def _default_update_replace(name,type_kw,**kwargs):
 def update_pcolor_kw(pcolor_kw,**kwargs):
     
     pcolor_kw = _default_update_replace('pcolor_kw',pcolor_kw,
-                                cmap = 'jet',
                                 shading = 'gouraud',
                                 **kwargs)
     return pcolor_kw

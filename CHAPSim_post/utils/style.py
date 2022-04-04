@@ -28,6 +28,7 @@ class styleParameters:
 
         self.timeStyle = defaultTimeStyle
         self.CoordLabel_channel = defaultCoordLabel_channel
+        self.CoordLabel_blayer = defaultCoordLabel_blayer
         self.CoordLabel_pipe = defaultCoordLabel_pipe
         self.locationStyle = defaultLocationStyle
         self.AVGStyle = defaultAVGStyle
@@ -39,7 +40,8 @@ class styleParameters:
         self.polar_to_cart.update(_cylind_to_cart)
         
     def format_location(self,text):
-        floats = re.findall("\d+\.\d+|\d+|\-\d+\.\d+|\-\d+",text)
+        split_text = text.split('=')
+        floats = re.findall("\d+\.\d+|\d+|\-\d+\.\d+|\-\d+",split_text[-1])
         new_numbers = [float(x) for x in floats ]
         new_strs = [self.locationStyle(x) for x in new_numbers]
         for f, nf in zip(floats,new_strs):
@@ -78,8 +80,9 @@ def default_ystyle_pipe(ax):
     ax.apply_func('x',axis_func)
 
 defaultCoordLabel_channel = lambda label: r"%s/\delta"%label
+defaultCoordLabel_blayer = lambda label: r"%s/\theta_0"%label
 defaultCoordLabel_pipe = lambda label: r"%s^*"%label
 
 defaultAVGStyle = lambda label: r"\overline{%s}"%label
-defaultLocationStyle = lambda x: r"%.2g"%x
+defaultLocationStyle = lambda x: r"%.1f"%x
 defaultTimeStyle = r"t^*"

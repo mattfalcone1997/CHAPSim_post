@@ -418,25 +418,25 @@ class DomainHandler(cd.GeomHandler):
         else:
             return char
     
-    def get_symbol(self,comp):
-        if comp not in styleParams.cart_to_polar.keys():
-            msg = "Comp must be either x, y, or z"
-            raise ValueError(msg)
+    # def get_symbol(self,comp):
+    #     if comp not in styleParams.cart_to_polar.keys():
+    #         msg = "Comp must be either x, y, or z"
+    #         raise ValueError(msg)
 
-        if self.is_polar:
-            return styleParams.CoordLabel_pipe(comp)
-        else:
-            return styleParams.CoordLabel_channel(comp)
+    #     if self.is_polar:
+    #         return styleParams.CoordLabel_pipe(comp)
+    #     else:
+    #         return styleParams.CoordLabel_channel(comp)
 
     def _get_coord_symbol(self,comp):
         if comp not in ['x','y','z']:
             return comp
         if self.is_polar:
             comp = styleParams.cart_to_polar[comp]
-        if self.is_polar:
+        elif self.is_polar:
             return styleParams.CoordLabel_pipe(comp)
         else:
-            return styleParams.CoordLabel_channel(comp)
+            return styleParams.CoordLabel_blayer(comp)
 
     def _get_velocity_symbol(self,comp):
         if comp not in ['u','v','w']:
