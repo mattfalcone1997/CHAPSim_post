@@ -280,7 +280,7 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
                 coord_list = coord_list[0]
             else:
                 coord_list = np.diag(coord_list)
-            coord_int = self._avg_data.ycoords_from_norm_coords(coord_list,x_vals=x_vals,mode=y_mode)
+            coord_int = self._avg_data.ycoords_from_norm_coords(coord_list,x_vals=x_vals,mode=y_mode)[0]
         else:
             coord_int = coord_list = indexing.true_coords_from_coords(self.CoordDF,'x',coord_list)
             
