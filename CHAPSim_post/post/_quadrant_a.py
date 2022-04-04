@@ -276,6 +276,7 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
 
         if prop_dir == 'x':
             coord_list = self._avg_data.ycoords_from_coords(coord_list,x_vals=x_vals,mode=y_mode)
+            print(coord_list)
             coord_int = self._avg_data.ycoords_from_norm_coords(coord_list,x_vals=x_vals,mode=y_mode)
         else:
             coord_int = coord_list = indexing.true_coords_from_coords(self.CoordDF,'x',coord_list)
