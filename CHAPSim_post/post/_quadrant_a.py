@@ -322,7 +322,7 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
 
         ncol = cplt.get_legend_ncols(len(h_list))
         ax[0,0].clegend(vertical=False,ncol=ncol)
-        print(ax.shape)
+
         return fig, ax
 
     def plot_events(self,h_list,coord_list,prop_dir,Quadrants=None,x_vals=0,y_mode='half_channel',fig=None,ax=None,line_kw=None,**kwargs):
