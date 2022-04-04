@@ -40,6 +40,8 @@ class styleParameters:
         self.polar_to_cart.update(_cylind_to_cart)
         
     def format_location(self,text):
+        if text.count('=') == 0:
+            return text
         split_text = text.split('=')
         floats = re.findall("\d+\.\d+|\d+|\-\d+\.\d+|\-\d+",split_text[-1])
         new_numbers = [float(x) for x in floats ]
