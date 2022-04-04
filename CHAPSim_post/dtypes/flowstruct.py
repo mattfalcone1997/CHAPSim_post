@@ -1653,7 +1653,7 @@ class FlowStruct2D(FlowStructND):
 
         return fig, ax
     
-    def plot_line_data(self,data,axis,coords,time=None,labels=None,transform_ydata=None, transform_xdata=None, channel_half=False,fig=None,ax=None,line_kw=None,**kwargs):
+    def plot_line_data(self,data,axis,coords,labels=None,transform_ydata=None, transform_xdata=None, channel_half=False,fig=None,ax=None,line_kw=None,**kwargs):
         coords = misc_utils.check_list_vals(coords)
         if labels is None:
             labels = [None]*len(coords)
@@ -1664,7 +1664,7 @@ class FlowStruct2D(FlowStructND):
             
             slice_data = data[self.slice.get_slicer(slicer)]
             
-            fig, ax = flowstruct.plot_line_data(slice_data,time=time,
+            fig, ax = flowstruct.plot_line_data(slice_data,
                                                 label=label,
                                                 transform_xdata=transform_xdata,
                                                 transform_ydata=transform_ydata,

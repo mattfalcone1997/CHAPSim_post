@@ -147,10 +147,11 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
         u_prime_array = [ [] for _ in range(len(y_index)) ]
         v_prime_array = [ [] for _ in range(len(y_index)) ]
 
-        for time in times:
-            fluct_data = self._module._fluct_io_class(time,self.avg_data,path_to_folder,abs_path)
-            u_prime_data = fluct_data.fluctDF[time,'u']
-            v_prime_data = fluct_data.fluctDF[time,'v']
+        for timing in times:
+            time1 = time.perf_counter()
+            fluct_data = self._module._fluct_io_class(timing,self.avg_data,path_to_folder,abs_path)
+            u_prime_data = fluct_data.fluctDF[timing,'u']
+            v_prime_data = fluct_data.fluctDF[timing,'v']
             for i in range(len(y_index)):
                 u_prime_array[i].extend(u_prime_data[:,y_index[i],x_index[i]])
                 v_prime_array[i].extend(v_prime_data[:,y_index[i],x_index[i]])
@@ -160,10 +161,12 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
                     v_prime_array[i].extend(-1*v_prime_data[:,-1-y_index[i],x_index[i]])
             # del fluct_data#; del u_prime_data; del v_prime_data
             gc.collect()
+            print(timing, time.time()-time1)
 
         pdf_array = [ [] for _ in range(len(y_index)) ]
         u_array = [ [] for _ in range(len(y_index)) ]
         v_array = [ [] for _ in range(len(y_index)) ]
+        print("Calculating PDFs")
         estimator = seaborn._statistics.KDE(gridsize=gridsize)
         for i, y in enumerate(y_index):
             pdf_array[i],(u_array[i],v_array[i]) = estimator(np.array(u_prime_array[i]),

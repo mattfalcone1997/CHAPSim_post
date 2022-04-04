@@ -123,12 +123,11 @@ class CHAPSim_fluct_base(Common):
 
             ax1.axes.set_title(r"$%s=%.2g$"%(title_symbol,axis_vals[i]),loc='right')
             ax1.axes.set_title(r"$t^*=%s$"%PhyTime,loc='left')
-            
-            
 
             ax[i]=ax1
             ax[i].axes.set_aspect('equal')
-            
+            fig.tight_layout()
+
             cbar=fig.colorbar(ax1,ax=ax[i].axes)
             cbar.set_label(r"$%s^\prime$"%comp)
             

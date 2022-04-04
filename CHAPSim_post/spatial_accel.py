@@ -101,6 +101,38 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         y_transform = lambda u: u/u_tau[x_index]
         
         return x_transform, y_transform
+    
+    def accel_param_calc(self,PhyTime=None):
+
+        PhyTime = self.check_PhyTime(PhyTime)
+
+        U_infty = self._bulk_velo_calc(PhyTime)
+        U_infty_grad = np.gradient(U_infty,self.CoordDF['x'])
+
+        REN = self.metaDF['REN']
+
+        accel_param = (1/(REN*U_infty**2))*U_infty_grad
+        
+        return accel_param
+
+    def plot_accel_param(self,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
+        
+        accel_param = self.accel_param_calc(PhyTime)
+        x_coords = self.CoordDF['x']
+
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
+        
+        line_kw = cplt.update_line_kw(line_kw,label = r"$K$")
+        
+        ax.cplot(x_coords,accel_param,**line_kw)
+        xlabel = self.Domain.create_label(r"$x$")
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(r"$K$")
+        
+        ax.ticklabel_format(style='sci',axis='y',scilimits=(-5,5))
+        return fig,ax
+
 _avg_io_class = CHAPSim_AVG_io
 
 class CHAPSim_meta(cp.CHAPSim_meta):
@@ -131,7 +163,9 @@ class CHAPSim_meta(cp.CHAPSim_meta):
         hdf_obj = cd.hdfHandler(file_name,mode='a',key=key)
         
         hdf_obj.create_dataset('U_infty',data=self.U_infty)
-        
+
+class CHAPSim_budget_io(cp.CHAPSim_budget_io):
+    pass
         
 _meta_class = CHAPSim_meta
 
