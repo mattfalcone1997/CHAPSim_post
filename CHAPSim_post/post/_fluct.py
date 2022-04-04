@@ -129,7 +129,7 @@ class CHAPSim_fluct_base(Common):
             ax[i]=ax1
             ax[i].axes.set_aspect('equal')
             
-            cbar=fig.colorbar(ax1,ax=ax[i])
+            cbar=fig.colorbar(ax1,ax=ax[i].axes)
             cbar.set_label(r"$%s^\prime$"%comp)
             
         if axes_output:
