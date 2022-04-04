@@ -64,7 +64,7 @@ class CHAPSim_joint_PDF_base(Common,ABC):
         hdf_obj = cd.hdfHandler(file_name,mode,key=key)
         hdf_obj.set_type_id(self.__class__)
 
-        hdf_obj.attrs["y_mode"] = self._y_mode.encode('utf-8')
+        hdf_obj.attrs["y_mode"] = self._y_mode
         hdf_obj.create_dataset("x_loc_norm",data=self._x_loc_norm)
 
         self.pdf_arrayDF.to_hdf(file_name,key=key+'/pdf_arrayDF',mode='a')#,format='fixed',data_columns=True)
@@ -192,7 +192,7 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
         hdf_obj = cd.hdfHandler(file_name,'r',key=key)
         hdf_obj.check_type_id(self.__class__)
 
-        self._y_mode = hdf_obj.attrs['y_mode'].decode('utf-8')
+        self._y_mode = hdf_obj.attrs['y_mode']
         self._x_loc_norm = hdf_obj['x_loc_norm'][:]
         
         self._meta_data = self._module._meta_class.from_hdf(file_name,key+'/meta_data')
