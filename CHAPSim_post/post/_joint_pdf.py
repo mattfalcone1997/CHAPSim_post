@@ -161,7 +161,7 @@ class CHAPSim_joint_PDF_io(CHAPSim_joint_PDF_base):
                     v_prime_array[i].extend(-1*v_prime_data[:,-1-y_index[i],x_index[i]])
             # del fluct_data#; del u_prime_data; del v_prime_data
             gc.collect()
-            print(timing, time.time()-time1)
+            print(timing, time.perf_counter()-time1)
 
         pdf_array = [ [] for _ in range(len(y_index)) ]
         u_array = [ [] for _ in range(len(y_index)) ]
