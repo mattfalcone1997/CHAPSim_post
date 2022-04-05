@@ -270,12 +270,12 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
         quad_anal_array=np.empty((len(h_list)*q_size,*self.shape))
 
         for j,h in enumerate(h_list):
-            for i in range(q_size):
+            for i, quad in enumerate(self.Quadrants):
                 num_q = self.num_array[q_size*j+i]
                 prev_q = self.prev_array[q_size*j+i]
                 tot_event_q = self.total_event_times[q_size*j+i]
 
-                no_mask = np.logical_and(quadrant_array == (i+1),
+                no_mask = np.logical_and(quadrant_array == quad,
                                          abs(fluct_uv) > h*u_rms*v_rms)
                 fluct_uv.mask = ~no_mask
                 uv_q = fluct_uv.filled(0.).mean(axis=0)
@@ -596,12 +596,12 @@ class CHAPSim_Quad_Anl_tg(_Quad_Anl_base):
         quad_anal_array=np.empty((len(h_list)*q_size,*self.shape))
 
         for j,h in enumerate(h_list):
-            for i in range(q_size):
+            for i, quad in enumerate(self.Quadrants):
                 num_q = self.num_array[q_size*j+i]
                 prev_q = self.prev_array[q_size*j+i]
                 tot_event_q = self.total_event_times[q_size*j+i]
 
-                no_mask = np.logical_and(quadrant_array == (i+1),
+                no_mask = np.logical_and(quadrant_array == quad,
                                      abs(fluct_uv) > h*(u_rms*v_rms)[:,np.newaxis])
                 fluct_uv.mask = ~no_mask
                 uv_q = fluct_uv.filled(0.).mean(axis=(0,2))
@@ -831,9 +831,9 @@ class CHAPSim_Quad_Anl_temp(CHAPSim_Quad_Anl_tg):
         quad_anal_array=np.empty((len(h_list)*q_size,*self.shape))
 
         for j,h in enumerate(h_list):
-            for i in range(4):
+            for i, quad in enumerate(self.Quadrants):
 
-                no_mask = np.logical_and(quadrant_array == (i+1),
+                no_mask = np.logical_and(quadrant_array == quad,
                                      abs(fluct_uv) > h*(u_rms*v_rms)[:,np.newaxis])
                 fluct_uv.mask = ~no_mask
                 quad_anal_array[q_size*j+i] = fluct_uv.filled(0.).mean(axis=(0,2))
