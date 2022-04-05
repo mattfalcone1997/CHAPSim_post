@@ -377,8 +377,7 @@ class AxesCHAPSim(mpl.axes.Axes):
                 quadmesh._coordinates[:,:,0] += val
                 
         if contour_list:
-            for contour in contour_list:
-                for path_col in contour.collections:
+                for path_col in contour_list:
                     paths = path_col.get_paths()
                     for path in paths:
                         vertices = path._vertices
@@ -429,8 +428,7 @@ class AxesCHAPSim(mpl.axes.Axes):
                 quadmesh._coordinates[:,:,1] += val
                 
         if contour_list:
-            for contour in contour_list:
-                for path_col in contour.collections:
+                for path_col in contour_list:
                     paths = path_col.get_paths()
                     for path in paths:
                         vertices = path._vertices
