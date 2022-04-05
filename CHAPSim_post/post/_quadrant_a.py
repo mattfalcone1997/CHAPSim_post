@@ -186,9 +186,10 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
                                                         time0=time0, 
                                                         path_to_folder=path_to_folder,
                                                         abs_path=abs_path)
-            del fluct_data; gc.collect()
             
             fluctDF = fluct_data.fluctDF[timing,['u','v']]
+            del fluct_data; gc.collect()
+
             time2 = time.time()
             fluct_uv, quadrant_array = self._quadrant_extract(fluctDF,
                                                                 timing)
