@@ -53,6 +53,7 @@ class _Quad_Anl_base(Common,ABC):
         hdf_obj = cd.hdfHandler(file_name,write_mode,key=key)
         hdf_obj.set_type_id(self.__class__)
 
+        hdf_obj.attrs['Quadrants'] = np.array(self.Quadrants)
         self._meta_data.save_hdf(file_name,'a',key+'/meta_data')
         self._avg_data.save_hdf(file_name,'a',key+'/avg_data')
         self.QuadAnalDF.to_hdf(file_name,key=key+'/QuadAnalDF',mode='a')
@@ -64,13 +65,18 @@ class _Quad_Anl_base(Common,ABC):
         return "h=%g Q%d"%(h,quadrant)
 
     def _check_quadrant(self,Quadrants):
+        if hasattr(self,'Quadrants'):
+            _quad_avail  = self.Quadrants
+        else:
+            _quad_avail = [1,2,3,4]
+            
         if Quadrants is None:
-            Quadrants = [1,2,3,4]
+            Quadrants = _quad_avail
 
         else:
             Quadrants = misc_utils.check_list_vals(Quadrants)
-            if not all(quad in [1,2,3,4] for quad in Quadrants):
-                msg = "The quadrants provided must be in 1 2 3 4"
+            if not all(quad in _quad_avail for quad in Quadrants):
+                msg = f"The quadrants provided must be in {_quad_avail}"
                 raise ValueError(msg)
         return Quadrants
 
@@ -98,7 +104,7 @@ class _Quad_Anl_base(Common,ABC):
 
         quadrant_array = np.zeros_like(v_array_isneg,dtype='i4')
 
-        for i in range(1,5): #determining quadrant
+        for i in self.Quadrants: #determining quadrant
             if i ==1:
                 quadrant_array_temp = np.logical_and(~u_array_isneg,~v_array_isneg)#not fluct_u_isneg and not fluct_v_isneg
                 quadrant_array += quadrant_array_temp*1
@@ -120,7 +126,11 @@ class _Quad_Anl_base(Common,ABC):
     def _create_symmetry(self,h_list,quad_anal_array,num_array,mean_dt, mean_dur):
         if not cp.rcParams['SymmetryAVG'] or  not self.metaDF['iCase'] ==1:
             return
-
+        if not all(i in self.Quadrants for i in range(1,5)):
+            msg = ("Not all quadrants being computed"
+                    " symmetry averaging not possible")
+            warnings.warn(msg)
+            
         old_quad_array = quad_anal_array.copy()
         old_num_array = num_array.copy()
         old_dt_array = mean_dt.copy()
@@ -163,12 +173,16 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
         self.QuadNumDF = cd.FlowStruct2D.from_hdf(file_name,key=key+'/QuadNumDF')
         self.QuadDTDF = cd.FlowStruct2D.from_hdf(file_name,key=key+'/QuadDTDF')
         self.QuadDurDF = cd.FlowStruct2D.from_hdf(file_name,key=key+'/QuadDurDF')
-
-    def _quad_extract(self,h_list,path_to_folder='.',time0=None,abs_path=True):
+        self.Quadrants = list(hdf_obj.attrs['Quadrants'])
+        
+    def _quad_extract(self,h_list,path_to_folder='.',Quadrants=None,time0=None,abs_path=True):
         times = misc_utils.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
         
+        self.Quadrants = self._check_quadrant(Quadrants)
+        q_size = len(self.Quadrants)
+
         if cp.rcParams['TEST']:
             times.sort(); times= times[-3:]
 
@@ -194,14 +208,13 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
             fluct_uv, quadrant_array = self._quadrant_extract(fluctDF,
                                                                 timing)
             
-            
             coe3 = i/(i + 1)
             coe2 = 1/(i + 1)
 
             if i ==0:
-                self.num_array = np.zeros((len(h_list)*4, *fluct_uv.shape),dtype=np.int32)
-                self.prev_array = np.full((len(h_list)*4, *fluct_uv.shape),False)
-                self.total_event_times = np.zeros_like(self.num_array,dtype=np.float64)
+                self.num_array = np.zeros((len(h_list)*q_size, *fluct_uv.shape),dtype=np.int32)
+                self.prev_array = np.full((len(h_list)*q_size, *fluct_uv.shape),False)
+                self.total_event_times = np.zeros_like(self.num_array,dtype=cp.rcParams['dtype'])
 
                 quad_anal_array  = self._quad_calc(dt,fluct_uv,quadrant_array,h_list)
             else:
@@ -231,7 +244,7 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
                             total_mean_dur)
         
 
-        comp = [self._comp_calc(*x) for x in itertools.product(h_list,range(1,5))]
+        comp = [self._comp_calc(*x) for x in itertools.product(h_list,self.Quadrants)]
         PhyTime = [None]*len(comp)
 
 
@@ -244,6 +257,7 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
     
 
     def _quad_calc(self,dt,fluct_uv,quadrant_array,h_list):
+        q_size = len(self.Quadrants)
 
         avg_time = max(self._avg_data.times)
         uu=self._avg_data.UU_tensorDF[avg_time,'uu']
@@ -252,13 +266,13 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
         u_rms = np.sqrt(uu)
         v_rms = np.sqrt(vv)
 
-        quad_anal_array=np.empty((len(h_list)*4,*self.shape))
+        quad_anal_array=np.empty((len(h_list)*q_size,*self.shape))
 
         for j,h in enumerate(h_list):
-            for i in range(4):
-                num_q = self.num_array[4*j+i]
-                prev_q = self.prev_array[4*j+i]
-                tot_event_q = self.total_event_times[4*j+i]
+            for i in range(q_size):
+                num_q = self.num_array[q_size*j+i]
+                prev_q = self.prev_array[q_size*j+i]
+                tot_event_q = self.total_event_times[q_size*j+i]
 
                 no_mask = np.logical_and(quadrant_array == (i+1),
                                          abs(fluct_uv) > h*u_rms*v_rms)
@@ -270,7 +284,7 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
                 tot_event_q[no_mask] += dt
                 prev_q = no_mask.copy()
 
-                quad_anal_array[4*j+i]=uv_q
+                quad_anal_array[q_size*j+i]=uv_q
 
         return quad_anal_array
 
@@ -486,8 +500,9 @@ class CHAPSim_Quad_Anl_tg(_Quad_Anl_base):
         self.QuadNumDF = cd.FlowStruct1D.from_hdf(file_name,key=key+'/QuadNumDF')
         self.QuadDTDF = cd.FlowStruct1D.from_hdf(file_name,key=key+'/QuadDTDF')
         self.QuadDurDF = cd.FlowStruct1D.from_hdf(file_name,key=key+'/QuadDurDF')
+        self.Quadrants = list(hdf_obj.attrs['Quadrants'])
 
-    def _quad_extract(self,h_list,path_to_folder='.',ntimes=None,time0=None,abs_path=True):
+    def _quad_extract(self,h_list,path_to_folder='.',ntimes=None,Quadrants=None,time0=None,abs_path=True):
         times = misc_utils.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
@@ -497,6 +512,9 @@ class CHAPSim_Quad_Anl_tg(_Quad_Anl_base):
 
         if cp.rcParams['TEST']:
             times.sort(); times= times[-3:]
+            
+        self.Quadrants = self._check_quadrant(Quadrants)
+        q_size = len(self.Quadrants)
 
         self._meta_data = self._module._meta_class(path_to_folder,abs_path)
         self._avg_data = self._module._avg_tg_class(max(times), 
@@ -523,9 +541,9 @@ class CHAPSim_Quad_Anl_tg(_Quad_Anl_base):
             coe2 = 1/(i + 1)
 
             if i ==0:
-                self.num_array = np.zeros((len(h_list)*4, *fluct_uv.shape),dtype=np.int32)
-                self.prev_array = np.full((len(h_list)*4, *fluct_uv.shape),False)
-                self.total_event_times = np.zeros_like(self.num_array,dtype=np.float64)
+                self.num_array = np.zeros((len(h_list)*q_size, *fluct_uv.shape),dtype=np.int32)
+                self.prev_array = np.full((len(h_list)*q_size, *fluct_uv.shape),False)
+                self.total_event_times = np.zeros_like(self.num_array,dtype=cp.rcParams['dtype'])
 
                 quad_anal_array  = self._quad_calc(dt,fluct_uv,quadrant_array,h_list)
             else:
@@ -553,7 +571,7 @@ class CHAPSim_Quad_Anl_tg(_Quad_Anl_base):
                             total_mean_dt, 
                             total_mean_dur)
         
-        comp = [self._comp_calc(*x) for x in itertools.product(h_list,range(1,5))]
+        comp = [self._comp_calc(*x) for x in itertools.product(h_list,self.Quadrants)]
         PhyTime = [None]*len(comp)
 
 
@@ -565,6 +583,7 @@ class CHAPSim_Quad_Anl_tg(_Quad_Anl_base):
         self.QuadDurDF = cd.FlowStruct1D(self._coorddata,total_mean_dur,index=index)
 
     def _quad_calc(self,dt,fluct_uv,quadrant_array,h_list):
+        q_size = len(self.Quadrants)
 
         avg_time = max(self._avg_data.times)
         uu=self._avg_data.UU_tensorDF[avg_time,'uu']
@@ -573,13 +592,13 @@ class CHAPSim_Quad_Anl_tg(_Quad_Anl_base):
         u_rms = np.sqrt(uu)
         v_rms = np.sqrt(vv)
 
-        quad_anal_array=np.empty((len(h_list)*4,*self.shape))
+        quad_anal_array=np.empty((len(h_list)*q_size,*self.shape))
 
         for j,h in enumerate(h_list):
-            for i in range(4):
-                num_q = self.num_array[4*j+i]
-                prev_q = self.prev_array[4*j+i]
-                tot_event_q = self.total_event_times[4*j+i]
+            for i in range(q_size):
+                num_q = self.num_array[q_size*j+i]
+                prev_q = self.prev_array[q_size*j+i]
+                tot_event_q = self.total_event_times[q_size*j+i]
 
                 no_mask = np.logical_and(quadrant_array == (i+1),
                                      abs(fluct_uv) > h*(u_rms*v_rms)[:,np.newaxis])
@@ -591,7 +610,7 @@ class CHAPSim_Quad_Anl_tg(_Quad_Anl_base):
                 tot_event_q[no_mask] += dt
                 prev_q = no_mask.copy()
 
-                quad_anal_array[4*j+i]=uv_q
+                quad_anal_array[q_size*j+i]=uv_q
 
         return quad_anal_array
 
@@ -749,12 +768,16 @@ class CHAPSim_Quad_Anl_temp(CHAPSim_Quad_Anl_tg):
         self._meta_data.save_hdf(file_name,'a',key+'/meta_data')
         self._avg_data.save_hdf(file_name,'a',key+'/avg_data')
         self.QuadAnalDF.to_hdf(file_name,key=key+'/QuadAnalDF',mode='a')
+        self.Quadrants = list(hdf_obj.attrs['Quadrants'])
 
-    def _quad_extract(self,h_list,path_to_folder='.',time0=None,abs_path=True):
+    def _quad_extract(self,h_list,path_to_folder='.',Quadrants=None,time0=None,abs_path=True):
         times = misc_utils.time_extract(path_to_folder,abs_path)
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
-            
+        
+        self.Quadrants = self._check_quadrant(Quadrants)
+        q_size = len(self.Quadrants)
+        
         if cp.rcParams['TEST']:
             times.sort(); times= times[-3:]
 
@@ -766,7 +789,7 @@ class CHAPSim_Quad_Anl_temp(CHAPSim_Quad_Anl_tg):
 
         quad_array = []
         quad_index = []
-        comp = [self._comp_calc(*x) for x in itertools.product(h_list,range(1,5))]
+        comp = [self._comp_calc(*x) for x in itertools.product(h_list,self.Quadrants)]
 
         for i, (timing, dt) in enumerate(zip(times,dt_array)):
             time1 = time.time()
@@ -795,6 +818,7 @@ class CHAPSim_Quad_Anl_temp(CHAPSim_Quad_Anl_tg):
         self.QuadAnalDF = cd.FlowStruct1D_time(self._coorddata,QuadAnal,index=quad_index)
 
     def _quad_calc(self,fluct_uv,quadrant_array,h_list):
+        q_size = len(self.Quadrants)
 
         avg_time = max(self._avg_data.times)
         uu=self._avg_data.UU_tensorDF[avg_time,'uu']
@@ -803,7 +827,7 @@ class CHAPSim_Quad_Anl_temp(CHAPSim_Quad_Anl_tg):
         u_rms = np.sqrt(uu)
         v_rms = np.sqrt(vv)
 
-        quad_anal_array=np.empty((len(h_list)*4,*self.shape))
+        quad_anal_array=np.empty((len(h_list)*q_size,*self.shape))
 
         for j,h in enumerate(h_list):
             for i in range(4):
@@ -811,7 +835,7 @@ class CHAPSim_Quad_Anl_temp(CHAPSim_Quad_Anl_tg):
                 no_mask = np.logical_and(quadrant_array == (i+1),
                                      abs(fluct_uv) > h*(u_rms*v_rms)[:,np.newaxis])
                 fluct_uv.mask = ~no_mask
-                quad_anal_array[4*j+i] = fluct_uv.filled(0.).mean(axis=(0,2))
+                quad_anal_array[q_size*j+i] = fluct_uv.filled(0.).mean(axis=(0,2))
 
         return quad_anal_array
 
