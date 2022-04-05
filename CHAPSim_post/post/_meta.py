@@ -433,8 +433,11 @@ class DomainHandler(cd.GeomHandler):
             return comp
         if self.is_polar:
             comp = styleParams.cart_to_polar[comp]
-        elif self.is_polar:
+            
+        if self.is_polar:
             return styleParams.CoordLabel_pipe(comp)
+        elif self.is_channel:
+            return styleParams.CoordLabel_channel(comp)
         else:
             return styleParams.CoordLabel_blayer(comp)
 
