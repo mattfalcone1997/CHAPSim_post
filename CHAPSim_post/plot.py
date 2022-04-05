@@ -370,6 +370,8 @@ class AxesCHAPSim(mpl.axes.Axes):
                             if isinstance(x,mpl.contour.ContourSet)]
         quiver_list = [x for x in self.get_children()\
                             if isinstance(x,mpl.quiver.Quiver)]
+        
+        print(contour_list)
         if quadmesh_list:
             for quadmesh in quadmesh_list:
                 quadmesh._coordinates[:,:,0] += val
