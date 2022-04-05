@@ -422,6 +422,8 @@ class AxesCHAPSim(mpl.axes.Axes):
         quiver_list = [x for x in self.get_children()\
                             if isinstance(x,mpl.quiver.Quiver)]
 
+        print(contour_list)
+
         if quadmesh_list:
             for quadmesh in quadmesh_list:
                 quadmesh._coordinates[:,:,1] += val
@@ -445,7 +447,7 @@ class AxesCHAPSim(mpl.axes.Axes):
                 quiver_list[i]._offsets = offsets
                 quiver_list[i]._transOffset = quiver_list[i].transform
 
-        if quadmesh_list or quiver_list or lines:
+        if quadmesh_list or quiver_list or lines or contour_list:
             ylim = [y+val for y in self.get_ylim()]
             self.set_ylim(ylim)
 
