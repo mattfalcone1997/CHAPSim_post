@@ -118,7 +118,7 @@ class _Quad_Anl_base(Common,ABC):
                 quadrant_array_temp =  np.logical_and(~u_array_isneg,v_array_isneg)#fluct_u_isneg and not fluct_v_isneg
                 quadrant_array += quadrant_array_temp*4
 
-        assert(quadrant_array.all()<=4 and quadrant_array.all()>=1)  
+        assert(quadrant_array.all()<=4 and quadrant_array.all()>=0)  
         fluct_uv = np.ma.array(u_array*v_array) 
 
         return fluct_uv, quadrant_array 
