@@ -381,6 +381,7 @@ class AxesCHAPSim(mpl.axes.Axes):
                     for path in paths:
                         vertices = path._vertices
                         vertices[0] += val
+                        path._vertices = vertices
                         
         if quiver_list:
             for i,_ in enumerate(quiver_list):
@@ -430,6 +431,7 @@ class AxesCHAPSim(mpl.axes.Axes):
                     for path in paths:
                         vertices = path._vertices
                         vertices[1] += val
+                        path._vertices = vertices
               
         if quiver_list:
             for i,_ in enumerate(quiver_list):
