@@ -130,6 +130,7 @@ class _Quad_Anl_base(Common,ABC):
             msg = ("Not all quadrants being computed"
                     " symmetry averaging not possible")
             warnings.warn(msg)
+            return
             
         old_quad_array = quad_anal_array.copy()
         old_num_array = num_array.copy()
@@ -222,7 +223,7 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
 
                 quad_anal_array = quad_anal_array*coe3 + local_quad_anal_array*coe2
 
-            gc.collect()
+            del fluctDF; gc.collect()
             print("Time %g: %.3g %.3g"%(timing,time2 - time1, time.time()- time2))
 
         del self.prev_array; del local_quad_anal_array
