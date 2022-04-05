@@ -366,12 +366,22 @@ class AxesCHAPSim(mpl.axes.Axes):
 
         quadmesh_list = [x for x in self.get_children()\
                             if isinstance(x,mpl.collections.QuadMesh)]
+        contour_list = [x for x in self.get_children()\
+                            if isinstance(x,mpl.contour.ContourSet)]
         quiver_list = [x for x in self.get_children()\
                             if isinstance(x,mpl.quiver.Quiver)]
         if quadmesh_list:
             for quadmesh in quadmesh_list:
                 quadmesh._coordinates[:,:,0] += val
-
+                
+        if contour_list:
+            for contour in contour_list:
+                for path_col in contour.collections:
+                    paths = path_col.get_paths()
+                    for path in paths:
+                        vertices = path._vertices
+                        vertices[0] += val
+                        
         if quiver_list:
             for i,_ in enumerate(quiver_list):
                 quiver_list[i].X += val
@@ -403,13 +413,24 @@ class AxesCHAPSim(mpl.axes.Axes):
         quadmesh_list = [x for x in self.get_children()\
                             if isinstance(x,mpl.collections.QuadMesh)]
 
+        contour_list = [x for x in self.get_children()\
+                            if isinstance(x,mpl.contour.ContourSet)]
+                
         quiver_list = [x for x in self.get_children()\
                             if isinstance(x,mpl.quiver.Quiver)]
 
         if quadmesh_list:
             for quadmesh in quadmesh_list:
                 quadmesh._coordinates[:,:,1] += val
-
+                
+        if contour_list:
+            for contour in contour_list:
+                for path_col in contour.collections:
+                    paths = path_col.get_paths()
+                    for path in paths:
+                        vertices = path._vertices
+                        vertices[1] += val
+              
         if quiver_list:
             for i,_ in enumerate(quiver_list):
                 quiver_list[i].Y += val
