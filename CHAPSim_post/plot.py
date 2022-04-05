@@ -367,7 +367,7 @@ class AxesCHAPSim(mpl.axes.Axes):
         quadmesh_list = [x for x in self.get_children()\
                             if isinstance(x,mpl.collections.QuadMesh)]
         contour_list = [x for x in self.get_children()\
-                            if isinstance(x,mpl.contour.ContourSet)]
+                            if isinstance(x,mpl.collections.PathCollection)]
         quiver_list = [x for x in self.get_children()\
                             if isinstance(x,mpl.quiver.Quiver)]
         
@@ -417,7 +417,7 @@ class AxesCHAPSim(mpl.axes.Axes):
                             if isinstance(x,mpl.collections.QuadMesh)]
 
         contour_list = [x for x in self.get_children()\
-                            if isinstance(x,mpl.contour.ContourSet)]
+                            if isinstance(x,mpl.collections.PathCollection)]
                 
         quiver_list = [x for x in self.get_children()\
                             if isinstance(x,mpl.quiver.Quiver)]
