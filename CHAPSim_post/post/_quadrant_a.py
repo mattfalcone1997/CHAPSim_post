@@ -119,7 +119,7 @@ class _Quad_Anl_base(Common,ABC):
                 quadrant_array += quadrant_array_temp*4
 
         assert(quadrant_array.all()<=4 and quadrant_array.all()>=0)  
-        fluct_uv = np.ma.array(u_array*v_array) 
+        fluct_uv = np.ma.array(u_array*v_array,dtype=cp.rcParams['dtype'])
 
         return fluct_uv, quadrant_array 
 
@@ -267,7 +267,7 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
         u_rms = np.sqrt(uu)
         v_rms = np.sqrt(vv)
 
-        quad_anal_array=np.empty((len(h_list)*q_size,*self.shape))
+        quad_anal_array=np.empty((len(h_list)*q_size,*self.shape),dtype=cp.rcParams['dtype'])
 
         for j,h in enumerate(h_list):
             for i, quad in enumerate(self.Quadrants):
