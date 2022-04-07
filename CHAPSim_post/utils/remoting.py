@@ -15,6 +15,7 @@ class RemoteSSH:
         self._user = user_host[0]
         self.__password = None    
         self.__keyfile = None
+        self.__pkey_password = None
         
     def set_keyfile(self,keyfile):
         if not os.path.isfile(keyfile):
