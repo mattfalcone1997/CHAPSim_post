@@ -333,7 +333,7 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
                                                             line_kw=line_kw)
                     
                     ax[0,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')
-                    x_label = f"${prop_dir}$"
+                    x_label = self.Domain.create_label(f"${prop_dir}$")
                     ax[-1,j].set_xlabel(x_label)
 
             ax[i,0].set_ylabel(r"$Q%d$"%quad)
@@ -379,11 +379,11 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
                                                             channel_half = True,
                                                             fig= fig, ax= ax[i,j],
                                                             line_kw=line_kw)
-                x_label = f"${prop_dir}$"
+                    x_label = self.Domain.create_label(f"${prop_dir}$")
 
-                ax[i,j].set_xlabel(x_label)
-                ax[i,j].set_ylabel(r"$Q%d$(Number of events)"%quad)
-                ax[i,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')
+                    ax[i,j].set_xlabel(x_label)
+                    ax[i,j].set_ylabel(r"$Q%d$(Number of events)"%quad)
+                    ax[i,j].set_title(r"$%s=%.5g$"%(unit,coord_list[j]),loc='left')
 
         ncol = cplt.get_legend_ncols(len(h_list))
         ax[0,0].clegend(vertical=False,ncol=ncol)
@@ -425,7 +425,7 @@ class CHAPSim_Quad_Anl_io(_Quad_Anl_base):
                                                             channel_half = True,
                                                             fig= fig, ax= ax[i,j],
                                                             line_kw=line_kw)
-                x_label = f"${prop_dir}$"
+                x_label = self.Domain.create_label(f"${prop_dir}$")
 
                 ax[i,j].set_xlabel(x_label)
                 ax[i,j].set_ylabel(r"$T_{Q%d}$"%quad)
