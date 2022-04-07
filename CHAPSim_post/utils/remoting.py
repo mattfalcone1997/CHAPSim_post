@@ -36,7 +36,7 @@ class RemoteSSH:
             return  self._get_pkey_pword(keyfile,password=password)
         
     def _get_password(self):
-        if self._password is None:
+        if self.__password is None:
             name = "@".join([self._user,self._hostname])
             self.__password = getpass.getpass("Password for %s:"%name)
             
