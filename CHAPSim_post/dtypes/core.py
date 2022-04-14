@@ -499,13 +499,13 @@ class datastruct:
     
     def _get_data(self,data,copy=False,dtype=None):
         if dtype is None:
-            if issubclass(data.dtype,np.floating):
+            if issubclass(data.dtype.type,np.floating):
                 dtype = cp.rcParams['dtype']
         else:
             if isinstance(dtype,str):
                 dtype = np.dtype(str)
             
-            super_dtype = data.dtype.mro()[1]
+            super_dtype = data.dtype.type.mro()[1]
             if not issubclass(dtype,super_dtype):
                 msg = (f"Cannot set the dtype to {dtype.__name__}. "
                        f"Must be subclass of {super_dtype.__name__}")
