@@ -475,33 +475,49 @@ class datastruct:
             msg = "The length of the input array must match the index"
             raise ValueError(msg)
 
-    def _array_ini(self,array,index=None,copy=False):
+    def _array_ini(self,array,index=None,dtype=None,copy=False):
         if index is None:
             index = range(len(array))
         
         self._indexer = structIndexer(index)
         self._check_array_index(array,self._indexer)
 
-        self._data = list(array.astype(cp.rcParams['dtype'],copy=copy))
+        self._data = list(self._get_data(array,copy,dtype))
 
-    def _dict_ini(self,dict_data,copy=False):
+    def _dict_ini(self,dict_data,dtype=None,copy=False):
         if not all([isinstance(val,np.ndarray) for val in dict_data.values()]):
             msg = "The type of the values of the dictionary must be a numpy array"
             raise TypeError(msg)
         
         index = list(dict_data.keys())
-        self._data = [data.astype(cp.rcParams['dtype'],copy=copy) for data in dict_data.values()]
+        self._data = [self._get_data(data,copy,dtype) for data in dict_data.values()]
 
         self._indexer = structIndexer(index)
 
     def _dstruct_ini(self,dstruct,copy=False):
         return self._dict_ini(dstruct.to_dict(),copy=copy)
-
+    
+    def _get_data(self,data,copy=False,dtype=None):
+        if dtype is None:
+            if issubclass(data.dtype,np.floating):
+                dtype = cp.rcParams['dtype']
+        else:
+            if isinstance(dtype,str):
+                dtype = np.dtype(str)
+            
+            super_dtype = data.dtype.mro()[1]
+            if not issubclass(dtype,super_dtype):
+                msg = (f"Cannot set the dtype to {dtype.__name__}. "
+                       f"Must be subclass of {super_dtype.__name__}")
+                raise TypeError(msg)         
+            
+        return data.astype(dtype,copy=copy)
+        
     def _file_extract(self,filename,key=None):
         hdf_obj = hdfHandler(filename,mode='r',key=key)
 
         hdf_obj.check_type_id(self.__class__)
-        data_array = list(hdf_obj['data'][:].astype(cp.rcParams['dtype']))
+        data_array = list(self._get_data(hdf_obj['data'][:],copy=True))
         index_array = hdf_obj.contruct_index_from_hdfkey('index')
         shapes_array = hdf_obj['shapes'][:]
         

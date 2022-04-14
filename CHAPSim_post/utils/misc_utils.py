@@ -3,6 +3,7 @@ from pathlib import PurePath
 import numpy as np
 import warnings
 import sys
+import numbers
 
 # from CHAPSim_post import rcParams
 
@@ -62,9 +63,11 @@ class Params:
         if key == 'dtype':
             if isinstance(value,str):
                 value = np.dtype(value)
-            elif not isinstance(value,np.dtype):
-                msg = f"For key {key}, the value must be of type {str} or {np.dtype}"
+            
+            if not isinstance(value,np.floating):
+                msg = f"For key {key}, the value must be of type or str corresponding to numpy floating type"
                 raise TypeError(msg)
+            
         else:
             if not isinstance(value,type(self.__params[key])):
                 msg = f"Parameter {key} requires arguments of type {type(self.__params[key])}"
