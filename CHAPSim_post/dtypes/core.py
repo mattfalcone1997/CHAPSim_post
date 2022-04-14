@@ -501,6 +501,8 @@ class datastruct:
         if dtype is None:
             if issubclass(data.dtype.type,np.floating):
                 dtype = cp.rcParams['dtype']
+            else:
+                dtype = data.dtype.type
         else:
             if isinstance(dtype,str):
                 dtype = np.dtype(str)
