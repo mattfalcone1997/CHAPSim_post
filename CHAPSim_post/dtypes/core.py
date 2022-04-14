@@ -513,7 +513,6 @@ class datastruct:
                        f"Must be subclass of {super_dtype.__name__}")
                 raise TypeError(msg)         
         
-        print(data.dtype.type,dtype)
         return data.astype(dtype,copy=copy)
         
     def _file_extract(self,filename,key=None):
