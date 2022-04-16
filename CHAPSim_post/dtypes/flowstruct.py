@@ -740,7 +740,9 @@ class FlowStructND(_FlowStruct_base):
             
         del self.CoordDF[old_coord]
         
-        self._data_layout.replace(old_coord,new_coord)
+        index = self._data_layout.find(old_coord)
+        self._data_layout.remove(old_coord)
+        self._data_layout.insert(index,new_coord)
         
         if old_coord == self._wall_normal_line:
             self._wall_normal_line = new_coord
