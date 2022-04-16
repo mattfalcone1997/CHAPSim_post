@@ -768,7 +768,7 @@ class CHAPSim_Inst_tg(_Inst_base):
     
     @classproperty
     def _avg_class(cls):
-        return cls._module._avg_class_tg
+        return cls._module._avg_tg_class
     
     def _create_avg_data(self,path_to_folder,abs_path,time0,avg_data=None):
         time = misc_utils.max_time_calc(path_to_folder,abs_path)
@@ -801,7 +801,7 @@ class CHAPSim_Inst_temp(_Inst_base):
     _tgpost = True
     @classproperty
     def _avg_class(cls):
-        return cls._module._avg_class_temp
+        return cls._module._avg_temp_class
     
     def _create_avg_data(self,path_to_folder,abs_path,time0,avg_data=None):
         times = self.InstDF.times
