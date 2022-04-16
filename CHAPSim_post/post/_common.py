@@ -60,6 +60,10 @@ class Common(ABC):
     def _coorddata(self):
         return self._meta_data.coord_data
 
+    def _get_hdf_key(self,key):
+        if key is None:
+            key = self.__class__.__name__
+        return key
     # @_coorddata.setter
     # def _coorddata(self,value):
     #     if isinstance(value,coorddata):

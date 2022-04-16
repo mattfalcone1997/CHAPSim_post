@@ -497,7 +497,7 @@ class datastruct:
     def _dstruct_ini(self,dstruct,copy=False):
         return self._dict_ini(dstruct.to_dict(),copy=copy)
     
-    def _get_data(self,data,copy=False,dtype=None):
+    def _get_dtype(self,data,dtype=None):
         if dtype is None:
             if issubclass(data.dtype.type,np.floating):
                 dtype = cp.rcParams['dtype']
@@ -512,6 +512,10 @@ class datastruct:
                 msg = (f"Cannot set the dtype to {dtype.__name__}. "
                        f"Must be subclass of {super_dtype.__name__}")
                 raise TypeError(msg)         
+        return dtype
+    
+    def _get_data(self,data,copy=False,dtype=None):
+        dtype = self._get_dtype(data,dtype=dtype)         
         
         return data.astype(dtype,copy=copy)
         
@@ -579,7 +583,8 @@ class datastruct:
         max_size = max(sizes)
         outer_size = len(array)
 
-        data_array = np.full((outer_size,max_size),np.nan,dtype=cp.rcParams['dtype'])
+        dtype = self._get_dtype(array[0])
+        data_array = np.full((outer_size,max_size),np.nan,dtype=dtype)
         for i, arr in enumerate(array):
             data_array[i,:arr.size] = arr
 
