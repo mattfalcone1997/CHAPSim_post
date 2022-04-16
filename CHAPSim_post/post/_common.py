@@ -43,7 +43,7 @@ class _classfinder:
                     warnings.warn(warn_msg)
                     
                 return getattr(module,attr)
-        msg = "Attribute %s was not found"%attr
+        msg = f"Attribute {attr} was not found for class {mro[0].__name__}"
         raise ModuleNotFoundError(msg)
         # module = sys.modules[self._cls.__module__]
         # if hasattr(self._cls,attr):
