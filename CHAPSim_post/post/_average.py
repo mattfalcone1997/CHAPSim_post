@@ -961,12 +961,8 @@ class CHAPSim_AVG_tg(_AVG_base):
             Whether the path provided is absolute or relative, by default True
         """
 
-        PhyTimes = misc_utils.check_list_vals(PhyTimes)
-
-        if cp.rcParams['TEST']:
-            PhyTimes=PhyTimes[-5:]
-        PhyTimes.sort()
-
+        PhyTimes = misc_utils.check_list_vals(sorted(PhyTimes))
+        
         self._meta_data = self._module._meta_class(path_to_folder,abs_path,tgpost=True)
 
         DF_list = self._AVG_extract(PhyTimes,path_to_folder,abs_path,self.metaDF,time0)
@@ -1579,7 +1575,10 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg):
 
         if PhyTimes is not None:
             PhyTimes = misc_utils.check_list_vals(PhyTimes)
-            times = list(set(times).intersection(PhyTimes))      
+            times = list(set(times).intersection(PhyTimes))
+        else:
+            times = times [-5:] if cp.rcParams['TEST'] else times
+            
 
         if time0 is not None:
             times = list(filter(lambda x: x > time0, times))
