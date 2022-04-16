@@ -725,6 +725,29 @@ class FlowStructND(_FlowStruct_base):
 
         self._set_data_layout(data_layout, wall_normal_line, polar_plane)
 
+    def update_coord(self,old_coord,new_coord,array=None):
+        if old_coord not in self._data_layout:
+            msg = "Old coord key must be in the data layout"
+            raise KeyError(msg)
+        
+        if self.Coord_ND_DF is not None:
+            raise Exception
+        
+        if array is None:
+            self.CoordDF[new_coord] = array
+        else:
+            self.CoordDF[new_coord] = self.CoordDF[old_coord]
+            
+        del self.CoordDF[old_coord]
+        
+        self._data_layout.replace(old_coord,new_coord)
+        
+        if old_coord == self._wall_normal_line:
+            self._wall_normal_line = new_coord
+            
+        if self._polar_plane is not None:
+            if old_coord in self._polar_plane:
+                self._polar_plane.replace(old_coord,new_coord)
         
     def from_internal(self, *args, **kwargs) -> FlowStructType:
         """
