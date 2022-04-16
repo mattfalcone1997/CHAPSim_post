@@ -759,7 +759,7 @@ class FlowStructND(_FlowStruct_base):
                 raise ValueError(msg)
             
             if self.CoordDF[data].size != self.shape[i]:
-                coord_shape = tuple(d.size for _,d in self.CoordDF)
+                coord_shape = tuple(self.CoordDF[d].size for d in data_layout)
                 msg = ("There is an issue with the data layout\n"
                         f"Coordinate shape: {coord_shape}. Data Shape: {self.shape}.")
                 raise ValueError(msg)
