@@ -740,7 +740,7 @@ class FlowStructND(_FlowStruct_base):
             
         del self.CoordDF[old_coord]
         
-        index = self._data_layout.find(old_coord)
+        index = [i for i, val in enumerate(self._data_layout) if val == old_coord][0]
         self._data_layout.remove(old_coord)
         self._data_layout.insert(index,new_coord)
         
