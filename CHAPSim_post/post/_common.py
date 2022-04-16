@@ -29,23 +29,39 @@ class _classfinder:
         self._cls = cls
     
     def __getattr__(self,attr):
-        module = sys.modules[self._cls.__module__]
-        if hasattr(self._cls,attr):
-            return getattr(self._cls,attr)
-        elif hasattr(module, attr):
-            return getattr(module,attr)
-        else:
-            mro = self._cls.mro()
-            for c in mro[1:]:
-                if hasattr(c._module,attr):
+        mro = self._cls.mro()
+        
+        for c in mro:
+            module = sys.modules[c.__module__]
+            if hasattr(c,attr):
+                return getattr(self._cls,attr)
+            elif hasattr(module, attr) and hasattr(c,'_module'):
+                if c in mro[1:]:
                     warn_msg = (f"Attribute {attr} being inherited "
                                 f"from parent class ({c.__module__}.{c.__name__})"
                                  ". This behavior may be undesired")
                     warnings.warn(warn_msg)
-                    return getattr(c._module,attr)
+                    
+                return getattr(module,attr)
+        msg = "Attribute %s was not found"%attr
+        raise ModuleNotFoundError(msg)
+        # module = sys.modules[self._cls.__module__]
+        # if hasattr(self._cls,attr):
+        #     return getattr(self._cls,attr)
+        # elif hasattr(module, attr):
+        #     return getattr(module,attr)
+        # else:
+        #     mro = self._cls.mro()
+        #     for c in mro[1:]:
+        #         if hasattr(c._module,attr):
+        #             warn_msg = (f"Attribute {attr} being inherited "
+        #                         f"from parent class ({c.__module__}.{c.__name__})"
+        #                          ". This behavior may be undesired")
+        #             warnings.warn(warn_msg)
+        #             return getattr(c._module,attr)
             
-            msg = "Attribute %s was not found"%attr
-            raise ModuleNotFoundError(msg)
+        #     msg = "Attribute %s was not found"%attr
+        #     raise ModuleNotFoundError(msg)
             
             
             
