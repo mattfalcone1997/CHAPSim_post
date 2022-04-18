@@ -34,7 +34,8 @@ def _compute_spectra_io(fluct1, fluct2, fft_axis):
 def _test_symmetry(array,axis):
     indexer = [slice(None)]*len(array.shape)
     indexer[axis] = slice(None,None,-1)
-    if array != array[indexer]
+    
+    if array != array[indexer]:
         msg = "Symmetry averaging has failed"
         raise RuntimeError(msg)
     elif rcParams['TEST']:
@@ -120,7 +121,7 @@ class Spectra1D_io(_Spectra_base):
             sign = (-1)**(v_count)
             
             spectra_z = 0.5*(spectra_z + sign*spectra_z[:,::-1])
-            _test_symmetry(spectra_z)
+            _test_symmetry(spectra_z,axis=1)
         z_array = self._avg_data.Coord_ND_DF['z']
         k_z = 2. * np.pi/(z_array[-1])*np.arange(1,spectra_z.shape[0]+1)
         
@@ -216,8 +217,8 @@ class Spectra1D_tg(_Spectra_base, ABC):
             
             spectra_z = 0.5*(spectra_z + sign*spectra_z[:,::-1])
             spectra_x = 0.5*(spectra_x + sign*spectra_x[:,::-1])
-            _test_symmetry(spectra_z)
-            _test_symmetry(spectra_x)
+            _test_symmetry(spectra_z,axis=1)
+            _test_symmetry(spectra_x,axis=1)
         z_array = self.Coord_ND_DF['z']
         k_z = 2. * np.pi/(z_array[-1])*np.arange(1,spectra_z.shape[1]+1)
         
@@ -304,8 +305,8 @@ class Spectra1D_temp(_Spectra_base, ABC):
             spectra_z = 0.5*(spectra_z + sign*spectra_z[:,::-1])
             spectra_x = 0.5*(spectra_x + sign*spectra_x[:,::-1])
             
-            _test_symmetry(spectra_z)
-            _test_symmetry(spectra_x)
+            _test_symmetry(spectra_z,axis=1)
+            _test_symmetry(spectra_x,axis=1)
             
         
         z_array = self.Coord_ND_DF['z']
