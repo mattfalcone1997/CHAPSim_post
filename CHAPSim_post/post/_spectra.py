@@ -35,7 +35,7 @@ def _test_symmetry(array,axis):
     indexer = [slice(None)]*len(array.shape)
     indexer[axis] = slice(None,None,-1)
     
-    if array != array[indexer]:
+    if np.array_equal(array, array[indexer]):
         msg = "Symmetry averaging has failed"
         raise RuntimeError(msg)
     elif rcParams['TEST']:
