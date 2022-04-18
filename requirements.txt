@@ -25,3 +25,5 @@ decorator==4.4.2
 virtualenv
 tables
 pyfftw
+scp
+paramiko
