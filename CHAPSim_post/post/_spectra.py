@@ -1,4 +1,4 @@
-from CHAPSim_post.post._common import Common
+from CHAPSim_post.post._common import Common, temporal_base, classproperty
 from CHAPSim_post import utils, rcParams
 import CHAPSim_post.post as cp
 import CHAPSim_post.plot as cplt
@@ -274,7 +274,17 @@ class Spectra1D_tg(_Spectra_base, ABC):
         self.E_zDF = cd.FlowStructND.from_hdf(filename,key=key+'/E_zDF')
         self.E_xDF = cd.FlowStructND.from_hdf(filename,key=key+'/E_xDF')            
                                 
-class Spectra1D_temp(_Spectra_base, ABC):   
+class Spectra1D_temp(_Spectra_base,temporal_base, ABC):   
+    @classmethod
+    def with_phase_average(cls,comp,paths,time0=None):
+        spectra_list = [cls(comp,path,time0=time0) for path in paths]
+        
+        return spectra_list[0].phase_average(spectra_list[1:])
+    
+    @property
+    def _time_shift(self):
+        self.metaDF['time_start_end'][0]
+        
     def _spectra_extract(self,comp, path_to_folder,time0=None):
              
         times = utils.time_extract(path_to_folder)

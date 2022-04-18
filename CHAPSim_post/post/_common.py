@@ -44,27 +44,7 @@ class _classfinder:
                     
                 return getattr(module,attr)
         msg = f"Attribute {attr} was not found for class {mro[0].__name__} in module {mro[0].__module__}"
-        raise ModuleNotFoundError(msg)
-        # module = sys.modules[self._cls.__module__]
-        # if hasattr(self._cls,attr):
-        #     return getattr(self._cls,attr)
-        # elif hasattr(module, attr):
-        #     return getattr(module,attr)
-        # else:
-        #     mro = self._cls.mro()
-        #     for c in mro[1:]:
-        #         if hasattr(c._module,attr):
-        #             warn_msg = (f"Attribute {attr} being inherited "
-        #                         f"from parent class ({c.__module__}.{c.__name__})"
-        #                          ". This behavior may be undesired")
-        #             warnings.warn(warn_msg)
-        #             return getattr(c._module,attr)
-            
-        #     msg = "Attribute %s was not found"%attr
-        #     raise ModuleNotFoundError(msg)
-            
-            
-            
+        raise ModuleNotFoundError(msg)              
 
 class Common(ABC):
 
@@ -80,14 +60,7 @@ class Common(ABC):
         if key is None:
             key = self.__class__.__name__
         return key
-    # @_coorddata.setter
-    # def _coorddata(self,value):
-    #     if isinstance(value,coorddata):
-    #         self._meta_data._coorddata = value
-    #     else:
-    #         msg = "This value can only be set with an object of type coorddata"
-    #         raise TypeError(msg)
-
+    
     @property
     def Domain(self):
         return self._meta_data.coord_data._domain_handler
@@ -115,6 +88,49 @@ class Common(ABC):
     def copy(self):
         return copy.deepcopy(self)
 
+class temporal_base(ABC):
+    def phase_average(self,*others):
+        # check others
+        
+        if not all(type(x)==type(self) for x in others):
+            msg = "All objects to be averaged must be the same type"
+            raise TypeError(msg)
+        
+        if not all(hasattr(x,'_time_shift') for x in [self,*others]):
+            msg = "To use the phase averaging functionality the class variable _time_shift must be present"
+            raise AttributeError(msg)
+        
+        self_copy = self.copy() 
+        for i, other in enumerate(others):
+            other_copy = other.copy()
+            
+            for k, v in self_copy.__dict__.items():
+                if isinstance(v,temporal_base):
+                    setattr(self_copy,k,v._phase_average(getattr(other_copy,k)))
+                elif isinstance(v,cd.FlowStructND):
+                    
+                    coe1 = (i+1)/(i+2)
+                    coe2 = 1/(i+2)
+            
+                    v.shift_times(self._time_shift)
+                    
+                    other_fstruct = getattr(other_copy,k)
+                    other_fstruct.shift_times(other_copy._time_shift)
+                    
+                    time_intersect = set(v.times).intersection(other_fstruct.times)
+                    for time in v.times:
+                        if time not in time_intersect:
+                            v.remove_time(time)
+                            
+                    for time in other_fstruct.times:
+                        if time not in time_intersect:
+                            other_fstruct.remove_time(time)
+                            
+                    new_v = coe1*v + coe2*other_fstruct
+                    setattr(self_copy,k,new_v)
+            
+            return self_copy
+                    
 
 class postArray(ABC):
     _type = None
