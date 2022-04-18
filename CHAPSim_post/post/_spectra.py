@@ -168,7 +168,7 @@ class Spectra1D_io(_Spectra_base):
             
         fstruct = self.E_zDF.slice[:,:,x_loc]
         
-        k = self.CoordDF['k_z']
+        k = fstruct.CoordDF['k_z']
         c_transform = (lambda x: x*k[:,np.newaxis]) if premultiply else None
 
         x_transform = (lambda x: 2*np.pi/x) if wavelength else None
@@ -391,7 +391,7 @@ class Spectra1D_temp(_Spectra_base, ABC):
         time = self.E_zDF.check_times(time)
             
         fstruct = self.E_zDF if direction =='z' else self.E_xDF
-        k = self.CoordDF[f'k_{direction}']
+        k = fstruct.CoordDF[f'k_{direction}']
         
         c_transform = (lambda x: x*k[:,np.newaxis]) if premultiply else None
         x_transform = (lambda x: 2*np.pi/x) if wavelength else None
