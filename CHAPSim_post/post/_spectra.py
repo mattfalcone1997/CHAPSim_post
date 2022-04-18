@@ -79,7 +79,8 @@ class Spectra1D_io(_Spectra_base):
     def _spectra_extract(self,comp, path_to_folder,time0=None):
              
         times = utils.time_extract(path_to_folder)
-        times = list(filter(lambda x: x > time0,times))
+        if time is not None:
+            times = list(filter(lambda x: x > time0,times))
         
         if rcParams['TEST']:
             times = times[-10:]
@@ -167,7 +168,8 @@ class Spectra1D_tg(_Spectra_base, ABC):
     def _spectra_extract(self,comp, path_to_folder,time0=None):
              
         times = utils.time_extract(path_to_folder)
-        times = list(filter(lambda x: x > time0,times))
+        if time is not None:
+            times = list(filter(lambda x: x > time0,times))
         
         if rcParams['TEST']:
             times = times[-10:]
@@ -257,7 +259,8 @@ class Spectra1D_temp(_Spectra_base, ABC):
     def _spectra_extract(self,comp, path_to_folder,time0=None):
              
         times = utils.time_extract(path_to_folder)
-        times = list(filter(lambda x: x > time0,times))
+        if time is not None:
+            times = list(filter(lambda x: x > time0,times))
         
         if rcParams['TEST']:
             times = times[-10:]
