@@ -522,14 +522,20 @@ class _FlowStruct_slicer:
 
             else:
                 stop = flow_struct.CoordDF.index_calc(data,k)[0]
-                stop_nd = flow_struct.Coord_ND_DF.index_calc(data,k)[0]
-                
                 output_slicer.append(slice(stop,stop+1))
-                output_slicer_nd.append(slice(stop_nd,stop_nd+1))
+                if flow_struct.Coord_ND_DF is not None:
+                    stop_nd = flow_struct.Coord_ND_DF.index_calc(data,k)[0]
+                    output_slicer_nd.append(slice(stop_nd,stop_nd+1))
         
         output_slicer.extend(extra_slices)
-        output_slicer_nd.extend(extra_slices)
-        return tuple(output_slicer), tuple(output_slicer_nd)
+        output_slicer = tuple(output_slicer)
+        
+        if flow_struct.Coord_ND_DF is not None:
+            output_slicer_nd.extend(extra_slices)
+            output_slicer_nd = tuple(output_slicer_nd)
+        else:
+            output_slicer_nd = None
+        return output_slicer, output_slicer_nd
 
 
     def _get_new_coorddata(self,output_slice, output_slice_nd):
@@ -541,14 +547,15 @@ class _FlowStruct_slicer:
         new_dict = {}
         data_layout = []
         for i, data in enumerate(flow_struct._data_layout):
-            coord_nd = Coord_ND_DF[data][output_slice_nd[i]]
             coord = CoordDF[data][output_slice[i]]
             if len(coord) == 1:
                 continue
             
             data_layout.append(data)
-            new_nd_dict[data] = coord_nd
             new_dict[data] = coord
+            if Coord_ND_DF is not None:
+                coord_nd = Coord_ND_DF[data][output_slice_nd[i]]
+                new_nd_dict[data] = coord_nd
         
         if flow_struct._wall_normal_line not in data_layout:
             wall_normal_line = None
@@ -565,7 +572,7 @@ class _FlowStruct_slicer:
 
         
         new_CoordDF = coordstruct(new_dict)
-        new_Coord_ND_DF = coordstruct(new_nd_dict)
+        new_Coord_ND_DF = coordstruct(new_nd_dict) if Coord_ND_DF is not None else None
         new_coorddata = AxisData(flow_struct.Domain,new_CoordDF,new_Coord_ND_DF)
 
         return new_coorddata, data_layout, wall_normal_line, polar_plane
