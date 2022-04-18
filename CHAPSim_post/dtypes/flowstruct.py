@@ -1045,7 +1045,7 @@ class FlowStructND(_FlowStruct_base):
             y_coord = transform_xdata(self.CoordDF[plane[0]])
 
         X,Y = np.meshgrid(x_coord,y_coord)
-
+        print(X.shape,Y.shape,x_coord.shape,y_coord.shape)
         ax = plot_func(X,Y,flow.squeeze(),**contour_kw)
 
         return fig, ax
