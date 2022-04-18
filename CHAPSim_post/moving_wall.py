@@ -527,3 +527,6 @@ class flowReconstruct3D(POD.flowReconstruct3D):
 
 class CHAPSim_FIK_io(cp.CHAPSim_FIK_io):
     pass
+
+class velocitySpectra1D_io(cp.velocitySpectra1D_io):
+    pass

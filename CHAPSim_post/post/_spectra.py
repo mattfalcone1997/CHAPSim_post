@@ -68,9 +68,15 @@ class _Spectra_base(Common):
     @property
     def shape(self):
         return self.E_zDF.shape
-            
+
+_avg_io_class = cp.CHAPSim_AVG_io
+_avg_tg_class = cp.CHAPSim_AVG_tg
+_avg_temp_class = cp.CHAPSim_AVG_temp
+
+_fluct_io_class = cp.CHAPSim_fluct_io
+_fluct_temp_class = cp.CHAPSim_fluct_temp
+
 class Spectra1D_io(_Spectra_base):
-    _avg_io_class = cp.CHAPSim_AVG_io
     def _spectra_extract(self,comp, path_to_folder,time0=None):
              
         times = utils.time_extract(path_to_folder)
@@ -159,7 +165,6 @@ class Spectra1D_io(_Spectra_base):
                                     ax=ax)
 
 class Spectra1D_tg(_Spectra_base, ABC):   
-    _avg_tg_class = cp.CHAPSim_AVG_tg
     def _spectra_extract(self,comp, path_to_folder,time0=None):
              
         times = utils.time_extract(path_to_folder)
@@ -250,7 +255,6 @@ class Spectra1D_tg(_Spectra_base, ABC):
         self.E_xDF = cd.FlowStructND.from_hdf(filename,key=key+'/E_xDF')            
                                 
 class Spectra1D_temp(_Spectra_base, ABC):   
-    _avg_temp_class = ct.CHAPSim_AVG_temp       
     def _spectra_extract(self,comp, path_to_folder,time0=None):
              
         times = utils.time_extract(path_to_folder)
@@ -391,7 +395,6 @@ class Spectra1D_temp(_Spectra_base, ABC):
 
        
 class velocitySpectra1D_io(Spectra1D_io):            
-    _fluct_io_class = cp.CHAPSim_fluct_io                      
     def _fluct_calc(self,time,path_to_folder):
         fluct_data = self._module._fluct_io_class(time,path_to_folder=path_to_folder,avg_data=self._avg_data)
         
@@ -402,7 +405,6 @@ class velocitySpectra1D_io(Spectra1D_io):
             return fluct_data.fluctDF[time,comp1], fluct_data.fluctDF[time,comp2]
                     
 class velocitySpectra1D_temp(Spectra1D_temp):
-    _fluct_temp_class = ct.CHAPSim_fluct_temp
     def _fluct_calc(self,time,path_to_folder):
         fluct_data = self._module._fluct_temp_class(time,path_to_folder=path_to_folder,avg_data=self._avg_data)
         

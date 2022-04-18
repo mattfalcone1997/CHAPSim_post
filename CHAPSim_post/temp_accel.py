@@ -635,3 +635,6 @@ class CHAPSim_FIK_temp_conv(cp.CHAPSim_FIK_temp):
 
 class CHAPSim_FIK_temp(cp.CHAPSim_FIK_temp):
     pass
+
+class velocitySpectra1D_temp(cp.velocitySpectra1D_temp):
+    pass
