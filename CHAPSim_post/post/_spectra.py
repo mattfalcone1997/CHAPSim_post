@@ -119,9 +119,8 @@ class Spectra1D_io(_Spectra_base):
         if cp.rcParams['SymmetryAVG'] and self.Domain.is_channel:
             v_count = self._comp.count('v')
             sign = (-1)**(v_count)
-            # print(spectra_z.shape)
             spectra_z = 0.5*(spectra_z + sign*spectra_z[:,::-1])
-            # _test_symmetry(spectra_z,axis=1)
+
         z_array = self._avg_data.Coord_ND_DF['z']
         k_z = 2. * np.pi/(z_array[-1])*np.arange(1,spectra_z.shape[0]+1)
         
@@ -306,14 +305,9 @@ class Spectra1D_temp(_Spectra_base, ABC):
         if cp.rcParams['SymmetryAVG'] and self.Domain.is_channel:
             v_count = self._comp.count('v')
             sign = (-1)**(v_count)
-            # print(spectra_z.shape)
-            # print(spectra_x.shape)
 
             spectra_z = 0.5*(spectra_z + sign*spectra_z[:,:,::-1])
             spectra_x = 0.5*(spectra_x + sign*spectra_x[:,:,::-1])
-            
-            # _test_symmetry(spectra_z,axis=2)
-            # _test_symmetry(spectra_x,axis=2)
             
         
         z_array = self.Coord_ND_DF['z']
