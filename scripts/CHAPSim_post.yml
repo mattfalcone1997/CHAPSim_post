@@ -27,3 +27,4 @@ dependencies:
   - decorator
   - virtualenv
   - pytables
+  - pyfftw

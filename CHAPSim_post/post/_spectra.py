@@ -141,10 +141,7 @@ class Spectra1D_io(_Spectra_base):
         pass
 
     def plot_spectra_contour(self,x_loc,time=None,wavelength=False,contour_kw=None,fig=None,ax=None):
-        if direction not in ['x','z']:
-            msg = f"direction must be x or z not {direction}"
-            raise ValueError(msg)
-        
+                
         contour_kw = cplt.update_contour_kw(contour_kw)
         if 'plot_func' not in contour_kw:
             contour_kw['plot_func'] = 'contourf'
@@ -212,7 +209,7 @@ class Spectra1D_tg(_Spectra_base, ABC):
         del coorddata_z.coord_centered['x']
         
         self.E_zDF = cd.FlowStructND(coorddata_z,
-                                    {(times[-1],comp) : spectra_z),
+                                    {(times[-1],comp) : spectra_z},
                                     data_layout = ['k_z', 'y'],
                                     wall_normal_line = 'y',
                                     polar_plane=None)
@@ -228,7 +225,7 @@ class Spectra1D_tg(_Spectra_base, ABC):
         del coorddata_x.coord_centered['z']
         
         self.E_xDF = cd.FlowStructND(coorddata_x,
-                                    {(times[-1],comp) : spectra_x),
+                                    {(times[-1],comp) : spectra_x},
                                     data_layout = ['k_x', 'y'],
                                     wall_normal_line = 'y',
                                     polar_plane=None)

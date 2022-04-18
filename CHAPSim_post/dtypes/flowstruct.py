@@ -1030,11 +1030,10 @@ class FlowStructND(_FlowStruct_base):
         time = self.check_times(time)
         comp = self.check_comp(comp)
         plane = self._data_layout
-        print(transform_xdata,transform_ydata,transform_cdata)
+
         transform_xdata, transform_ydata, transform_cdata = self._check_datatransforms(transform_xdata,
                                                                                        transform_ydata,
                                                                                        transform_cdata)
-        print(transform_xdata,transform_ydata,transform_cdata)
         if rotate:
             flow = transform_cdata(self[time,comp]).T
             x_coord = transform_xdata(self.CoordDF[plane[0]])
@@ -1045,7 +1044,7 @@ class FlowStructND(_FlowStruct_base):
             y_coord = transform_xdata(self.CoordDF[plane[0]])
 
         X,Y = np.meshgrid(x_coord,y_coord)
-        print(X.shape,Y.shape,x_coord.shape,y_coord.shape)
+
         ax = plot_func(X,Y,flow.squeeze(),**contour_kw)
 
         return fig, ax
