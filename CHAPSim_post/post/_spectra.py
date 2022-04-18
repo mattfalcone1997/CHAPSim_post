@@ -119,7 +119,7 @@ class Spectra1D_io(_Spectra_base):
         if cp.rcParams['SymmetryAVG'] and self.Domain.is_channel:
             v_count = self._comp.count('v')
             sign = (-1)**(v_count)
-            
+            print(spectra_z.shape)
             spectra_z = 0.5*(spectra_z + sign*spectra_z[:,::-1])
             _test_symmetry(spectra_z,axis=1)
         z_array = self._avg_data.Coord_ND_DF['z']
