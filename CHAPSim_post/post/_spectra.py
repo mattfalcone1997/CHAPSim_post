@@ -1,7 +1,6 @@
 from CHAPSim_post.post._common import Common
 from CHAPSim_post import utils, rcParams
-import CHAPSim_post.temp_accel as ct
-import CHAPSim_post.moving_wall as cp
+import CHAPSim_post.post as cp
 import CHAPSim_post.plot as cplt
 import CHAPSim_post.dtypes as cd
 import numpy as np
