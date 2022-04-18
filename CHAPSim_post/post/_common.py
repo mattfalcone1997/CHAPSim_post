@@ -126,7 +126,7 @@ class temporal_base(ABC):
                     for time in other_fstruct.times:
                         if time not in time_intersect:
                             other_fstruct.remove_time(time)
-                            
+                    print(v.index,other_fstruct.index)
                     new_v = coe1*v + coe2*other_fstruct
                     setattr(self_copy,k,new_v)
             
