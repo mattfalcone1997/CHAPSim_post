@@ -283,7 +283,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
     
     @property
     def _time_shift(self):
-        self.metaDF['time_start_end'][0]
+        return -self.metaDF['time_start_end'][0]
         
     def _spectra_extract(self,comp, path_to_folder,time0=None):
              
