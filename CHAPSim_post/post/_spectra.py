@@ -305,8 +305,8 @@ class Spectra1D_temp(_Spectra_base, ABC):
             spectra_z = 0.5*(spectra_z + sign*spectra_z[:,:,::-1])
             spectra_x = 0.5*(spectra_x + sign*spectra_x[:,:,::-1])
             
-            _test_symmetry(spectra_z,axis=1)
-            _test_symmetry(spectra_x,axis=1)
+            _test_symmetry(spectra_z,axis=2)
+            _test_symmetry(spectra_x,axis=2)
             
         
         z_array = self.Coord_ND_DF['z']
