@@ -96,9 +96,7 @@ class _FlowStruct_base(datastruct):
         
         return identity_transform
 
-    def _check_datatransforms(self,
-                              transform_xdata:  Union[ Callable,None],
-                              transform_ydata:  Union[ Callable,None])->  Union[ Callable,  Callable] :  
+    def _check_datatransforms(self, *transform_datas):  
         """
         Checks validity of transforms  on ``plot_line`` functions and replaces ``None`` with the identity transform
 
@@ -121,19 +119,17 @@ class _FlowStruct_base(datastruct):
 
         """
         
-        if transform_xdata is None:
-            transform_xdata = self._get_identity_transform()
-        if transform_ydata is None:
-            transform_ydata = self._get_identity_transform()
+        return_transforms = []
+        for transform in transform_datas:
+            if transform is None:
+                transform = self._get_identity_transform()
+            
 
-        if not hasattr(transform_xdata,'__call__'):
-            msg = "transform_xdata must be None or callable"
-            raise TypeError(msg)
-        if not hasattr(transform_ydata,'__call__'):
-            msg = "transform_xdata must be None or callable"
-            raise TypeError(msg)
-
-        return transform_xdata, transform_ydata
+            if not hasattr(transform,'__call__'):
+                msg = "transform must be None or callable"
+                raise TypeError(msg)
+            return_transforms.append(transform)
+        return return_transforms
 
         
     @property
@@ -724,32 +720,6 @@ class FlowStructND(_FlowStruct_base):
             wall_normal_line = None
 
         self._set_data_layout(data_layout, wall_normal_line, polar_plane)
-
-    def update_coord(self,old_coord,new_coord,array=None):
-        if old_coord not in self._data_layout:
-            msg = "Old coord key must be in the data layout"
-            raise KeyError(msg)
-        
-        if self.Coord_ND_DF is not None:
-            raise Exception
-        
-        if array is None:
-            self.CoordDF[new_coord] = array
-        else:
-            self.CoordDF[new_coord] = self.CoordDF[old_coord]
-            
-        del self.CoordDF[old_coord]
-        
-        index = [i for i, val in enumerate(self._data_layout) if val == old_coord][0]
-        self._data_layout.remove(old_coord)
-        self._data_layout.insert(index,new_coord)
-        
-        if old_coord == self._wall_normal_line:
-            self._wall_normal_line = new_coord
-            
-        if self._polar_plane is not None:
-            if old_coord in self._polar_plane:
-                self._polar_plane.replace(old_coord,new_coord)
         
     def from_internal(self, *args, **kwargs) -> FlowStructType:
         """
@@ -1014,6 +984,9 @@ class FlowStructND(_FlowStruct_base):
     def plot_contour(self,comp: str,
                         time: Number =None,
                         rotate: bool=False,
+                        transform_xdata: Callable=None,
+                        transform_ydata: Callable=None,
+                        transform_cdata: Callable=None,
                         fig: cplt.CHAPSimFigure =None,
                         ax: cplt.AxesCHAPSim =None,
                         contour_kw: dict =None,
@@ -1058,14 +1031,18 @@ class FlowStructND(_FlowStruct_base):
         comp = self.check_comp(comp)
         plane = self._data_layout
 
+        transform_xdata, transform_ydata, transform_cdata = self._check_datatransforms(transform_xdata,
+                                                                                       transform_ydata,
+                                                                                       transform_cdata)
+
         if rotate:
-            flow = self[time,comp].T
-            x_coord = self.CoordDF[plane[0]]
-            y_coord = self.CoordDF[plane[1]]
+            flow = transform_cdata(self[time,comp]).T
+            x_coord = transform_xdata(self.CoordDF[plane[0]])
+            y_coord = transform_ydata(self.CoordDF[plane[1]])
         else:
-            flow = self[time,comp]
-            x_coord = self.CoordDF[plane[1]]
-            y_coord = self.CoordDF[plane[0]]
+            flow = transform_cdata(self[time,comp])
+            x_coord = transform_ydata(self.CoordDF[plane[1]])
+            y_coord = transform_xdata(self.CoordDF[plane[0]])
 
         X,Y = np.meshgrid(x_coord,y_coord)
 
