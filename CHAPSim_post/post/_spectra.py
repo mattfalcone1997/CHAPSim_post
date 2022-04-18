@@ -158,7 +158,7 @@ class Spectra1D_io(_Spectra_base):
     def _fluct_calc(self,time,path_to_folder):
         pass
 
-    def plot_spectra_contour(self,x_loc,time=None,wavelength=False,contour_kw=None,fig=None,ax=None):
+    def plot_spectra_contour(self,x_loc,time=None,wavelength=False,premultiply=True,contour_kw=None,fig=None,ax=None):
                 
         contour_kw = cplt.update_contour_kw(contour_kw)
         if 'plot_func' not in contour_kw:
@@ -168,11 +168,15 @@ class Spectra1D_io(_Spectra_base):
             
         fstruct = self.E_zDF.slice[:,:,x_loc]
         
+        k = self.CoordDF['k_z']
+        c_transform = (lambda x: x*k[:,np.newaxis]) if premultiply else None
+
         x_transform = (lambda x: 2*np.pi/x) if wavelength else None
         return fstruct.plot_contour(self._comp,
                                     time=time,
                                     rotate=True,
                                     transform_xdata=x_transform,
+                                    transform_cdata=c_transform,
                                     contour_kw=contour_kw,
                                     fig=fig,
                                     ax=ax)
@@ -375,7 +379,7 @@ class Spectra1D_temp(_Spectra_base, ABC):
     def _fluct_calc(self,time,path_to_folder):
         pass
         
-    def plot_spectra_contour(self,direction,time=None,wavelength=False,contour_kw=None,fig=None,ax=None):
+    def plot_spectra_contour(self,direction,time=None,wavelength=False,premultiply=True,contour_kw=None,fig=None,ax=None):
         if direction not in ['x','z']:
             msg = f"direction must be x or z not {direction}"
             raise ValueError(msg)
@@ -387,12 +391,15 @@ class Spectra1D_temp(_Spectra_base, ABC):
         time = self.E_zDF.check_times(time)
             
         fstruct = self.E_zDF if direction =='z' else self.E_xDF
+        k = self.CoordDF[f'k_{direction}']
         
+        c_transform = (lambda x: x*k[:,np.newaxis]) if premultiply else None
         x_transform = (lambda x: 2*np.pi/x) if wavelength else None
         return fstruct.plot_contour(self._comp,
                                     time=time,
                                     rotate=True,
                                     transform_xdata=x_transform,
+                                    transform_cdata=c_transform,
                                     contour_kw=contour_kw,
                                     fig=fig,
                                     ax=ax)
