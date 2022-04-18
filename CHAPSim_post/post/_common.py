@@ -93,7 +93,8 @@ class temporal_base(ABC):
         # check others
         
         if not all(type(x)==type(self) for x in others):
-            msg = "All objects to be averaged must be the same type"
+            msg = (f"All objects to be averaged must be of type {type(self).__name}"
+                    f" not {[type(x).__name__ for x in others]}")
             raise TypeError(msg)
         
         if not all(hasattr(x,'_time_shift') for x in [self,*others]):
