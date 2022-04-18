@@ -171,6 +171,7 @@ class Spectra1D_io(_Spectra_base):
         x_transform = (lambda x: 2*np.pi/x) if wavelength else None
         return fstruct.plot_contour(self._comp,
                                     time=time,
+                                    rotate=True,
                                     transform_xdata=x_transform,
                                     contour_kw=contour_kw,
                                     fig=fig,
