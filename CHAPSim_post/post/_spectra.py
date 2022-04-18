@@ -30,7 +30,16 @@ def _compute_spectra_io(fluct1, fluct2, fft_axis):
     else:
         fluct_hat2 = numpy_fft.rfft(fluct2,axis=fft_axis)
         return fluct_hat1*fluct_hat2.conj()
-        
+
+def _test_symmetry(array,axis):
+    indexer = [slice(None)]*len(array.shape)
+    indexer[axis] = slice(None,None,-1)
+    if array != array[indexer]
+        msg = "Symmetry averaging has failed"
+        raise RuntimeError(msg)
+    elif rcParams['TEST']:
+        msg = "Symmetry average passed"
+        print(msg)
 class _Spectra_base(Common):
     def __init__(self,*args,from_hdf=False,**kwargs):
         if from_hdf:
@@ -111,7 +120,7 @@ class Spectra1D_io(_Spectra_base):
             sign = (-1)**(v_count)
             
             spectra_z = 0.5*(spectra_z + sign*spectra_z[:,::-1])
-            
+            _test_symmetry(spectra_z)
         z_array = self._avg_data.Coord_ND_DF['z']
         k_z = 2. * np.pi/(z_array[-1])*np.arange(1,spectra_z.shape[0]+1)
         
@@ -207,7 +216,8 @@ class Spectra1D_tg(_Spectra_base, ABC):
             
             spectra_z = 0.5*(spectra_z + sign*spectra_z[:,::-1])
             spectra_x = 0.5*(spectra_x + sign*spectra_x[:,::-1])
-        
+            _test_symmetry(spectra_z)
+            _test_symmetry(spectra_x)
         z_array = self.Coord_ND_DF['z']
         k_z = 2. * np.pi/(z_array[-1])*np.arange(1,spectra_z.shape[1]+1)
         
@@ -293,6 +303,10 @@ class Spectra1D_temp(_Spectra_base, ABC):
             
             spectra_z = 0.5*(spectra_z + sign*spectra_z[:,::-1])
             spectra_x = 0.5*(spectra_x + sign*spectra_x[:,::-1])
+            
+            _test_symmetry(spectra_z)
+            _test_symmetry(spectra_x)
+            
         
         z_array = self.Coord_ND_DF['z']
         k_z = 2. * np.pi/(z_array[-1])*np.arange(1,spectra_z.shape[1]+1)
@@ -320,7 +334,7 @@ class Spectra1D_temp(_Spectra_base, ABC):
         coorddata_x = self._coorddata.copy()
         coorddata_x.coord_staggered = None
         coorddata_x.coord_centered['k_x'] = k_x
-        d_x = np.diff(z_array)
+        d_x = np.diff(z_array)[0]
 
 
         del coorddata_x.coord_centered['x']
