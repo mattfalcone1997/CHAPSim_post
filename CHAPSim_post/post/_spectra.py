@@ -108,7 +108,9 @@ class Spectra1D_io(_Spectra_base):
                     
         if cp.rcParams['SymmetryAVG'] and self.Domain.is_channel:
             v_count = self._comp.count('v')
-            spectra_z = 0.5*(spectra_z + spectra_z[:,::-1]*(-1)**(v_count))
+            sign = (-1)**(v_count)
+            
+            spectra_z = 0.5*(spectra_z + sign*spectra_z[:,::-1])
             
         z_array = self._avg_data.Coord_ND_DF['z']
         k_z = 2. * np.pi/(z_array[-1])*np.arange(1,spectra_z.shape[0]+1)
@@ -201,8 +203,10 @@ class Spectra1D_tg(_Spectra_base, ABC):
                     
         if cp.rcParams['SymmetryAVG'] and self.Domain.is_channel:
             v_count = self._comp.count('v')
-            spectra_z = 0.5*(spectra_z + spectra_z[:,::-1]*(-1)**(v_count))
-            spectra_x = 0.5*(spectra_x + spectra_x[:,::-1]*(-1)**(v_count))   
+            sign = (-1)**(v_count)
+            
+            spectra_z = 0.5*(spectra_z + sign*spectra_z[:,::-1])
+            spectra_x = 0.5*(spectra_x + sign*spectra_x[:,::-1])
         
         z_array = self.Coord_ND_DF['z']
         k_z = 2. * np.pi/(z_array[-1])*np.arange(1,spectra_z.shape[1]+1)
@@ -285,8 +289,10 @@ class Spectra1D_temp(_Spectra_base, ABC):
         
         if cp.rcParams['SymmetryAVG'] and self.Domain.is_channel:
             v_count = self._comp.count('v')
-            spectra_z = 0.5*(spectra_z + spectra_z[:,::-1]*(-1)**(v_count))
-            spectra_x = 0.5*(spectra_x + spectra_x[:,::-1]*(-1)**(v_count))
+            sign = (-1)**(v_count)
+            
+            spectra_z = 0.5*(spectra_z + sign*spectra_z[:,::-1])
+            spectra_x = 0.5*(spectra_x + sign*spectra_x[:,::-1])
         
         z_array = self.Coord_ND_DF['z']
         k_z = 2. * np.pi/(z_array[-1])*np.arange(1,spectra_z.shape[1]+1)
@@ -295,11 +301,13 @@ class Spectra1D_temp(_Spectra_base, ABC):
         coorddata_z = self._coorddata.copy()
         coorddata_z.coord_staggered = None
         coorddata_z.coord_centered['k_z'] = k_z
+        d_z = np.diff(z_array)[0]
+
         del coorddata_z.coord_centered['z']
         del coorddata_z.coord_centered['x']
         
         self.E_zDF = cd.FlowStructND_time(coorddata_z,
-                                    spectra_z,
+                                    spectra_z*d_z*d_z,
                                     index=[times,[comp]*len(times)],
                                     data_layout = ['k_z', 'y'],
                                     wall_normal_line = 'y',
@@ -312,11 +320,14 @@ class Spectra1D_temp(_Spectra_base, ABC):
         coorddata_x = self._coorddata.copy()
         coorddata_x.coord_staggered = None
         coorddata_x.coord_centered['k_x'] = k_x
+        d_x = np.diff(z_array)
+
+
         del coorddata_x.coord_centered['x']
         del coorddata_x.coord_centered['z']
         
         self.E_xDF = cd.FlowStructND_time(coorddata_x,
-                                    spectra_x,
+                                    spectra_x*d_x*d_x,
                                     index=[times,[comp]*len(times)],
                                     data_layout = ['k_x', 'y'],
                                     wall_normal_line = 'y',
