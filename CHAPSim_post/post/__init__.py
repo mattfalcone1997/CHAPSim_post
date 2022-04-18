@@ -4,28 +4,31 @@ import warnings
 
 from ._instant import *
 
-from ._average import CHAPSim_AVG_io
-from ._average import CHAPSim_AVG_tg
-from ._average import CHAPSim_AVG_temp
+from ._average import (CHAPSim_AVG_io,
+                       CHAPSim_AVG_tg,
+                       CHAPSim_AVG_temp )
 
-from ._meta import CHAPSim_meta
-from ._meta import OutputFileStore_io
-from ._meta import OutputFileStore_tg
 
-from ._fluct import CHAPSim_fluct_io
-from ._fluct import CHAPSim_fluct_tg
-from ._fluct import CHAPSim_fluct_temp
+from ._meta import (CHAPSim_meta,
+                    OutputFileStore_io,
+                    OutputFileStore_tg)
 
+from ._fluct import (CHAPSim_fluct_io,
+                     CHAPSim_fluct_tg,
+                     CHAPSim_fluct_temp)
 
 from ._budget import *
 
-from ._autocov import CHAPSim_autocov_io
-from ._autocov import CHAPSim_autocov_tg
-from ._autocov import CHAPSim_autocov_temp
+from ._autocov import (CHAPSim_autocov_io,
+                        CHAPSim_autocov_tg,
+                        CHAPSim_autocov_temp)
 
-from ._quadrant_a import CHAPSim_Quad_Anl_io
-from ._quadrant_a import CHAPSim_Quad_Anl_tg
-from ._quadrant_a import CHAPSim_Quad_Anl_temp
+
+from ._quadrant_a import (CHAPSim_Quad_Anl_io,
+                          CHAPSim_Quad_Anl_tg, 
+                          CHAPSim_Quad_Anl_temp)
 
 
 from ._joint_pdf import CHAPSim_joint_PDF_io
+
+from ._spectra import *
