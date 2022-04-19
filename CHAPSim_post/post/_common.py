@@ -141,8 +141,6 @@ class temporal_base(ABC):
                         for shift, path in zip(times_shifts,paths)]
             times_shifted = list(times_list[0].intersection(*times_list[1:]))
             times_shifted = np.array(times_shifted)
-            
-            print(times_shifted)
         else:
             times_shifted = PhyTimes    
         

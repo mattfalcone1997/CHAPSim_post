@@ -297,7 +297,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
                 msg = "None of the provided times are in the results folder"
                 raise ValueError(msg)
             
-        elif rcParams['TEST']:
+        if rcParams['TEST']:
             times = times[:10] #times[-10:]
             
         if time0 is not None:
