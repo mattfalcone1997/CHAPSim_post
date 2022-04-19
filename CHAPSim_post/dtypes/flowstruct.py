@@ -71,8 +71,8 @@ class _FlowStruct_base(datastruct):
         """
         Removes specified time from FlowStruct
         """
-        
-        del_index = [ index for index in self.index if index[0] == time]
+        time_key = self.index._item_handler(time)
+        del_index = [ index for index in self.index if index[0] == time_key]
         print(time,del_index,self.index)
         for index in del_index:
             del self[index]
