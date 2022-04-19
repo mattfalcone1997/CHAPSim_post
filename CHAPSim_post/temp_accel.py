@@ -20,14 +20,14 @@ else:
 class temp_accel_base(cp.temporal_base):
     @property
     def _time_shift(self):
-        return -self.metaDF['time_start_end'][0]
+        return -self.metaDF['temp_start_end'][0]
 
     @classmethod
     def _get_times_shift(cls,paths):
         times_shift = []
         for path in paths:
             meta_data = cp.CHAPSim_meta(path)
-            times_shift.append(-meta_data.metaDF['time_start_end'][0])
+            times_shift.append(-meta_data.metaDF['temp_start_end'][0])
             
         return times_shift
     
