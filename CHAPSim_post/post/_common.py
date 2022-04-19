@@ -119,7 +119,7 @@ class temporal_base(ABC):
                     fstruct_shifted = other_fstruct.shift_times(other_copy._time_shift)
                     print(self._time_shift,other_copy._time_shift)
 
-                    time_intersect = set(v_shifted.times).intersection(set(fstruct_shifted.times))
+                    time_intersect = list(set(v_shifted.times).intersection(set(fstruct_shifted.times)))
                     print(time_intersect,v_shifted.times,fstruct_shifted.times)
                     
                     for time in v_shifted.times:
