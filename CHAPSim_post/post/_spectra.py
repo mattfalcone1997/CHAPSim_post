@@ -277,7 +277,7 @@ class Spectra1D_tg(_Spectra_base, ABC):
 class Spectra1D_temp(_Spectra_base,temporal_base, ABC):   
     @classmethod
     def with_phase_average(cls,comp,paths,time0=None,PhyTimes=None):
-        times_list = cls._get_times_shift(paths,PhyTimes=PhyTimes)
+        times_list = cls._get_times_phase(paths,PhyTimes=PhyTimes)
         
         spectra_list = []
         for path,times in zip(paths,times_list):

@@ -117,10 +117,8 @@ class temporal_base(ABC):
                     
                     other_fstruct = getattr(other_copy,k)
                     fstruct_shifted = other_fstruct.shift_times(other_copy._time_shift)
-                    print(self._time_shift,other_copy._time_shift)
-
+                    
                     time_intersect = set(v_shifted.times).intersection(set(fstruct_shifted.times))
-                    print(time_intersect,v_shifted.times,fstruct_shifted.times)
                     
                     for time in v_shifted.times:
                         if time not in time_intersect:
@@ -130,7 +128,6 @@ class temporal_base(ABC):
                         if time not in time_intersect:
                             fstruct_shifted.remove_time(time)
                             
-                    print(v_shifted.index,fstruct_shifted.index)
                     new_v = coe1*v_shifted + coe2*fstruct_shifted
                     setattr(self_copy,k,new_v)
             
