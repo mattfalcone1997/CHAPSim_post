@@ -313,7 +313,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
             
         if time0 is not None:
             times = list(filter(lambda x: x > time0,times))
-
+        print(times)
         self._avg_data = self._module._avg_temp_class(path_to_folder,time0=time0,PhyTimes=times)
         self._comp = comp    
         
