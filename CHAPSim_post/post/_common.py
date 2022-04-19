@@ -140,7 +140,7 @@ class temporal_base(ABC):
             times_list = [ set(np.array(misc_utils.time_extract(path)) + shift)\
                         for shift, path in zip(times_shifts,paths)]
             times_shifted = list(times_list[0].intersection(*times_list[1:]))
-            times_shifted = np.array(time_shifted)
+            times_shifted = np.array(times_shifted)
             
             print(times_shifted)
         else:
