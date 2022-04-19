@@ -285,14 +285,16 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
     def _time_shift(self):
         return -self.metaDF['time_start_end'][0]
         
-    def _spectra_extract(self,comp, path_to_folder,time0=None):
+    def _spectra_extract(self,comp, path_to_folder,PhyTimes=None,time0=None):
              
         times = utils.time_extract(path_to_folder)
+        if PhyTimes is not None:
+            times = [time for time in PhyTimes if time in times]
+        elif rcParams['TEST']:
+            times = times[-10:]
+            
         if time0 is not None:
             times = list(filter(lambda x: x > time0,times))
-        
-        if rcParams['TEST']:
-            times = times[-10:]
 
         self._avg_data = self._module._avg_temp_class(path_to_folder,time0=time0,PhyTimes=times)
         self._comp = comp    
