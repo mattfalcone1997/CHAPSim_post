@@ -93,7 +93,7 @@ class temporal_base(ABC):
         # check others
         
         if not all(type(x)==type(self) for x in others):
-            msg = (f"All objects to be averaged must be of type {type(self).__name}"
+            msg = (f"All objects to be averaged must be of type {type(self).__name.__}"
                     f" not {[type(x).__name__ for x in others]}")
             raise TypeError(msg)
         

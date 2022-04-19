@@ -286,7 +286,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         for spectra,path in zip(spectra_list,paths):
             spectra._test_times_shift(path)            
             
-        return spectra_list[0].phase_average(spectra_list[1:])
+        return spectra_list[0].phase_average(*spectra_list[1:])
     
     def _spectra_extract(self,comp, path_to_folder,PhyTimes=None,time0=None):
              
