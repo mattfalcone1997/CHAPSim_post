@@ -114,7 +114,7 @@ class Spectra1D_io(_Spectra_base):
 
             spectra_z = coe1*spectra_z + coe2*pre_spectra_z
             print(f"Time step {i+1} or {len(times)}. Extraction: "
-                    f"{time2 - time1}s. Calculation {perf_counter() - time2}")
+                    f"{time2 - time1}s. Calculation {perf_counter() - time2}",flush=True)
                     
         if cp.rcParams['SymmetryAVG'] and self.Domain.is_channel:
             v_count = self._comp.count('v')
@@ -213,7 +213,7 @@ class Spectra1D_tg(_Spectra_base, ABC):
             spectra_x = coe1*spectra_x + coe2*pre_spectra_x
             
             print(f"Time step {i+1} or {len(times)}. Extraction: "
-                    f"{time2 - time1}s. Calculation {perf_counter() - time2}")
+                    f"{time2 - time1}s. Calculation {perf_counter() - time2}",flush=True)
                     
         if cp.rcParams['SymmetryAVG'] and self.Domain.is_channel:
             v_count = self._comp.count('v')
@@ -317,7 +317,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
             spectra_x.append(_compute_spectra_tg(fluct1, fluct2, 2, 0).T)
             
             print(f"Time step {i+1} or {len(times)}. Extraction: "
-                    f"{time2 - time1}s. Calculation {perf_counter() - time2}")
+                    f"{time2 - time1}s. Calculation {perf_counter() - time2}",flush=True)
         spectra_z = np.stack(spectra_z,axis=0)
         spectra_x = np.stack(spectra_x,axis=0)
         
