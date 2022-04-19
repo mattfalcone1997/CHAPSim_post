@@ -298,7 +298,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
                 raise ValueError(msg)
             
         elif rcParams['TEST']:
-            times = times[-10:]
+            times = times[:10] #times[-10:]
             
         if time0 is not None:
             times = list(filter(lambda x: x > time0,times))
