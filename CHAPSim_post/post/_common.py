@@ -135,13 +135,16 @@ class temporal_base(ABC):
             return self_copy
                     
     @classmethod
-    def _get_times_phase(cls,paths):
+    def _get_times_phase(cls,paths,PhyTimes=None):
         times_shifts = cls._get_times_shift(paths)
-        times_list = [ set(np.array(misc_utils.time_extract(path)) + shift)\
+        if PhyTimes is None:
+            times_list = [ set(np.array(misc_utils.time_extract(path)) + shift)\
                         for shift, path in zip(times_shifts,paths)]
+            times_shifted = np.array(times_list[0].intersection(*times_list[1:]))
+
+        else:
+            times_shifted = PhyTimes    
         
-        
-        times_shifted = np.array(times_list[0].intersection(*times_list[1:]))
         
         return [times_shifted - shift for shift in times_shifts]
 

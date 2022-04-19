@@ -276,8 +276,9 @@ class Spectra1D_tg(_Spectra_base, ABC):
                                 
 class Spectra1D_temp(_Spectra_base,temporal_base, ABC):   
     @classmethod
-    def with_phase_average(cls,comp,paths,time0=None):
-        times_list = cls._get_times_shift(paths)
+    def with_phase_average(cls,comp,paths,time0=None,PhyTimes=None):
+        times_list = cls._get_times_shift(paths,PhyTimes=PhyTimes)
+        
         spectra_list = [cls(comp,path,time0=time0,PhyTimes=times) \
                     for path,times in zip(paths,times_list)]
         
@@ -298,7 +299,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         times_shift = []
         for path in paths:
             meta_data = cp.CHAPSim_meta(path)
-            times_shift.append(-meta_data.metaDF['time_Start_end'][0])
+            times_shift.append(-meta_data.metaDF['time_start_end'][0])
             
         return times_shift
     
