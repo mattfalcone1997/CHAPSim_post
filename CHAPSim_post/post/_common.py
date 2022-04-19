@@ -10,12 +10,11 @@ import pyvista
 import copy
 import itertools
 import warnings
-from abc import abstractmethod, ABC, abstractproperty
+from abc import abstractmethod, ABC, abstractproperty, abstractclassmethod
 
-import CHAPSim_post.plot as cplt
 import CHAPSim_post.dtypes as cd
-from CHAPSim_post.utils import indexing, misc_utils,gradient
-from ._meta import CHAPSim_meta, coorddata
+from CHAPSim_post import rcParams
+from CHAPSim_post.utils import misc_utils
 
   
 class classproperty():
@@ -89,6 +88,7 @@ class Common(ABC):
         return copy.deepcopy(self)
 
 class temporal_base(ABC):
+   
     def phase_average(self,*others):
         # check others
         
@@ -134,7 +134,21 @@ class temporal_base(ABC):
             
             return self_copy
                     
+    @classmethod
+    def _get_times_phase(cls,paths):
+        times_shifts = cls._get_times_shift(paths)
+        times_list = [ set(np.array(misc_utils.time_extract(path)) + shift)\
+                        for shift, path in zip(times_shifts,paths)]
+        
+        
+        times_shifted = np.array(times_list[0].intersection(*times_list[1:]))
+        
+        return [times_shifted - shift for shift in times_shifts]
 
+    @abstractclassmethod
+    def _get_times_shift(cls,paths):
+        pass
+        
 class postArray(ABC):
     _type = None
     def __init__(self,*args,from_file=False,**kwargs):

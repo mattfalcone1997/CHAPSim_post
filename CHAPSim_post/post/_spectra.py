@@ -277,14 +277,31 @@ class Spectra1D_tg(_Spectra_base, ABC):
 class Spectra1D_temp(_Spectra_base,temporal_base, ABC):   
     @classmethod
     def with_phase_average(cls,comp,paths,time0=None):
-        spectra_list = [cls(comp,path,time0=time0) for path in paths]
+        times_list = cls._get_times_shift(paths)
+        spectra_list = [cls(comp,path,time0=time0,PhyTimes=times) \
+                    for path,times in zip(paths,times_list)]
         
+        times_shift = cls.get_times_shift(paths)
+        if not all(spectra._time_shift == shift \
+                for shift, spectra in zip(times_shift,spectra_list)):
+            msg = "The _time_shift property must equal the shifts in _get_times_shift"
+            raise RuntimeError(msg)
+            
         return spectra_list[0].phase_average(spectra_list[1:])
     
     @property
     def _time_shift(self):
         return -self.metaDF['time_start_end'][0]
-        
+    
+    @classmethod
+    def _get_times_shift(self,paths):
+        times_shift = []
+        for path in paths:
+            meta_data = cp.CHAPSim_meta(path)
+            times_shift.append(-meta_data.metaDF['time_Start_end'][0])
+            
+        return times_shift
+    
     def _spectra_extract(self,comp, path_to_folder,PhyTimes=None,time0=None):
              
         times = utils.time_extract(path_to_folder)
