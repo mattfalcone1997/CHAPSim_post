@@ -88,7 +88,7 @@ class Common(ABC):
         return copy.deepcopy(self)
 
 class temporal_base(ABC):
-   
+    
     def phase_average(self,*others):
         # check others
         
@@ -148,9 +148,26 @@ class temporal_base(ABC):
         
         return [times_shifted - shift for shift in times_shifts]
 
-    @abstractclassmethod
     def _get_times_shift(cls,paths):
-        pass
+        return NotImplemented
+    
+    def _time_shift(self):
+        return NotImplemented
+    
+    def _test_times_shift(self,path):
+        
+        time_shift1 = self._get_times_shift([path])[0]
+        time_shift2 = self._time_shift
+        
+        if time_shift1 is NotImplemented or time_shift2 is NotImplemented:
+            msg = "_get_times_shift and _time_shift methods must be implemented"
+            raise NotImplementedError(msg)
+        
+        if time_shift1 != time_shift2:
+            msg = ("methods _get_times_shift and"
+                   " _time_shift must return the same value")
+            raise RuntimeError(msg)
+        
         
 class postArray(ABC):
     _type = None

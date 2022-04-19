@@ -279,34 +279,18 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
     def with_phase_average(cls,comp,paths,time0=None,PhyTimes=None):
         times_list = cls._get_times_shift(paths,PhyTimes=PhyTimes)
         
-        spectra_list = [cls(comp,path,time0=time0,PhyTimes=times) \
-                    for path,times in zip(paths,times_list)]
-        
-        times_shift = cls.get_times_shift(paths)
-        if not all(spectra._time_shift == shift \
-                for shift, spectra in zip(times_shift,spectra_list)):
-            msg = "The _time_shift property must equal the shifts in _get_times_shift"
-            raise RuntimeError(msg)
+        spectra_list = []
+        for path,times in zip(paths,times_list):
+            spectra_list.append(cls(comp,path,time0=time0,PhyTimes=times))
+            
+        for spectra,path in zip(spectra_list,paths):
+            spectra._test_times_shift(path)            
             
         return spectra_list[0].phase_average(spectra_list[1:])
-    
-    @property
-    def _time_shift(self):
-        return -self.metaDF['time_start_end'][0]
-    
-    @classmethod
-    def _get_times_shift(self,paths):
-        times_shift = []
-        for path in paths:
-            meta_data = cp.CHAPSim_meta(path)
-            times_shift.append(-meta_data.metaDF['time_start_end'][0])
-            
-        return times_shift
     
     def _spectra_extract(self,comp, path_to_folder,PhyTimes=None,time0=None):
              
         times = utils.time_extract(path_to_folder)
-        print(times)
         if PhyTimes is not None:
             times = [time for time in PhyTimes if time in times]
             if len(times) < 1:
@@ -318,7 +302,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
             
         if time0 is not None:
             times = list(filter(lambda x: x > time0,times))
-        print(times)
+
         self._avg_data = self._module._avg_temp_class(path_to_folder,time0=time0,PhyTimes=times)
         self._comp = comp    
         
