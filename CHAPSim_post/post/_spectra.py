@@ -306,8 +306,13 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
     def _spectra_extract(self,comp, path_to_folder,PhyTimes=None,time0=None):
              
         times = utils.time_extract(path_to_folder)
+        print(times)
         if PhyTimes is not None:
             times = [time for time in PhyTimes if time in times]
+            if len(times) < 1:
+                msg = "None of the provided times are in the results folder"
+                raise ValueError(msg)
+            
         elif rcParams['TEST']:
             times = times[-10:]
             
