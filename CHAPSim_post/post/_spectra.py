@@ -338,7 +338,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         spectra_list = []
         for path,times in zip(paths,times_list):
             time_shift = cls._get_time_shift(path)
-            
+            print(time_shift)
             avg_data._shift_times(-time_shift)
             
             spectra = cls(comp,path,time0=time0,PhyTimes=times,avg_data=avg_data)
