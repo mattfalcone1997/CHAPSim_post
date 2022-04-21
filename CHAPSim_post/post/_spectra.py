@@ -97,7 +97,7 @@ class _Spectra_base(Common):
         if norm:
             norm_array = array[:,0]
             
-            shape = np.ones(array.ndim)
+            shape = np.ones(array.ndim,dtype='i4')
             shape[:norm_array.ndim] = norm_array.shape
             
             array = array/norm_array.reshape(shape)
