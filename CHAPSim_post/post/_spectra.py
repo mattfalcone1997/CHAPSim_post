@@ -95,12 +95,7 @@ class _Spectra_base(Common):
         array =  np.fft.irfft(spec_array,axis=axis,norm='forward')*dk
         
         if norm:
-            norm_array = array[:,0]
-            
-            shape = np.ones(array.ndim,dtype='i4')
-            shape[:norm_array.ndim] = norm_array.shape
-            print(shape)
-            array = array/norm_array.reshape(shape)
+            array = array/array[0]
             
         index = (time,self._comp)
         new_item = f'delta_{comp}'
