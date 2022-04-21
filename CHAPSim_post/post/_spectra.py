@@ -75,7 +75,7 @@ class _Spectra_base(Common):
         return self.E_zDF.shape
     
     def _get_autocorrelation(self,comp,norm=True):
-        time = self.E_zDF.times
+        time = self.E_zDF.times[0]
         if comp == 'z':
             fstruct = self.E_zDF
         elif comp == 'x':
@@ -86,6 +86,7 @@ class _Spectra_base(Common):
         
         item = f"k_{comp}"
         k_array = fstruct.CoordDF[item]
+        
         spec_array = fstruct[time,self._comp].copy()
         
         axis = fstruct.get_dim_from_axis(item)
