@@ -33,8 +33,7 @@ class CHAPSim_Inst_temp(cp.CHAPSim_Inst_temp):
 _inst_temp_class = CHAPSim_Inst_temp
 
 class CHAPSim_AVG_temp(temp_accel_base,cp.CHAPSim_AVG_temp):   
-    @classmethod
-    def with_phase_average(cls, *args, **kwargs):
+    def with_phase_average(self, *args, **kwargs):
         avg =  super().with_phase_average(*args, **kwargs)
         avg.metaDF['temp_start_end'] = [ x + avg._time_shift \
                                     for x in avg.metaDF['temp_start_end']]
