@@ -864,6 +864,7 @@ class FlowStructND(_FlowStruct_base):
         ValueError
             Raises exception if the axis is not present in the FlowStruct
         """
+        print(axis, axis in self._data_layout)
         if axis in self._data_layout:
             return self._data_layout.index(axis)
         elif hasattr(axis,'__iter__') and \
