@@ -86,7 +86,7 @@ class _Spectra_base(Common):
         
         item = f"k_{comp}"
         k_array = fstruct.CoordDF[item]
-        spec_array = fstruct[time,self._comp]
+        spec_array = fstruct[time,self._comp].copy()
         
         axis = fstruct.get_dim_from_axis(item)
         print(spec_array.shape)
