@@ -77,6 +77,52 @@ class _Spectra_base(Common):
     @property
     def shape(self):
         return self.E_zDF.shape
+    
+    def _get_autocorrelation(self,comp,norm=True):
+        time = self.E_zDF.times
+        if comp == 'z':
+            fstruct = self.E_zDF
+        elif comp == 'x':
+            fstruct = self.E_xDF
+        else:
+            msg = "Incorrect component. Must be x or z"
+            raise KeyError(msg)
+        
+        item = f"k_{comp}"
+        k_array = fstruct.CoordDF[item]
+        spec_array = fstruct[time,self._comp]
+        
+        axis = fstruct.get_dim_from_axis(item)
+        dk = np.diff(k_array)[0]
+        array =  numpy_fft.irfft(spec_array,axis=axis,norm='forward')*dk
+        
+        if norm:
+            norm_array = array[:,0]
+            
+            shape = np.ones(array.ndim)
+            shape[:norm_array.ndim] = norm_array.shape
+            
+            array = array/norm_array.reshape(shape)
+            
+        index = (time,self._comp)
+        new_item = f'delta_{comp}'
+        
+        coord_data  = fstruct._coorddata.copy()
+        coord_data.coord_centered[new_item] = self.CoordDF[comp]
+        
+        data_layout = fstruct._data_layout
+        data_layout[axis] = new_item
+        wall_normal_line = fstruct._wall_normal_line
+        polar_plane = fstruct._polar_plane
+        
+        data_dict = {index : array}
+        
+        args= (coord_data,data_dict)
+        kwargs = dict(data_layout = data_layout,
+                      wall_normal_line = wall_normal_line,
+                      polar_plane = polar_plane)
+        
+        return args, kwargs
 
 _avg_io_class = cp.CHAPSim_AVG_io
 _avg_tg_class = cp.CHAPSim_AVG_tg
@@ -180,7 +226,11 @@ class Spectra1D_io(_Spectra_base):
                                     fig=fig,
                                     ax=ax)
 
-class Spectra1D_tg(_Spectra_base, ABC):   
+    def get_autocorrelation(self, norm=True):
+        fstruct_args, fstruct_kwargs =  self._get_autocorrelation('z', norm)
+        return cd.FlowStructND(*fstruct_args,
+                               **fstruct_kwargs)
+class Spectra1D_tg(_Spectra_base, ABC):    
     def _spectra_extract(self,comp, path_to_folder,time0=None):
              
         times = utils.time_extract(path_to_folder)
@@ -273,7 +323,10 @@ class Spectra1D_tg(_Spectra_base, ABC):
                 
         self.E_zDF = cd.FlowStructND.from_hdf(filename,key=key+'/E_zDF')
         self.E_xDF = cd.FlowStructND.from_hdf(filename,key=key+'/E_xDF')            
-                                
+    def get_autocorrelation(self,comp, norm=True):
+        fstruct_args, fstruct_kwargs =  self._get_autocorrelation(comp, norm)
+        return cd.FlowStructND(*fstruct_args,
+                               **fstruct_kwargs)
 class Spectra1D_temp(_Spectra_base,temporal_base, ABC):   
     @classmethod
     def with_phase_average(cls,comp,paths,time0=None,PhyTimes=None):
@@ -392,7 +445,12 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
                 
         self.E_zDF = cd.FlowStructND_time.from_hdf(filename,key=key+'/E_zDF')
         self.E_xDF = cd.FlowStructND_time.from_hdf(filename,key=key+'/E_xDF')
-                    
+    
+    def get_autocorrelation(self,comp, norm=True):
+        fstruct_args, fstruct_kwargs =  self._get_autocorrelation(comp, norm)
+        return cd.FlowStructND(*fstruct_args,
+                               **fstruct_kwargs)
+        
     @abstractmethod
     def _fluct_calc(self,time,path_to_folder):
         pass
@@ -445,7 +503,8 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
                                         line_kw=line_kw)
                                         
         return fig, ax
-        
+    
+            
             
         
 
