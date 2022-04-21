@@ -99,7 +99,7 @@ class _Spectra_base(Common):
             
             shape = np.ones(array.ndim,dtype='i4')
             shape[:norm_array.ndim] = norm_array.shape
-            
+            print(shape)
             array = array/norm_array.reshape(shape)
             
         index = (time,self._comp)
