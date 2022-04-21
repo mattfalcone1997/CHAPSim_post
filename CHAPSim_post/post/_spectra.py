@@ -92,7 +92,7 @@ class _Spectra_base(Common):
         axis = fstruct.get_dim_from_axis(item)
         print(spec_array.shape,type(spec_array),self._comp)
         dk = np.diff(k_array)[0]
-        array =  np.fft.irfft(spec_array,axis=0,norm='forward')*dk
+        array =  np.fft.irfft(spec_array,axis=axis,norm='forward')*dk
         
         if norm:
             norm_array = array[:,0]
