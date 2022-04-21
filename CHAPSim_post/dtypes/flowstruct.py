@@ -864,16 +864,15 @@ class FlowStructND(_FlowStruct_base):
         ValueError
             Raises exception if the axis is not present in the FlowStruct
         """
-        if len(axis) > 1:
-            return tuple([self.get_dim_from_axis(a) for a in axis])
-        if self._data_layout.count(axis) > 1:
-            msg = "The index axis cannot appear more than once"
+        if axis in self._data_layout:
+            return self._data_layout.index(axis)
+        elif hasattr(axis,'__iter__') and \
+                        all(x in self._data_layout for x in axis):
+                return [self.get_dim_from_axis(x) for x in axis]
+        else:
+            msg = (f"axis(es) {axis} provided not in the"
+                   f" FlowStructs data layout {self._data_layout}")
             raise ValueError(msg)
-        elif self._data_layout.count(axis) == 0:
-            msg = "The index axis provided does not appear in the data layout"
-            raise ValueError(msg)
-
-        return "".join(self._data_layout).find(axis)
 
     def reduce(self,numpy_op:  Callable,axis: str) -> FlowStructType:
         """
