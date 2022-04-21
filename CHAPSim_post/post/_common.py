@@ -116,7 +116,7 @@ class temporal_base(ABC):
             
             for k, v in self_copy.__dict__.items():
                 if isinstance(v,temporal_base):
-                    setattr(self_copy,k,v._phase_average(getattr(other_copy,k)))
+                    setattr(self_copy,k,v.phase_average(getattr(other_copy,k)))
                 elif isinstance(v,cd.FlowStructND):
                     
                     coe1 = (i+1)/(i+2)
