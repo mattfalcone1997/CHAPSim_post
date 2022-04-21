@@ -333,12 +333,19 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         avg_data = cls._module._avg_temp_class.with_phase_average(paths,
                                                                   PhyTimes=PhyTimes)
         times_list = cls._get_times_phase(paths,PhyTimes=PhyTimes)
-        
+
         spectra_list = []
         for path,times in zip(paths,times_list):
+            time_shift = cls._get_time_shift(path)
+            
+            avg_data._shift_times(-time_shift)
+            
             spectra = cls(comp,path,time0=time0,PhyTimes=times,avg_data=avg_data)
             spectra._test_times_shift(path)        
             spectra_list.append(spectra)    
+            
+            avg_data._shift_times(time_shift)
+
             
         return spectra_list[0].phase_average(*spectra_list[1:])
     

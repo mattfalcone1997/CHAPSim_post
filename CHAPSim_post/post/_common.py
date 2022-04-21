@@ -11,7 +11,7 @@ import copy
 import itertools
 import warnings
 from abc import abstractmethod, ABC, abstractproperty, abstractclassmethod
-
+from functools import wraps
 import CHAPSim_post.dtypes as cd
 from CHAPSim_post import rcParams
 from CHAPSim_post.utils import misc_utils
@@ -135,7 +135,8 @@ class temporal_base(ABC):
                     
     @classmethod
     def _get_times_phase(cls,paths,PhyTimes=None):
-        times_shifts = cls._get_times_shift(paths)
+        times_shifts = [cls._get_time_shift(path) for path in paths]
+        
         if PhyTimes is None:
             times_list = [ set(np.array(misc_utils.time_extract(path)) + shift)\
                         for shift, path in zip(times_shifts,paths)]
@@ -147,20 +148,18 @@ class temporal_base(ABC):
         
         return [times_shifted - shift for shift in times_shifts]
 
-    def _get_times_shift(cls,paths):
-        return NotImplemented
+    def _get_time_shift(cls,path):
+        msg = f"Method {__name__} must be provided by higher level class"
+        raise NotImplementedError(msg)
     
     def _time_shift(self):
-        return NotImplemented
-    
+        msg = f"Method {__name__} must be provided by higher level class"
+        raise NotImplementedError(msg)
+        
     def _test_times_shift(self,path):
         
-        time_shift1 = self._get_times_shift([path])[0]
+        time_shift1 = self._get_time_shift(path)
         time_shift2 = self._time_shift
-        
-        if time_shift1 is NotImplemented or time_shift2 is NotImplemented:
-            msg = "_get_times_shift and _time_shift methods must be implemented"
-            raise NotImplementedError(msg)
         
         if time_shift1 != time_shift2:
             msg = ("methods _get_times_shift and"
