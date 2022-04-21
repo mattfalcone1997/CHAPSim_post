@@ -108,7 +108,7 @@ class _Spectra_base(Common):
         coord_data  = fstruct._coorddata.copy()
         coord_data.coord_centered[new_item] = self.CoordDF[comp]
         
-        data_layout = fstruct._data_layout
+        data_layout = fstruct._data_layout.copy()
         data_layout[axis] = new_item
         wall_normal_line = fstruct._wall_normal_line
         polar_plane = fstruct._polar_plane
