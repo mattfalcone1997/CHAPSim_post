@@ -778,6 +778,7 @@ class FlowStructND(_FlowStruct_base):
             self._polar_plane = None
         else:
             self._polar_plane = list(polar_plane)
+            
         self._data_layout = list(data_layout)
         self._wall_normal_line = wall_normal_line
         self._dim = self._data[0].ndim
@@ -787,7 +788,7 @@ class FlowStructND(_FlowStruct_base):
         for comp in self.CoordDF.index:
             if comp not in self._data_layout:
                 del self.CoordDF[comp]
-                del self.Coord_ND_DF[comp]
+                if self.Coord_ND_DF is not None: del self.Coord_ND_DF[comp]
         
     def plot_line(self,comp: str,
                   time: Number =None,
