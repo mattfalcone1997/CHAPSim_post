@@ -45,7 +45,7 @@ class CHAPSim_AVG_temp(temp_accel_base,cp.CHAPSim_AVG_temp):
         super()._shift_times(time)
         
         self.metaDF['temp_start_end'] = [ x + time \
-                                    for x in avg.metaDF['temp_start_end']]
+                                    for x in self.metaDF['temp_start_end']]
         
     def conv_distance_calc(self):
         
