@@ -374,7 +374,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         
         spectra_z = []
         spectra_x = []
-        for i, time in enumerate(times):
+        for i, time in enumerate(sorted(times)):
             time1 = perf_counter()
             fluct1, fluct2 = self._fluct_calc(time,path_to_folder)
             
