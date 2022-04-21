@@ -407,13 +407,15 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         coorddata_z = self._coorddata.copy()
         coorddata_z.coord_staggered = None
         coorddata_z.coord_centered['k_z'] = k_z
+        
         d_z = np.diff(z_array)[0]
-
+        L_z = np.amax(self.Coord_ND_DF['z'])
+        
         del coorddata_z.coord_centered['z']
         del coorddata_z.coord_centered['x']
         
         self.E_zDF = cd.FlowStructND_time(coorddata_z,
-                                    spectra_z*d_z*d_z,
+                                    spectra_z*d_z*d_z/L_z,
                                     index=[times,[comp]*len(times)],
                                     data_layout = ['k_z', 'y'],
                                     wall_normal_line = 'y',
@@ -426,14 +428,16 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         coorddata_x = self._coorddata.copy()
         coorddata_x.coord_staggered = None
         coorddata_x.coord_centered['k_x'] = k_x
+        
         d_x = np.diff(z_array)[0]
+        L_x = np.amax(self.Coord_ND_DF['x'])
 
 
         del coorddata_x.coord_centered['x']
         del coorddata_x.coord_centered['z']
         
         self.E_xDF = cd.FlowStructND_time(coorddata_x,
-                                    spectra_x*d_x*d_x,
+                                    spectra_x*d_x*d_x/L_x,
                                     index=[times,[comp]*len(times)],
                                     data_layout = ['k_x', 'y'],
                                     wall_normal_line = 'y',
