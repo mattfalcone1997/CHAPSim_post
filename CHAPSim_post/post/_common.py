@@ -163,7 +163,8 @@ class temporal_base(ABC):
         
         if time_shift1 != time_shift2:
             msg = ("methods _get_times_shift and"
-                   " _time_shift must return the same value")
+                   " _time_shift must return the same value."
+                   f" Current_values: {time_shift1} {time_shift2}")
             raise RuntimeError(msg)
         
         
