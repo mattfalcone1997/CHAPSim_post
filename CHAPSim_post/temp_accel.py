@@ -35,26 +35,7 @@ class CHAPSim_Inst_temp(cp.CHAPSim_Inst_temp):
     pass
 _inst_temp_class = CHAPSim_Inst_temp
 
-class CHAPSim_AVG_temp(cp.CHAPSim_AVG_temp):
-
-    @classmethod
-    def with_phase_average(cls,paths_to_folders,abs_path=True,*args,**kwargs):
-
-        if not isinstance(paths_to_folders,(tuple,list)):
-            msg = f"To use this method, path_to_folder must be a tuple or a list not a {type(paths_to_folders)}"
-            raise TypeError(msg)
-
-        metaDF_list = []
-        for path in paths_to_folders:
-            metaDF_list.append(cp.CHAPSim_meta(path,abs_path).metaDF)
-        shift_times = [-float(metaDF['temp_start_end'][0]) for metaDF in metaDF_list]
-
-        obj = super().with_phase_average(paths_to_folders,shift_times,time0=None,abs_path=abs_path,*args,**kwargs)
-
-        start = 0.0; end = obj.metaDF['temp_start_end'][1] - obj.metaDF['temp_start_end'][0]
-        obj.metaDF['temp_start_end'] = [start,end]
-        return obj
-    
+class CHAPSim_AVG_temp(temp_accel_base,cp.CHAPSim_AVG_temp):   
     
     def conv_distance_calc(self):
         

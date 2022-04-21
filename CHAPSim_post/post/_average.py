@@ -22,14 +22,14 @@ from abc import ABC, abstractmethod, abstractproperty
 
 import CHAPSim_post as cp
 
-from CHAPSim_post.utils import docstring, indexing,parallel, misc_utils
+from CHAPSim_post.utils import docstring, indexing, misc_utils
 
 import CHAPSim_post.plot as cplt
 import CHAPSim_post.dtypes as cd
 
 
 from ._meta import CHAPSim_meta
-from ._common import Common, postArray
+from ._common import Common, postArray, temporal_base
 
 from CHAPSim_post._libs import file_handler
 
@@ -1474,47 +1474,57 @@ class AVG_tg_array(postArray):
 
         return _plotting_method
 
-class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg):
+class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg,temporal_base):
 
     @classmethod
-    def with_phase_average(cls,paths_to_folders,shift_times,time0=None,abs_path=True,*args,**kwargs):
-        if not isinstance(paths_to_folders,(tuple,list)):
-            msg = f"To use this method, path_to_folder must be a tuple or a list not a {type(paths_to_folders)}"
-            raise TypeError(msg)
+    def with_phase_average(cls,paths_to_folders,PhyTimes=None,abs_path=True,*args,**kwargs):
+            times_list = cls._get_times_phase(paths_to_folders,PhyTimes=PhyTimes)
+            
+            avg_list = []
+            for path,times in zip(paths_to_folders,times_list):
+                avg = cls(path,path,abs_path=abs_path,PhyTimes=times,*args,**kwargs)
+                avg._test_times_shift(path)
+                avg_list.append(avg)
+                
+            return avg_list[0].phase_average(*avg_list[1:])
+        
+        # if not isinstance(paths_to_folders,(tuple,list)):
+        #     msg = f"To use this method, path_to_folder must be a tuple or a list not a {type(paths_to_folders)}"
+        #     raise TypeError(msg)
 
-        if len(paths_to_folders) != len(shift_times):
-            msg= f"The length of shift times and paths_to_folder must be the same"
-            raise ValueError(msg)
+        # if len(paths_to_folders) != len(shift_times):
+        #     msg= f"The length of shift times and paths_to_folder must be the same"
+        #     raise ValueError(msg)
 
         
-        for (i,path),val in zip(enumerate(paths_to_folders),shift_times):
-            if i ==0:
-                PhyTimes = [x+val for x in misc_utils.time_extract(path,abs_path)]
-                if time0 is not None:
-                    PhyTimes = list(filter(lambda x: x > (time0+val), PhyTimes))
+        # for (i,path),val in zip(enumerate(paths_to_folders),shift_times):
+        #     if i ==0:
+        #         PhyTimes = [x+val for x in misc_utils.time_extract(path,abs_path)]
+        #         if time0 is not None:
+        #             PhyTimes = list(filter(lambda x: x > (time0+val), PhyTimes))
 
-            else:
-                times = [x+val for x in misc_utils.time_extract(path,abs_path)]
-                PhyTimes = sorted(set(PhyTimes).intersection(times))
+        #     else:
+        #         times = [x+val for x in misc_utils.time_extract(path,abs_path)]
+        #         PhyTimes = sorted(set(PhyTimes).intersection(times))
 
-        avg_data = None
+        # avg_data = None
 
-        for (i,path),val in zip(enumerate(paths_to_folders),shift_times):
-            local_PhyTimes = sorted([time - val for time in PhyTimes])
-            local_time0 = None if time0 is None else time0 -val
-            avg_data_local = cls(path,local_time0,PhyTimes=local_PhyTimes,abs_path=abs_path,**kwargs)
+        # for (i,path),val in zip(enumerate(paths_to_folders),shift_times):
+        #     local_PhyTimes = sorted([time - val for time in PhyTimes])
+        #     local_time0 = None if time0 is None else time0 -val
+        #     avg_data_local = cls(path,local_time0,PhyTimes=local_PhyTimes,abs_path=abs_path,**kwargs)
 
-            avg_data_local._shift_times(val)
+        #     avg_data_local._shift_times(val)
 
-            coe1 = i/(i+1)
-            coe2 = 1/(i+1)
+        #     coe1 = i/(i+1)
+        #     coe2 = 1/(i+1)
 
-            if i == 0:
-                avg_data = avg_data_local
-            else:
-                avg_data._incremental_ensemble_avg(avg_data_local,coe1,coe2)
+        #     if i == 0:
+        #         avg_data = avg_data_local
+        #     else:
+        #         avg_data._incremental_ensemble_avg(avg_data_local,coe1,coe2)
 
-        return avg_data
+        # return avg_data
 
     def _del_times(self,PhyTimes):
 

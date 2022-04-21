@@ -277,18 +277,19 @@ class Spectra1D_tg(_Spectra_base, ABC):
 class Spectra1D_temp(_Spectra_base,temporal_base, ABC):   
     @classmethod
     def with_phase_average(cls,comp,paths,time0=None,PhyTimes=None):
+        avg_data = cls._module._avg_temp_class.with_phase_average(paths,
+                                                                  PhyTimes=PhyTimes)
         times_list = cls._get_times_phase(paths,PhyTimes=PhyTimes)
         
         spectra_list = []
         for path,times in zip(paths,times_list):
-            spectra_list.append(cls(comp,path,time0=time0,PhyTimes=times))
-            
-        for spectra,path in zip(spectra_list,paths):
-            spectra._test_times_shift(path)            
+            spectra = cls(comp,path,time0=time0,PhyTimes=times,avg_data=avg_data)
+            spectra._test_times_shift(path)        
+            spectra_list.append(spectra)    
             
         return spectra_list[0].phase_average(*spectra_list[1:])
     
-    def _spectra_extract(self,comp, path_to_folder,PhyTimes=None,time0=None):
+    def _spectra_extract(self,comp, path_to_folder,PhyTimes=None,avg_data=None,time0=None):
              
         times = utils.time_extract(path_to_folder)
         if PhyTimes is not None:
@@ -303,7 +304,11 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         if time0 is not None:
             times = list(filter(lambda x: x > time0,times))
 
-        self._avg_data = self._module._avg_temp_class(path_to_folder,time0=time0,PhyTimes=times)
+        if avg_data is None:
+            self._avg_data = self._module._avg_temp_class(path_to_folder,time0=time0,PhyTimes=times)
+        else:
+            self._avg_data = avg_data
+            
         self._comp = comp    
         
         spectra_z = []
