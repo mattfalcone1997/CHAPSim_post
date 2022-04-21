@@ -33,7 +33,18 @@ class CHAPSim_Inst_temp(cp.CHAPSim_Inst_temp):
 _inst_temp_class = CHAPSim_Inst_temp
 
 class CHAPSim_AVG_temp(temp_accel_base,cp.CHAPSim_AVG_temp):   
+    @classmethod
+    def with_phase_average(cls, *args, **kwargs):
+        avg =  super().with_phase_average(*args, **kwargs)
+        avg.metaDF['temp_start_end'] += avg._time_shift
+        
+        return avg
     
+    def _shift_times(self,time):
+        super()._shift_times(time)
+        
+        self.metaDF['temp_start_end'] += time
+        
     def conv_distance_calc(self):
         
         bulk_velo = self.bulk_velo_calc()
