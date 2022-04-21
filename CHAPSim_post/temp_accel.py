@@ -36,14 +36,16 @@ class CHAPSim_AVG_temp(temp_accel_base,cp.CHAPSim_AVG_temp):
     @classmethod
     def with_phase_average(cls, *args, **kwargs):
         avg =  super().with_phase_average(*args, **kwargs)
-        avg.metaDF['temp_start_end'] += avg._time_shift
+        avg.metaDF['temp_start_end'] = [ x + avg._time_shift \
+                                    for x in avg.metaDF['temp_start_end']]
         
         return avg
     
     def _shift_times(self,time):
         super()._shift_times(time)
         
-        self.metaDF['temp_start_end'] += time
+        self.metaDF['temp_start_end'] = [ x + time \
+                                    for x in avg.metaDF['temp_start_end']]
         
     def conv_distance_calc(self):
         
