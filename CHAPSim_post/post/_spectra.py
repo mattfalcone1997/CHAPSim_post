@@ -69,10 +69,6 @@ class _Spectra_base(Common):
         
         hdf_obj = cd.hdfHandler(filename,'r',key=key)
         self._comp = hdf_obj.attrs['comp']
-    
-    @property
-    def _meta_data(self):
-        return self._avg_data._meta_data
         
     @property
     def shape(self):
@@ -130,7 +126,7 @@ _avg_temp_class = cp.CHAPSim_AVG_temp
 
 _fluct_io_class = cp.CHAPSim_fluct_io
 _fluct_temp_class = cp.CHAPSim_fluct_temp
-
+_meta_class = cp.CHAPSim_meta
 class Spectra1D_io(_Spectra_base):
     def _spectra_extract(self,comp, path_to_folder,time0=None):
              
@@ -142,6 +138,8 @@ class Spectra1D_io(_Spectra_base):
             times = times[-10:]
         
         self._avg_data = self._module._avg_io_class(times[-1],path_to_folder,time0=time0)
+        self._meta_data = self._avg_data._meta_data
+        
         self._comp = comp        
 
         for i, time in enumerate(times):
@@ -181,7 +179,8 @@ class Spectra1D_io(_Spectra_base):
                                     data_layout = ['k_z', 'y', 'x'],
                                     wall_normal_line = 'y',
                                     polar_plane=None)
-                                    
+    
+    
     def save_hdf(self,filename,mode,key=None):
         if key is None:
             key = self.__class__.__name__
@@ -197,6 +196,8 @@ class Spectra1D_io(_Spectra_base):
         super()._hdf_extract(filename,key=key)
         
         self._avg_data = self._module._avg_io_class.from_hdf(filename,key=key+'/avg_data')
+        self._meta_data = self._avg_data._meta_data
+        
         self.E_zDF = cd.FlowStructND.from_hdf(filename,key=key+'/E_zDF')
         
     @abstractmethod                                                   
@@ -241,6 +242,8 @@ class Spectra1D_tg(_Spectra_base, ABC):
             times = times[-10:]
         
         self._avg_data = self._module._avg_tg_class(times[-1],path_to_folder,time0=time0)
+        self._meta_data = self._avg_data._meta_data
+        
         self._comp = comp        
 
         for i, time in enumerate(times):
@@ -304,6 +307,11 @@ class Spectra1D_tg(_Spectra_base, ABC):
                                     data_layout = ['k_x', 'y'],
                                     wall_normal_line = 'y',
                                     polar_plane=None)
+        
+    @property
+    def _meta_data(self):
+        return self._avg_data._meta_data
+    
     def save_hdf(self,filename,mode,key=None):
         if key is None:
             key = self.__class__.__name__
@@ -319,8 +327,9 @@ class Spectra1D_tg(_Spectra_base, ABC):
                 
         super()._hdf_extract(filename,key=key)
         
-        self._avg_data = self._module._avg_temp_class.from_hdf(filename,key=key+'/avg_data')
-                
+        self._avg_data = self._module._avg_tg_class.from_hdf(filename,key=key+'/avg_data')
+        self._meta_data = self._avg_data._meta_data
+        
         self.E_zDF = cd.FlowStructND.from_hdf(filename,key=key+'/E_zDF')
         self.E_xDF = cd.FlowStructND.from_hdf(filename,key=key+'/E_xDF')            
     def get_autocorrelation(self,comp, norm=True):
@@ -367,7 +376,8 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
             self._avg_data = self._module._avg_temp_class(path_to_folder,time0=time0,PhyTimes=times)
         else:
             self._avg_data = avg_data
-            
+        
+        self._meta_data = self._module._meta_class(path_to_folder,tgpost=True)
         self._comp = comp    
         
         spectra_z = []
@@ -437,7 +447,9 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
             key = self.__class__.__name__
             
         super().save_hdf(filename,mode,key=key)
-          
+        
+        self._meta_data.save_hdf(filename,'a',key=key+'/meta_data')
+        
         self.E_zDF.to_hdf(filename,'a',key=key+'/E_zDF')
         self.E_xDF.to_hdf(filename,'a',key=key+'/E_xDF')
         
@@ -448,6 +460,8 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         super()._hdf_extract(filename,key=key)
         
         self._avg_data = self._module._avg_temp_class.from_hdf(filename,key=key+'/avg_data')
+        self._meta_data = self._module._meta_class.from_hdf(filename,key=key+'/meta_data')
+
                 
         self.E_zDF = cd.FlowStructND_time.from_hdf(filename,key=key+'/E_zDF')
         self.E_xDF = cd.FlowStructND_time.from_hdf(filename,key=key+'/E_xDF')
