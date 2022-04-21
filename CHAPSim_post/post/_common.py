@@ -87,6 +87,15 @@ class Common(ABC):
     def copy(self):
         return copy.deepcopy(self)
 
+def require_override(func):
+    
+    @wraps(func)
+    def _return_func(*args,**kwargs):
+       msg = (f"Method {__name__} must be overriden to be used. There is no "
+              "need to override it if this function is not called")
+       raise NotImplementedError(msg)
+   
+    return _return_func
 class temporal_base(ABC):
     
     def phase_average(self,*others):
@@ -148,14 +157,14 @@ class temporal_base(ABC):
         
         return [times_shifted - shift for shift in times_shifts]
 
+    @require_override
     def _get_time_shift(cls,path):
-        msg = f"Method {__name__} must be provided by higher level class"
-        raise NotImplementedError(msg)
+        pass
     
+    @require_override
     def _time_shift(self):
-        msg = f"Method {__name__} must be provided by higher level class"
-        raise NotImplementedError(msg)
-        
+        pass
+            
     def _test_times_shift(self,path):
         
         time_shift1 = self._get_time_shift(path)
