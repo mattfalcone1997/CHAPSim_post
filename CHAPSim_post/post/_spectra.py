@@ -101,7 +101,7 @@ class _Spectra_base(Common):
         new_item = f'delta_{comp}'
         
         coord_data  = fstruct._coorddata.copy()
-        coord_data.coord_centered[new_item] = self.CoordDF[comp]
+        coord_data.coord_centered[new_item] = self.CoordDF[comp][:array.shape[axis]]
         
         data_layout = fstruct._data_layout.copy()
         data_layout[axis] = new_item
