@@ -92,7 +92,7 @@ class _Spectra_base(Common):
         axis = fstruct.get_dim_from_axis(item)
 
         dk = np.diff(k_array)[0]
-        array =  np.fft.irfft(spec_array,axis=axis,norm='forward')*dk
+        array =  np.fft.irfft(spec_array,axis=axis,norm='forward')
         
         if norm:
             array = array/array[0]
@@ -415,7 +415,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         del coorddata_z.coord_centered['x']
         
         self.E_zDF = cd.FlowStructND_time(coorddata_z,
-                                    spectra_z*d_z*d_z/L_z,
+                                    spectra_z,
                                     index=[times,[comp]*len(times)],
                                     data_layout = ['k_z', 'y'],
                                     wall_normal_line = 'y',
@@ -437,7 +437,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         del coorddata_x.coord_centered['z']
         
         self.E_xDF = cd.FlowStructND_time(coorddata_x,
-                                    spectra_x*d_x*d_x/L_x,
+                                    spectra_x,
                                     index=[times,[comp]*len(times)],
                                     data_layout = ['k_x', 'y'],
                                     wall_normal_line = 'y',
