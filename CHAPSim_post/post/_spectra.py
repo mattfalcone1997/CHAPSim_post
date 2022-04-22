@@ -13,13 +13,14 @@ pyfftw.config.PLANNER_EFFORT = 'FFTW_ESTIMATE'
 pyfftw.interfaces.cache.enable()
         
 def _compute_spectra_tg(fluct1, fluct2, fft_axis,mean_axis):
-             
-    fluct_hat1 =numpy_fft.rfft(fluct1,axis=fft_axis,norm='forward')
+        
+    N = fluct1.shape[fft_axis]
+    fluct_hat1 =numpy_fft.rfft(fluct1,axis=fft_axis,norm=None)/N
     
     if fluct2 is None:
         return (fluct_hat1*fluct_hat1.conj()).mean(mean_axis)
     else:
-        fluct_hat2 = numpy_fft.rfft(fluct2,axis=fft_axis,norm='forward')
+        fluct_hat2 = numpy_fft.rfft(fluct2,axis=fft_axis,norm=None)/N
         return (fluct_hat1*fluct_hat2.conj()).mean(mean_axis)
 
 def _compute_spectra_io(fluct1, fluct2, fft_axis):
@@ -91,8 +92,8 @@ class _Spectra_base(Common):
         
         axis = fstruct.get_dim_from_axis(item)
 
-        dk = np.diff(k_array)[0]
-        array =  np.fft.irfft(spec_array,axis=axis,norm='forward')
+        array =  np.fft.irfft(spec_array,axis=axis,norm=None)
+        array *= array.shape[axis]
         
         if norm:
             array = array/array[0]
@@ -408,9 +409,6 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         coorddata_z.coord_staggered = None
         coorddata_z.coord_centered['k_z'] = k_z
         
-        d_z = np.diff(z_array)[0]
-        L_z = np.amax(self.Coord_ND_DF['z'])
-        
         del coorddata_z.coord_centered['z']
         del coorddata_z.coord_centered['x']
         
@@ -428,10 +426,6 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         coorddata_x = self._coorddata.copy()
         coorddata_x.coord_staggered = None
         coorddata_x.coord_centered['k_x'] = k_x
-        
-        d_x = np.diff(z_array)[0]
-        L_x = np.amax(self.Coord_ND_DF['x'])
-
 
         del coorddata_x.coord_centered['x']
         del coorddata_x.coord_centered['z']
