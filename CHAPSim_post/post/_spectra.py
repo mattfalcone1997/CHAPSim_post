@@ -14,12 +14,12 @@ pyfftw.interfaces.cache.enable()
         
 def _compute_spectra_tg(fluct1, fluct2, fft_axis,mean_axis):
              
-    fluct_hat1 =numpy_fft.rfft(fluct1,axis=fft_axis)
+    fluct_hat1 =numpy_fft.rfft(fluct1,axis=fft_axis,norm='forward')
     
     if fluct2 is None:
         return (fluct_hat1*fluct_hat1.conj()).mean(mean_axis)
     else:
-        fluct_hat2 = numpy_fft.rfft(fluct2,axis=fft_axis)
+        fluct_hat2 = numpy_fft.rfft(fluct2,axis=fft_axis,norm='forward')
         return (fluct_hat1*fluct_hat2.conj()).mean(mean_axis)
 
 def _compute_spectra_io(fluct1, fluct2, fft_axis):
