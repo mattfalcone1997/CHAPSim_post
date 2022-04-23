@@ -353,7 +353,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
             avg_data._shift_times(time_shift)
 
             
-        return spectra_list[0].phase_average(*spectra_list[1:])
+        return cls.phase_average(*spectra_list)
     
     def _spectra_extract(self,comp, path_to_folder,PhyTimes=None,avg_data=None,time0=None):
              

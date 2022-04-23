@@ -1486,7 +1486,7 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg,temporal_base):
                 avg._test_times_shift(path)
                 avg_list.append(avg)
                 
-            return avg_list[0].phase_average(*avg_list[1:])
+            return cls.phase_average(*avg_list)
         
         # if not isinstance(paths_to_folders,(tuple,list)):
         #     msg = f"To use this method, path_to_folder must be a tuple or a list not a {type(paths_to_folders)}"
