@@ -140,7 +140,6 @@ class temporal_base(ABC):
                         val_type.phase_average(*vals,
                                                items=items))
             elif issubclass(val_type,cd.FlowStructND):
-                coeffs = items/np.sum(items)
                 time_shifts = [x._time_shift for x in objects_temp]
                 vals = [val.shift_times(shift) \
                             for val,shift in zip(vals,time_shifts)]
@@ -152,7 +151,8 @@ class temporal_base(ABC):
                     for time in val.times:
                         if time not in intersect_times:
                             val.remove_time(time)
-                            
+                
+                coeffs = items/np.sum(items)
                 phase_val = sum(coeffs*vals)
                 
                 setattr(starter_obj,attr,phase_val)
