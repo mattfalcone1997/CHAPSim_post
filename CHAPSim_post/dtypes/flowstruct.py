@@ -82,7 +82,7 @@ class _FlowStruct_base(datastruct):
         Shifts all the FlowStruct's times by a scalar
         """
         
-        self.times = self.times + time            
+        self.times = np.array(self.times) + time            
 
     def _get_identity_transform(self) ->  Callable:
         """
