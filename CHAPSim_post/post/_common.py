@@ -170,7 +170,7 @@ class temporal_base(ABC):
                 
     def _handle_time_remove(self,fstructs,times_list):
         dt = self.metaDF['DT']
-        print(intersect_times)
+
         for i, fstruct in enumerate(fstructs):
             intersect_times = self._get_intersect([times_list[i],times_list],
                                                   dt=dt)
