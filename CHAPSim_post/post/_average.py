@@ -1479,7 +1479,6 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg,temporal_base):
     @classmethod
     def with_phase_average(cls,paths_to_folders,PhyTimes=None,abs_path=True,*args,**kwargs):
             times_list = cls._get_times_phase(paths_to_folders,PhyTimes=PhyTimes)
-            print(times_list)
             avg_list = []
             for path,times in zip(paths_to_folders,times_list):
                 avg = cls(path,abs_path=abs_path,PhyTimes=times,*args,**kwargs)
