@@ -1485,47 +1485,8 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg,temporal_base):
                 print(avg.times)
                 avg._test_times_shift(path)
                 avg_list.append(avg)
-            exit()
+
             return cls.phase_average(*avg_list)
-        
-        # if not isinstance(paths_to_folders,(tuple,list)):
-        #     msg = f"To use this method, path_to_folder must be a tuple or a list not a {type(paths_to_folders)}"
-        #     raise TypeError(msg)
-
-        # if len(paths_to_folders) != len(shift_times):
-        #     msg= f"The length of shift times and paths_to_folder must be the same"
-        #     raise ValueError(msg)
-
-        
-        # for (i,path),val in zip(enumerate(paths_to_folders),shift_times):
-        #     if i ==0:
-        #         PhyTimes = [x+val for x in misc_utils.time_extract(path,abs_path)]
-        #         if time0 is not None:
-        #             PhyTimes = list(filter(lambda x: x > (time0+val), PhyTimes))
-
-        #     else:
-        #         times = [x+val for x in misc_utils.time_extract(path,abs_path)]
-        #         PhyTimes = sorted(set(PhyTimes).intersection(times))
-
-        # avg_data = None
-
-        # for (i,path),val in zip(enumerate(paths_to_folders),shift_times):
-        #     local_PhyTimes = sorted([time - val for time in PhyTimes])
-        #     local_time0 = None if time0 is None else time0 -val
-        #     avg_data_local = cls(path,local_time0,PhyTimes=local_PhyTimes,abs_path=abs_path,**kwargs)
-
-        #     avg_data_local._shift_times(val)
-
-        #     coe1 = i/(i+1)
-        #     coe2 = 1/(i+1)
-
-        #     if i == 0:
-        #         avg_data = avg_data_local
-        #     else:
-        #         avg_data._incremental_ensemble_avg(avg_data_local,coe1,coe2)
-
-        # return avg_data
-
         
     @property
     def _shape_devel(self):
