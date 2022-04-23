@@ -210,7 +210,8 @@ class temporal_base(ABC):
                     v.remove_time(time)
                     
     def _shift_times(self,time):
-        for  v in self.__dict__.values():
+        for  k, v in self.__dict__.items():
+            print(v.__class__)
             if isinstance(v,cd.FlowStructND):
                v.shift_times(time)
                 
