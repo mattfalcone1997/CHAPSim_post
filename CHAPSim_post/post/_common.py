@@ -220,11 +220,13 @@ class temporal_base(ABC):
     @classmethod
     def _get_times_phase(cls,paths,PhyTimes=None):
         times_shifts = [cls._get_time_shift(path) for path in paths]
-        
+        print(times_shifts)
         if PhyTimes is None:
-            times_list = [ set(np.array(misc_utils.time_extract(path)) + shift)\
+            times_list = [ np.array(misc_utils.time_extract(path)) + shift\
                         for shift, path in zip(times_shifts,paths)]
-            times_shifted = sorted(times_list[0].intersection(*times_list[1:]))
+            print(times_list)
+            
+            times_shifted = sorted(set.intersection(times_list))
             times_shifted = np.array(times_shifted)
         else:
             times_shifted = PhyTimes    
