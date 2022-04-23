@@ -145,7 +145,8 @@ class temporal_base(ABC):
                             for val,shift in zip(vals,time_shifts)]
                 
                 times_list = [set(val.times) for val in vals]
-                intersect_times = sorted(set.intersection(*times_list))
+                dt = starter_obj.metaDF['DT']
+                intersect_times = starter_obj._get_intersect(times_list,dt=dt)
                 
                 for val in vals:
                     for time in val.times:
@@ -225,7 +226,7 @@ class temporal_base(ABC):
                         for shift, path in zip(times_shifts,paths)]
             print([max(time) for time in times_list])
             
-            times_shifted = cls._get_intersect(paths[0],times_list)
+            times_shifted = cls._get_intersect(times_list,path=paths[0])
             
         else:
             times_shifted = PhyTimes    
@@ -233,11 +234,17 @@ class temporal_base(ABC):
         return [times_shifted - shift for shift in times_shifts]
     
     @classmethod
-    def _get_intersect(cls,path,times_list):
-        meta_data = cls._module._meta_class(path,tgpost=True)
-        DT = meta_data.metaDF['DT']
+    def _get_intersect(cls,times_list,path=None,dt=None):
         
-        _intersect = lambda times: [any(np.isclose(x,times,atol=DT)) for x in times_list[0]]
+        if path is None and dt is None:
+            msg = "Both path an DT cannot be None"
+            raise RuntimeError(msg)
+        
+        if dt is None:
+            meta_data = cls._module._meta_class(path,tgpost=True)
+            dt = meta_data.metaDF['DT']
+        
+        _intersect = lambda times: [any(np.isclose(x,times,atol=dt)) for x in times_list[0]]
 
         intersection = np.array( [_intersect(times) for times in times_list[1:]]).all(axis=0)
         return times_list[0][intersection]
