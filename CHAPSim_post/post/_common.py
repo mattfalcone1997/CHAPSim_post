@@ -228,7 +228,7 @@ class temporal_base(ABC):
             print([max(time) for time in times_list])
             
             times_shifted = sorted(set.intersection(*times_list))
-            print([max(time) for time in times_shifted])
+            print(max(times_shifted))
             
             times_shifted = np.array(times_shifted)
         else:
