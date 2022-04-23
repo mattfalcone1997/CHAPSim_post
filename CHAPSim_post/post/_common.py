@@ -172,7 +172,7 @@ class temporal_base(ABC):
         dt = self.metaDF['DT']
 
         for i, fstruct in enumerate(fstructs):
-            intersect_times = self._get_intersect([times_list[i],times_list],
+            intersect_times = self._get_intersect([times_list[i],*times_list],
                                                   dt=dt)
 
             for time in fstruct.times:
