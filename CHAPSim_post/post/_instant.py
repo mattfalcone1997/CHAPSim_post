@@ -36,6 +36,8 @@ try:
     _cupy_avail = True
 except:
     pass
+
+logger = logging.getLogger(__name__)
 class _Inst_base(Common,ABC):
     """
     ## CHAPSim_Inst
@@ -814,7 +816,7 @@ class CHAPSim_Inst_temp(_Inst_base):
                         "required times. Re-extracting average data.")
                 warnings.warn(msg)
                 
-                logging.debug(f"Instant times: {times}. AVG times:"
+                logger.debug(f"Instant times: {times}. AVG times:"
                               f" {avg_data.times}")
         return self._module._avg_temp_class(path_to_folder=path_to_folder,abs_path=abs_path,PhyTimes=times)
 
