@@ -147,7 +147,6 @@ class temporal_base(ABC):
                 times_list = [val.times for val in vals]
                 print(times_list)
                 vals = starter_obj._handle_time_remove(vals,times_list)
-                print([val.times for val in vals])
                 coeffs = items/np.sum(items)
                 phase_val = sum(coeffs*vals)
                 
@@ -182,7 +181,7 @@ class temporal_base(ABC):
                 if not time in times_list[0]:
                     min_pos = np.argmin(times_list[0] - time)
                     fstruct.index.update_outer_key(time,times_list[0][min_pos])
-                    
+                    print(fstruct.index._outer_index)
         return fstructs
                 
                 
