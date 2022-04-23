@@ -126,7 +126,7 @@ class temporal_base(ABC):
         
         for attr in object_attrs:
             
-            vals = [getattr(ob,attr).copy() for ob in objects_temp]
+            vals = [copy.deepcopy(getattr(ob,attr)) for ob in objects_temp]
             val_type = type(vals[0])
             
             if not all(type(val) == val_type for val in vals):
