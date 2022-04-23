@@ -225,7 +225,7 @@ class temporal_base(ABC):
         if PhyTimes is None:
             times_list = [ set(np.array(misc_utils.time_extract(path)) + shift)\
                         for shift, path in zip(times_shifts,paths)]
-            print(times_list)
+            print([max(time) for time in times_list])
             
             times_shifted = sorted(set.intersection(*times_list))
             times_shifted = np.array(times_shifted)
