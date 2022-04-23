@@ -232,6 +232,7 @@ class temporal_base(ABC):
         else:
             times_shifted = PhyTimes    
         
+        print(times_shifted)
         
         return [times_shifted - shift for shift in times_shifts]
 
