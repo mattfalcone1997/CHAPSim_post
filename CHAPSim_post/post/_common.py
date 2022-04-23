@@ -223,21 +223,28 @@ class temporal_base(ABC):
         
         print(times_shifts)
         if PhyTimes is None:
-            times_list = [ set(np.array(misc_utils.time_extract(path)) + shift)\
+            times_list = [ np.array(misc_utils.time_extract(path)) + shift\
                         for shift, path in zip(times_shifts,paths)]
             print([max(time) for time in times_list])
             
-            times_shifted = sorted(set.intersection(*times_list))
+            times_shifted = cls._get_intersect(times_list)
             print(max(times_shifted))
             
-            times_shifted = np.array(times_shifted)
         else:
             times_shifted = PhyTimes    
         
         print(times_shifted)
         
         return [times_shifted - shift for shift in times_shifts]
-
+    
+    @classmethod
+    def _get_intersect(cls,times_list):
+        _intersect = lambda times: [any(np.allclose(x,times)) for x in times_list[0]]
+        
+        intersection = np.array( _intersect(times) for times in times_list[1:]).all(axis=0)
+        return times_list[0][intersection]
+        
+            
     @require_override
     def _get_time_shift(cls,path):
         pass
