@@ -236,7 +236,7 @@ class temporal_base(ABC):
     
     @classmethod
     def _get_intersect(cls,path,times_list):
-        meta_data = cls._module._meta_data(path,tgpost=True)
+        meta_data = cls._module._meta_class(path,tgpost=True)
         DT = meta_data.metaDF['DT']
         
         _intersect = lambda times: [any(np.isclose(x,times,atol=DT)) for x in times_list[0]]
