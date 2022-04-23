@@ -241,7 +241,7 @@ class temporal_base(ABC):
 
         intersection = np.array( [_intersect(times) for times in times_list[1:]]).all(axis=0)
         print(times_list[0][~intersection])
-        print(times_list[1][~intersection])
+        print(times_list[-1][~intersection])
         return times_list[0][intersection]
         
             
