@@ -145,7 +145,7 @@ class temporal_base(ABC):
                 vals = [val.shift_times(shift) \
                             for val,shift in zip(vals,time_shifts)]
                 
-                times_list = [val.times for val in vals]
+                times_list = [set(val.times) for val in vals]
                 intersect_times = sorted(set.intersection(*times_list))
                 
                 for val in vals:
