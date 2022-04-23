@@ -179,7 +179,7 @@ class temporal_base(ABC):
                     fstruct.remove_time(time)
                 
                 if not time in times_list[0]:
-                    min_pos = np.argmin(times_list[0] - time)
+                    min_pos = np.argmin(abs(times_list[0] - time))
                     fstruct.index.update_outer_key(time,times_list[0][min_pos])
 
         return fstructs
