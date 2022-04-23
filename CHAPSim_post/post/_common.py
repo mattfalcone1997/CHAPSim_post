@@ -229,9 +229,7 @@ class temporal_base(ABC):
             
         else:
             times_shifted = PhyTimes    
-        
-        print(times_shifted)
-        
+                
         return [times_shifted - shift for shift in times_shifts]
     
     @classmethod
@@ -242,6 +240,8 @@ class temporal_base(ABC):
         _intersect = lambda times: [any(np.isclose(x,times,atol=DT)) for x in times_list[0]]
 
         intersection = np.array( [_intersect(times) for times in times_list[1:]]).all(axis=0)
+        print(times_list[0][~intersection])
+        print(times_list[1][~intersection])
         return times_list[0][intersection]
         
             
