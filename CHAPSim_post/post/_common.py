@@ -126,7 +126,7 @@ class temporal_base(ABC):
         
         for attr in object_attrs:
             
-            vals = [copy.deepcopy(getattr(ob,attr)) for ob in objects_temp]
+            vals = [getattr(ob,attr) for ob in objects_temp]
             val_type = type(vals[0])
             
             if not all(type(val) == val_type for val in vals):
@@ -140,8 +140,9 @@ class temporal_base(ABC):
                         val_type.phase_average(*vals,
                                                items=items))
             elif issubclass(val_type,cd.FlowStructND):
+                
                 time_shifts = [x._time_shift for x in objects_temp]
-                vals = [val.shift_times(shift) \
+                vals = [val.copy().shift_times(shift) \
                             for val,shift in zip(vals,time_shifts)]
                 
                 times_list = [set(val.times) for val in vals]
@@ -201,7 +202,20 @@ class temporal_base(ABC):
         #             setattr(self_copy,k,new_v)
             
         #     return self_copy
+        
+    def _del_times(self,times):
+        for  v in self.__dict__.values():
+            if isinstance(v,cd.FlowStructND):
+                for time in times:
+                    v.remove_time(time)
                     
+    def _shift_times(self,time):
+        for  v in self.__dict__.values():
+            if isinstance(v,cd.FlowStructND):
+               v.shift_times(time)
+                
+                
+            
     @classmethod
     def _get_times_phase(cls,paths,PhyTimes=None):
         times_shifts = [cls._get_time_shift(path) for path in paths]

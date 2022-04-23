@@ -1526,41 +1526,7 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg,temporal_base):
 
         # return avg_data
 
-    def _del_times(self,PhyTimes):
-
-        for time in PhyTimes:
-            self.flow_AVGDF.remove_time(time)
-            self.PU_vectorDF.remove_time(time)
-            self.UU_tensorDF.remove_time(time)
-            self.UUU_tensorDF.remove_time(time)
-            self.Velo_grad_tensorDF.remove_time(time)
-            self.PR_Velo_grad_tensorDF.remove_time(time)
-            self.DUDX2_tensorDF.remove_time(time)
-
-
-    def _shift_times(self,time):
-
-        self.flow_AVGDF = self.flow_AVGDF.shift_times(time)
-        self.PU_vectorDF = self.PU_vectorDF.shift_times(time)
-        self.UU_tensorDF = self.UU_tensorDF.shift_times(time)
-        self.UUU_tensorDF = self.UUU_tensorDF.shift_times(time)
-        self.Velo_grad_tensorDF = self.Velo_grad_tensorDF.shift_times(time)
-        self.PR_Velo_grad_tensorDF = self.PR_Velo_grad_tensorDF.shift_times(time)
-        self.DUDX2_tensorDF = self.DUDX2_tensorDF.shift_times(time)
         
-    def _incremental_ensemble_avg(self,other_avg,coe1,coe2):
-        if not isinstance(other_avg,self.__class__):
-            msg = "The other_avg object must be of the same type"
-            raise TypeError(msg)
-
-        self.flow_AVGDF = coe1*self.flow_AVGDF + coe2*other_avg.flow_AVGDF
-        self.PU_vectorDF = coe1*self.PU_vectorDF + coe2*other_avg.PU_vectorDF
-        self.UU_tensorDF = coe1*self.UU_tensorDF + coe2*other_avg.UU_tensorDF
-        self.UUU_tensorDF = coe1*self.UUU_tensorDF + coe2*other_avg.UUU_tensorDF
-        self.Velo_grad_tensorDF = coe1*self.Velo_grad_tensorDF + coe2*other_avg.Velo_grad_tensorDF
-        self.PR_Velo_grad_tensorDF = coe1*self.PR_Velo_grad_tensorDF + coe2*other_avg.PR_Velo_grad_tensorDF
-        self.DUDX2_tensorDF = coe1*self.DUDX2_tensorDF + coe2*other_avg.DUDX2_tensorDF
-
     @property
     def _shape_devel(self):
         shape = (super().shape[0],

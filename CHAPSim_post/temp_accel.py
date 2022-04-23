@@ -18,6 +18,16 @@ else:
     from scipy.integrate import simps as integrate_simps
 
 class temp_accel_base(cp.temporal_base):
+    @classmethod
+    def phase_average(cls, *objects_temp, items=None):
+        temp_object = super().phase_average(*objects_temp, items=items)
+        
+        accel_info = temp_object.metaDF['temp_start_end'].copy()        
+        temp_object.metaDF['temp_start_end'] = [x + \
+            temp_object._time_shift for x in accel_info]
+        
+        return temp_object
+        
     @property
     def _time_shift(self):
         return -self.metaDF['temp_start_end'][0]
@@ -27,26 +37,19 @@ class temp_accel_base(cp.temporal_base):
         meta_data = cp.CHAPSim_meta(path,tgpost=True)
         return - meta_data.metaDF['temp_start_end'][0]
             
+    def _shift_times(self,time):
+        super()._shift_times(time)
+        
+        self.metaDF['temp_start_end'] = [ x + time \
+                                    for x in self.metaDF['temp_start_end']]
     
 class CHAPSim_Inst_temp(cp.CHAPSim_Inst_temp):
     pass
 _inst_temp_class = CHAPSim_Inst_temp
 
 class CHAPSim_AVG_temp(temp_accel_base,cp.CHAPSim_AVG_temp):
-    @classmethod   
-    def with_phase_average(cls, *args, **kwargs):
-        avg =  super().with_phase_average(*args, **kwargs)
-        avg.metaDF['temp_start_end'] = [ x + avg._time_shift \
-                                    for x in avg.metaDF['temp_start_end']]
-        
-        return avg
     
-    def _shift_times(self,time):
-        super()._shift_times(time)
-        
-        self.metaDF['temp_start_end'] = [ x + time \
-                                    for x in self.metaDF['temp_start_end']]
-        
+            
     def conv_distance_calc(self):
         
         bulk_velo = self.bulk_velo_calc()
