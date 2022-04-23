@@ -98,59 +98,109 @@ def require_override(func):
     return _return_func
 class temporal_base(ABC):
     
-    def phase_average(self,*others,items=None):
+    @classmethod
+    def phase_average(cls,*objects_temp,items=None):
         # check others
         
-        if not all(type(x)==type(self) for x in others):
-            msg = (f"All objects to be averaged must be of type {type(self).__name.__}"
-                    f" not {[type(x).__name__ for x in others]}")
+        if not all(type(x)==cls for x in objects_temp):
+            msg = (f"All objects to be averaged must be of type {cls.__name.__}"
+                    f" not {[type(x).__name__ for x in objects_temp]}")
             raise TypeError(msg)
         
-        if not all(hasattr(x,'_time_shift') for x in [self,*others]):
+        if not all(hasattr(x,'_time_shift') for x in objects_temp):
             msg = "To use the phase averaging functionality the class variable _time_shift must be present"
             raise AttributeError(msg)
         
         if items is not None:
-            if len(items) != len(others) + 1:
+            if len(items) != len(objects_temp):
                 msg = ("If items is present, it must be the same"
                        " length as the inputs to be phased averaged")
                 raise ValueError(msg)
+            items = np.array(items)
+        else:
+            items = np.ones(objects_temp)
             
-        self_copy = self.copy() 
-        for i, other in enumerate(others):
-            other_copy = other.copy()
             
-            for k, v in self_copy.__dict__.items():
-                if isinstance(v,temporal_base):
-                    setattr(self_copy,k,v.phase_average(getattr(other_copy,k)))
-                elif isinstance(v,cd.FlowStructND):
-                    
-                    if items:
-                        coe1 = sum(items[:i+1])/sum(items[i+2])
-                        coe2 = items[i+1]/sum(items[i+2])
-                    else:
-                        coe1 = (i+1)/(i+2)
-                        coe2 = 1/(i+2)
-
-                    v_shifted = v.shift_times(self._time_shift)
-                    
-                    other_fstruct = getattr(other_copy,k)
-                    fstruct_shifted = other_fstruct.shift_times(other_copy._time_shift)
-                    
-                    time_intersect = set(v_shifted.times).intersection(set(fstruct_shifted.times))
-
-                    for time in v_shifted.times:
-                        if time not in time_intersect:
-                            v_shifted.remove_time(time)
+        object_attrs = objects_temp[0].__dict__.keys()
+        starter_obj = objects_temp[0].copy()
+        
+        for attr in object_attrs:
+            
+            vals = [getattr(ob,attr).copy() for ob in objects_temp]
+            val_type = type(vals[0])
+            
+            if not all(type(val) == val_type for val in vals):
+                msg = ("Not all attributes of object "
+                       "to be phased averaged are of the same type")
+                raise TypeError(msg)
+            
+            if issubclass(val_type,temporal_base):
+                setattr(starter_obj,
+                        attr,
+                        val_type.phase_average(*vals,
+                                               items=items))
+            elif issubclass(val_type,cd.FlowStructND):
+                coeffs = items/np.sum(items)
+                time_shifts = [x._time_shift for x in objects_temp]
+                vals = [val.shift_times(shift) \
+                            for val,shift in zip(vals,time_shifts)]
+                
+                times_list = [val.times for val in vals]
+                intersect_times = sorted(set.intersection(*times_list))
+                
+                for val in vals:
+                    for time in val.times:
+                        if time not in intersect_times:
+                            val.remove_time(time)
                             
-                    for time in fstruct_shifted.times:
-                        if time not in time_intersect:
-                            fstruct_shifted.remove_time(time)
-                            
-                    new_v = coe1*v_shifted + coe2*fstruct_shifted
-                    setattr(self_copy,k,new_v)
+                phase_val = sum(coeffs*vals)
+                
+                setattr(starter_obj,attr,phase_val)
+                
+                    
+        return starter_obj
             
-            return self_copy
+            
+            
+        # for i, other in enumerate(objects_temp[1:]):
+        #     other_copy = other.copy()
+            
+        #     for k, v in object_copy_ini.__dict__.items():
+                
+        #         items_sub1 = sum(items[:i+1])
+        #         items_sub2
+                
+        #         if isinstance(v,temporal_base):
+        #             sub_items = []
+        #             setattr(object_copy_ini,k,v.phase_average(v,getattr(other_copy,k),items=items))
+        #         elif isinstance(v,cd.FlowStructND):
+                    
+        #             if items:
+        #                 coe1 = sum(items[:i+1])/sum(items[i+2])
+        #                 coe2 = items[i+1]/sum(items[i+2])
+        #             else:
+        #                 coe1 = (i+1)/(i+2)
+        #                 coe2 = 1/(i+2)
+
+        #             v_shifted = v.shift_times(self._time_shift)
+                    
+        #             other_fstruct = getattr(other_copy,k)
+        #             fstruct_shifted = other_fstruct.shift_times(other_copy._time_shift)
+                    
+        #             time_intersect = set(v_shifted.times).intersection(set(fstruct_shifted.times))
+
+        #             for time in v_shifted.times:
+        #                 if time not in time_intersect:
+        #                     v_shifted.remove_time(time)
+                            
+        #             for time in fstruct_shifted.times:
+        #                 if time not in time_intersect:
+        #                     fstruct_shifted.remove_time(time)
+                            
+        #             new_v = coe1*v_shifted + coe2*fstruct_shifted
+        #             setattr(self_copy,k,new_v)
+            
+        #     return self_copy
                     
     @classmethod
     def _get_times_phase(cls,paths,PhyTimes=None):
