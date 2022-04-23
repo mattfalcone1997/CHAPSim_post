@@ -147,7 +147,7 @@ class temporal_base(ABC):
                 times_list = [val.times for val in vals]
                 
                 vals = starter_obj._handle_time_remove(vals,times_list)
-                
+                print([val.times for val in vals])
                 coeffs = items/np.sum(items)
                 phase_val = sum(coeffs*vals)
                 
