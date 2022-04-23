@@ -273,7 +273,7 @@ class MultiIndex(IndexBase):
             if x[0] == old_key:
                 new_total_key = (new_key,x[1])
                 self.update_key(x,new_total_key)
-                print(x,old_key,new_key,new_total_key)
+                print(x,old_key,new_key,new_total_key,new_total_key in self._index)
                 break
 
         self._update_internals()
