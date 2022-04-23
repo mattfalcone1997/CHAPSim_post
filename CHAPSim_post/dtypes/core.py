@@ -269,7 +269,6 @@ class MultiIndex(IndexBase):
     def update_outer_key(self,old_key,new_key):
         old_key = self._item_handler(old_key)
         new_key = self._item_handler(new_key)
-        print(old_key,new_key)
         for x in self._index:
             if x[0] == old_key:
                 new_total_key = (new_key,x[1])
@@ -277,6 +276,7 @@ class MultiIndex(IndexBase):
                 break
 
         self._update_internals()
+        print(self._outer_index)
 
     def __contains__(self, key):
         levels = self._levels
