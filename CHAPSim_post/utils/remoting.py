@@ -19,7 +19,11 @@ class RemoteSSH:
         
         cmd = ['scp',remote_cmd,local_file]
         
-        subprocess.run(cmd)
+        out = subprocess.run(cmd)
+        
+        if out.returncode != 0:
+            msg = f"Secure copy existed with error code {out.returncode}: {out.stderr}"
+            raise Exception(msg)
         
 
 
