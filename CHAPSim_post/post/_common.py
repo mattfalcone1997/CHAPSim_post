@@ -193,7 +193,7 @@ class temporal_base(ABC):
                         for shift, path in zip(times_shifts,paths)]
             
             times_shifted = cls._get_intersect(times_list,path=paths[0])
-            
+            print(times_shifted)
         else:
             times_shifted = PhyTimes    
                 

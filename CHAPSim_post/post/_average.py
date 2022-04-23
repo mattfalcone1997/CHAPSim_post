@@ -1485,7 +1485,7 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg,temporal_base):
                 print(avg.times)
                 avg._test_times_shift(path)
                 avg_list.append(avg)
-                
+            exit()
             return cls.phase_average(*avg_list)
         
         # if not isinstance(paths_to_folders,(tuple,list)):
