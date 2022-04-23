@@ -98,7 +98,7 @@ def require_override(func):
     return _return_func
 class temporal_base(ABC):
     
-    def phase_average(self,*others):
+    def phase_average(self,*others,items=None):
         # check others
         
         if not all(type(x)==type(self) for x in others):
@@ -110,6 +110,12 @@ class temporal_base(ABC):
             msg = "To use the phase averaging functionality the class variable _time_shift must be present"
             raise AttributeError(msg)
         
+        if items is not None:
+            if len(items) != len(others) + 1:
+                msg = ("If items is present, it must be the same"
+                       " length as the inputs to be phased averaged")
+                raise ValueError(msg)
+            
         self_copy = self.copy() 
         for i, other in enumerate(others):
             other_copy = other.copy()
@@ -119,8 +125,12 @@ class temporal_base(ABC):
                     setattr(self_copy,k,v.phase_average(getattr(other_copy,k)))
                 elif isinstance(v,cd.FlowStructND):
                     
-                    coe1 = (i+1)/(i+2)
-                    coe2 = 1/(i+2)
+                    if items:
+                        coe1 = sum(items[:i+1])/sum(items[i+2])
+                        coe2 = items[i+1]/sum(items[i+2])
+                    else:
+                        coe1 = (i+1)/(i+2)
+                        coe2 = 1/(i+2)
 
                     v_shifted = v.shift_times(self._time_shift)
                     
