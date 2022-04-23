@@ -145,7 +145,7 @@ class temporal_base(ABC):
                             for val,shift in zip(vals,time_shifts)]
                 
                 times_list = [val.times for val in vals]
-                print(times_list)
+
                 vals = starter_obj._handle_time_remove(vals,times_list)
                 coeffs = items/np.sum(items)
                 phase_val = sum(coeffs*vals)
@@ -194,7 +194,6 @@ class temporal_base(ABC):
                         for shift, path in zip(times_shifts,paths)]
             
             times_shifted = cls._get_intersect(times_list,path=paths[0])
-            print(times_shifted)
         else:
             times_shifted = PhyTimes    
                 

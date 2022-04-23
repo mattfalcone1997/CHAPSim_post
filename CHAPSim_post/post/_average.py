@@ -1482,7 +1482,7 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg,temporal_base):
             avg_list = []
             for path,times in zip(paths_to_folders,times_list):
                 avg = cls(path,abs_path=abs_path,PhyTimes=times,*args,**kwargs)
-                print(avg.times)
+
                 avg._test_times_shift(path)
                 avg_list.append(avg)
 
