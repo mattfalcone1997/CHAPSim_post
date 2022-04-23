@@ -1551,7 +1551,7 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg,temporal_base):
 
         if PhyTimes is not None:
             PhyTimes = misc_utils.check_list_vals(PhyTimes)
-            times = list(set(times).intersection(PhyTimes))
+            times = self._get_intersect(PhyTimes,path=path_to_folder)
         else:
             times = times [-5:] if cp.rcParams['TEST'] else times
             

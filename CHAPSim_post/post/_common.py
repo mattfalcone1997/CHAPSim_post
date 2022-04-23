@@ -172,9 +172,9 @@ class temporal_base(ABC):
         dt = self.metaDF['DT']
         intersect_times = self._get_intersect(times_list,dt=dt)
 
-        for fstruct, times in zip(fstructs, intersect_times):
+        for fstruct in fstructs:
             for time in fstruct.times:
-                if time not in times:
+                if time not in intersect_times:
                     fstruct.remove_time(time)
                 
                 if not time in times_list[0]:
@@ -195,11 +195,9 @@ class temporal_base(ABC):
             times_shifted = cls._get_intersect(times_list,path=paths[0])
             print(times_shifted)
         else:
-            times_shifted = [PhyTimes]*len(times_shifts)
-        print(times_shifted)
+            times_shifted = PhyTimes    
                 
-        return [times - shift for shift,times\
-                        in zip(times_shifts,times_shifted)]
+        return [times_shifted - shift for shift in times_shifts]
     
     @classmethod
     def _get_intersect(cls,times_list,path=None,dt=None):
@@ -212,13 +210,10 @@ class temporal_base(ABC):
             meta_data = cls._module._meta_class(path,tgpost=True)
             dt = meta_data.metaDF['DT']
         
-        _intersect = lambda times,i: [any(np.isclose(x,times,atol=dt)) for x in times_list[i]]
-        times_intersect = []
-        for i,times in enumerate(times_list):
-            intersection = np.array( [_intersect(times,i)]).all(axis=0)
-            times_intersect.append(times[intersection])
-            
-        return times_intersect
+        _intersect = lambda times: [any(np.isclose(x,times,atol=dt)) for x in times_list[0]]
+
+        intersection = np.array( [_intersect(times) for times in times_list[1:]]).all(axis=0)
+        return times_list[0][intersection]
         
             
     @require_override
