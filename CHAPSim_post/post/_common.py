@@ -213,7 +213,7 @@ class temporal_base(ABC):
         for  k, v in self.__dict__.items():
             if isinstance(v,cd.FlowStructND):
                 v.shift_times(time)
-                setattr(self,k,v)
+                setattr(self,k,v.shift_times(time))
                 
                 
             
