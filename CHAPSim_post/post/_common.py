@@ -144,7 +144,7 @@ class temporal_base(ABC):
                 vals = [val.copy().shift_times(shift) \
                             for val,shift in zip(vals,time_shifts)]
                 
-                times_list = [set(val.times) for val in vals]
+                times_list = [val.times for val in vals]
                 
                 vals = starter_obj._handle_time_remove(vals,times_list)
                 
@@ -170,6 +170,7 @@ class temporal_base(ABC):
                 
     def _handle_time_remove(self,fstructs,times_list):
         dt = self.metaDF['DT']
+        print(times_list)
         intersect_times = self._get_intersect(times_list,dt=dt)
 
         for fstruct in fstructs:
