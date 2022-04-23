@@ -81,13 +81,8 @@ class _FlowStruct_base(datastruct):
         """
         Shifts all the FlowStruct's times by a scalar
         """
-        new_index = []
-        for index in self.index:
-            new_time = float(index[0]) + time
-            new_index.append(self._indexer._item_handler((new_time,*index[1:])))
-
-        return self.from_internal(dict(zip(new_index, self._data)))
-            
+        
+        self.times = self.times + time            
 
     def _get_identity_transform(self) ->  Callable:
         """
@@ -146,11 +141,23 @@ class _FlowStruct_base(datastruct):
             list of the FlowStruct's times
             
         """
-        if 'None' in self.index.outer_index:
+        if None in self.index.outer_index:
             return None
         else:
             return sorted([float(x) for x in self.outer_index])
 
+    @times.setter
+    def times(self,values):
+        if self.times is None:
+            msg = "Times cannot be set if the existing times are None"
+            raise Exception(msg)
+        
+        if len(values) != len(self.times):
+            msg = "Input times must be have the same length as current times"
+        
+        for old, new in zip(self.times,values):
+            self.index.update_outer_key(old,new)
+        
     @property
     def comp(self) -> Index:
         """

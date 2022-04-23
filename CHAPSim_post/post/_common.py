@@ -145,13 +145,8 @@ class temporal_base(ABC):
                             for val,shift in zip(vals,time_shifts)]
                 
                 times_list = [set(val.times) for val in vals]
-                dt = starter_obj.metaDF['DT']
-                intersect_times = starter_obj._get_intersect(times_list,dt=dt)
                 
-                for val in vals:
-                    for time in val.times:
-                        if time not in intersect_times:
-                            val.remove_time(time)
+                vals = starter_obj._handle_time_remove(vals,times_list)
                 
                 coeffs = items/np.sum(items)
                 phase_val = sum(coeffs*vals)
@@ -161,47 +156,6 @@ class temporal_base(ABC):
                     
         return starter_obj
             
-            
-            
-        # for i, other in enumerate(objects_temp[1:]):
-        #     other_copy = other.copy()
-            
-        #     for k, v in object_copy_ini.__dict__.items():
-                
-        #         items_sub1 = sum(items[:i+1])
-        #         items_sub2
-                
-        #         if isinstance(v,temporal_base):
-        #             sub_items = []
-        #             setattr(object_copy_ini,k,v.phase_average(v,getattr(other_copy,k),items=items))
-        #         elif isinstance(v,cd.FlowStructND):
-                    
-        #             if items:
-        #                 coe1 = sum(items[:i+1])/sum(items[i+2])
-        #                 coe2 = items[i+1]/sum(items[i+2])
-        #             else:
-        #                 coe1 = (i+1)/(i+2)
-        #                 coe2 = 1/(i+2)
-
-        #             v_shifted = v.shift_times(self._time_shift)
-                    
-        #             other_fstruct = getattr(other_copy,k)
-        #             fstruct_shifted = other_fstruct.shift_times(other_copy._time_shift)
-                    
-        #             time_intersect = set(v_shifted.times).intersection(set(fstruct_shifted.times))
-
-        #             for time in v_shifted.times:
-        #                 if time not in time_intersect:
-        #                     v_shifted.remove_time(time)
-                            
-        #             for time in fstruct_shifted.times:
-        #                 if time not in time_intersect:
-        #                     fstruct_shifted.remove_time(time)
-                            
-        #             new_v = coe1*v_shifted + coe2*fstruct_shifted
-        #             setattr(self_copy,k,new_v)
-            
-        #     return self_copy
         
     def _del_times(self,times):
         for  v in self.__dict__.values():
@@ -213,10 +167,23 @@ class temporal_base(ABC):
         for  k, v in self.__dict__.items():
             if isinstance(v,cd.FlowStructND):
                 v.shift_times(time)
-                setattr(self,k,v.shift_times(time))
+                
+    def _handle_time_remove(self,fstructs,times_list):
+        dt = self.metaDF['DT']
+        intersect_times = self._get_intersect(times_list,dt=dt)
+
+        for fstruct in fstructs:
+            for time in fstruct.times:
+                if time not in intersect_times:
+                    fstruct.remove_time(time)
+                
+                if not time in times_list[0]:
+                    min_pos = np.argmin(times_list[0] - time)
+                    fstruct.index.update_outer_key(time,times_list[0][min_pos])
+                    
+        return fstructs
                 
                 
-            
     @classmethod
     def _get_times_phase(cls,paths,PhyTimes=None):
         times_shifts = [cls._get_time_shift(path) for path in paths]
