@@ -145,7 +145,7 @@ class _FlowStruct_base(datastruct):
         if None in self.index.outer_index:
             return None
         else:
-            return sorted([float(x) for x in self.outer_index])
+            return np.array(sorted([float(x) for x in self.outer_index]))
 
     @times.setter
     def times(self,values):
