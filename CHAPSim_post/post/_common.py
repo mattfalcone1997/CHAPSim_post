@@ -15,7 +15,6 @@ from functools import wraps
 import CHAPSim_post.dtypes as cd
 from CHAPSim_post import rcParams
 from CHAPSim_post.utils import misc_utils
-
   
 class classproperty():
     def __init__(self,func):
@@ -221,14 +220,12 @@ class temporal_base(ABC):
     def _get_times_phase(cls,paths,PhyTimes=None):
         times_shifts = [cls._get_time_shift(path) for path in paths]
         
-        print(times_shifts)
         if PhyTimes is None:
             times_list = [ np.array(misc_utils.time_extract(path)) + shift\
                         for shift, path in zip(times_shifts,paths)]
             print([max(time) for time in times_list])
             
-            times_shifted = cls._get_intersect(times_list)
-            print(max(times_shifted))
+            times_shifted = cls._get_intersect(paths[0],times_list)
             
         else:
             times_shifted = PhyTimes    
@@ -238,11 +235,13 @@ class temporal_base(ABC):
         return [times_shifted - shift for shift in times_shifts]
     
     @classmethod
-    def _get_intersect(cls,times_list):
-        _intersect = lambda times: [any(np.isclose(x,times)) for x in times_list[0]]
+    def _get_intersect(cls,path,times_list):
+        meta_data = cls._module._meta_data(path,tgpost=True)
+        DT = meta_data.metaDF['DT']
         
+        _intersect = lambda times: [any(np.isclose(x,times,atol=DT)) for x in times_list[0]]
+
         intersection = np.array( [_intersect(times) for times in times_list[1:]]).all(axis=0)
-        print(intersection)
         return times_list[0][intersection]
         
             
