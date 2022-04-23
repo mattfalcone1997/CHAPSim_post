@@ -118,7 +118,7 @@ class temporal_base(ABC):
                 raise ValueError(msg)
             items = np.array(items)
         else:
-            items = np.ones(objects_temp)
+            items = np.ones(len(objects_temp))
             
             
         object_attrs = objects_temp[0].__dict__.keys()
