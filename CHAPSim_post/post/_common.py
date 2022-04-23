@@ -181,7 +181,7 @@ class temporal_base(ABC):
                 if not time in times_list[0]:
                     min_pos = np.argmin(times_list[0] - time)
                     fstruct.index.update_outer_key(time,times_list[0][min_pos])
-                    print(fstruct.index._outer_index)
+
         return fstructs
                 
                 
