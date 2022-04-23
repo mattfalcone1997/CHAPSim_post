@@ -7,7 +7,7 @@ from abc import abstractmethod, ABC, abstractproperty
 import numpy as np
 import matplotlib as mpl
 
-import sys
+import logging
 import os
 import warnings
 import gc
@@ -813,5 +813,8 @@ class CHAPSim_Inst_temp(_Inst_base):
                 msg = ("The averaged data does not contain the "
                         "required times. Re-extracting average data.")
                 warnings.warn(msg)
+                
+                logging.debug(f"Instant times: {times}. AVG times:"
+                              f" {avg_data.times}")
         return self._module._avg_temp_class(path_to_folder=path_to_folder,abs_path=abs_path,PhyTimes=times)
 
