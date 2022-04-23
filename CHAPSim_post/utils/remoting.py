@@ -11,7 +11,7 @@ class RemoteSSH:
         self._address = address
         
     def _user_ready(self):            
-        x = input(f"Are you ready to log in to ssh at {self._address} (y or n)?")
+        x = input(f"Are you ready to log in to ssh at {self._address} (y or n)? ")
         if x.lower() == 'n':
             msg = "You are not ready"
             raise RuntimeError(msg)
