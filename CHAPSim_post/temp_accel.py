@@ -34,7 +34,7 @@ class temp_accel_base(cp.temporal_base):
 
     @classmethod
     def _get_time_shift(cls,path):
-        meta_data = cp.CHAPSim_meta(path,tgpost=True)
+        meta_data = cls._module._meta_class(path,tgpost=True)
         return - meta_data.metaDF['temp_start_end'][0]
             
     def _shift_times(self,time):
