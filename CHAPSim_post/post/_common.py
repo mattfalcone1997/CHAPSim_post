@@ -145,7 +145,7 @@ class temporal_base(ABC):
                             for val,shift in zip(vals,time_shifts)]
                 
                 times_list = [val.times for val in vals]
-                
+                print(times_list)
                 vals = starter_obj._handle_time_remove(vals,times_list)
                 print([val.times for val in vals])
                 coeffs = items/np.sum(items)
@@ -170,7 +170,6 @@ class temporal_base(ABC):
                 
     def _handle_time_remove(self,fstructs,times_list):
         dt = self.metaDF['DT']
-        print(times_list)
         intersect_times = self._get_intersect(times_list,dt=dt)
 
         for fstruct in fstructs:
@@ -192,7 +191,6 @@ class temporal_base(ABC):
         if PhyTimes is None:
             times_list = [ np.array(misc_utils.time_extract(path)) + shift\
                         for shift, path in zip(times_shifts,paths)]
-            print([max(time) for time in times_list])
             
             times_shifted = cls._get_intersect(times_list,path=paths[0])
             
