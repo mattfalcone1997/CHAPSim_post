@@ -222,7 +222,7 @@ class temporal_base(ABC):
         times_shifts = [cls._get_time_shift(path) for path in paths]
         print(times_shifts)
         if PhyTimes is None:
-            times_list = [ np.array(misc_utils.time_extract(path)) + shift\
+            times_list = [ set(np.array(misc_utils.time_extract(path)) + shift)\
                         for shift, path in zip(times_shifts,paths)]
             print(times_list)
             
