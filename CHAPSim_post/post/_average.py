@@ -1080,6 +1080,18 @@ class CHAPSim_AVG_tg(_AVG_base):
         Pr_Velo_grad_tensor = np.concatenate(array_list[5])
         DUDX2_tensor = np.concatenate(array_list[6])
 
+        if cp.rcParams["SymmetryAVG"] and self.Domain.ischannel:
+            flow_AVG = 0.5*(flow_AVG + flow_AVG[:,::-1])
+            PU_vector = 0.5*(PU_vector + PU_vector[:,::-1])
+            UU_tensor = 0.5*(UU_tensor + UU_tensor[:,::-1])
+            UUU_tensor = 0.5*(UUU_tensor + UUU_tensor[:,::-1])
+            Velo_grad_tensor = 0.5*(Velo_grad_tensor + \
+                                Velo_grad_tensor[:,::-1])
+            Pr_Velo_grad_tensor = 0.5*(Pr_Velo_grad_tensor + \
+                            Pr_Velo_grad_tensor[:,::-1])
+            DUDX2_tensor = 0.5*(DUDX2_tensor + DUDX2_tensor[:,::-1])
+
+
         flow_index, pu_index, uu_index, uuu_index, dudx_index, pr_dudx_index, dudxdudx_index =  index_list
 
         flow_AVGDF = cd.FlowStruct1D(self._coorddata,flow_AVG,index=flow_index)
