@@ -1405,8 +1405,8 @@ class FlowStructND_time(FlowStructND):
         coordstruct_c['t'] = np.array(self.times)
         
         new_coorddata = AxisData(self.Domain,
-                                                    coordstruct_c,
-                                                    None)
+                                coordstruct_c,
+                                None)
         return FlowStructND(new_coorddata,
                             array,
                             index=index,
@@ -1445,6 +1445,7 @@ class FlowStructND_time(FlowStructND):
 
     def _getitem_process_singlekey(self,key):
         fstruct = self.to_ND()
+        print(fstruct.index)
         return fstruct[None,key]
 
     def _getitem_process_multikey(self,key):
