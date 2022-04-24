@@ -24,12 +24,14 @@ def _compute_spectra_tg(fluct1, fluct2, fft_axis,mean_axis):
         return (fluct_hat1*fluct_hat2.conj()).mean(mean_axis)
 
 def _compute_spectra_io(fluct1, fluct2, fft_axis):
-    fluct_hat1 =numpy_fft.rfft(fluct1,axis=fft_axis)
+    
+    N = fluct1.shape[fft_axis]
+    fluct_hat1 =numpy_fft.rfft(fluct1,axis=fft_axis)/N
     
     if fluct2 is None:
         return fluct_hat1*fluct_hat1.conj()
     else:
-        fluct_hat2 = numpy_fft.rfft(fluct2,axis=fft_axis)
+        fluct_hat2 = numpy_fft.rfft(fluct2,axis=fft_axis)/N
         return fluct_hat1*fluct_hat2.conj()
 
 def _test_symmetry(array,axis):
@@ -92,8 +94,7 @@ class _Spectra_base(Common):
         
         axis = fstruct.get_dim_from_axis(item)
 
-        array =  np.fft.irfft(spec_array,axis=axis,norm=None)
-        array *= array.shape[axis]
+        array =  np.fft.irfft(spec_array,axis=axis,norm='forward')
         
         if norm:
             array = array/array[0]
