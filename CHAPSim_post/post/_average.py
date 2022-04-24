@@ -457,7 +457,7 @@ class CHAPSim_AVG_io(_AVG_developing):
         PR_Velo_grad_tensorDF = cd.FlowStruct2D(self._coorddata,Pr_Velo_grad_tensor,index=tensor_2_index) 
         DUDX2_tensorDF = cd.FlowStruct2D(self._coorddata,DUDX2_tensor,index=tensor_4_index) 
 
-        if cp.rcParams["SymmetryAVG"] and self.metaDF['iCase'] == 1:
+        if cp.rcParams["SymmetryAVG"] and self.Domain.is_channel:
             flow_AVGDF = 0.5*(flow_AVGDF + \
                             flow_AVGDF.symmetrify(dim=0))
             PU_vectorDF = 0.5*(PU_vectorDF +\
@@ -1080,7 +1080,7 @@ class CHAPSim_AVG_tg(_AVG_base):
         Pr_Velo_grad_tensor = np.concatenate(array_list[5])
         DUDX2_tensor = np.concatenate(array_list[6])
 
-        if cp.rcParams["SymmetryAVG"] and self.Domain.ischannel:
+        if cp.rcParams["SymmetryAVG"] and self.Domain.is_channel:
             flow_AVG = 0.5*(flow_AVG + flow_AVG[:,::-1])
             PU_vector = 0.5*(PU_vector + PU_vector[:,::-1])
             UU_tensor = 0.5*(UU_tensor + UU_tensor[:,::-1])
@@ -1638,7 +1638,7 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg,temporal_base):
         Pr_Velo_grad_tensor = np.concatenate(array_list[5])
         DUDX2_tensor = np.concatenate(array_list[6])
 
-        if cp.rcParams["SymmetryAVG"] and self.Domain.ischannel:
+        if cp.rcParams["SymmetryAVG"] and self.Domain.is_channel:
             flow_AVG = 0.5*(flow_AVG + flow_AVG[:,::-1])
             PU_vector = 0.5*(PU_vector + PU_vector[:,::-1])
             UU_tensor = 0.5*(UU_tensor + UU_tensor[:,::-1])
