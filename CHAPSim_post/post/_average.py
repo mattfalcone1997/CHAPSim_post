@@ -751,12 +751,7 @@ class CHAPSim_AVG_io(_AVG_developing):
 
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
-
-        # self.Domain.styleAxes(ax)
         
-        ncol = cplt.get_legend_ncols(len(x_vals))
-        ax.clegend(vertical=False,ncol=ncol)
-
         return fig, ax
 
     def _get_uplus_yplus_transforms(self,PhyTime,x_val):
@@ -803,8 +798,6 @@ class CHAPSim_AVG_io(_AVG_developing):
         ax.set_xlabel(r"$y^+$")
         ax.set_ylabel(r"$\bar{u}^+$")
         ax.set_xscale('log')
-        ncol = cplt.get_legend_ncols(len(x_vals))
-        ax.clegend(vertical=False,ncol=ncol)
 
         return fig, ax
 
@@ -841,12 +834,7 @@ class CHAPSim_AVG_io(_AVG_developing):
 
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
-
-        # self.Domain.styleAxes(ax)
         
-        ncol = cplt.get_legend_ncols(len(x_vals))
-        ax.clegend(vertical=False,ncol=ncol)
-
         return fig, ax
 
     def plot_Reynolds_x(self,comp,y_vals_list,y_mode='half-channel',PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
@@ -934,11 +922,6 @@ class CHAPSim_AVG_io(_AVG_developing):
         ax.set_xlabel(x_label)
 
         ax.set_xlim([-1,-0.1])
-
-        # self.Domain.styleAxes(ax)
-
-        ncol = cplt.get_legend_ncols(len(x_vals))
-        ax.clegend(vertical=False,ncol=ncol)
 
         return fig, ax
 
@@ -1919,8 +1902,6 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg,temporal_base):
 
             fig, ax = super().plot_mean_flow(comp,time,fig=fig,ax=ax,line_kw=line_kw,**kwargs)
         
-        ncol = cplt.get_legend_ncols(len(PhyTimes))
-        ax.clegend(vertical=False,ncol=ncol)
         return fig, ax
 
     def plot_flow_wall_units(self,PhyTimes,fig=None,ax=None,line_kw=None,**kwargs):
@@ -1933,8 +1914,6 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg,temporal_base):
 
             fig, ax = super().plot_flow_wall_units(time,fig=fig,ax=ax,line_kw=line_kw,**kwargs)
         
-        ncol = cplt.get_legend_ncols(len(PhyTimes))
-        ax.clegend(vertical=False,ncol=ncol)
         return fig, ax
 
     def plot_Reynolds(self,comp,PhyTimes,fig=None,ax=None,line_kw=None,**kwargs):
@@ -1947,7 +1926,6 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg,temporal_base):
             fig, ax = super().plot_Reynolds(comp,PhyTime=time,fig=fig,ax=ax,line_kw=line_kw,**kwargs)
         
         ncol = cplt.get_legend_ncols(len(PhyTimes))
-        ax.clegend(vertical=False,ncol=ncol)
         return fig, ax
 
     def plot_eddy_visc(self,PhyTimes,fig=None,ax=None,line_kw=None,**kwargs):
@@ -1960,7 +1938,6 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg,temporal_base):
             fig, ax = super().plot_eddy_visc(time,fig=fig,ax=ax,line_kw=line_kw,**kwargs)
         
         ncol = cplt.get_legend_ncols(len(PhyTimes))
-        ax.clegend(vertical=False,ncol=ncol)
         return fig, ax
 
     def plot_Reynolds_x(self,comp,y_vals_list,y_mode='half-channel',fig=None,ax=None,line_kw=None,**kwargs):

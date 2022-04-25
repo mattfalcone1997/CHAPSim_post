@@ -138,11 +138,6 @@ class CHAPSim_AVG_temp_conv(CHAPSim_AVG_temp):
             line.set_xdata(self.CoordDF['x'])
             line.set_label(r"$x_{conv}=%.3g$"%float(x))
         
-        ax.get_legend().remove()
-        ncol = cplt.get_legend_ncols(len(lines))
-        ax.clegend(vertical=False,ncol=ncol)
-        ax.get_gridspec().tight_layout(fig)
-
         return fig, ax
 
     def plot_Reynolds_x(self,*args,**kwargs):
@@ -151,7 +146,6 @@ class CHAPSim_AVG_temp_conv(CHAPSim_AVG_temp):
         ax.set_xlabel(r"$x_{conv}$")
         ax.relim()
         ax.autoscale_view()
-        ax.get_gridspec().tight_layout(fig)
         return fig, ax  
 
     def plot_bulk_velocity(self,*args,**kwargs):
@@ -177,10 +171,7 @@ class CHAPSim_AVG_temp_conv(CHAPSim_AVG_temp):
         lines = ax.get_lines()[-len(x_vals):]
         for line,x in zip(lines,x_vals):
             line.set_label(r"$x_{conv}=%.3g$"%float(x))
-        ax.get_legend().remove()
-        ncol = cplt.get_legend_ncols(len(lines))
-        ax.clegend(vertical=False,ncol=ncol)
-        ax.get_gridspec().tight_layout(fig)
+
         return fig, ax
 
     def plot_mean_flow(self,x_vals,*args,**kwargs):
@@ -191,10 +182,6 @@ class CHAPSim_AVG_temp_conv(CHAPSim_AVG_temp):
         for line,x in zip(lines,x_vals):
             line.set_label(r"$x_{conv}=%.3g$"%float(x))
             
-        ax.get_legend().remove()
-        ncol = cplt.get_legend_ncols(len(lines))
-        ax.clegend(vertical=False,ncol=ncol)
-        ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
     def plot_near_wall(self,x_vals,*args,**kwargs):
@@ -204,10 +191,7 @@ class CHAPSim_AVG_temp_conv(CHAPSim_AVG_temp):
         lines = ax.get_lines()[-len(x_vals):]
         for line,x in zip(lines,x_vals):
             line.set_label(r"$x_{conv}=%.3g$"%float(x))
-        ax.get_legend().remove()
-        ncol = cplt.get_legend_ncols(len(lines))
-        ax.clegend(vertical=False,ncol=ncol)
-        ax.get_gridspec().tight_layout(fig)
+
         return fig, ax
 
 from CHAPSim_post.post._common import Common
@@ -279,10 +263,6 @@ class CHAPSim_perturb(Common):
             ax.set_ylabel(r"$y/\delta$")# ,fontsize=16)
             ax.set_ylim([-1,y_max])
 
-        axes_items_num = len(ax.get_lines())
-        ncol = 4 if axes_items_num>3 else axes_items_num
-        ax.clegend(vertical=False,ncol=ncol, fontsize=16)
-        ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
     def plot_perturb_cf(self,wall_units=False,fig=None,ax=None,**kwargs):

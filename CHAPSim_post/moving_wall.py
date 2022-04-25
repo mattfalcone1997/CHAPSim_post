@@ -254,7 +254,6 @@ class CHAPSim_perturb():
             ax.set_ylim([-1,y_max])
 
         ncol = cplt.get_legend_ncols(len(ax.get_lines()))
-        ax.clegend(vertical=False,ncol=ncol)
         ax.get_gridspec().tight_layout(fig)
         return fig, ax
 
