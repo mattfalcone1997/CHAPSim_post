@@ -990,6 +990,7 @@ class CHAPSim_momentum_budget_temp(CHAPSim_momentum_budget_tg,_budget_base):
     _flowstruct_class = cd.FlowStruct1D_time
 
     def plot_budget(self,times_list, budget_terms=None,fig=None, ax =None,line_kw=None,**kwargs):
+        times_list = misc_utils.check_list_vals(times_list)
         
         fig, ax = self._create_budget_axes(times_list,fig,ax,**kwargs)
         for i,time in enumerate(times_list):
