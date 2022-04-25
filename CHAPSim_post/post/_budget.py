@@ -50,8 +50,9 @@ class _budget_base(Common,ABC):
         else:
             raise TypeError("incorrect time")
         
-        if not all([comp in budget_terms for comp in comp_list]):
-            raise KeyError("Invalid budget term provided")
+        for comp in comp_list:
+            if not comp in budget_terms:
+                raise KeyError(f"Invalid budget term ({comp}) provided")
 
         return comp_list
 
