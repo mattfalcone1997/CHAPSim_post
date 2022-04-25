@@ -727,7 +727,10 @@ class datastruct:
         
         if self._is_multidim() and not self._indexer.is_multikey(key):
             self.delete_inner_key(key)
-            
+        
+        if not key in self.index:
+            raise KeyError(f"Key {key} not present in "
+                           f"{self.__class__.__name__}")
         key = self._indexer._item_handler(key)
         loc = self._indexer.get_loc(key)
 
