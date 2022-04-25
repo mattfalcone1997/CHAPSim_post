@@ -807,16 +807,35 @@ class CHAPSim_Inst_temp(_Inst_base):
     
     def _create_avg_data(self,path_to_folder,abs_path,time0,avg_data=None):
         times = self.InstDF.times
-
+                                                  
+        
         if avg_data is not None:
             if all(time in avg_data.times for time in times):
                 return avg_data
             else:
-                msg = ("The averaged data does not contain the "
-                        "required times. Re-extracting average data.")
-                warnings.warn(msg)
+                inst_intersect = avg_data._get_intersect(times,avg_data.times,
+                                                          path=path_to_folder)
+                avg_intersect = avg_data._get_intersect(avg_data.times,times,
+                                                          path=path_to_folder)
                 
-                logger.debug(f"Instant times: {times}. AVG times:"
-                              f" {avg_data.times}")
+                if all(time in inst_intersect for time in times):
+                    new_avg_data = avg_data.copy()
+                    for time in new_avg_data.times:
+                        if not time in avg_intersect:
+                            new_avg_data.remove_time(time)
+                    
+                    new_avg_data.times = inst_intersect
+                    if new_avg_data.times != times:
+                        raise ValueError("There has been a problem with the"
+                                         f" times: {new_avg_data.times} {times}")
+                    return new_avg_data
+                
+                else:
+                    msg = ("The averaged data does not contain the "
+                            "required times. Re-extracting average data.")
+                    warnings.warn(msg)
+                    
+                    logger.debug(f"Instant times: {times}. AVG times:"
+                                f" {avg_data.times}")
         return self._module._avg_temp_class(path_to_folder=path_to_folder,abs_path=abs_path,PhyTimes=times)
 
