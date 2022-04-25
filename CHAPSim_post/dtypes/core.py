@@ -724,6 +724,10 @@ class datastruct:
         self._indexer.append(key)
                 
     def __delitem__(self,key):
+        
+        if self._is_multidim() and not self._indexer.is_multikey(key):
+            self.delete_inner_key(key)
+            
         key = self._indexer._item_handler(key)
         loc = self._indexer.get_loc(key)
 
