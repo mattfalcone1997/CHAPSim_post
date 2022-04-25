@@ -83,8 +83,9 @@ class _budget_base(Common,ABC):
         figsize= [7*ax_size[1],5*ax_size[0]+1]
 
         kwargs = cplt.update_subplots_kw(kwargs,gridspec_kw=gridspec_kw,figsize=figsize)
-        fig, ax, _ = cplt.create_fig_ax_without_squeeze(*ax_size,fig=fig,ax=ax,**kwargs)
-        return fig, ax.flatten()
+        fig, ax, single_input = cplt.create_fig_ax_without_squeeze(*ax_size,fig=fig,ax=ax,**kwargs)
+        ax = ax.flatten()
+        return fig, ax[0] if single_input else ax
 
     @staticmethod
     def title_with_math(string):
