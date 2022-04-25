@@ -726,8 +726,10 @@ class datastruct:
     def __delitem__(self,key):
         print(key)
         print(self._is_multidim(),not self._indexer.is_multikey(key))
+        
         if self._is_multidim() and not self._indexer.is_multikey(key):
             self.delete_inner_key(key)
+            return
         
         if not key in self.index:
             raise KeyError(f"Key {key} not present in "
