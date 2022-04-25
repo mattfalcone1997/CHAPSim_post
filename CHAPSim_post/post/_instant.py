@@ -813,9 +813,9 @@ class CHAPSim_Inst_temp(_Inst_base):
             if all(time in avg_data.times for time in times):
                 return avg_data
             else:
-                inst_intersect = avg_data._get_intersect(times,avg_data.times,
+                inst_intersect = avg_data._get_intersect([times,avg_data.times],
                                                           path=path_to_folder)
-                avg_intersect = avg_data._get_intersect(avg_data.times,times,
+                avg_intersect = avg_data._get_intersect([avg_data.times,times],
                                                           path=path_to_folder)
                 
                 if all(time in inst_intersect for time in times):
