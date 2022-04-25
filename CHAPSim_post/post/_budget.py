@@ -394,10 +394,7 @@ class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
             label = r"$\int^{\delta}_{-\delta}$ %s $dy$"%comp.title()
             ax.cplot(x_coords,int_budget,label=label,**line_kw)
 
-        ax.set_xlabel(r"$x/\delta$")
-        ncol = cplt.get_legend_ncols(len(budget_terms))
-        ax.clegend(ncol=ncol,vertical=False)
-        
+        ax.set_xlabel(r"$x/\delta$")        
 
         return fig, ax
 
@@ -660,9 +657,7 @@ class CHAPSim_budget_temp(CHAPSim_budget_tg):
 
         time_label = cp.styleParams.timeStyle
         ax.set_xlabel(r"$%s$"%time_label)
-        ncol = cplt.get_legend_ncols(len(budget_terms))
-        ax.clegend(ncol=ncol,vertical=False)
-
+        
         return fig, ax
 
 class _k_budget(_budget_base,ABC):
@@ -1095,8 +1090,7 @@ class _FIK_developing_base(_budget_base):
             ax.cplot(xaxis_vals,budget_term,label=label,**line_kw)
         if plot_total:
             ax.cplot(xaxis_vals,np.sum(self.budgetDF.values,axis=0),label="Total",**line_kw)
-        ncol = cplt.get_legend_ncols(len(budget_terms))
-        ax.clegend(ncol=ncol,vertical=False)
+
         return fig, ax
 
 class CHAPSim_FIK_io(_FIK_developing_base):
