@@ -84,8 +84,7 @@ class _budget_base(Common,ABC):
 
         kwargs = cplt.update_subplots_kw(kwargs,gridspec_kw=gridspec_kw,figsize=figsize)
         fig, ax, single_input = cplt.create_fig_ax_without_squeeze(*ax_size,fig=fig,ax=ax,**kwargs)
-        ax = ax.flatten()
-        return fig, ax[0] if single_input else ax
+        return fig, ax.flatten(), single_input
 
     @staticmethod
     def title_with_math(string):
@@ -308,7 +307,7 @@ class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
 
         budget_terms = self._check_terms(budget_terms)
 
-        fig, ax = self._create_budget_axes(x_list,fig=fig,ax=ax,**kwargs)
+        fig, ax, single_input = self._create_budget_axes(x_list,fig=fig,ax=ax,**kwargs)
         line_kw= cplt.update_line_kw(line_kw)
 
 
@@ -347,7 +346,7 @@ class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
 
         fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.1),ncol=4)
             
-        return fig, ax
+        return fig, ax[0] if single_input else ax
 
     # def plot_budget(self, x_list,PhyTime=None,budget_terms=None,wall_units=True, fig=None, ax =None,line_kw=None,**kwargs):
         
@@ -574,7 +573,7 @@ class CHAPSim_budget_tg(ReynoldsBudget_base,_budget_base):
 class Budget_tg_array(postArray,_budget_base):
     def plot_budget(self,budget_terms=None, wall_units=False,fig=None, ax =None,line_kw=None,**kwargs):
 
-        fig, ax = self._create_budget_axes(self._data_dict.keys(),fig,ax,**kwargs)
+        fig, ax, single_input = self._create_budget_axes(self._data_dict.keys(),fig,ax,**kwargs)
         
         for i, (label, data) in enumerate(self._data_dict.items()):
             fig, ax[i] = data.plot_budget(PhyTime = None, budget_terms=budget_terms,wall_units=wall_units,fig=fig,ax=ax[i],line_kw=line_kw)
@@ -589,7 +588,7 @@ class Budget_tg_array(postArray,_budget_base):
 
         fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.1),ncol=4)
 
-        return fig, ax
+        return fig, ax[0] if single_input else ax
 
 
 class CHAPSim_budget_temp(CHAPSim_budget_tg):
@@ -617,7 +616,7 @@ class CHAPSim_budget_temp(CHAPSim_budget_tg):
         
         budget_terms = self._check_terms(budget_terms)
         line_kw= cplt.update_line_kw(line_kw)
-        fig, ax = self._create_budget_axes(time_list,fig,ax,**kwargs)
+        fig, ax, single_input = self._create_budget_axes(time_list,fig,ax,**kwargs)
 
         for i,time in enumerate(time_list):
             fig, ax[i] = super().plot_budget(time,
@@ -638,7 +637,7 @@ class CHAPSim_budget_temp(CHAPSim_budget_tg):
 
         fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.1),ncol=4)
 
-        return fig, ax
+        return fig, ax[0] if single_input else ax
 
     def plot_integral_budget(self, budget_terms, fig=None, ax=None, line_kw=None, **kwargs):
         budget_terms = self._check_terms(budget_terms)
@@ -792,7 +791,7 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
 
         budget_terms = self._check_terms(budget_terms)
 
-        fig, ax = self._create_budget_axes(x_list,fig=fig,ax=ax,**kwargs)
+        fig, ax, single_input = self._create_budget_axes(x_list,fig=fig,ax=ax,**kwargs)
         line_kw= cplt.update_line_kw(line_kw)
 
 
@@ -822,14 +821,14 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
 
         fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.1),ncol=4)
             
-        return fig, ax
+        return fig, ax[0] if single_input else ax
 
     def plot_integrated_budget(self,x_list,budget_terms=None,PhyTime=None, fig=None, ax =None,line_kw=None,**kwargs):
         PhyTime = self.avg_data.check_PhyTime(PhyTime)
         x_list = misc_utils.check_list_vals(x_list)
         budget_terms = self._check_terms(budget_terms)
 
-        fig, ax = self._create_budget_axes(x_list,fig,ax,**kwargs)
+        fig, ax, single_input = self._create_budget_axes(x_list,fig,ax,**kwargs)
         line_kw= cplt.update_line_kw(line_kw)
 
         for i,x_loc in enumerate(x_list):
@@ -868,7 +867,7 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
 
         fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.1),ncol=4)
             
-        return fig, ax
+        return fig, ax[0] if single_input else ax
 
 class CHAPSim_momentum_budget_tg(_momentum_budget_base,_budget_base):
     _flowstruct_class = cd.FlowStruct1D
@@ -969,7 +968,7 @@ class CHAPSim_momentum_budget_tg(_momentum_budget_base,_budget_base):
 class Mom_budget_array(Budget_tg_array):
     def plot_integrated_budget(self,budget_terms=None, wall_units=False,fig=None, ax =None,line_kw=None,**kwargs):
 
-        fig, ax = self._create_budget_axes(self._data_dict.keys(),fig,ax,**kwargs)
+        fig, ax, single_input = self._create_budget_axes(self._data_dict.keys(),fig,ax,**kwargs)
         
         for i, (label, data) in enumerate(self._data_dict.items()):
             fig, ax[i] = data.plot_budget(PhyTime = None, budget_terms=budget_terms,wall_units=wall_units,fig=fig,ax=ax[i],line_kw=line_kw)
@@ -984,7 +983,7 @@ class Mom_budget_array(Budget_tg_array):
 
         fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.1),ncol=4)
 
-        return fig, ax
+        return fig, ax[0] if single_input else ax
 
 
 class CHAPSim_momentum_budget_temp(CHAPSim_momentum_budget_tg,_budget_base):
@@ -993,7 +992,7 @@ class CHAPSim_momentum_budget_temp(CHAPSim_momentum_budget_tg,_budget_base):
     def plot_budget(self,times_list, budget_terms=None,fig=None, ax =None,line_kw=None,**kwargs):
         times_list = misc_utils.check_list_vals(times_list)
         
-        fig, ax = self._create_budget_axes(times_list,fig,ax,**kwargs)
+        fig, ax, single_input = self._create_budget_axes(times_list,fig,ax,**kwargs)
         for i,time in enumerate(times_list):
             fig, ax[i] = super().plot_budget(PhyTime=time,budget_terms=budget_terms,fig=fig,ax=ax[i],line_kw=line_kw)
 
@@ -1008,11 +1007,11 @@ class CHAPSim_momentum_budget_temp(CHAPSim_momentum_budget_tg,_budget_base):
 
         fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.1),ncol=4)
 
-        return fig, ax
+        return fig, ax[0] if single_input else ax
 
     def plot_integrated_budget(self,times_list, budget_terms=None,fig=None, ax =None,line_kw=None,**kwargs):
         
-        fig, ax = self._create_budget_axes(times_list,fig,ax,**kwargs)
+        fig, ax, single_input = self._create_budget_axes(times_list,fig,ax,**kwargs)
         for i,time in enumerate(times_list):
             fig, ax[i] = super().plot_integrated_budget(PhyTime=time,budget_terms=budget_terms,fig=fig,ax=ax[i],line_kw=line_kw)
             ax[i].get_legend().remove()
@@ -1028,7 +1027,7 @@ class CHAPSim_momentum_budget_temp(CHAPSim_momentum_budget_tg,_budget_base):
 
         fig.clegend(handles,labels,loc='upper center',bbox_to_anchor=(0.5,0.1),ncol=4)
 
-        return fig, ax
+        return fig, ax[0] if single_input else ax
 
 class _FIK_developing_base(_budget_base):
 
