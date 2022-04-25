@@ -27,6 +27,6 @@ dependencies:
   - decorator
   - virtualenv
   - pytables
-  - pyfftw>=0.13
+  - pyfftw
   - scp
   - paramiko
