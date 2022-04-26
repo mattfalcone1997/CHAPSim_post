@@ -94,7 +94,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         x_coords = self.CoordDF['x']
         
         U_infty_grad = np.zeros(self.NCL[0])
-        U_infty = U0 - wall_velo
+        U_infty = self._bulk_velo_calc(PhyTime)#U0 - wall_velo
         REN = self.metaDF['REN']
         for i in range(self.NCL[0]):
             if i ==0:
