@@ -69,7 +69,7 @@ class CHAPSim_AVG_temp(temp_accel_base,cp.CHAPSim_AVG_temp):
 
     def accel_param_calc(self):
         U_mean = self.flow_AVGDF[None,'u']
-        U_infty = U_mean[self.NCL[1] // 2 ]
+        U_infty = self._bulk_velo_calc(None)#U_mean[self.NCL[1] // 2 ]
 
         times = self.times
         dudt = np.gradient(U_infty,times,edge_order=2)
