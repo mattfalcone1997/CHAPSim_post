@@ -69,7 +69,7 @@ class CHAPSim_AVG_temp(temp_accel_base,cp.CHAPSim_AVG_temp):
 
     def accel_param_calc(self):
         U_mean = self.flow_AVGDF[None,'u']
-        U_infty = U_mean[self.NCL[1] // 2 ]
+        U_infty = self._bulk_velo_calc(None)#U_mean[self.NCL[1] // 2 ]
 
         times = self.times
         dudt = np.gradient(U_infty,times,edge_order=2)
@@ -78,7 +78,7 @@ class CHAPSim_AVG_temp(temp_accel_base,cp.CHAPSim_AVG_temp):
         accel_param = (1/(REN*U_infty**3))*dudt
         return accel_param
 
-    def plot_accel_param(self,fig=None,ax=None,**kwargs):
+    def plot_accel_param(self,fig=None,ax=None,line_kw=None,**kwargs):
         accel_param = self.accel_param_calc()
 
         xaxis = self._return_xaxis()
@@ -86,7 +86,10 @@ class CHAPSim_AVG_temp(temp_accel_base,cp.CHAPSim_AVG_temp):
         kwargs = cplt.update_subplots_kw(kwargs,figsize=[7,5])
         fig, ax = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
 
-        ax.cplot(xaxis,accel_param,label=r"$K$")
+        line_kw = cplt.update_line_kw(line_kw,label = r"$K$")
+
+
+        ax.cplot(xaxis,accel_param,**line_kw)
 
         ax.set_xlabel(r"$t^*$")# ,fontsize=18)
         ax.set_ylabel(r"$K$")# ,fontsize=18)
