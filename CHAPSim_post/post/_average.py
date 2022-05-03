@@ -944,7 +944,7 @@ class CHAPSim_AVG_tg(_AVG_base):
             Whether the path provided is absolute or relative, by default True
         """
 
-        PhyTimes = misc_utils.check_list_vals(sorted(PhyTimes))
+        PhyTimes = sorted(misc_utils.check_list_vals(PhyTimes))
         
         self._meta_data = self._module._meta_class(path_to_folder,abs_path,tgpost=True)
 
