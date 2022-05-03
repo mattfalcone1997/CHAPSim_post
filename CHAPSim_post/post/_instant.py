@@ -647,18 +647,12 @@ class _Inst_base(Common,ABC):
         PhyTime = self.check_PhyTime(PhyTime)
 
         vorticity = np.zeros((3,*self.InstDF.shape),dtype='f8')
-        u_velo = self.InstDF[PhyTime,'u']
-        v_velo = self.InstDF[PhyTime,'v']
-        w_velo = self.InstDF[PhyTime,'w']
+        velo_vector = self.InstDF.values[:3]
 
-        vorticity[0] = gradient.Grad_calc(self.InstDF.CoordDF,w_velo,'y') - \
-                        gradient.Grad_calc(self.InstDF.CoordDF,v_velo,'z')    
-                          
-        vorticity[1] = gradient.Grad_calc(self.InstDF.CoordDF,u_velo,'z') - \
-                        gradient.Grad_calc(self.InstDF.CoordDF,w_velo,'x')      
-        vorticity[2] = gradient.Grad_calc(self.InstDF.CoordDF,v_velo,'x') - \
-                        gradient.Grad_calc(self.InstDF.CoordDF,u_velo,'y')     
-
+        vorticity = gradient.Curl(self.InstDF.CoordDF,
+                                 velo_vector,
+                                 polar=self.Domain.is_polar)
+                                 
         index = [(PhyTime,x) for x in ['x','y','z']]
         return cd.FlowStruct3D(self.InstDF._coorddata,vorticity,index=index)
 
@@ -823,7 +817,9 @@ class CHAPSim_Inst_temp(_Inst_base):
                                                           path=path_to_folder)
                 avg_intersect = avg_data._get_intersect([avg_data.times,times],
                                                           path=path_to_folder)
-                
+                print(inst_intersect)
+                print(avg_intersect)
+
                 if all(time in inst_intersect for time in times):
                     new_avg_data = avg_data.copy()
                     for time in new_avg_data.times:

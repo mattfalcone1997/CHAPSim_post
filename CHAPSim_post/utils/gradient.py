@@ -24,7 +24,7 @@ else:
 
 __all__ = ["Grad_calc",'Scalar_grad_io',"Vector_div_io",
             "Scalar_laplacian_io","Scalar_laplacian_tg",
-             "totIntegrate_y",'cumIntegrate_y']
+             "totIntegrate_y",'cumIntegrate_y','Curl']
 
 _cupy_avail = False
 
@@ -394,7 +394,27 @@ def Scalar_laplacian_tg(coordDF,flow_array):
     dflow_dy = Grad_calc(coordDF,flow_array,'y')
     return Grad_calc(coordDF,dflow_dy,'y')
 
+def Curl(CoordDF,flow_array,polar=True):
 
+    if polar:
+        r = CoordDF['y']
+        r_inv = r**-1
+    else:
+        r = 1.
+        r_inv = 1.
+
+    curl_array = np.zeros_like(flow_array)
+    if flow_array.shape[0] == 3:
+        r = r[:,np.newaxis]
+        r_inv = r_inv[:,np.newaxis]
+        curl_array[0] = r_inv*(Grad_calc(CoordDF,r*flow_array[2],'y') -\
+                            Grad_calc(CoordDF,flow_array[1],'z'))
+        curl_array[1] = r_inv*Grad_calc(CoordDF,r*flow_array[2],'x') -\
+                            Grad_calc(CoordDF,flow_array[0],'z')
+        curl_array[2] = Grad_calc(CoordDF,r*flow_array[1],'x') -\
+                            Grad_calc(CoordDF,flow_array[0],'y')
+    else:
+        raise ValueError("Must be 3D big sad")
 
 
 
