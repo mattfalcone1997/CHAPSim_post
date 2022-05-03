@@ -45,6 +45,8 @@ class _Inst_base(Common,ABC):
     """
     
     _inst_comp = ['u', 'v', 'w','p']
+    _update_time = True
+    
     @docstring.copy_fromattr("_inst_extract")
     def __init__(self,*args,**kwargs):
         fromfile= kwargs.pop('fromfile',False)
@@ -52,7 +54,11 @@ class _Inst_base(Common,ABC):
             self._inst_extract(*args,**kwargs)
         else:
             self._hdf_extract(*args,**kwargs)
-
+    
+    @classmethod
+    def update_time(cls,val):
+        cls._update_time = False
+    
     @abstractproperty
     def _avg_class(self):
         pass
