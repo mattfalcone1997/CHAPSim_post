@@ -64,7 +64,7 @@ class Params:
             if isinstance(value,str):
                 value = np.dtype(value)
             
-            if not isinstance(value,np.floating):
+            if not issubclass(value,np.floating):
                 msg = f"For key {key}, the value must be of type or str corresponding to numpy floating type"
                 raise TypeError(msg)
             
