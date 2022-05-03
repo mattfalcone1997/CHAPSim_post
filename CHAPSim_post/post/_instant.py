@@ -57,7 +57,7 @@ class _Inst_base(Common,ABC):
     
     @classmethod
     def update_time(cls,val):
-        cls._update_time = False
+        cls._update_time = val
     
     @abstractproperty
     def _avg_class(self):
@@ -762,7 +762,7 @@ class CHAPSim_Inst_io(_Inst_base):
     
     def _create_avg_data(self,path_to_folder,abs_path,time0,avg_data=None):
         time = misc_utils.max_time_calc(path_to_folder,abs_path)
-        if avg_data is not None:
+        if avg_data is not None and self._update_time:
             if time in avg_data.times:
                 return avg_data
             else:
@@ -780,7 +780,7 @@ class CHAPSim_Inst_tg(_Inst_base):
     
     def _create_avg_data(self,path_to_folder,abs_path,time0,avg_data=None):
         time = misc_utils.max_time_calc(path_to_folder,abs_path)
-        if avg_data is not None:
+        if avg_data is not None and self._update_time:
             if time in avg_data.times:
                 return avg_data
             else:
@@ -815,7 +815,7 @@ class CHAPSim_Inst_temp(_Inst_base):
         times = self.InstDF.times
                                                   
         
-        if avg_data is not None:
+        if avg_data is not None and self._update_time:
             if all(time in avg_data.times for time in times):
                 return avg_data
             else:
