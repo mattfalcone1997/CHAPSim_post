@@ -300,7 +300,7 @@ class TEST_flow_quant(blayer_TEST_base):
         self.AVGdata = cd.FlowStruct2D(self._meta_data._coorddata,
                                        avg_info,index=index)
         
-        print(int_info)
+
     def plot_mom_thickness(self,fig=None, ax = None, line_kw=None,**kwargs):
         
         x_coords = self._meta_data.Coord_ND_DF['x'][:-1]

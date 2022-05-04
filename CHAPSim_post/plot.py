@@ -252,6 +252,31 @@ class AxesCHAPSim(mpl.axes.Axes):
         if self.get_legend() is not None:
             self.clegend(*args,**kwargs)
 
+    def apply_func_contours(self,comp,func):
+        quadmesh_list = [x for x in self.get_children()\
+                            if isinstance(x,mpl.collections.QuadMesh)]
+        contour_list = [x for x in self.get_children()\
+                            if isinstance(x,mpl.collections.PathCollection)]
+        
+        if comp == 'x':
+            indexer_quad = (slice(None),slice(None),0)
+            indexer_contour = (slice(None),0)
+        else:
+            indexer_quad = (slice(None),slice(None),1)
+            indexer_contour = (slice(None),1)
+
+        if quadmesh_list:
+            for quad in quadmesh_list:
+                quad._coordinates[indexer_quad] = func(quad._coordinates[indexer_quad])
+
+        if contour_list:
+            for path_col in contour_list:
+                paths = path_col.get_paths()
+                for path in paths:
+                    vertices = path._vertices
+                    vertices[indexer_contour] = func(vertices[indexer_contour])
+                    path._vertices = vertices
+                    
     def normalise(self,axis,val,use_gcl=False):
 
         lines = self.get_lines()[-1:] if use_gcl else self.get_lines()

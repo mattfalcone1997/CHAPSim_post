@@ -77,18 +77,16 @@ class _FlowStruct_base(datastruct):
         for index in del_index:
             del self[index]
     
-    def shift_times(self,time: Number) -> FlowStructType:
+    def shift_times(self,time_shift: Number) -> FlowStructType:
         """
         Shifts all the FlowStruct's times by a scalar
         """
         
-        new_index = []
-        for index in self.index:
-            new_time = float(index[0]) + time
-            new_index.append(self._indexer._item_handler((new_time,*index[1:])))
+        times = self.times.copy()
+        for time in times:
+            self.index.update_outer_key(time,time+time_shift)
 
-        return self.from_internal(dict(zip(new_index, self._data)))     
-
+        return self
     def _get_identity_transform(self) ->  Callable:
         """
         For use on ``plot_line`` internals if data transform is given as None
@@ -1002,6 +1000,13 @@ class FlowStructND(_FlowStruct_base):
         ax.cplot(transform_xdata(coord_data),transform_ydata(data),**line_kw)
 
         return fig, ax
+    @staticmethod
+    def update_plot_params(plot_params,**kwargs):
+        if plot_params is None:
+            plot_params = {}
+
+        plot_params.update(kwargs)
+        return plot_params
 
     def plot_contour(self,comp: str,
                         time: Number =None,
