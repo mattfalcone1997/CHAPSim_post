@@ -818,17 +818,13 @@ class CHAPSim_Inst_temp(_Inst_base):
                 avg_intersect = avg_data._get_intersect([avg_data.times,times],
                                                           path=path_to_folder)
 
-                assert len(inst_intersect) == len(avg_intersect)
                 if all(time in inst_intersect for time in times):
                     new_avg_data = avg_data.copy()
-            
-                    for inst_time, avg_time in zip(inst_intersect,avg_intersect):
-                        if not inst_time in avg_intersect:
-                            for  v in new_avg_data.__dict__.values():
-                                if isinstance(v,cd.FlowStructND):
-                                    v.index.update_outer_key(avg_time,inst_time)
+                    avg_times = [time for time in new_avg_data.times if not time in avg_intersect]
+                    new_avg_data._del_times(avg_times)
 
-                    if not all(time in new_avg_data.times for time in times):
+                    new_avg_data.times = inst_intersect
+                    if all(time in times for time  in new_avg_data.times):
                         raise ValueError("There has been a problem with the"
                                          f" times: {new_avg_data.times} {times}")
                     return new_avg_data
