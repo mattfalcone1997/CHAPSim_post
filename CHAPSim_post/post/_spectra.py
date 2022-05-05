@@ -359,7 +359,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
              
         times = utils.time_extract(path_to_folder)
         if PhyTimes is not None:
-            times = [time for time in PhyTimes if time in times]
+            times = self._get_intersect([times,PhyTimes],path=path_to_folder)
             if len(times) < 1:
                 msg = "None of the provided times are in the results folder"
                 raise ValueError(msg)
