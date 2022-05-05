@@ -818,8 +818,10 @@ class CHAPSim_Inst_temp(_Inst_base):
                 avg_intersect = avg_data._get_intersect([avg_data.times,times],
                                                           path=path_to_folder)
 
+                assert len(inst_intersect) == len(avg_intersect)
                 if all(time in inst_intersect for time in times):
                     new_avg_data = avg_data.copy()
+            
                     for inst_time, avg_time in zip(inst_intersect,avg_intersect):
                         if not inst_time in avg_intersect:
                             for  v in new_avg_data.__dict__.values():
