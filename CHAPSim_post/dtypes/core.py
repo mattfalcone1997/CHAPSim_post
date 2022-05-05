@@ -367,7 +367,8 @@ class structIndexer:
         if len(index) != 2:
             return False
 
-        if not all(isinstance(ind,(list,Index)) for ind in index):
+        allowed_types = (list, Index, np.ndarray)
+        if not all(isinstance(ind,allowed_types) for ind in index):
             return False
 
         if len(index[0]) != len(index[1]):

@@ -213,8 +213,7 @@ class temporal_base(ABC):
         _intersect = lambda times: [any(np.isclose(x,times,atol=dt)) for x in times_list[0]]
 
         intersection = np.array( [_intersect(times) for times in times_list[1:]]).all(axis=0)
-        times = np.array(times_list[0])[intersection]
-        return list(times)
+        return np.array(times_list[0])[intersection]
         
             
     @require_override
