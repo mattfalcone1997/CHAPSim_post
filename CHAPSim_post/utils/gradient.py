@@ -413,6 +413,8 @@ def Curl(CoordDF,flow_array,polar=True):
                             Grad_calc(CoordDF,flow_array[0],'z')
         curl_array[2] = Grad_calc(CoordDF,r*flow_array[1],'x') -\
                             Grad_calc(CoordDF,flow_array[0],'y')
+
+        return curl_array
     else:
         raise ValueError("Must be 3D big sad")
 
