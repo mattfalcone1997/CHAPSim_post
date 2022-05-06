@@ -60,7 +60,8 @@ class Common(ABC):
     
     def _flowstructs(self):
         members = getmembers(self,lambda x: not(isroutine(x)))
-        
+        members = [member for member in members \
+                    if isinstance(member[1],cd.FlowStructND)]
         return dict(*members)
 
     @property
