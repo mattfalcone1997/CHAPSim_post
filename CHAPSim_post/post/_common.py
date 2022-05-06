@@ -12,7 +12,7 @@ from functools import wraps
 import CHAPSim_post.dtypes as cd
 from CHAPSim_post import rcParams
 from CHAPSim_post.utils import misc_utils
-from inspect import getmembers
+from inspect import getmembers, isroutine
 import copy
   
 class classproperty():
@@ -58,9 +58,9 @@ class Common(ABC):
             key = self.__class__.__name__
         return key
     
-    @property
     def _flowstructs(self):
-        members = getmembers(self,lambda x: isinstance(x,cd.FlowStructND))
+        members = getmembers(self,lambda x: not(isroutine(x)))
+        
         return dict(*members)
 
     @property
@@ -165,19 +165,19 @@ class temporal_base(Common,ABC):
 
     @times.setter
     def times(self,value):
-        for  v in self._flowstructs.values():
+        for  v in self._flowstructs().values():
             if not len(value) == len(v.times):
                 raise ValueError("The length of the new times"
                                 " must be the same as the existing one")
             v.times = value
         
     def _del_times(self,times):
-        for  v in self._flowstructs.values():
+        for  v in self._flowstructs().values():
             for time in times:
                 v.remove_time(time)
                     
     def _shift_times(self,time):
-        for v in self._flowstructs.values():
+        for v in self._flowstructs().values():
             v.shift_times(time)
                 
     def _handle_time_remove(self,fstructs,times_list):
