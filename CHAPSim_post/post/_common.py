@@ -4,17 +4,16 @@ A module to create base level visualisation classes
 providing functionality common to several classes
 """
 import numpy as np
-import matplotlib as mpl
 import sys
-import pyvista
-import copy
-import itertools
+
 import warnings
 from abc import abstractmethod, ABC, abstractproperty, abstractclassmethod
 from functools import wraps
 import CHAPSim_post.dtypes as cd
 from CHAPSim_post import rcParams
 from CHAPSim_post.utils import misc_utils
+from inspect import getmembers
+import copy
   
 class classproperty():
     def __init__(self,func):
@@ -60,6 +59,11 @@ class Common(ABC):
         return key
     
     @property
+    def _flowstructs(self):
+        members = getmembers(self,lambda x: isinstance(x,cd.FlowStructND))
+        return dict(*members)
+
+    @property
     def Domain(self):
         return self._meta_data.coord_data._domain_handler
 
@@ -95,7 +99,7 @@ def require_override(func):
        raise NotImplementedError(msg)
    
     return _return_func
-class temporal_base(ABC):
+class temporal_base(Common,ABC):
     
     @classmethod
     def phase_average(cls,*objects_temp,items=None):
@@ -154,18 +158,27 @@ class temporal_base(ABC):
                 
                     
         return starter_obj
-            
+    
+    @abstractproperty
+    def times(self):
+        pass
+
+    @times.setter
+    def times(self,value):
+        for  v in self._flowstructs.values():
+            if not len(value) == len(v.times):
+                raise ValueError("The length of the new times"
+                                " must be the same as the existing one")
+            v.times = value
         
     def _del_times(self,times):
-        for  v in self.__dict__.values():
-            if isinstance(v,cd.FlowStructND):
-                for time in times:
-                    v.remove_time(time)
+        for  v in self._flowstructs.values():
+            for time in times:
+                v.remove_time(time)
                     
     def _shift_times(self,time):
-        for  k, v in self.__dict__.items():
-            if isinstance(v,cd.FlowStructND):
-                v.shift_times(time)
+        for v in self._flowstructs.values():
+            v.shift_times(time)
                 
     def _handle_time_remove(self,fstructs,times_list):
         dt = self.metaDF['DT']
