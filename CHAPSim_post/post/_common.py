@@ -59,10 +59,8 @@ class Common(ABC):
         return key
     
     def _flowstructs(self):
-        members = getmembers(self,lambda x: not(isroutine(x)))
-        members = [member for member in members \
-                    if isinstance(member[1],cd.FlowStructND)]
-        return dict(*members)
+        members = getmembers(self,lambda x: isinstance(x,cd.FlowStructND))
+        return dict(members)
 
     @property
     def Domain(self):
