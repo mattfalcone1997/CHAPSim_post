@@ -72,7 +72,9 @@ class _Spectra_base(Common):
         
         hdf_obj = cd.hdfHandler(filename,'r',key=key)
         self._comp = hdf_obj.attrs['comp']
-        
+    @property
+    def times(self):
+        return self.E_zDF.times
     @property
     def shape(self):
         return self.E_zDF.shape
