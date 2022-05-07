@@ -162,8 +162,7 @@ class temporal_base(Common,ABC):
     def times(self):
         pass
 
-    @times.setter
-    def times(self,value):
+    def set_times(self,value):
         for  v in self._flowstructs().values():
             if not len(value) == len(v.times):
                 raise ValueError("The length of the new times"
