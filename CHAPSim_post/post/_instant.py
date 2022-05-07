@@ -824,7 +824,7 @@ class CHAPSim_Inst_temp(_Inst_base):
                     new_avg_data._del_times(avg_times)
 
                     new_avg_data.set_times(inst_intersect)
-                    if all(time in times for time  in new_avg_data.times):
+                    if not all(time in times for time  in new_avg_data.times):
                         raise ValueError("There has been a problem with the"
                                          f" times: {new_avg_data.times} {times}")
                     return new_avg_data
