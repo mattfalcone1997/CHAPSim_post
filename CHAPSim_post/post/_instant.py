@@ -20,7 +20,6 @@ import CHAPSim_post.dtypes as cd
 
 from CHAPSim_post._libs import file_handler, post
 
-from functools import partial
 from ._average import CHAPSim_AVG_io,CHAPSim_AVG_temp, CHAPSim_AVG_tg
 from ._common import Common, classproperty
 
@@ -44,7 +43,7 @@ class _Inst_base(Common,ABC):
     This is a module for processing and visualising instantaneous data from CHAPSim
     """
     
-    _inst_comp = ['u', 'v', 'w','p']
+    _default_comps = ('u', 'v', 'w','p')
     _update_time = True
     
     @docstring.copy_fromattr("_inst_extract")
@@ -59,11 +58,22 @@ class _Inst_base(Common,ABC):
     def update_time(cls,val):
         cls._update_time = val
     
+    @classmethod
+    def update_default_comps(cls,comps):
+        if not all(isinstance(x, str) for x in comps):
+            raise TypeError("All components must be characters")
+
+        if not all(len(x) == 1 for x in comps):
+            raise ValueError("All components must be length 1")
+        
+        cls._default_comps = tuple(comps)
+        
     @abstractproperty
     def _avg_class(self):
         pass
     
-    def _inst_extract(self,time,path_to_folder='.',avg_data=None,abs_path = True, time0=None):
+
+    def _inst_extract(self,time,path_to_folder='.',avg_data=None, comps=None, abs_path = True, time0=None):
         """
         Instantiates CHAPSim_Inst by extracting data from the 
         CHAPSim rawdata results folder
@@ -87,6 +97,10 @@ class _Inst_base(Common,ABC):
         
         self._meta_data = self._module._meta_class(path_to_folder,abs_path,self._tgpost)
 
+        if comps is None:
+            self._comps = list(self._default_comps)
+        else:
+            self._comps = list(comps)
 
         time = misc_utils.check_list_vals(time)
 
@@ -177,7 +191,7 @@ class _Inst_base(Common,ABC):
             file_temp = open(file,'rb')
             open_list.append(file_temp)
         
-        comp_size = len(self._inst_comp)
+        comp_size = len(self._comps)
         #allocating arrays
         int_info=np.zeros((comp_size,4))
         r_info = np.zeros((comp_size,3))
@@ -219,12 +233,8 @@ class _Inst_base(Common,ABC):
             file_string = "DNS_perixz_INSTANT_T" + instant
         else:
             file_string = "DNS_perioz_INSTANT_T" + instant
-
-        if not self._inst_comp[:3] == ['u','v','w']:
-            msg = "The vectors u v w must occupy the first three position"
-            raise ValueError(msg)
         
-        veloVector = ['_%s'%comp.upper() for comp in self._inst_comp]
+        veloVector = ['_%s'%comp.upper() for comp in self._comps]
         file_ext = ".D"
         
         full_path = misc_utils.check_paths(path_to_folder,'1_instant_rawdata',
@@ -240,7 +250,7 @@ class _Inst_base(Common,ABC):
         flow_info, NCL1, NCL2, NCL3, PhyTime = self._file_extract(file_list)
         
         #Reshaping and interpolating flow data so that it is centred
-        comp_size = len(self._inst_comp)
+        comp_size = len(self._comps)
         flow_info=flow_info.reshape((comp_size,NCL3,NCL2,NCL1))
         flow_info = self._velo_interp(flow_info,NCL3,NCL2,NCL1)
         
@@ -249,7 +259,7 @@ class _Inst_base(Common,ABC):
         Phy_string = '%.9g' % PhyTime
 
         # creating datastruct index
-        index = [[Phy_string]*len(self._inst_comp),self._inst_comp]
+        index = [[Phy_string]*len(self._comps),self._comps]
 
         # creating datastruct so that data can be easily accessible elsewhere
         Instant_DF = cd.FlowStruct3D(self._coorddata,flow_info,index=index,copy=False)# pd.DataFrame(flow_info1,index=index)
@@ -265,27 +275,20 @@ class _Inst_base(Common,ABC):
         #This doesn't interpolate pressure as it is already located at the cell centre
         #interpolation reduces u extent, therefore to maintain size, V, W reduced by 1
         
-        comp_size = len(self._inst_comp)
+        comp_size = len(self._comps)
         flow_interp = np.zeros((comp_size,NCL3,NCL2,NCL1-1))
         
-        flow_interp[0] = post.velo_interp3D(flow_info[0],NCL1,NCL2,NCL3,2)
-        flow_interp[1] = post.velo_interp3D(flow_info[1],NCL1,NCL2,NCL3,1)
-        flow_interp[2] = post.velo_interp3D(flow_info[2],NCL1,NCL2,NCL3,0)
+        for i, comp in enumerate(self._comps):
+            if comp in ('u','v','w'):
+                dim = ord('w') - ord(comp)
+                flow_interp[i] = post.velo_interp3D(flow_info[i],
+                                                    NCL1,
+                                                    NCL2,
+                                                    NCL3,
+                                                    dim) #0.5*(flow_info[i,:,:,:-1] + flow_info[i,:,:,1:])
+            else:
+                flow_interp[i] = flow_info[i,:,:,:-1]
 
-        # for i in range(NCL1-1): #U velocity
-        #     flow_interp[0,:,:,i] = 0.5*(flow_info[0,:,:,i] + flow_info[0,:,:,i+1])
-        # for i in range(NCL2): #V velocity
-        #     if i != NCL2-1:
-        #         flow_interp[1,:,i,:] = 0.5*(flow_info[1,:,i,:-1] + flow_info[1,:,i+1,:-1])
-        #     else: #Interpolate with the top wall
-        #         flow_interp[1,:,i,:] = 0.5*(flow_info[1,:,i,:-1] + flow_info[1,:,0,:-1])
-        # for i in range(NCL3): #W velocity
-        #     if i != NCL3-1:
-        #         flow_interp[2,i,:,:] = 0.5*(flow_info[2,i,:,:-1] + flow_info[2,i+1,:,:-1])
-        #     else: #interpolation with first cell due to z periodicity BC
-        #         flow_interp[2,i,:,:] = 0.5*(flow_info[2,i,:,:-1] + flow_info[2,0,:,:-1])
-        for i in range(3,comp_size):
-            flow_interp[i,:,:,:] = flow_info[i,:,:,:-1] #Removing final pressure value 
         return flow_interp
 
     def check_PhyTime(self,PhyTime):

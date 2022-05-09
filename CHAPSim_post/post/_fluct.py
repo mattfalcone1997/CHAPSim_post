@@ -278,7 +278,7 @@ class CHAPSim_fluct_base(Common):
         return self.fluctDF.__str__()
 
 class CHAPSim_fluct_io(CHAPSim_fluct_base):
-    def _fluct_extract(self,time_inst_data_list,avg_data=None,path_to_folder='.',abs_path=True,*args,**kwargs):
+    def _fluct_extract(self,time_inst_data_list,avg_data=None,path_to_folder='.',*args,**kwargs):
                 
         if not isinstance(time_inst_data_list,(list,tuple)):
             time_inst_data_list = [time_inst_data_list]
@@ -291,9 +291,9 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
                     inst_data += time_inst_data
             else:
                 if 'inst_data' not in locals():
-                    inst_data = self._module._inst_io_class(time_inst_data,path_to_folder=path_to_folder,avg_data=avg_data,abs_path=abs_path)
+                    inst_data = self._module._inst_io_class(time_inst_data,path_to_folder=path_to_folder,avg_data=avg_data,*args,**kwargs)
                 else:
-                    inst_data += self._module._inst_io_class(time_inst_data,path_to_folder=path_to_folder,avg_data=avg_data,abs_path=abs_path)
+                    inst_data += self._module._inst_io_class(time_inst_data,path_to_folder=path_to_folder,avg_data=avg_data,*args,**kwargs)
         
         self.avg_data = inst_data._avg_data
         self._meta_data = inst_data._meta_data

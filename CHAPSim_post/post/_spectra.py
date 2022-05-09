@@ -1,4 +1,4 @@
-from CHAPSim_post.post._common import Common, temporal_base, classproperty
+from CHAPSim_post.post._common import Common, temporal_base
 from CHAPSim_post import utils, rcParams
 import CHAPSim_post.post as cp
 import CHAPSim_post.plot as cplt
@@ -121,6 +121,10 @@ class _Spectra_base(Common):
         
         return args, kwargs
 
+    @abstractmethod                                                   
+    def _fluct_calc(self,time,path_to_folder):
+        pass
+
 _avg_io_class = cp.CHAPSim_AVG_io
 _avg_tg_class = cp.CHAPSim_AVG_tg
 _avg_temp_class = cp.CHAPSim_AVG_temp
@@ -200,10 +204,6 @@ class Spectra1D_io(_Spectra_base):
         self._meta_data = self._avg_data._meta_data
         
         self.E_zDF = cd.FlowStructND.from_hdf(filename,key=key+'/E_zDF')
-        
-    @abstractmethod                                                   
-    def _fluct_calc(self,time,path_to_folder):
-        pass
 
     def plot_spectra_contour(self,x_loc,time=None,wavelength=False,premultiply=True,contour_kw=None,fig=None,ax=None):
                 
@@ -469,9 +469,6 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         return cd.FlowStructND(*fstruct_args,
                                **fstruct_kwargs)
         
-    @abstractmethod
-    def _fluct_calc(self,time,path_to_folder):
-        pass
         
     def plot_spectra_contour(self,direction,time=None,wavelength=False,premultiply=True,contour_kw=None,fig=None,ax=None):
         if direction not in ['x','z']:
@@ -529,7 +526,12 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
        
 class velocitySpectra1D_io(Spectra1D_io):            
     def _fluct_calc(self,time,path_to_folder):
-        fluct_data = self._module._fluct_io_class(time,path_to_folder=path_to_folder,avg_data=self._avg_data)
+        
+        comps = list(set(self._comp))
+
+        fluct_data = self._module._fluct_io_class(time,path_to_folder=path_to_folder,
+                                                       avg_data=self._avg_data,
+                                                       comps=comps)
         
         comp1, comp2 = self._comp
         if comp1 == comp2:
@@ -539,7 +541,12 @@ class velocitySpectra1D_io(Spectra1D_io):
                     
 class velocitySpectra1D_temp(Spectra1D_temp):
     def _fluct_calc(self,time,path_to_folder):
-        fluct_data = self._module._fluct_temp_class(time,path_to_folder=path_to_folder,avg_data=self._avg_data)
+
+        comps = list(set(self._comp))
+
+        fluct_data = self._module._fluct_temp_class(time,path_to_folder=path_to_folder,
+                                                         avg_data=self._avg_data,
+                                                         comps=comps)
         
         comp1, comp2 = self._comp
         if comp1 == comp2:
