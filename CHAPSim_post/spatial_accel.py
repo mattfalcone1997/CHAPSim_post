@@ -33,7 +33,8 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         U_mean = self.flow_AVGDF[PhyTime,'u'].copy()
         y_coords = self.CoordDF['y']
 
-        U0 = U_mean[-1]
+        U0 = self.flow_AVGDF[PhyTime,'u'][-1,:]
+            
         theta_integrand = np.zeros_like(U_mean)
         delta_integrand = np.zeros_like(U_mean)
         mom_thickness = np.zeros(self.shape[1])
@@ -115,7 +116,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         
         return accel_param
 
-    def plot_accel_param(self,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
+    def plot_accel_param(self,PhyTime=None,desired=False,fig=None,ax=None,line_kw=None,**kwargs):
         
         accel_param = self.accel_param_calc(PhyTime)
         x_coords = self.CoordDF['x']
@@ -126,6 +127,12 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         line_kw = cplt.update_line_kw(line_kw,label = r"$K$")
         
         ax.cplot(x_coords,accel_param,**line_kw)
+        if desired:
+            REN = self.metaDF['REN']
+            U = self._meta_data.U_infty
+            k_des = (1/(REN*U**2))*np.gradient(U,x_coords)
+
+            ax.cplot(x_coords,k_des,label=r'$K_{des}$')
         xlabel = self.Domain.create_label(r"$x$")
         ax.set_xlabel(xlabel)
         ax.set_ylabel(r"$K$")
@@ -153,7 +160,8 @@ class CHAPSim_meta(cp.CHAPSim_meta):
         super()._hdf_extract(file_name, key)
         hdf_obj = cd.hdfHandler(file_name,mode='r',key=key)
         
-        self.U_infty = hdf_obj['U_infty'][:]
+        if 'U_infty' in hdf_obj.keys():
+            self.U_infty = hdf_obj['U_infty'][:]
         
     def save_hdf(self,file_name,write_mode,key=None):
         if key is None:
@@ -162,13 +170,37 @@ class CHAPSim_meta(cp.CHAPSim_meta):
         super().save_hdf(file_name,write_mode,key=key)
         hdf_obj = cd.hdfHandler(file_name,mode='a',key=key)
         
-        hdf_obj.create_dataset('U_infty',data=self.U_infty)
+        if hasattr(self,'U_infty'):
+            hdf_obj.create_dataset('U_infty',data=self.U_infty)
+
+_meta_class = CHAPSim_meta
 
 class CHAPSim_budget_io(cp.CHAPSim_budget_io):
     pass
         
-_meta_class = CHAPSim_meta
+class CHAPSim_momentum_budget_io(cp.CHAPSim_momentum_budget_io):
+    def __init__(self,comp,avg_data,PhyTime=None,advection_split=False):
+        
+        super().__init__(comp,avg_data,PhyTime)
 
+        if advection_split:
+            PhyTime = self.avg_data.check_PhyTime(PhyTime)
+            self._advection_split(comp,PhyTime)
+        
+
+    def _advection_split(self,comp,PhyTime):
+        advection = self.budgetDF[PhyTime,'advection']
+
+        U = self.avg_data.flow_AVGDF[PhyTime,'u']
+        V = self.avg_data.flow_AVGDF[PhyTime,'v']
+        U_comp = self.avg_data.flow_AVGDF[PhyTime,comp] 
+
+        U_dU_dx = -1*U* self.Domain.Grad_calc(self.avg_data.CoordDF,U,'x')
+        V_dU_dy = -1*V* self.Domain.Grad_calc(self.avg_data.CoordDF,U,'y')
+        self.budgetDF[PhyTime,'advection (term 1)'] = U_dU_dx
+        self.budgetDF[PhyTime,'advection (term 2)'] = V_dU_dy
+
+        del self.budgetDF[PhyTime,'advection']
 class blayer_TEST_base(ABC):
     blayer_folder = "8_BLAYER_TESTS/"
     blayer_avg_test = "7_BLAYER_DATA"

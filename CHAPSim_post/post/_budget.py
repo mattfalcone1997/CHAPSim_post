@@ -802,7 +802,7 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
                 fig, ax[i] = self.budgetDF.plot_line(comp,'y',x_loc,time=PhyTime,channel_half=True,
                                                     fig=fig,ax=ax[i],line_kw=line_kw)
             
-            title = self.Domain.create_label(r"$x = %.2g$"%x_loc)
+            title = self.Domain.create_label(r"$x = %.3g$"%x_loc)
             ax[i].set_title(title,loc='right')
 
             if mpl.rcParams['text.usetex'] == True:

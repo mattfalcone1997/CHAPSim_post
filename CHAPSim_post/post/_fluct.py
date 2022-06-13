@@ -322,7 +322,9 @@ class CHAPSim_fluct_io(CHAPSim_fluct_base):
 
             # fluct[j] = post.fluct_calc_io(inst_values,avg_values)
             fluct[j] = inst_values - avg_values
-        return cd.FlowStruct3D(self._coorddata,fluct,index=inst_data.InstDF.index.copy())
+        return cd.FlowStruct3D(inst_data.InstDF._coorddata,
+                               fluct,
+                               index=inst_data.InstDF.index)
     
 class CHAPSim_fluct_tg(CHAPSim_fluct_base):
     def _fluct_extract(self,time_inst_data_list,avg_data=None,path_to_folder='.',abs_path=True,*args,**kwargs):
@@ -371,8 +373,9 @@ class CHAPSim_fluct_tg(CHAPSim_fluct_base):
             
             #fluct[j] = post.fluct_calc_tg(inst_values,avg_values)
             fluct[j] = inst_values - avg_values[:,np.newaxis]
-        return cd.FlowStruct3D(self._coorddata,fluct,index=inst_data.InstDF.index)#.data(inst_data.shape)
-
+        return cd.FlowStruct3D(inst_data.InstDF._coorddata,
+                               fluct,
+                               index=inst_data.InstDF.index)
 class CHAPSim_fluct_temp(CHAPSim_fluct_base):
     def _fluct_extract(self,time_inst_data_list,avg_data=None,path_to_folder='.',abs_path=True,*args,**kwargs):
         if not hasattr(time_inst_data_list,'__iter__'):
@@ -424,4 +427,6 @@ class CHAPSim_fluct_temp(CHAPSim_fluct_base):
             #     for k in range(inst_data.shape[2]):
             #         fluct[j,i,:,k] = inst_values[i,:,k] -avg_values
 
-        return cd.FlowStruct3D(self._coorddata,fluct,index=inst_data.InstDF.index)
+        return cd.FlowStruct3D(inst_data.InstDF._coorddata,
+                               fluct,
+                               index=inst_data.InstDF.index)

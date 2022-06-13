@@ -70,29 +70,37 @@ class VTKstruct_base:
         time = self._flowstruct.index.check_outer(time,err)
         return self[time,inner_list]
     
-    def save_vtk(self,file_name):
-        file_base, file_ext = os.path.splitext(file_name)
-        if file_ext == ".vtk":
+    def save_vtk(self,file_path):
+        file_name = os.path.basename(file_path)
+        file_split = file_name.split('.')
+        if "vtk" in file_split:
             writer = vtk.vtkStructuredGridWriter()
-        elif file_ext == ".vts":
+
+        elif "vts" in file_split:
             writer = vtk.vtkXMLStructuredGridWriter()
-        elif file_ext == "":
-            file_name = file_base +".vts"
+
+        elif os.path.splitext(file_name)[-1] == "":
+            file_path = file_path + ".vts"
             writer = vtk.vtkXMLStructuredGridWriter()
+            
         else:
-            msg = "This function can only use the vtk or vts file extension not %s"%file_ext
-            raise ValueError(msg)
+            raise ValueError("This function can only use the vtk or vts")
 
         times = self._flowstruct.times
         if times is None:
             times = [None]
+
+        if len(times) > 1 and file_split[-1].isnumeric():
+            raise Exception(f"Filename: {file_name}, last extension cannot"
+                            " be numeric if multiple times are give")
+
         for i,time in enumerate(times):
 
             grid = self._grid
             if len(times) > 1:
                 num_zeros = int(np.log10(len(self._flowstruct.times)))+1
                 ext = str(i).zfill(num_zeros)
-                file_name = os.path.join(file_name,".%s"%ext)
+                file_path = os.path.join(file_path,".%s"%ext)
 
             if self._use_cell_data:
                 for comp in self._flowstruct.comp:
@@ -101,7 +109,7 @@ class VTKstruct_base:
                 for comp in self._flowstruct.comp:
                     grid.point_data[np.str_(comp)] = self._flowstruct[time,comp].flatten()
             
-            writer.SetFileName(file_name)
+            writer.SetFileName(file_path)
 
             if vtk.vtkVersion().GetVTKMajorVersion() <= 5:
                 grid.Update()

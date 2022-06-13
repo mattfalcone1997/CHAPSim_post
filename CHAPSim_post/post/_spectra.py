@@ -12,7 +12,7 @@ from time import perf_counter
 pyfftw.config.PLANNER_EFFORT = 'FFTW_ESTIMATE'
 pyfftw.interfaces.cache.enable()
         
-def _compute_spectra_tg(fluct1, fluct2, fft_axis,mean_axis):
+def _compute_spectra_tg_base(fluct1, fluct2, fft_axis,mean_axis):
         
     N = fluct1.shape[fft_axis]
     fluct_hat1 =numpy_fft.rfft(fluct1,axis=fft_axis,norm=None)/N
@@ -23,7 +23,7 @@ def _compute_spectra_tg(fluct1, fluct2, fft_axis,mean_axis):
         fluct_hat2 = numpy_fft.rfft(fluct2,axis=fft_axis,norm=None)/N
         return (fluct_hat1*fluct_hat2.conj()).mean(mean_axis)
 
-def _compute_spectra_io(fluct1, fluct2, fft_axis):
+def _compute_spectra_io_base(fluct1, fluct2, fft_axis):
     
     N = fluct1.shape[fft_axis]
     fluct_hat1 =numpy_fft.rfft(fluct1,axis=fft_axis)/N
@@ -156,7 +156,7 @@ class Spectra1D_io(_Spectra_base):
             coe1 = i/(i+1)
             coe2 = 1/(i+1)
             
-            pre_spectra_z = _compute_spectra_io(fluct1, fluct2, 0)
+            pre_spectra_z = self._compute_spectra(fluct1, fluct2, 0)
             
             if i == 0:
                 spectra_z = np.zeros_like(pre_spectra_z)
@@ -185,7 +185,9 @@ class Spectra1D_io(_Spectra_base):
                                     wall_normal_line = 'y',
                                     polar_plane=None)
     
-    
+    def _compute_spectra(self,fluct1, fluct2, fft_axis):
+        return _compute_spectra_io_base(fluct1,fluct2,fft_axis)
+
     def save_hdf(self,filename,mode,key=None):
         if key is None:
             key = self.__class__.__name__
@@ -232,6 +234,52 @@ class Spectra1D_io(_Spectra_base):
         fstruct_args, fstruct_kwargs =  self._get_autocorrelation('z', norm)
         return cd.FlowStructND(*fstruct_args,
                                **fstruct_kwargs)
+
+    def plot_spectra_contour(self,x_val,time=None,wavelength=False,premultiply=True,contour_kw=None,fig=None,ax=None):
+        contour_kw = cplt.update_contour_kw(contour_kw)
+        if 'plot_func' not in contour_kw:
+            contour_kw['plot_func'] = 'contourf'
+            
+        time = self.E_zDF.check_times(time)
+        k = self.E_zDF.CoordDF['k_z']
+
+        c_transform = (lambda x: np.abs(x)*k[:,np.newaxis]) if premultiply else np.abs
+        x_transform = (lambda x: 2*np.pi/x) if wavelength else None
+
+        fig, ax = self.E_zDF.slice[:,:,x_val].plot_contour(self._comp,
+                                                        time=time,
+                                                        rotate=True,
+                                                        transform_xdata=x_transform,
+                                                        transform_cdata=c_transform,
+                                                        contour_kw=contour_kw,
+                                                        fig=fig,
+                                                        ax=ax)
+
+        
+        return fig, ax
+
+    def plot_spectra_line(self,x_vals,y_val,wavelength=False,y_mode='half-channel', line_kw=None,fig=None,ax=None):
+            
+        time = self.E_zDF.check_times(time)
+        
+        labels = [ "$x/\delta=%.1f$"%x for x in x_vals ]
+        
+        x_transform = (lambda x: 2*np.pi/x) if wavelength else None
+        
+        y_vals = self._avg_data.ycoords_from_coords(y_vals,mode=y_mode)[0]
+        y_vals_int = self._avg_data.ycoords_from_norm_coords(y_vals,mode=y_mode)[0]
+
+        for i, x in enumerate(x_vals):
+            fig, ax = self.E_zDF.slice[:,y_vals_int[0],x].plot_line(self._comp,
+                                                            time=time,
+                                                            label=labels[i],
+                                                            transform_xdata=x_transform,
+                                                            fig=fig,
+                                                            ax=ax,
+                                                            line_kw=line_kw)
+                                        
+        return fig, ax
+
 class Spectra1D_tg(_Spectra_base, ABC):    
     def _spectra_extract(self,comp, path_to_folder,time0=None):
              
@@ -256,8 +304,8 @@ class Spectra1D_tg(_Spectra_base, ABC):
             coe1 = i/(i+1)
             coe2 = 1/(i+1)
             
-            pre_spectra_z = _compute_spectra_tg(fluct1, fluct2, 0,2)
-            pre_spectra_x = _compute_spectra_tg(fluct1, fluct2, 2,0)
+            pre_spectra_z = self._compute_spectra(fluct1, fluct2, 0,2)
+            pre_spectra_x =self. _compute_spectra(fluct1, fluct2, 2,0)
             
             if i == 0:
                 spectra_z = np.zeros_like(pre_spectra_z)
@@ -308,7 +356,10 @@ class Spectra1D_tg(_Spectra_base, ABC):
                                     data_layout = ['k_x', 'y'],
                                     wall_normal_line = 'y',
                                     polar_plane=None)
-        
+    
+    def _compute_spectra(self,fluct1, fluct2, fft_axis,mean_axis):
+        return _compute_spectra_tg_base(fluct1, fluct2, fft_axis,mean_axis)
+
     @property
     def _meta_data(self):
         return self._avg_data._meta_data
@@ -388,8 +439,8 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
             fluct1, fluct2 = self._fluct_calc(time,path_to_folder)
             
             time2 = perf_counter()
-            spectra_z.append(_compute_spectra_tg(fluct1, fluct2, 0, 2))
-            spectra_x.append(_compute_spectra_tg(fluct1, fluct2, 2, 0).T)
+            spectra_z.append(self._compute_spectra(fluct1, fluct2, 0, 2))
+            spectra_x.append(self._compute_spectra(fluct1, fluct2, 2, 0).T)
             
             print(f"Time step {i+1} or {len(times)}. Extraction: "
                     f"{time2 - time1}s. Calculation {perf_counter() - time2}",flush=True)
@@ -439,7 +490,10 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
                                     data_layout = ['k_x', 'y'],
                                     wall_normal_line = 'y',
                                     polar_plane=None)
-                                    
+    
+    def _compute_spectra(self,fluct1, fluct2, fft_axis,mean_axis):
+        return _compute_spectra_tg_base(fluct1, fluct2, fft_axis,mean_axis)
+
     def save_hdf(self,filename,mode,key=None):
         if key is None:
             key = self.__class__.__name__
@@ -484,7 +538,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
         fstruct = self.E_zDF if direction =='z' else self.E_xDF
         k = fstruct.CoordDF[f'k_{direction}']
         
-        c_transform = (lambda x: x*k[:,np.newaxis]) if premultiply else None
+        c_transform = (lambda x: np.abs(x)*k[:,np.newaxis]) if premultiply else np.abs
         x_transform = (lambda x: 2*np.pi/x) if wavelength else None
         return fstruct.plot_contour(self._comp,
                                     time=time,
@@ -518,12 +572,7 @@ class Spectra1D_temp(_Spectra_base,temporal_base, ABC):
                                         line_kw=line_kw)
                                         
         return fig, ax
-    
-            
-            
-        
-
-       
+      
 class velocitySpectra1D_io(Spectra1D_io):            
     def _fluct_calc(self,time,path_to_folder):
         
@@ -553,3 +602,7 @@ class velocitySpectra1D_temp(Spectra1D_temp):
             return fluct_data.fluctDF[time,comp1], None
         else:
             return fluct_data.fluctDF[time,comp1], fluct_data.fluctDF[time,comp2]        
+
+
+class pressureStrainSpectra_temp(Spectra1D_temp):
+    pass

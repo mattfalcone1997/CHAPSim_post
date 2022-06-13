@@ -1322,32 +1322,47 @@ class CHAPSim_AVG_tg(_AVG_base):
         # self.Domain.styleAxes(ax)
 
         return fig, ax
-    
-    def plot_flow_wall_units(self,PhyTime=None,fig=None,ax=None,line_kw=None,**kwargs):
+
+    def _get_uplus_yplus_transforms(self,PhyTime):
+        u_tau, delta_v = self.wall_unit_calc(PhyTime)
+        
+        if self.Domain.is_polar:
+            x_transform = lambda y:  -1*(y - 1.0)/delta_v
+            y_transform = lambda u: u/u_tau
+        else:
+            x_transform = lambda y:  (y + 1.0)/delta_v
+            y_transform = lambda u: u/u_tau
+        
+        return x_transform, y_transform
+
+    def plot_flow_wall_units(self,PhyTime=None,fig=None,ax=None,line_kw=None,plot_sublayer=True,**kwargs):
 
         PhyTime = self.check_PhyTime(PhyTime)
-        fig, ax = self.flow_AVGDF.plot_line('u',channel_half=True,time=PhyTime,
-                            fig=fig,ax=ax,line_kw=line_kw,**kwargs)
 
-        if self.Domain.is_polar:
-            flip_axis = lambda x: -1*(x - 1.0)
-            ax.apply_func('x',flip_axis)
-        else:
-            ax.shift_xaxis(1.0)
+        
+        y_plus_trans, u_plus_trans = self._get_uplus_yplus_transforms(PhyTime)
 
-        u_tau, delta_v = self.wall_unit_calc(PhyTime)
+
+        fig, ax = self.flow_AVGDF.plot_line('u',
+                                            channel_half=True,
+                                            time=PhyTime,
+                                            transform_xdata=y_plus_trans,
+                                            transform_ydata=u_plus_trans,
+                                            fig=fig,ax=ax,
+                                            line_kw=line_kw,
+                                            **kwargs)
+
+        if plot_sublayer:
+            u = np.amax(self.flow_AVGDF[PhyTime,'u'])
+            u_plus_array = np.linspace(0,u_plus_trans(u),100)
+            ax.cplot(u_plus_array,u_plus_array,
+                     label=r"$\bar{u}^+=y^+$",
+                     color='r',
+                     linestyle='--')
+
+        
 
         ax.set_xscale('log')
-        ax.normalise('y',u_tau)
-        ax.normalise('x',delta_v)
-
-        labels = [l.get_label() for l in ax.get_lines()]
-        if not r"$\bar{u}^+=y^+$" in labels:
-            uplus_max = ax.get_ylim()[1]
-            u_plus_array = np.linspace(0,uplus_max,100)
-
-            ax.cplot(u_plus_array,u_plus_array,label=r"$\bar{u}^+=y^+$",color='r',linestyle='--')
-
         ax.set_xlabel(r"$y^+$")
         ax.set_ylabel(r"$\bar{u}^+$")
 
@@ -1904,15 +1919,21 @@ class CHAPSim_AVG_temp(_AVG_developing,CHAPSim_AVG_tg,temporal_base):
         
         return fig, ax
 
-    def plot_flow_wall_units(self,PhyTimes,fig=None,ax=None,line_kw=None,**kwargs):
+    def plot_flow_wall_units(self,PhyTimes,fig=None,ax=None,line_kw=None,plot_sublayer=True,**kwargs):
         line_kw = cplt.update_line_kw(line_kw)
 
         for time in PhyTimes:
             
             time_label = cp.styleParams.timeStyle
             line_kw['label'] = r"$%s = %.3g$"%(time_label,time)
-
-            fig, ax = super().plot_flow_wall_units(time,fig=fig,ax=ax,line_kw=line_kw,**kwargs)
+            
+            sublayer = True if time == PhyTimes[-1] and plot_sublayer else False
+            fig, ax = super().plot_flow_wall_units(time,
+                                                   fig=fig,
+                                                   ax=ax,
+                                                   line_kw=line_kw,
+                                                   plot_sublayer=sublayer,
+                                                   **kwargs)
         
         return fig, ax
 

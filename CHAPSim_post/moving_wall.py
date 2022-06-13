@@ -87,25 +87,14 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
 
         PhyTime = self.check_PhyTime(PhyTime)
 
-        U_mean = self.flow_AVGDF[PhyTime,'u'].copy()
-        U0_index = int(self.NCL[1]*0.5)
-        U0 = U_mean[U0_index]
         wall_velo = self._meta_data.wall_velocity
-        x_coords = self.CoordDF['x']
+        U_mean = self.flow_AVGDF[PhyTime,'u'].copy()        
+        U_infty = U_mean[self.NCL[1] // 2] - wall_velo
         
-        U_infty_grad = np.zeros(self.NCL[0])
-        U_infty = self._bulk_velo_calc(PhyTime)#U0 - wall_velo
+        x_coords = self.CoordDF['x']
+        U_infty_grad = np.gradient(U_infty,x_coords)
+
         REN = self.metaDF['REN']
-        for i in range(self.NCL[0]):
-            if i ==0:
-                U_infty_grad[i] = (U_infty[i+1] - U_infty[i])/\
-                                (x_coords[i+1] - x_coords[i])
-            elif i == self.NCL[0]-1:
-                 U_infty_grad[i] = (U_infty[i] - U_infty[i-1])/\
-                                (x_coords[i] - x_coords[i-1])
-            else:
-                U_infty_grad[i] = (U_infty[i+1] - U_infty[i-1])/\
-                                (x_coords[i+1] - x_coords[i-1])
         accel_param = (1/(REN*U_infty**2))*U_infty_grad
         
         return accel_param

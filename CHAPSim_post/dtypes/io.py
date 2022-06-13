@@ -72,7 +72,7 @@ class hdfHandler:
 
         if self._file_must_exist(mode):
             if not os.path.isfile(filename):
-                msg = f"Using file mode {mode} requires the file to exist"
+                msg = f"Using file mode {mode} requires the file at {filename} to exist"
                 raise ValueError(msg)
 
         return filename

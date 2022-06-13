@@ -258,20 +258,20 @@ class MultiIndex(IndexBase):
         old_key = self._item_handler(old_key)
         new_key = self._item_handler(new_key)
 
-        for x in self._index:
+        for i, x in enumerate(self._index):
             if x[1] == old_key:
                 new_total_key = (x[0],new_key)
-                self.update_key(x,new_total_key)
+                self._index[i] = new_total_key
 
         self._update_internals()
 
     def update_outer_key(self,old_key,new_key):
         old_key = self._item_handler(old_key)
         new_key = self._item_handler(new_key)
-        for x in self._index:
+        for i,x in enumerate(self._index):
             if x[0] == old_key:
                 new_total_key = (new_key,x[1])
-                self.update_key(x,new_total_key)
+                self._index[i] = new_total_key
 
         self._update_internals()
 
@@ -281,19 +281,18 @@ class MultiIndex(IndexBase):
 
     @property
     def _levels(self):
-        return [Index(self.get_outer_index()),Index(self.get_inner_index())]
+        return [self.get_outer_index(),self.get_inner_index()]
 
     @property
     def _codes(self):
-        outer_level = self._levels[0]
-        inner_level = self._levels[1]
+        outer_level, inner_level = self._levels
 
         outer_code_map = dict(zip(outer_level,range(len(outer_level))))
         inner_code_map = dict(zip(inner_level,range(len(inner_level))))
 
         inner_index = [x[1] for x in self.get_index()]
         outer_index = [x[0] for x in self.get_index()]
-        
+
         outer_code = [outer_code_map[x] for x in outer_index]
         inner_code = [inner_code_map[x] for x in inner_index]
 
@@ -417,8 +416,57 @@ class structIndexer:
 
         return index
 
+# _HANDLE_NP_FUNCS = {}
 
-class datastruct:
+# def implements(numpy_function):
+#     """Register an __array_function__ implementation for MyArray objects."""
+#     def decorator(func):
+#         _HANDLE_NP_FUNCS[numpy_function] = func
+#         return func
+#     return decorator
+
+
+class _StructMath(np.lib.mixins.NDArrayOperatorsMixin):
+    
+    _HANDLE_TYPES = (np.ndarray, numbers.Number)
+    _ALLOWED_METHODS = ('__call__')
+    _NOT_ALLOWED_UFUNCS  = ()
+    _NOT_ALLOWED_KWARGS = ('axis', 'out','axes')
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+
+        if method not in self._ALLOWED_METHODS:
+            return NotImplemented
+
+        if ufunc in self._NOT_ALLOWED_UFUNCS:
+            return NotImplemented
+
+        func = getattr(ufunc,method)
+        nargs = len(inputs)
+
+        if nargs == 1:
+            return self._process_unary(func,inputs[0],**kwargs)
+
+        else:
+            return self._process_binary(func, *inputs, **kwargs)
+
+    # def __array_function__(self, func, types, args, kwargs):
+    #     if func not in _HANDLE_NP_FUNCS:
+    #         return NotImplemented
+    #     # Note: this allows subclasses that don't override
+    #     # __array_function__ to handle MyArray objects
+
+    #     return _HANDLE_NP_FUNCS[func](*args, **kwargs)
+
+    @abstractmethod
+    def _process_unary(self,func, input, **kwargs):
+        pass
+
+    @abstractmethod
+    def _process_binary(self,func, *inputs, **kwargs):
+        pass
+
+class datastruct(_StructMath):
 
     def __init__(self,*args,from_hdf=False,**kwargs):
 
@@ -681,6 +729,9 @@ class datastruct:
                 raise KeyError(err_msg) from None
 
     def _getitem_process_list(self,key):
+        if self._is_multidim() and isinstance(key,list):
+            key = (self.outer_index, key)
+
         key_list = self._indexer._getitem_process_list(key)
 
         struct_dict = {k : self[k] for k in key_list}
@@ -803,57 +854,91 @@ class datastruct:
             msg = f"Type of arr must be either {np.ndarray.__name__} or {datastruct.__name__}"
             raise TypeError(msg)
 
-    def _arith_binary_op(self,other_obj,func):
-        if isinstance(other_obj,datastruct):
-            if not self.index==other_obj.index:
+    def _process_unary(self,func, input, **kwargs):
+        new_data = {key :func(val,**kwargs) for key, val in input}
+        return datastruct(new_data) 
+
+    def _process_binary(self,func, *inputs, **kwargs):
+
+        if isinstance(inputs[0], datastruct):
+            this = inputs[0]
+            other = inputs[1]
+
+        else:
+            this = inputs[1]
+            other = inputs[0]
+
+        if isinstance(other,datastruct):
+            if not this.index==other.index:
                 msg = "This can only be used if the indices in both datastructs are the same"
                 raise ValueError(msg)
+
             new_data = {}
             for key, val in self:
-                new_data[key] = func(val,other_obj[key])
+                new_data[key] = func(val,other[key],**kwargs)
 
         else:
             try:
-                new_data = {key :func(val,other_obj) for key, val in self}
+                new_data = {key :func(val,other,**kwargs) for key, val in self}
+
             except TypeError:
                 msg = (f"Cannot use operation {func.__name__} datastruct by "
-                        f"object of type {type(other_obj)}")
+                        f"object of type {type(other)}")
                 raise TypeError(msg) from None
 
         return datastruct(new_data) 
+                    
+    # def _arith_binary_op(self,other_obj,func):
+    #     if isinstance(other_obj,datastruct):
+    #         if not self.index==other_obj.index:
+    #             msg = "This can only be used if the indices in both datastructs are the same"
+    #             raise ValueError(msg)
+    #         new_data = {}
+    #         for key, val in self:
+    #             new_data[key] = func(val,other_obj[key])
 
-    def __add__(self,other_obj):
-        return self._arith_binary_op(other_obj,operator.add)
+    #     else:
+    #         try:
+    #             new_data = {key :func(val,other_obj) for key, val in self}
+    #         except TypeError:
+    #             msg = (f"Cannot use operation {func.__name__} datastruct by "
+    #                     f"object of type {type(other_obj)}")
+    #             raise TypeError(msg) from None
 
-    def __radd__(self,other_obj):
-        return self.__add__(other_obj)
+    #     return datastruct(new_data) 
 
-    def __sub__(self,other_obj):
-        return self._arith_binary_op(other_obj,operator.sub)
+    # def __add__(self,other_obj):
+    #     return self._arith_binary_op(other_obj,operator.add)
 
-    def __rsub__(self,other_obj):
-        self_neg = operator.neg(self)
-        return operator.add(self_neg,other_obj)
+    # def __radd__(self,other_obj):
+    #     return self.__add__(other_obj)
 
-    def __mul__(self,other_obj):
-        return self._arith_binary_op(other_obj,operator.mul)
+    # def __sub__(self,other_obj):
+    #     return self._arith_binary_op(other_obj,operator.sub)
 
-    def __rmul__(self,other_obj):
-        return self.__mul__(other_obj)
+    # def __rsub__(self,other_obj):
+    #     self_neg = operator.neg(self)
+    #     return operator.add(self_neg,other_obj)
 
-    def __truediv__(self,other_obj):
-        return self._arith_binary_op(other_obj,operator.truediv)
+    # def __mul__(self,other_obj):
+    #     return self._arith_binary_op(other_obj,operator.mul)
+
+    # def __rmul__(self,other_obj):
+    #     return self.__mul__(other_obj)
+
+    # def __truediv__(self,other_obj):
+    #     return self._arith_binary_op(other_obj,operator.truediv)
     
-    def _arith_unary_op(self,func):
+    # def _arith_unary_op(self,func):
 
-        new_data = {key :func(val) for key, val in self}
-        return datastruct(new_data) 
+    #     new_data = {key :func(val) for key, val in self}
+    #     return datastruct(new_data) 
 
-    def __abs__(self):
-        return self._arith_unary_op(operator.abs)
+    # def __abs__(self):
+    #     return self._arith_unary_op(operator.abs)
 
-    def __neg__(self):
-        return self._arith_unary_op(operator.neg)
+    # def __neg__(self):
+    #     return self._arith_unary_op(operator.neg)
 
     def __eq__(self,other_datastruct):
         return self.equals(other_datastruct)

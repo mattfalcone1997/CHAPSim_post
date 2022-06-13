@@ -86,5 +86,5 @@ defaultCoordLabel_blayer = lambda label: r"%s/\theta_0"%label
 defaultCoordLabel_pipe = lambda label: r"%s^*"%label
 
 defaultAVGStyle = lambda label: r"\overline{%s}"%label
-defaultLocationStyle = lambda x: r"%.1f"%x
+defaultLocationStyle = lambda x: r"%.3g"%x
 defaultTimeStyle = r"t^*"

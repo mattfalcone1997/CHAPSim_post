@@ -26,7 +26,12 @@ from CHAPSim_post.utils import misc_utils, docstring
 import matplotlib as mpl
 from .vtk import VTKstruct2D, VTKstruct3D
 from .coords import coordstruct, AxisData
-from .core import *
+from .core import Index, datastruct, _StructMath
+from .io import hdfHandler
+
+import numpy as np
+import numbers
+import os
 
 FlowStructType =  NewType('FlowStructType',datastruct)
 
@@ -417,6 +422,7 @@ class _FlowStruct_base(datastruct):
         if isinstance(arr_or_data,self.__class__):
             if not self.is_fully_compatible(arr_or_data):
                 raise ValueError(msg)
+
         elif hasattr(arr_or_data,'__iter__'):
             if not all(self.is_fully_compatible(data) for data in arr_or_data):
                 raise ValueError(msg)
@@ -448,21 +454,30 @@ class _FlowStruct_base(datastruct):
         symm_dstruct = super().symmetrify(dim=dim)
         return self.from_internal(symm_dstruct)
 
-    def _arith_binary_op(self,other_obj,func):
-        if isinstance(other_obj,np.ndarray):
+    def _process_binary(self,func, *inputs, **kwargs):
+    
+        if isinstance(inputs[0], datastruct):
+            this = inputs[0]
+            other = inputs[1]
+
+        else:
+            this = inputs[1]
+            other = inputs[0]
+        
+        if isinstance(other,np.ndarray):
             pass
-        elif isinstance(other_obj,numbers.Number):
+        elif isinstance(other,numbers.Number):
             pass
         else:
             msg= "The flowstructs must be compatible in type, shape and coordinate data"
-            if not self.is_fully_compatible(other_obj):
+            if not this.is_fully_compatible(other):
                 raise ValueError(msg)
 
-        dstruct = super()._arith_binary_op(other_obj,func)
+        dstruct = super()._process_binary(func, *inputs, **kwargs)
         return self.from_internal(dstruct)
 
-    def _arith_unary_op(self,func):
-        dstruct = super()._arith_unary_op(func)
+    def _process_unary(self,func, input, **kwargs):
+        dstruct = super()._process_unary(func, input, **kwargs)
         return self.from_internal(dstruct)
 
     def copy(self) -> FlowStructType:
@@ -479,17 +494,17 @@ class _FlowStruct_base(datastruct):
 
 class _FlowStruct_slicer:
     def __init__(self,flowstruct_obj):
-        self._ref = weakref.ref(flowstruct_obj)
+        self._ref = flowstruct_obj
 
     def get_slicer(self,key):
         output_slice, _ = self._get_index_slice(key)
         return output_slice
     
     def __getitem__(self,key):
-        if self._ref()._dim == 1:
+        if self._ref._dim == 1:
             key = (key)
         
-        flow_struct = self._ref().copy()
+        flow_struct = self._ref.copy()
         output_slice, output_slice_nd = self._get_index_slice(key)
 
         new_coorddata, data_layout,\
@@ -501,17 +516,43 @@ class _FlowStruct_slicer:
             new_array.append(array[output_slice].squeeze())
         new_array = np.stack(new_array,axis=0)
         
-        return FlowStructND(new_coorddata,
-                            new_array,
-                            data_layout = data_layout,
-                            wall_normal_line = wall_normal_line,
-                            polar_plane = polar_plane,
-                            index=flow_struct.index)
+        kwds = dict(data_layout = data_layout,
+                    wall_normal_line = wall_normal_line,
+                    polar_plane = polar_plane)
 
+        cls = self._get_output_class(new_array)
+        kwds = self._arg_handler(cls,kwds)
+
+        return cls(new_coorddata,
+                                    new_array,
+                                    index=flow_struct.index,
+                                    **kwds)
+
+    def _get_output_class(self,array):
+        dim = array.ndim - 1
+        if self._ref._dim != dim:
+            return FlowStructND
+        else:
+            return self._ref.__class__
+
+    def _arg_handler(self, cls, kwargs):
+        low_level_args = ('data_layout',
+                          'wall_normal_line',
+                          'polar_plane')
+
+        if cls == FlowStructND or \
+            cls == FlowStructND_time:
+                return kwargs
+
+        for key in low_level_args:
+            del kwargs[key]
+
+        return kwargs
+        
     def _get_index_slice(self,key):
         output_slicer = []
         output_slicer_nd = []
-        flow_struct = self._ref()
+        flow_struct = self._ref
         data_layout = flow_struct._data_layout
 
         extra_slices =[slice(None)]*(len(data_layout) - len(key))
@@ -551,7 +592,7 @@ class _FlowStruct_slicer:
 
 
     def _get_new_coorddata(self,output_slice, output_slice_nd):
-        flow_struct = self._ref()
+        flow_struct = self._ref
         CoordDF = flow_struct.CoordDF
         Coord_ND_DF = flow_struct.Coord_ND_DF
 
