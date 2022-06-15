@@ -93,8 +93,6 @@ def reset_prop_cycler(**kwargs):
 
 reset_prop_cycler()
 
-mpl.rcParams['lines.markerfacecolor'] = 'white'
-# mpl.rcParams['figure.autolayout'] = True
 mpl.rcParams['mathtext.fontset'] = 'stix'
 mpl.rcParams['legend.edgecolor'] = 'inherit'
 mpl.rcParams['font.size'] = 17

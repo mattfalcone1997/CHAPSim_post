@@ -88,6 +88,8 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
     def _bulk_velo_calc(self, PhyTime):
         return self.flow_AVGDF[PhyTime,'u'][-1,:].copy()
 
+    plot_U_infty = cp.CHAPSim_AVG_io.plot_bulk_velocity
+    
     def _y_plus_calc(self,PhyTime):
 
         y_coord = self.CoordDF['y']

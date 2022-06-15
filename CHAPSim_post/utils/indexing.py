@@ -113,8 +113,7 @@ def coord_index_calc(CoordDF,comp,coord_list):
                 index_list.append(0)
             else:
                 msg = "Value in coord_list out of bounds: "\
-                    + "%s coordinate given: %g, max %s coordinate:" % (comp,coord,comp)\
-                    + " %g. Ignoring values beyond this" % max(coords)
+                    + "%s coordinate given %g. Coordinate range [%g,%g]" % (comp,coord,min_coord,max_coord)
                 raise IndexError(msg) from None
         else:
             min_array = np.abs(coords - coord)
