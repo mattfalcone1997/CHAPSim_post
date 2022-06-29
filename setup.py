@@ -7,6 +7,10 @@ if __name__ == "__main__":
     import os
     from Cython.Build import cythonize
     
+    #---------------------------------------------------------------
+    """
+    Building and install CHAPSim_post
+    """
     def create_cython_ext(folder,**other_args):
         sources = [os.path.join(folder,file) for file in os.listdir(folder) \
                         if os.path.splitext(file)[-1] == '.pyx']
@@ -58,17 +62,5 @@ if __name__ == "__main__":
 
     config.add_subpackage(subpackage_name='legacy',
                         subpackage_path="CHAPSim_post/legacy")
-    
-    # config.add_subpackage(subpackage_name='legacy.post',
-    #                          subpackage_path="CHAPSim_post/legacy/post")
-
-    # config.add_subpackage(subpackage_name="legacy.utils",
-    #                     subpackage_path="CHAPSim_post/legacy/utils")
-
-    # config.add_subpackage(subpackage_name="legacy.POD",
-    #                     subpackage_path="CHAPSim_post/legacy/POD")                     
-
-
-
-
+        
     setup(**config.todict())

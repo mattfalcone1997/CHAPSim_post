@@ -28,13 +28,21 @@ class CHAPSim_fluct_io(cp.CHAPSim_fluct_io):
 _fluct_io_class = CHAPSim_fluct_io
 
 class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
+    y_limit = None
     def _int_thickness_calc(self,PhyTime):
 
-        U_mean = self.flow_AVGDF[PhyTime,'u'].copy()
-        y_coords = self.CoordDF['y']
 
-        U0 = self.flow_AVGDF[PhyTime,'u'][-1,:]
+
+        if self.y_limit is None:
+            index = -1
+        else:
+            index = self.CoordDF.index_calc('y',self.y_limit)[0]
             
+        U0 = self.flow_AVGDF[PhyTime,'u'][index,:]
+        
+        U_mean = self.flow_AVGDF[PhyTime,'u'].copy()[:index]
+        y_coords = self.CoordDF['y'][:index]
+
         theta_integrand = np.zeros_like(U_mean)
         delta_integrand = np.zeros_like(U_mean)
         mom_thickness = np.zeros(self.shape[1])

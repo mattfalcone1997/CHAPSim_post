@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+
+import argparse
+from pgfto import PgfTo
+
+if __name__ == '__main__':
+    
+    parser = argparse.ArgumentParser(description='Converts pgf output from matplotlib to eps')
+    parser.add_argument(dest='input_fn',
+                        help='File to be converted')
+    parser.add_argument('--preamble',dest='preamble',default=None,
+                        help='Optional additional file to use as a preamble')
+    
+    parser.add_argument('--latex_cmd',dest='latex_cmd',default='pdflatex',
+                        help='Latex command to use. Default pdflatex')
+
+    parser.add_argument('--output','-o',dest='output',default=None,
+                        help='Output file name')
+    parser.add_argument('--doc-options',dest='doc_options',default=None,
+                        help='Options for standalone class')
+                        
+    args = parser.parse_args()   
+
+    pgf = PgfTo(args.input_fn,
+                preamble=args.preamble,
+                latex_cmd=args.latex_cmd,
+                doc_options=args.doc_options)
+
+    pgf.to_eps(output_fn=args.output)
