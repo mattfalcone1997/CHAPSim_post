@@ -2,8 +2,7 @@ import os
 from pathlib import PurePath
 import numpy as np
 import warnings
-import sys
-import numbers
+from scipy import stats
 
 # from CHAPSim_post import rcParams
 
@@ -125,14 +124,19 @@ def file_extract(path_to_folder,abs_path=True):
     #     mypath = os.path.join(path_to_folder,'2_averagd_D')
     # else:
     #     mypath = os.path.abspath(os.path.join(path_to_folder,'2_averagd_D'))
-    file_names = [f for f in os.listdir(full_path) if f[:8]=='DNS_peri']
+    file_names = [os.path.join(full_path,f) for f in os.listdir(full_path) if f[:8]=='DNS_peri']
     return file_names       
 
 def time_extract(path_to_folder,abs_path=True):
     file_names = file_extract(path_to_folder,abs_path)
+    sizes = [os.stat(f).st_size for f in file_names]
+    mode = stats.mode(sizes).mode
+
+    f_use = np.array(file_names)[sizes==mode]
+
     time_list =[]
-    for file in file_names:
-        time_list.append(float(file[20:35]))
+    for file in f_use:
+        time_list.append(float(os.path.basename(file)[20:35]))
 
     times = sorted(set(time_list))
     if not times:

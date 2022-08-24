@@ -59,23 +59,45 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
         
         return disp_thickness, mom_thickness, shape_factor
     
-    def blayer_thickness_calc(self,PhyTime=None,method='99'):
+    def blayer_thickness_calc(self,PhyTime=None,method=99):
         PhyTime= self.check_PhyTime(PhyTime)
-        if method == '99':
-            return self._delta99_calc(PhyTime)
-        else:
-            msg = ("Invalid boundary layer thickness"
-                   " calculation method")
-            raise Exception(msg)
+
         
-    def _delta99_calc(self,PhyTime):
+        return self._delta99_calc(PhyTime,threshold=method)
+        
+    
+    def plot_blayer_thickness(self,PhyTime=None,method=99,fig=None,ax=None,line_kw=None,**kwargs):
+        delta = self.blayer_thickness_calc(PhyTime,method=method)
+
+        fig, ax = cplt.create_fig_ax_with_squeeze(fig=fig,ax=ax,**kwargs)
+        x_coords = self.CoordDF['x']
+
+        line_kw = cplt.update_line_kw(line_kw,label=r'$\delta$')
+
+        ax.cplot(x_coords,delta,**line_kw)
+
+        xlabel = self.Domain.create_label(r'$x$')
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(r'$\delta$')
+
+        return fig, ax
+
+    def _delta99_calc(self,PhyTime,threshold='99'):
         u_mean = self.flow_AVGDF[PhyTime,'u']
         y_coords = self.CoordDF['y']
         
+        if self.y_limit is None:
+            index = -1
+        else:
+            index = self.CoordDF.index_calc('y',self.y_limit)[0]
+
+        U0 = self.flow_AVGDF[PhyTime,'u'][index,:]
+
+        thresh = float(threshold)*0.01
         delta99 = np.zeros(u_mean.shape[-1])
         for i in range(u_mean.shape[-1]):
-            u_99 = 0.99*u_mean[-1,i]
-            int = interp1d(u_mean[:,i], y_coords)
+            u_99 = thresh*U0[i]
+            int = interp1d(u_mean[:index,i], y_coords[:index])
             
             delta99[i] = int(u_99)
             
@@ -96,6 +118,7 @@ class CHAPSim_AVG_io(cp.CHAPSim_AVG_io):
     def _bulk_velo_calc(self, PhyTime):
         return self.flow_AVGDF[PhyTime,'u'][-1,:].copy()
 
+    U_infty_calc = cp.CHAPSim_AVG_io.bulk_velo_calc
     plot_U_infty = cp.CHAPSim_AVG_io.plot_bulk_velocity
     
     def _y_plus_calc(self,PhyTime):
@@ -187,9 +210,12 @@ _meta_class = CHAPSim_meta
 
 class CHAPSim_budget_io(cp.CHAPSim_budget_io):
     pass
+
+class CHAPSim_k_budget_io(cp.CHAPSim_k_budget_io):
+    pass
         
 class CHAPSim_momentum_budget_io(cp.CHAPSim_momentum_budget_io):
-    def __init__(self,comp,avg_data,PhyTime=None,advection_split=False):
+    def __init__(self,comp,avg_data,PhyTime=None,new_method=True,advection_split=False):
         
         super().__init__(comp,avg_data,PhyTime)
 
@@ -197,6 +223,12 @@ class CHAPSim_momentum_budget_io(cp.CHAPSim_momentum_budget_io):
             PhyTime = self.avg_data.check_PhyTime(PhyTime)
             self._advection_split(comp,PhyTime)
         
+        if new_method:
+            U_infty = self._meta_data.U_infty
+            pressure_g = U_infty*np.gradient(U_infty,
+                                               self.CoordDF['x'])
+            time = self.budgetDF.times[0]                                               
+            self.budgetDF[time,'pressure gradient'] += pressure_g
 
     def _advection_split(self,comp,PhyTime):
         advection = self.budgetDF[PhyTime,'advection']
@@ -491,17 +523,13 @@ class TEST_initialiseBlayer(blayer_TEST_base):
         self.y_scalesDF = pd.DataFrame(file_array[:,1:4],
                                         columns=columns,
                                         index=index)
-        columns = ['spaldings','velo defect']
-        self.velo_compsDF = pd.DataFrame(file_array[:,4:6],
-                                        columns=columns,
-                                        index=index)
         
-        columns = ['u plus','u','u_check']
-        self.veloDF = pd.DataFrame(file_array[:,6:9],
+        columns = ['u plus','u']
+        self.veloDF = pd.DataFrame(file_array[:,4:6],
                                         columns=columns,
                                         index=index)
         columns = ['delta v', 'u tau', 'Cf']
-        self.wall_unitDF = pd.DataFrame(file_array[:,9:12],
+        self.wall_unitDF = pd.DataFrame(file_array[:,6:9],
                                         columns=columns,
                                         index=index)
     def _get_fluct_ini(self):

@@ -10,7 +10,7 @@ import CHAPSim_post.dtypes as cd
 import CHAPSim_post as cp
 from ._common import Common, postArray
 
-class _budget_base(Common,ABC):
+class budgetBase(Common,ABC):
 
     def __init__(self,comp,avg_data,times = None):
 
@@ -149,7 +149,7 @@ class ReynoldsBudget_base(ABC):
     def _dissipation_extract(self,*args,**kwargs):
         raise NotImplementedError
 
-class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
+class CHAPSim_budget_io(ReynoldsBudget_base,budgetBase):
     _flowstruct_class = cd.FlowStruct2D
 
     def _advection_extract(self,PhyTime,comp):
@@ -289,8 +289,10 @@ class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
         def _x_Transform(data):
             if self.Domain.is_polar:
                 return -1.*(data.copy() -1.)/delta_v[x_index]
-            else:
+            if self.Domain.is_channel:
                 return (data.copy() + 1.)/delta_v[x_index]
+            else:
+                return data/delta_v[x_index]
 
         def _y_Transform(data):
             return data/budget_scale[x_index]
@@ -399,7 +401,7 @@ class CHAPSim_budget_io(ReynoldsBudget_base,_budget_base):
 
         return fig, ax
 
-class CHAPSim_budget_tg(ReynoldsBudget_base,_budget_base):
+class CHAPSim_budget_tg(ReynoldsBudget_base,budgetBase):
     _flowstruct_class = cd.FlowStruct1D
     def _advection_extract(self,PhyTime,comp):
 
@@ -571,7 +573,7 @@ class CHAPSim_budget_tg(ReynoldsBudget_base,_budget_base):
 
         return fig, ax
 
-class Budget_tg_array(postArray,_budget_base):
+class Budget_tg_array(postArray,budgetBase):
     def plot_budget(self,budget_terms=None, wall_units=False,fig=None, ax =None,line_kw=None,**kwargs):
 
         fig, ax, single_input = self._create_budget_axes(self._data_dict.keys(),fig,ax,**kwargs)
@@ -661,7 +663,7 @@ class CHAPSim_budget_temp(CHAPSim_budget_tg):
         
         return fig, ax
 
-class _k_budget(_budget_base,ABC):
+class _k_budget(budgetBase,ABC):
 
     def __init__(self,avg_data,times = None):
 
@@ -697,7 +699,7 @@ class CHAPSim_k_budget_temp(_k_budget,CHAPSim_budget_temp):
     pass
 
 
-class _momentum_budget_base(_budget_base):
+class _momentumbudgetBase(budgetBase):
     def _budget_extract(self,PhyTime,comp):
             
         advection = self._advection_extract(PhyTime,comp)
@@ -733,7 +735,7 @@ class _momentum_budget_base(_budget_base):
     def _turb_transport(self,PhyTime,comp):
         raise NotImplementedError
 
-class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
+class CHAPSim_momentum_budget_io(_momentumbudgetBase,budgetBase):
     _flowstruct_class = cd.FlowStruct2D
     def _advection_extract(self,PhyTime,comp):
         
@@ -870,7 +872,7 @@ class CHAPSim_momentum_budget_io(_momentum_budget_base,_budget_base):
             
         return fig, ax[0] if single_input else ax
 
-class CHAPSim_momentum_budget_tg(_momentum_budget_base,_budget_base):
+class CHAPSim_momentum_budget_tg(_momentumbudgetBase,budgetBase):
     _flowstruct_class = cd.FlowStruct1D
     def _advection_extract(self, PhyTime, comp):
         UV = self.avg_data.flow_AVGDF[PhyTime,comp]*self.avg_data.flow_AVGDF[PhyTime,'v']
@@ -987,7 +989,7 @@ class Mom_budget_array(Budget_tg_array):
         return fig, ax[0] if single_input else ax
 
 
-class CHAPSim_momentum_budget_temp(CHAPSim_momentum_budget_tg,_budget_base):
+class CHAPSim_momentum_budget_temp(CHAPSim_momentum_budget_tg,budgetBase):
     _flowstruct_class = cd.FlowStruct1D_time
 
     def plot_budget(self,times_list, budget_terms=None,fig=None, ax =None,line_kw=None,**kwargs):
@@ -1030,8 +1032,8 @@ class CHAPSim_momentum_budget_temp(CHAPSim_momentum_budget_tg,_budget_base):
 
         return fig, ax[0] if single_input else ax
 
-class _FIK_developing_base(_budget_base):
-
+class _FIK_base(budgetBase):
+    _flowstruct_class = None
     def _budget_extract(self,PhyTime):
         laminar = self._laminar_extract(PhyTime)
         turbulent = self._turbulent_extract(PhyTime)
@@ -1046,6 +1048,8 @@ class _FIK_developing_base(_budget_base):
         budgetDF = cd.datastruct(budget_array,index =[phystring_index,budget_index])
 
         return budgetDF
+
+class _FIK_developing_base(_FIK_base):
 
     @abstractmethod
     def _scale_vel(self,PhyTime):
@@ -1152,6 +1156,38 @@ class CHAPSim_FIK_io(_FIK_developing_base):
         ax.set_xlabel(r"$x/\delta$")
         return fig, ax
 
+class CHAPSim_FIK_tg(budgetBase):
+    def __init__(self,avg_data):
+        self.avg_data = avg_data
+
+        time = self.avg_data.times[-1]
+
+        self.Terms = {}
+        
+        self.Terms['laminar'] = self._laminar_extract(time)
+        self.Terms['turbulent'] = self._turbulent_extract(time)
+    
+    def _laminar_extract(self,time):
+        REN = self.avg_data.metaDF['REN']
+        const = 4.0 if self.Domain.is_polar else 6.0
+        return const/(REN)
+
+    def _turbulent_extract(self,time):
+        y_coords = self.avg_data.CoordDF['y']
+        uv = self.avg_data.UU_tensorDF[time,'uv']
+
+        turbulent =    6*y_coords*uv
+        Coord_ND_DF = self.avg_data.Coord_ND_DF
+        
+        return self.Domain.Integrate_tot(Coord_ND_DF,turbulent)
+
+    def plot(self,plot_total=True,PhyTime=None,fig=None,ax=None,**kwargs):
+        
+        kwargs = cplt.update_subplots_kw(kwargs,figsize=[10,5])
+        fig, ax  = cplt.create_fig_ax_with_squeeze(fig,ax,**kwargs)
+
+        for term in self.Terms:
+            pass
 class CHAPSim_FIK_temp(_FIK_developing_base):
     def __init__(self,avg_data):
         self.avg_data = avg_data

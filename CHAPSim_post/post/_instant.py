@@ -759,8 +759,8 @@ class CHAPSim_Inst_io(_Inst_base):
     
     def _create_avg_data(self,path_to_folder,abs_path,time0,avg_data=None):
         time = misc_utils.max_time_calc(path_to_folder,abs_path)
-        if avg_data is not None and self._update_time:
-            if time in avg_data.times:
+        if avg_data is not None :
+            if time in avg_data.times or self._update_time:
                 return avg_data
             else:
                 msg = ("The averaged data does not contain the required times. Re-extracting average data.\n"
@@ -777,8 +777,8 @@ class CHAPSim_Inst_tg(_Inst_base):
     
     def _create_avg_data(self,path_to_folder,abs_path,time0,avg_data=None):
         time = misc_utils.max_time_calc(path_to_folder,abs_path)
-        if avg_data is not None and self._update_time:
-            if time in avg_data.times:
+        if avg_data is not None:
+            if time in avg_data.times or self._update_time:
                 return avg_data
             else:
                 msg = ("The averaged data does not contain the required times. Re-extracting average data.\n"
@@ -812,8 +812,8 @@ class CHAPSim_Inst_temp(_Inst_base):
         times = self.InstDF.times
                                                   
         
-        if avg_data is not None and self._update_time:
-            if all(time in avg_data.times for time in times):
+        if avg_data is not None:
+            if all(time in avg_data.times for time in times) or self._update_time:
                 return avg_data
             else:
                 inst_intersect = avg_data._get_intersect([times,avg_data.times],
